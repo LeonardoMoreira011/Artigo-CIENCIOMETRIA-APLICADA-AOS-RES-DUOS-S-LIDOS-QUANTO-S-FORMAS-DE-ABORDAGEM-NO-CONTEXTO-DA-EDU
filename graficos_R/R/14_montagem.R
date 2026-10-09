@@ -5,6 +5,7 @@
 # =============================================================================
 #  MONTAGEM FINAL (eixos + tema + anotações)
 # =============================================================================
+# Escala contínua X ou Y a partir de um eixo calculado (limites, ticks, rótulos, margem).
 .escala_continua <- function(ax, xy, sec, posicao = NULL) {
   f <- if (xy == "x") scale_x_continuous else scale_y_continuous
   args <- list(limits = ax$limites, breaks = ax$maiores, minor_breaks = ax$menores,
@@ -15,6 +16,7 @@
   do.call(f, args)
 }
 
+# Camadas de anotação: faixas (antes do gráfico) e referências, setas, textos e letra (depois).
 .camadas_extra <- function(cfg, info) {
   cam <- list(); fonte <- .fonte(cfg$texto$fonte)
   an <- cfg$anotacoes
@@ -97,18 +99,23 @@
     l2 <- sort(fa * info$ax_y$limites + de)
     e2$inicio <- e2$inicio %||% l2[1]; e2$fim <- e2$fim %||% l2[2]
     if (e2$inicio != l2[1] || e2$fim != l2[2]) {
-      .aviso("eixo_y2 \"transformado\": os limites seguem o eixo_y (", l2[1], " a ", l2[2], "); inicio/fim do y2 ignorados.")
+      .aviso("eixo_y2 \"transformado\": os limites seguem o eixo_y (", l2[1], " a ", l2[2],
+             "); inicio/fim do y2 ignorados.")
       e2$inicio <- l2[1]; e2$fim <- l2[2]
     }
     ax2 <- .calc_eixo(e2, l2)
-    cor2 <- if (is.null(cfg$eixo_y2$cor_eixo) || identical(cfg$eixo_y2$cor_eixo, "serie")) NULL else cfg$eixo_y2$cor_eixo
+    cor2 <- if (is.null(cfg$eixo_y2$cor_eixo) || identical(cfg$eixo_y2$cor_eixo,
+                                                           "serie")) NULL else cfg$eixo_y2$cor_eixo
     info$y2 <- list(ax = ax2, para2 = function(v) fa * v + de, para1 = function(v) (v - de) / fa,
                     titulo = cfg$eixo_y2$titulo %||% "",
                     cor = cor2 %||% cfg$texto$cor)
   }
   cx <- cfg$caixa; it <- cfg$.interno %||% list()
   espelhar <- isTRUE(cx$fechada) && isTRUE(cx$ticks_espelhados)
-  sec_dup <- function(ax) if (espelhar) dup_axis(name = NULL, labels = if (isTRUE(cx$rotulos_espelhados)) derive() else NULL) else NULL
+  sec_dup <- function(ax) {
+    if (!espelhar) return(NULL)
+    dup_axis(name = NULL, labels = if (isTRUE(cx$rotulos_espelhados)) derive() else NULL)
+  }
   y_dir <- isTRUE(it$y_direita) && is.null(info$y2)
   x_topo <- isTRUE(it$x_topo)
   # secundários
@@ -146,12 +153,15 @@
   g <- g + .tema(cfg, eh, ev, lados, cor_y2 = if (!is.null(info$y2)) .cor(info$y2$cor) else NULL)
   if (!is.null(info$y2)) {
     # estilo de rótulos do y2: casas/notação próprias já nos rótulos; mostra sempre
-    g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, list(mostrar_rotulos = TRUE)), cfg, "right", .cor(info$y2$cor)),
-                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, list(mostrar_titulo = TRUE)), cfg, "right", .cor(info$y2$cor)))
+    g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, list(mostrar_rotulos = TRUE)), cfg, "right",
+                                                    .cor(info$y2$cor)),
+                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, list(mostrar_titulo = TRUE)), cfg, "right",
+                                                     .cor(info$y2$cor)))
   }
   if (y_dir && espelhar) {
     g <- g + theme(axis.text.y.left = element_blank(), axis.title.y.left = element_blank(),
-                   axis.text.y.right = .elem_rotulo(ev, cfg, "right"), axis.title.y.right = .elem_titulo(ev, cfg, "right"))
+                   axis.text.y.right = .elem_rotulo(ev, cfg,
+                                                    "right"), axis.title.y.right = .elem_titulo(ev, cfg, "right"))
   }
   ti <- .ticks_internos(axh, axv, lados, info$ax_x, info$ax_y)
   if (!is.null(ti)) g <- g + ti

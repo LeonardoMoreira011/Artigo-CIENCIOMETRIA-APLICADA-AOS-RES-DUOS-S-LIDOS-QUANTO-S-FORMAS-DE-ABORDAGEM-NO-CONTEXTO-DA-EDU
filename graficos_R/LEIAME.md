@@ -1,7 +1,7 @@
 # Template de gráficos científicos em R — alternativa ao Origin
 
 Entrada: arquivos **CSV**. Saída: figuras **PNG, TIFF, JPEG, PDF, SVG ou EMF** com controle fino de eixos, ticks, moldura, cores, legendas e painéis.
-Testado em R 4.3 com **ggplot2 4.0.3** e **ggplot2 3.5.2**.
+Testado em R 4.3/4.4 com **ggplot2 4.0.3** e **ggplot2 3.5.2** (Linux). **Não foi testado em Windows:** rode `07_verificar_windows.R` uma vez (seção 8).
 
 ## 1. Primeira vez (5 minutos)
 
@@ -11,7 +11,7 @@ Testado em R 4.3 com **ggplot2 4.0.3** e **ggplot2 3.5.2**.
    - Sem permissão de administrador? O script instala na sua pasta pessoal automaticamente.
    - Erro de download? Veja as instruções de proxy no topo do arquivo, ou peça à TI liberação de `https://cloud.r-project.org`.
 4. **Recomendado:** *Tools > Global Options > General > Graphics > Backend = "AGG"*. Assim a aba Plots mostra fontes e gradientes iguais ao arquivo final.
-5. Rode `05_exemplos.R` (Ctrl+Shift+S): gera 30 figuras de exemplo em `saida/exemplos/`.
+5. Rode `05_exemplos.R` (Ctrl+Shift+S): gera 31 figuras de exemplo em `saida/exemplos/`.
 6. No console: `galeria()` gera `saida/galeria_referencia.pdf` com símbolos, tipos de linha, paletas, ticks, gradientes e um exemplo de cada tipo.
 
 ## 2. Uso diário
@@ -35,9 +35,23 @@ salvar(g, cfg)       # grava em saida/ nos formatos de cfg$exportacao$formatos
 
 ## 3. Números: sempre ponto decimal
 
-- A leitura detecta sozinha separador (`,` `;` tab `|`), codificação (UTF-8 ou latin1/Excel) e **vírgula decimal**, e converte tudo para ponto: `1.234,5` → `1234.5`.
-- Valores como `n.d.` numa coluna numérica viram vazio (NA) e o relatório avisa a linha.
+- A leitura detecta sozinha separador (`,` `;` tab `|`), codificação (UTF-8, latin1/Excel ou UTF-16 = "Texto Unicode" do Excel) e **vírgula decimal**, e converte tudo para ponto: `1.234,5` → `1234.5`.
+- Valores como `n.d.` numa coluna numérica viram vazio (NA) e o relatório avisa a linha **do arquivo**.
+- Linha com **mais ou menos campos** que o cabeçalho gera um aviso (antes, dados podiam ser embaralhados em silêncio).
+- Colunas de **datas** (`2024-03-15`, `15/03/2024`, `15/03/2024 14:30`) aparecem como "data" no relatório e viram eixo de tempo (seção 3.1).
 - Todos os rótulos dos gráficos saem com ponto decimal. Para forçar: `cfg$dados$decimal_virgula <- TRUE` (ou `FALSE`).
+
+### 3.1 Eixo de datas e horas
+
+Se a coluna X de um gráfico de pontos/linhas/áreas for uma data, o eixo passa a ser **proporcional ao tempo** (um intervalo de 1 mês ocupa o dobro de 15 dias), com ticks "redondos" (dias, semanas, meses, anos, horas). Veja o exemplo 31.
+
+```r
+cfg$eixo_x$ticks_modo <- "incremento"; cfg$eixo_x$incremento <- "1 mes"    # "2 semanas", "6 horas", "1 ano"...
+cfg$eixo_x$inicio <- "01/01/2024"; cfg$eixo_x$fim <- "31/12/2024"
+cfg$eixo_x$formato_rotulo_data <- "%d/%m/%Y"      # como as datas aparecem nos ticks
+cfg$eixo_x$formato_data <- "%m/%d/%Y"             # só se o CSV for mês/dia/ano (o padrão é dia/mês/ano)
+cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categorias de texto (comportamento antigo)
+```
 
 ## 4. O que eu quero mudar → qual parâmetro
 
@@ -71,7 +85,15 @@ salvar(g, cfg)       # grava em saida/ nos formatos de cfg$exportacao$formatos
 | Grade | `cfg$grade$maior_y <- TRUE` |
 | Linha de referência | `cfg$referencias <- list(list(eixo = "y", valor = 0, tipo = "dashed"))` |
 | Texto / seta / faixa | `cfg$anotacoes$textos`, `$setas`, `$faixas` (ver `ajuda("anotacoes")`) |
-| Eixo Y à direita | `cfg$eixo_y2$ativo <- TRUE` + `cfg$series[["B"]] <- list(eixo = "y2")` |
+| Eixo Y à direita | `cfg$eixo_y2$ativo <- TRUE` + `cfg$series[["B"]] <- list(eixo = "y2")` (com ticks menores: `cfg$eixo_y2$n_menores`) |
+| Eixo X como datas / horas | automático; `cfg$eixo_x$incremento <- "1 mes"`, `inicio <- "01/01/2024"`, `formato_rotulo_data <- "%d/%m/%Y"` (seção 3.1) |
+| Ligar os pontos da esquerda para a direita | `cfg$linhas$ordenar_x <- TRUE` (padrão: segue a ordem das linhas do CSV, como o Origin) |
+| Rótulos da pizza sobrepostos | já são afastados sozinhos; para desligar: `cfg$pizza$rotulos_afastar <- FALSE` |
+| Ajuste fino da pizza (raio dos rótulos, linha guia) | `cfg$pizza$rotulos_raio_dentro`, `rotulos_raio_borda`, `linha_guia_espessura_pt`, `linha_guia_recuo`, `rotulos_margem` |
+| Pontos do boxplot (enxame), bordas, tamanho do "n =" | `cfg$boxplot$enxame_resolucao`, `pontos_borda_pt`, `outliers_borda_pt`, `media_borda_pt`, `n_tamanho_pt` |
+| Folga interna da legenda | `cfg$legenda$margem_interna_pt <- c(4, 6, 4, 6)` |
+| Tamanho dos traços "//" da quebra de eixo | `cfg$quebra$marca_largura_pt`, `marca_altura_pt` |
+| Tamanho dos tracinhos do rug | `cfg$distribuicao$rug_comprimento_pt`, `rug_espessura_pt` |
 | Gráficos empilhados com X fixo | `cfg$paineis$ativo <- TRUE` + `cfg$paineis$lista` (ver exemplos 25 e 26) |
 | Quebra no eixo Y | `cfg$quebra$ativo <- TRUE; de <- 20; ate <- 80` |
 | Fonte | `cfg$texto$fonte <- "Arial"; cfg$texto$tamanho_base_pt <- 10` |
@@ -106,11 +128,13 @@ salvar(g, cfg)       # grava em saida/ nos formatos de cfg$exportacao$formatos
 |---|---|
 | `00_instalar_pacotes.R` | instala/atualiza pacotes (uma vez) |
 | `01_config.R` | **todos** os parâmetros, cada um com descrição, OPÇÕES e EX. |
-| `02_motor.R` | o motor (não precisa editar) |
+| `02_motor.R` | carregador do motor (não precisa editar). Você continua dando um único `source("02_motor.R")` |
+| `R/` | o código do motor, um assunto por arquivo (leitura, eixos, tema, um arquivo por tipo de gráfico, exportação...). **Mantenha a pasta junto do `02_motor.R`** |
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
-| `05_exemplos.R` | 30 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 48 testes automáticos — rode depois de qualquer alteração no motor |
+| `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
+| `06_testes.R` | 82 testes automáticos — rode depois de qualquer alteração no motor |
+| `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |
 | `dados/` | CSVs de exemplo (inclui um CSV de Excel em português com `;` e vírgula) |
 
@@ -118,6 +142,15 @@ salvar(g, cfg)       # grava em saida/ nos formatos de cfg$exportacao$formatos
 
 - Gradientes exigem R ≥ 4.2 e não existem em EMF (o arquivo EMF sai com cor sólida, com aviso).
 - No Windows, a aba Plots do RStudio só mostra gradientes com o backend **AGG** (passo 1.4). `visualizar()` e `salvar()` sempre funcionam.
-- Eixo Y2 é linear. Quebra de eixo só no Y.
+- Eixo Y2 é linear. Quebra de eixo só no Y. O eixo de datas vale para pontos, linhas e áreas (em barras, pizza e boxplot a data continua sendo texto).
+- Com datas, o fuso é sempre UTC (sem horário de verão) e o dia vem antes do mês, salvo `formato_data`.
 - Sem gráficos 3D, mapas de contorno ou rótulos nos ticks menores.
 - Interface com botões (Shiny) não incluída: é a "Fase 2" opcional descrita no prompt.
+
+## 7. Mudou algo no seu `cfg`? Compatibilidade
+
+Todos os nomes de parâmetros e funções da versão anterior continuam valendo. Parâmetros novos têm valor padrão que mantém o comportamento antigo (exceções: colunas de datas agora viram eixo de tempo — desligue com `cfg$eixo_x$tempo <- FALSE` — e rótulos de pizza que se sobrepunham agora são afastados). Se você substituir um bloco inteiro (`cfg$quebra <- list(...)`) ou usar um estilo salvo antes desta versão, os parâmetros que faltarem são completados com os padrões do `01_config.R`.
+
+## 8. Verificação no Windows (uma vez, 1 minuto)
+
+O template foi desenvolvido e testado em Linux. No Windows, abra o projeto (`graficos_R.Rproj`) e rode `07_verificar_windows.R` (Ctrl+Shift+S). Ele checa as versões dos pacotes, se as fontes **Arial** e **Times New Roman** existem, gera `saida/verificacao/arial.pdf|png` e `times.pdf|png` com gradiente e acentos, e imprime uma tabela OK/ATENÇÃO. Depois **abra os arquivos e confira com os olhos** (os passos estão no fim da saída). Também rode `06_testes.R`: deve terminar com `0 FALHOU`.

@@ -3,6 +3,7 @@
 # =============================================================================
 
 # ---- Distribuições ----------------------------------------------------------------
+# Entra: dados e cfg. Sai: lista de amostras (uma por série ou grupo) para distribuições e boxplot.
 .amostras <- function(dados, cfg) {
   gcol <- cfg$grafico$coluna_grupo
   if (!is.null(gcol)) {
@@ -10,7 +11,8 @@
     vcol <- .colunas_y(dados, cfg, excluir = gcol)[1]
     g <- as.character(dados[[gcol]])
     itens <- unique(g[!is.na(g)])
-    if (!is.null(cfg$grafico$ordem_itens)) itens <- c(intersect(cfg$grafico$ordem_itens, itens), setdiff(itens, cfg$grafico$ordem_itens))
+    if (!is.null(cfg$grafico$ordem_itens)) itens <- c(intersect(cfg$grafico$ordem_itens, itens),
+                                                      setdiff(itens, cfg$grafico$ordem_itens))
     am <- lapply(itens, function(i) { v <- dados[[vcol]][g %in% i]; v[!is.na(v)] })
     return(list(am = stats::setNames(am, itens), nome_valor = vcol, nome_grupo = gcol))
   }
@@ -19,11 +21,13 @@
   list(am = stats::setNames(am, ycols), nome_valor = if (length(ycols) == 1) ycols else "Valor", nome_grupo = NULL)
 }
 
+# Histograma, densidade e ECDF. Entra: dados e cfg. Sai: list(camadas, info).
 .construir_distribuicao <- function(dados, cfg) {
   D <- cfg$distribuicao; tipo <- cfg$grafico$tipo
   A <- .amostras(dados, cfg); am <- A$am; itens <- names(am)
   vazio <- vapply(am, length, 0) < 2
-  if (any(vazio)) .erro("Distribuição: a(s) série(s) ", paste(itens[vazio], collapse = ", "), " tem(têm) menos de 2 valores.")
+  if (any(vazio)) .erro("Distribuição: a(s) série(s) ", paste(itens[vazio], collapse = ", "),
+                        " tem(têm) menos de 2 valores.")
   est <- .estilos(cfg, itens)
   multi <- length(itens) > 1
   todos <- unlist(am)
@@ -43,7 +47,8 @@
       quebras <- graphics::hist(todos, plot = FALSE)$breaks
       if (!is.null(D$inicio_classe)) { w <- diff(quebras)[1]; quebras <- seq(D$inicio_classe, max(todos) + w, by = w) }
     }
-    if (min(todos) < min(quebras)) .erro("distribuicao$inicio_classe (", min(quebras), ") é maior que o menor dado (", min(todos), ").")
+    if (min(todos) < min(quebras)) .erro("distribuicao$inicio_classe (", min(quebras), ") é maior que o menor dado (",
+                                         min(todos), ").")
     ret <- do.call(rbind, lapply(itens, function(i) {
       h <- graphics::hist(am[[i]], breaks = quebras, plot = FALSE, right = FALSE, include.lowest = TRUE)
       n <- length(am[[i]]); w <- diff(quebras)
@@ -71,14 +76,16 @@
         curvas[[length(curvas) + 1]] <- data.frame(x = dd$x, y = escalar(dd$y, n, w), serie = i, tipo = "dens")
       }
       if (isTRUE(D$curva_normal)) {
-        curvas[[length(curvas) + 1]] <- data.frame(x = grade, y = escalar(stats::dnorm(grade, mean(x), stats::sd(x)), n, w),
+        curvas[[length(curvas) + 1]] <- data.frame(x = grade,
+                                                   y = escalar(stats::dnorm(grade, mean(x), stats::sd(x)), n, w),
                                                    serie = i, tipo = "normal")
       }
     }
     if (length(curvas)) {
       cv <- do.call(rbind, curvas); cv$serie <- factor(cv$serie, levels = itens)
-      cam[[length(cam) + 1]] <- geom_line(data = cv, aes(x = x, y = y, colour = serie, group = interaction(serie, tipo),
-                                                        linetype = tipo), linewidth = .lw(D$espessura_curva_pt), show.legend = FALSE)
+      cam[[length(cam) + 1]] <- geom_line(
+        data = cv, aes(x = x, y = y, colour = serie, group = interaction(serie, tipo), linetype = tipo),
+        linewidth = .lw(D$espessura_curva_pt), show.legend = FALSE)
       cam[[length(cam) + 1]] <- scale_linetype_manual(values = c(dens = "solid", normal = "dashed"), guide = "none")
       aes_leg <- c(aes_leg, "colour"); faixa_y <- c(faixa_y, cv$y)
     }
@@ -97,7 +104,8 @@
         cam[[length(cam) + 1]] <- geom_ribbon(data = s, aes(x = x, ymin = 0, ymax = y), fill = fill, colour = NA)
       }
     }
-    cam[[length(cam) + 1]] <- geom_line(data = dd, aes(x = x, y = y, colour = serie, linetype = serie, linewidth = serie, alpha = serie))
+    cam[[length(cam) + 1]] <- geom_line(data = dd, aes(x = x, y = y, colour = serie, linetype = serie,
+                                                       linewidth = serie, alpha = serie))
     aes_leg <- c("colour", "linetype", "linewidth", "alpha")
     faixa_y <- c(0, dd$y); faixa_x <- range(dd$x); tit_y <- "Densidade"
   } else {
@@ -106,7 +114,8 @@
       data.frame(x = c(x[1], x), y = c(0, seq_len(n) / n), serie = i)
     }))
     ec$serie <- factor(ec$serie, levels = itens)
-    cam[[1]] <- geom_step(data = ec, aes(x = x, y = y, colour = serie, linetype = serie, linewidth = serie, alpha = serie),
+    cam[[1]] <- geom_step(data = ec, aes(x = x, y = y, colour = serie, linetype = serie, linewidth = serie,
+                                         alpha = serie),
                           direction = "hv")
     aes_leg <- c("colour", "linetype", "linewidth", "alpha")
     faixa_y <- c(0, 1); faixa_x <- range(ec$x); tit_y <- "Probabilidade acumulada"

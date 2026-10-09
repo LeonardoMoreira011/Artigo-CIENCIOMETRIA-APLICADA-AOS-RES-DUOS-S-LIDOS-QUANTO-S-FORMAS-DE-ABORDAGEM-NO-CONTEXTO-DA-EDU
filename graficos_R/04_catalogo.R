@@ -18,7 +18,8 @@
                cor = "cores", gradiente = "cores", paleta = "cores", serie = "series",
                simbolo = "serie_padrao", simbolos = "serie_padrao", moldura = "caixa", ticks = "eixo_x",
                fonte = "texto", painel = "paineis", empilhar = "paineis", exportar = "exportacao",
-               salvar = "exportacao", grid = "grade", titulo = "titulos", referencia = "referencias")
+               salvar = "exportacao", grid = "grade", titulo = "titulos", referencia = "referencias",
+               tempo = "eixo_x", data = "eixo_x", datas = "eixo_x", ordenar_x = "linhas")
 
 ajuda <- function(bloco = NULL) {
   arq <- file.path(.motor_pasta, "01_config.R")
@@ -111,7 +112,8 @@ galeria <- function(arquivo = "saida/galeria_referencia.pdf") {
     geom_text(aes(label = s), vjust = 2.6, size = 3.5) +
     scale_y_continuous(expand = expansion(add = 0.7)) + scale_x_continuous(expand = expansion(add = 0.6)) +
     labs(title = "Símbolos  —  cfg$serie_padrao$simbolo  ou  cfg$series[[\"nome\"]]$simbolo",
-         subtitle = "0–14: só contorno | 15–20: sólidos (cor da série) | 21–25: contorno + preenchimento (preenchimento_simbolo)") +
+         subtitle = paste("0–14: só contorno | 15–20: sólidos (cor da série) |",
+                          "21–25: contorno + preenchimento (preenchimento_simbolo)")) +
     theme_void(12) + theme(plot.margin = margin(20, 20, 20, 20))
   # 2. tipos de linha
   lt <- c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash", "44", "13", "1343", "73", "2262")
@@ -122,7 +124,8 @@ galeria <- function(arquivo = "saida/galeria_referencia.pdf") {
     labs(title = "Tipos de linha  —  cfg$serie_padrao$linha_tipo",
          subtitle = "Códigos hexadecimais: pares (traço, espaço). Ex.: \"44\", \"1343\"", x = NULL, y = NULL) +
     theme_minimal(12) + theme(panel.grid = element_blank(), axis.text.x = element_blank(),
-                              axis.text.y = element_text(face = "bold", size = 12), plot.margin = margin(20, 20, 20, 20))
+                              axis.text.y = element_text(face = "bold",
+                                                         size = 12), plot.margin = margin(20, 20, 20, 20))
   # 3. paletas
   pag[[3]] <- .grafico_paletas() + theme(plot.margin = margin(20, 20, 20, 20))
   # dados sintéticos para exemplos
@@ -143,7 +146,8 @@ galeria <- function(arquivo = "saida/galeria_referencia.pdf") {
                   eixo_x = list(direcao_maiores = dd, direcao_menores = dd, n_menores = 1),
                   eixo_y = list(direcao_maiores = dd, direcao_menores = dd, n_menores = 1)),
          paste0("direcao_maiores = \"", dd, "\"")))
-  gr <- lapply(c("vertical", "vertical_invertido", "horizontal", "horizontal_invertido", "diagonal", "radial"), function(dd)
+  gr <- lapply(c("vertical", "vertical_invertido", "horizontal", "horizontal_invertido", "diagonal", "radial"),
+               function(dd)
     mini(cat_, list(grafico = list(tipo = "barras", colunas_y = "Grupo 1"), legenda = list(mostrar = FALSE),
                     cores = list(preenchimento = "gradiente", gradiente_direcao = dd, gradiente_cor2 = "white"),
                     series = list(`Grupo 1` = list(cor = "#1F4E9E"))),
@@ -157,24 +161,36 @@ galeria <- function(arquivo = "saida/galeria_referencia.pdf") {
     mini(xy, list(grafico = list(tipo = "linha_pontos")), "\"linha_pontos\""),
     mini(xy, list(grafico = list(tipo = "area"), legenda = list(mostrar = FALSE)), "\"area\""),
     mini(xy, list(grafico = list(tipo = "area_empilhada"), cores = list(paleta = "okabe_ito")), "\"area_empilhada\""),
-    mini(xy, list(grafico = list(tipo = "linha"), linhas = list(ligacao = "degrau_hv")), "linhas$ligacao = \"degrau_hv\""),
+    mini(xy, list(grafico = list(tipo = "linha"), linhas = list(ligacao = "degrau_hv")),
+         "linhas$ligacao = \"degrau_hv\""),
     mini(cat_, list(grafico = list(tipo = "barras"), cores = list(paleta = "tableau")), "\"barras\" agrupado"),
-    mini(cat_, list(grafico = list(tipo = "barras"), barras = list(arranjo = "empilhado"), cores = list(paleta = "tableau")), "barras empilhado"),
-    mini(cat_, list(grafico = list(tipo = "barras"), barras = list(orientacao = "horizontal"), cores = list(paleta = "tableau")), "barras horizontal"),
-    mini(cat_, list(grafico = list(tipo = "pizza", colunas_y = "Grupo 1"), cores = list(paleta = "tableau"), pizza = list(explodir = "B", rotulos_tamanho_pt = 7)), "\"pizza\""),
-    mini(cat_, list(grafico = list(tipo = "pizza", colunas_y = "Grupo 1"), cores = list(paleta = "tableau"), pizza = list(raio_furo = 0.5, rotulos_tamanho_pt = 7)), "pizza raio_furo = 0.5"),
-    mini(am, list(grafico = list(tipo = "histograma", colunas_y = "G1"), distribuicao = list(curva_normal = TRUE), legenda = list(mostrar = FALSE)), "\"histograma\""),
+    mini(cat_, list(grafico = list(tipo = "barras"), barras = list(arranjo = "empilhado"),
+                    cores = list(paleta = "tableau")), "barras empilhado"),
+    mini(cat_, list(grafico = list(tipo = "barras"), barras = list(orientacao = "horizontal"),
+                    cores = list(paleta = "tableau")), "barras horizontal"),
+    mini(cat_, list(grafico = list(tipo = "pizza", colunas_y = "Grupo 1"), cores = list(paleta = "tableau"),
+                    pizza = list(explodir = "B", rotulos_tamanho_pt = 7)), "\"pizza\""),
+    mini(cat_, list(grafico = list(tipo = "pizza", colunas_y = "Grupo 1"), cores = list(paleta = "tableau"),
+                    pizza = list(raio_furo = 0.5, rotulos_tamanho_pt = 7)), "pizza raio_furo = 0.5"),
+    mini(am, list(grafico = list(tipo = "histograma", colunas_y = "G1"), distribuicao = list(curva_normal = TRUE),
+                  legenda = list(mostrar = FALSE)), "\"histograma\""),
     mini(am, list(grafico = list(tipo = "densidade"), cores = list(paleta = "viridis")), "\"densidade\""),
     mini(am, list(grafico = list(tipo = "ecdf"), cores = list(paleta = "okabe_ito")), "\"ecdf\""),
     mini(am, list(grafico = list(tipo = "boxplot"), cores = list(paleta = "tableau")), "boxplot \"box\""),
-    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "box_pontos"), cores = list(paleta = "tableau")), "\"box_pontos\""),
-    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "meio_box"), cores = list(paleta = "tableau")), "\"meio_box\""),
-    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "violino_box"), cores = list(paleta = "tableau")), "\"violino_box\""),
-    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "violino"), cores = list(paleta = "tableau")), "\"violino\""),
-    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "media_erro"), cores = list(paleta = "tableau")), "\"media_erro\"")
+    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "box_pontos"),
+                  cores = list(paleta = "tableau")), "\"box_pontos\""),
+    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "meio_box"),
+                  cores = list(paleta = "tableau")), "\"meio_box\""),
+    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "violino_box"),
+                  cores = list(paleta = "tableau")), "\"violino_box\""),
+    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "violino"),
+                  cores = list(paleta = "tableau")), "\"violino\""),
+    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "media_erro"),
+                  cores = list(paleta = "tableau")), "\"media_erro\"")
   )
   pag[[5]] <- patchwork::wrap_plots(lapply(tipos, function(g) patchwork::wrap_elements(full = g)), ncol = 4) +
-    patchwork::plot_annotation(title = "Tipos e variações (cfg$grafico$tipo, cfg$boxplot$variacao, cfg$barras$arranjo ...)")
+    patchwork::plot_annotation(
+      title = "Tipos e variações (cfg$grafico$tipo, cfg$boxplot$variacao, cfg$barras$arranjo ...)")
   dev <- if (capabilities("cairo")) grDevices::cairo_pdf else grDevices::pdf
   dev(arquivo, width = 11.7, height = 8.3, onefile = TRUE)
   for (p in pag) print(p)

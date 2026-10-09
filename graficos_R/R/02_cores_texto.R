@@ -3,6 +3,7 @@
 # =============================================================================
 
 # ---- Cores ------------------------------------------------------------------
+# Valida e normaliza uma cor (nome, #RRGGBB, c(R,G,B) ou "transparente"). Erro em português se inválida.
 .cor <- function(x, onde = "cor") {
   if (is.null(x)) return(NULL)
   if (length(x) == 3 && is.numeric(x)) return(grDevices::rgb(x[1], x[2], x[3], maxColorValue = 255))
@@ -12,12 +13,15 @@
   if (!ok) .erro("Cor inválida em ", onde, ": '", x, "'. Use nome (\"red\"), \"#RRGGBB\" ou c(R,G,B).")
   x
 }
+# Aplica opacidade a uma cor (a = 1 não altera; NA e NULL passam direto).
 .alfa <- function(cor, a) {
   if (is.null(cor) || (length(cor) == 1 && is.na(cor))) return(cor)
   if (is.null(a) || a >= 1) return(cor)
   scales::alpha(cor, a)
 }
+# Cor intermediária entre c1 e c2.
 .cor_media <- function(c1, c2) grDevices::colorRampPalette(c(c1, c2))(3)[2]
+# Brilho percebido (0 a 1) de uma cor; decide texto branco ou preto sobre ela.
 .luminancia <- function(cor) {
   v <- grDevices::col2rgb(cor) / 255
   sum(c(0.299, 0.587, 0.114) * v)
@@ -32,6 +36,7 @@
                 "#B07AA1", "#FF9DA7", "#9C755F", "#BAB0AC")
 )
 
+# Entra: nome da paleta e n. Sai: vetor com n cores (interpola se a paleta for menor que n).
 .paleta <- function(nome, n, cfg_cores = NULL) {
   n <- max(n, 1)
   base <- if (nome %in% names(.PALETAS)) {
@@ -81,6 +86,7 @@
 }
 
 # ---- Texto com sobrescrito ^{ } e subscrito _{ } -----------------------------
+# TRUE se o texto tem sobrescrito ^{ } ou subscrito _{ }.
 .tem_formatacao <- function(s) is.character(s) && length(s) == 1 && grepl("[\\^_]\\{", s)
 
 # Converte "Área (m^{2})" em string plotmath: "Área (m"*""^"2"*")"
@@ -100,10 +106,12 @@
   }
   paste(partes, collapse = "*")
 }
+# Texto simples ou expressão plotmath (se tiver ^{ } ou _{ }), pronto para títulos e rótulos.
 .texto <- function(s) {
   if (is.null(s)) return(NULL)
   if (.tem_formatacao(s)) parse(text = .plotmath(s))[[1]] else s
 }
+# Rótulos de legenda: vetor de textos ou expressões, conforme tenham ^{ } / _{ }.
 .rotulos_legenda <- function(x) {
   if (any(vapply(x, .tem_formatacao, logical(1))))
     parse(text = vapply(x, .plotmath, character(1)))
@@ -111,6 +119,7 @@
 }
 
 # ---- Mescla de listas (para painéis e estilos) -------------------------------
+# Entra: lista base e lista novo. Sai: base com os valores de novo por cima (recursivo; séries por nome).
 .mesclar <- function(base, novo) {
   if (!is.list(novo) || is.null(names(novo))) return(novo)
   for (nm in names(novo)) {

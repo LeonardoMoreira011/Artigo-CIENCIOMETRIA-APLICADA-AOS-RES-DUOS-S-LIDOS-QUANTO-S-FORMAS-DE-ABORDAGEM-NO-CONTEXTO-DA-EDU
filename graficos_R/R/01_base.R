@@ -26,8 +26,10 @@ suppressPackageStartupMessages({
 })
 
 `%||%` <- function(a, b) if (is.null(a)) b else a
+# TRUE se o pacote p está instalado (pacotes opcionais ficam desativados sem erro).
 .tem <- function(p) requireNamespace(p, quietly = TRUE)
 .R42 <- getRversion() >= "4.2.0"
+.GG4 <- utils::packageVersion("ggplot2") >= "4.0.0"
 
 # Cópia de referência do cfg (para detectar nomes digitados errado)
 .cfg_ref <- local({
@@ -42,22 +44,27 @@ suppressPackageStartupMessages({
 # ---- Conversões de unidade (tudo do usuário em pt) --------------------------
 # ggplot: linewidth em "mm" de ggplot; texto/símbolo em mm; stroke próprio.
 .lw <- function(pt) pt * 96 / 72 / ggplot2::.pt          # espessura de linha
+# Tamanho de texto/símbolo: pt do usuário -> unidade interna do ggplot2.
 .tx <- function(pt) pt / ggplot2::.pt                    # texto e símbolos
+# Espessura da borda de símbolo: pt do usuário -> unidade 'stroke' do ggplot2.
 .st <- function(pt) pt * 96 / 72 * 2 / ggplot2::.stroke  # borda de símbolo
 
 # Pasta/arquivo relativo (ex.: "estilos", "dados/x.csv"): se não existe a partir da pasta de trabalho
 # mas existe dentro da pasta do projeto, usa o do projeto (funciona mesmo com setwd() em outro lugar).
 .eh_absoluto <- function(p) grepl("^([A-Za-z]:|/|\\\\|~)", p)
+# Entra: caminho de pasta. Sai: o mesmo caminho, ou a pasta de mesmo nome dentro do projeto se só ela existir.
 .pasta_proj <- function(p) {
   if (.eh_absoluto(p) || dir.exists(p)) return(p)
   alt <- file.path(.motor_pasta, p)
   if (dir.exists(alt)) alt else p
 }
+# Entra: caminho de arquivo. Sai: o mesmo caminho, ou o arquivo dentro do projeto se só ele existir.
 .arquivo_proj <- function(a) {
   if (.eh_absoluto(a) || file.exists(a)) return(a)
   alt <- file.path(.motor_pasta, a)
   if (file.exists(alt)) alt else a
 }
 
+# Emite um aviso (warning) em português, sem mostrar a chamada interna.
 .aviso <- function(...) warning(paste0(...), call. = FALSE, immediate. = TRUE)
 .erro  <- function(...) stop(paste0(...), call. = FALSE)

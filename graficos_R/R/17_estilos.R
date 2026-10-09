@@ -8,12 +8,14 @@
 .BLOCOS_ESTILO <- c("cores", "serie_padrao", "linhas", "barras", "pizza", "distribuicao", "boxplot",
                     "eixo_x", "eixo_y", "eixo_y2", "caixa", "grade", "legenda", "titulos", "texto", "exportacao")
 
+# Grava os blocos de aparência do cfg em estilos/<nome>.R (sem títulos nem limites dos dados).
 salvar_estilo <- function(cfg, nome, pasta = "estilos") {
   pasta <- .pasta_proj(pasta)
   if (!dir.exists(pasta)) dir.create(pasta)
   est <- cfg[.BLOCOS_ESTILO]
   # não guarda o que é específico de um conjunto de dados
-  for (ax in c("eixo_x", "eixo_y", "eixo_y2")) est[[ax]][c("titulo", "inicio", "fim", "ticks_manuais", "rotulos_manuais")] <- NULL
+  for (ax in c("eixo_x", "eixo_y", "eixo_y2")) est[[ax]][c("titulo", "inicio", "fim", "ticks_manuais",
+                                                           "rotulos_manuais")] <- NULL
   est$exportacao$nome_arquivo <- NULL
   arq <- file.path(pasta, paste0(nome, ".R"))
   con <- file(arq, "w", encoding = "UTF-8")
@@ -25,6 +27,7 @@ salvar_estilo <- function(cfg, nome, pasta = "estilos") {
   invisible(arq)
 }
 
+# Entra: nome do estilo e cfg. Sai: o cfg com o estilo aplicado por cima.
 carregar_estilo <- function(nome, cfg = get("cfg", envir = globalenv()), pasta = "estilos") {
   pasta <- .pasta_proj(pasta)
   arq <- if (file.exists(nome)) nome else file.path(pasta, paste0(nome, ".R"))
@@ -36,11 +39,13 @@ carregar_estilo <- function(nome, cfg = get("cfg", envir = globalenv()), pasta =
   .mesclar(cfg, est)
 }
 
+# Nomes dos estilos disponíveis na pasta de estilos.
 listar_estilos <- function(pasta = "estilos") {
   pasta <- .pasta_proj(pasta)
   sub("\\.R$", "", list.files(pasta, pattern = "\\.R$"))
 }
 
+# Recarrega o 01_config.R e substitui o cfg do console pelo padrão.
 resetar_cfg <- function() {
   e <- new.env(); sys.source(file.path(.motor_pasta, "01_config.R"), envir = e)
   assign("cfg", e$cfg, envir = globalenv())
@@ -48,8 +53,12 @@ resetar_cfg <- function() {
   invisible(e$cfg)
 }
 
+# Imprime os nomes de fonte instalados (pelo systemfonts) para usar em cfg$texto$fonte.
 listar_fontes <- function() {
-  if (!.tem("systemfonts")) { message("Instale 'systemfonts' (vem com ragg) para listar as fontes."); return(invisible()) }
+  if (!.tem("systemfonts")) {
+    message("Instale 'systemfonts' (vem com ragg) para listar as fontes.")
+    return(invisible())
+  }
   f <- sort(unique(systemfonts::system_fonts()$family))
   print(f)
   invisible(f)

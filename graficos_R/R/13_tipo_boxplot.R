@@ -20,10 +20,12 @@
   centro + off
 }
 
+# Boxplot, violino e média ± erro. Entra: dados e cfg. Sai: list(camadas, info).
 .construir_boxplot <- function(dados, cfg) {
   X <- cfg$boxplot; var <- X$variacao
   A <- .amostras(dados, cfg); am <- A$am; itens <- names(am)
-  if (any(vapply(am, length, 0) == 0)) .erro("Boxplot: série(s) sem dados: ", paste(itens[vapply(am, length, 0) == 0], collapse = ", "))
+  if (any(vapply(am, length, 0) == 0)) .erro("Boxplot: série(s) sem dados: ",
+                                             paste(itens[vapply(am, length, 0) == 0], collapse = ", "))
   flip <- identical(X$orientacao, "horizontal")
   est <- .estilos(cfg, itens, inverter_grad = flip)
   k <- length(itens); w <- X$largura
@@ -42,7 +44,8 @@
     q <- stats::quantile(x, c(X$caixa_percentis[1], 50, X$caixa_percentis[2]) / 100, names = FALSE, type = 7)
     md <- mean(x)
     wl <- switch(X$bigode,
-      tukey = { iqr <- q[3] - q[1]; c(min(x[x >= q[1] - X$bigode_coef * iqr]), max(x[x <= q[3] + X$bigode_coef * iqr])) },
+      tukey = { iqr <- q[3] - q[1]; c(min(x[x >= q[1] - X$bigode_coef * iqr]),
+                                      max(x[x <= q[3] + X$bigode_coef * iqr])) },
       percentis = stats::quantile(x, X$bigode_percentis / 100, names = FALSE, type = 7),
       min_max = range(x),
       desvio_padrao = , erro_padrao = , ic95 = md + c(-1, 1) * erro_media(x, X$bigode))
@@ -51,13 +54,18 @@
       er <- erro_media(x, X$media_erro_tipo)
       if (X$media_erro_estilo == "barra")
         polys[[length(polys) + 1]] <- data.frame(x = p + c(-w, w, w, -w) / 2, y = c(0, 0, md, md), item = it)
-      segs[[length(segs) + 1]] <- data.frame(x = p, xend = p, y = md - er, yend = md + er, cor = cc, lw = X$contorno_espessura_pt)
+      segs[[length(segs) + 1]] <- data.frame(x = p, xend = p, y = md - er, yend = md + er, cor = cc,
+                                             lw = X$contorno_espessura_pt)
       segs[[length(segs) + 1]] <- data.frame(x = p - w * X$bigode_chapeu / 2, xend = p + w * X$bigode_chapeu / 2,
-                                             y = c(md - er, md + er), yend = c(md - er, md + er), cor = cc, lw = X$contorno_espessura_pt)
+                                             y = c(md - er,
+                                                   md + er), yend = c(md - er,
+                                                                      md + er), cor = cc, lw = X$contorno_espessura_pt)
       if (X$media_erro_estilo == "ponto")
-        pts_media[[length(pts_media) + 1]] <- data.frame(x = p, y = md, fill = est[[it]]$cor, tam = X$media_tamanho_pt * X$media_erro_ponto_fator, item = it)
+        pts_media[[length(pts_media) + 1]] <- data.frame(x = p, y = md, fill = est[[it]]$cor,
+                                                         tam = X$media_tamanho_pt * X$media_erro_ponto_fator, item = it)
       faixa <- range(c(faixa, 0, md + er, md - er))
-      if (isTRUE(X$mostrar_n)) txt_n[[length(txt_n) + 1]] <- data.frame(x = p, y = md + er, rot = paste0("n = ", length(x)))
+      if (isTRUE(X$mostrar_n))
+        txt_n[[length(txt_n) + 1]] <- data.frame(x = p, y = md + er, rot = paste0("n = ", length(x)))
       next
     }
     # caixa (ou violino)
@@ -94,13 +102,16 @@
         segs[[length(segs) + 1]] <- data.frame(x = c(xm, xm - cap), xend = c(xm, xm + cap), y = c(q[3], wl[2]),
                                                yend = c(wl[2], wl[2]), cor = cc, lw = X$contorno_espessura_pt)
       if (isTRUE(X$mediana))
-        segs[[length(segs) + 1]] <- data.frame(x = mx[1], xend = mx[2], y = q[2], yend = q[2], cor = cc, lw = X$mediana_espessura_pt)
+        segs[[length(segs) + 1]] <- data.frame(x = mx[1], xend = mx[2], y = q[2], yend = q[2], cor = cc,
+                                               lw = X$mediana_espessura_pt)
       if (isTRUE(X$outliers) && length(out))
         pts_out[[length(pts_out) + 1]] <- data.frame(x = xm, y = out, cor = cc)
       faixa <- range(c(faixa, wl))
     }
-    if (isTRUE(X$media)) pts_media[[length(pts_media) + 1]] <- data.frame(x = if (var == "meio_box") (xb0 + xb1) / 2 else p, y = md,
-                                                                          fill = .cor(X$media_preenchimento), tam = X$media_tamanho_pt, item = it)
+    if (isTRUE(X$media))
+      pts_media[[length(pts_media) + 1]] <- data.frame(
+        x = if (var == "meio_box") (xb0 + xb1) / 2 else p, y = md,
+        fill = .cor(X$media_preenchimento), tam = X$media_tamanho_pt, item = it)
     if (var %in% c("box_pontos", "meio_box")) {
       centro <- if (var == "meio_box") p - w / 4 else p
       larg <- if (var == "meio_box") min(X$pontos_largura, w / 2 * 0.9) else X$pontos_largura
@@ -109,7 +120,8 @@
                    enxame = .enxame(x, centro, larg, range(unlist(am)), X$enxame_resolucao))
       pts_dados[[length(pts_dados) + 1]] <- data.frame(x = xs, y = x, fill = .alfa(est[[it]]$cor, X$pontos_opacidade))
     }
-    if (isTRUE(X$mostrar_n)) txt_n[[length(txt_n) + 1]] <- data.frame(x = p, y = max(wl[2], q[3], max(x)), rot = paste0("n = ", length(x)))
+    if (isTRUE(X$mostrar_n)) txt_n[[length(txt_n) + 1]] <- data.frame(x = p, y = max(wl[2], q[3], max(x)),
+                                                                      rot = paste0("n = ", length(x)))
   }
   cam <- list()
   if (length(polys)) {
@@ -128,7 +140,8 @@
     if (any(brancos)) {
       pb <- pl[brancos, ]
       cam[[length(cam) + 1]] <- geom_polygon(data = pb, aes(x = x, y = y, group = item), fill = "white",
-        colour = .cor(if (identical(X$contorno_cor, "serie")) "black" else X$contorno_cor), linewidth = .lw(X$contorno_espessura_pt))
+        colour = .cor(if (identical(X$contorno_cor,
+                                    "serie")) "black" else X$contorno_cor), linewidth = .lw(X$contorno_espessura_pt))
     }
   }
   if (length(pts_dados)) {
@@ -149,8 +162,9 @@
   }
   if (length(pts_media)) {
     pm <- do.call(rbind, pts_media)
+    cor_media <- .cor(if (identical(X$contorno_cor, "serie")) "black" else X$contorno_cor)
     cam[[length(cam) + 1]] <- geom_point(data = pm, aes(x = x, y = y), shape = X$media_simbolo, fill = pm$fill,
-      colour = .cor(if (identical(X$contorno_cor, "serie")) "black" else X$contorno_cor), size = .tx(pm$tam), stroke = .st(X$media_borda_pt))
+      colour = cor_media, size = .tx(pm$tam), stroke = .st(X$media_borda_pt))
   }
   if (length(txt_n)) {
     tn <- do.call(rbind, txt_n); faixa <- range(c(faixa, tn$y + 0.06 * diff(faixa)))

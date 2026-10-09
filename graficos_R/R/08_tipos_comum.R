@@ -5,6 +5,7 @@
 # =============================================================================
 #  CONSTRUÇÃO POR TIPO — cada função devolve list(camadas, info)
 # =============================================================================
+# Entra: dados e colunas Y. Sai: data.frame longo (x, y, serie, mapa, barras de erro) de todas as séries.
 .serie_longa <- function(dados, xcol, ycols, est, mapa_col = NULL) {
   do.call(rbind, lapply(ycols, function(yc) {
     e <- est[[yc]]
@@ -35,6 +36,7 @@
   }
 }
 
+# Nomes das colunas Y a plotar (cfg$grafico$colunas_y ou todas as numéricas, sem as de erro/mapa de cor).
 .colunas_y <- function(dados, cfg, excluir = NULL, so_numericas = TRUE) {
   g <- cfg$grafico
   ys <- if (is.null(g$colunas_y)) {

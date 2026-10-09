@@ -39,6 +39,7 @@
   rd
 }
 
+# Pizza e rosca. Entra: dados e cfg. Sai: list(camadas, info) (info$pizza = TRUE).
 .construir_pizza <- function(dados, cfg) {
   P <- cfg$pizza
   xcol <- .coluna(dados, cfg$grafico$coluna_x, "cfg$grafico$coluna_x")
@@ -48,7 +49,8 @@
   if (any(val[ok] < 0)) .aviso("Pizza: valores negativos em '", ycol, "' foram ignorados.")
   ok <- ok & val > 0
   cat_ <- cat_[ok]; val <- val[ok]
-  if (anyDuplicated(cat_)) { ag <- tapply(val, factor(cat_, levels = unique(cat_)), sum); cat_ <- names(ag); val <- as.numeric(ag) }
+  if (anyDuplicated(cat_)) { ag <- tapply(val, factor(cat_, levels = unique(cat_)),
+                                          sum); cat_ <- names(ag); val <- as.numeric(ag) }
   if (!is.null(cfg$grafico$ordem_itens)) {
     o <- c(intersect(cfg$grafico$ordem_itens, cat_), setdiff(cat_, cfg$grafico$ordem_itens))
     val <- val[match(o, cat_)]; cat_ <- o
@@ -59,6 +61,10 @@
     cat_ <- c(cat_[!peq], P$nome_agrupado); val <- c(val[!peq], sum(val[peq]))
     pct <- val / sum(val) * 100
   }
+  inexistentes <- setdiff(P$explodir, cat_)
+  if (length(inexistentes))
+    .aviso("cfg$pizza$explodir: não existe(m) a(s) categoria(s) ", paste0("'", inexistentes, "'", collapse = ", "),
+           ". Categorias: ", paste0("'", cat_, "'", collapse = ", "))
   est <- .estilos(cfg, cat_, grupo_gradiente = TRUE)
   dir <- if (P$sentido == "horario") 1 else -1
   fr <- cumsum(c(0, val)) / sum(val)

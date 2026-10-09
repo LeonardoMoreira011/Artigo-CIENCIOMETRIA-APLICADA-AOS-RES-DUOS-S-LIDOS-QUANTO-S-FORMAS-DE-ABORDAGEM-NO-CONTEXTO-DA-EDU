@@ -5,10 +5,12 @@
 # =============================================================================
 #  TEMA (aparência: caixa, ticks, rótulos, grade, legenda)
 # =============================================================================
+# Comprimento do tick com sinal: negativo = para dentro, 0 = nenhum.
 .comp_tick <- function(direcao, comp) {
   switch(direcao %||% "dentro", dentro = -comp, fora = comp, ambos = comp, nenhum = 0)
 }
 
+# Elemento de tema para os números de um eixo (tamanho, cor, rotação, distância).
 .elem_rotulo <- function(e, cfg, lado, cor_forcada = NULL) {
   if (!isTRUE(e$mostrar_rotulos %||% TRUE)) return(element_blank())
   d <- e$distancia_rotulos_pt %||% 3
@@ -25,6 +27,7 @@
                angle = ang, hjust = just$h, vjust = just$v, margin = m)
 }
 
+# Elemento de tema para o título de um eixo (tamanho, cor, estilo, distância).
 .elem_titulo <- function(e, cfg, lado, cor_forcada = NULL) {
   if (!isTRUE(e$mostrar_titulo %||% TRUE)) return(element_blank())
   d <- e$distancia_titulo_pt %||% 4
@@ -37,6 +40,8 @@
                angle = switch(lado, left = 90, right = -90, 0), margin = m)
 }
 
+# Entra: cfg, config do eixo horizontal e do vertical (como aparecem na tela) e os lados com eixo.
+# Sai: tema ggplot2 completo.
 .tema <- function(cfg, eh, ev, lados, sem_eixos = FALSE, cor_y2 = NULL) {
   # eh = config do eixo HORIZONTAL na tela; ev = do VERTICAL
   # lados = lista(hor = c("bottom", "top"?), ver = c("left", "right"?)), lado_principal
@@ -52,7 +57,8 @@
           aspect.ratio = cx$proporcao,
           strip.background = element_blank())
   # grade (respeita o que está na horizontal/vertical da TELA)
-  gl <- function(on, cor, esp, tipo) if (isTRUE(on)) element_line(colour = cor, linewidth = .lw(esp), linetype = tipo) else element_blank()
+  gl <- function(on, cor, esp, tipo) if (isTRUE(on)) element_line(colour = cor, linewidth = .lw(esp),
+                                                                  linetype = tipo) else element_blank()
   t <- t + theme(
     panel.grid.major.x = gl(lados$grade_x_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior),
     panel.grid.major.y = gl(lados$grade_y_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior),
@@ -68,11 +74,16 @@
       t <- t + theme(panel.border = element_rect(fill = NA, colour = .cor(cx$cor), linewidth = .lw(cx$espessura_pt)),
                      axis.line = element_blank())
     } else {
+      # linha de cada eixo (só se mostrar_linha e, nos lados opostos, só se o lado existe)
+      linha <- function(e, ativo, cor = NULL, ponta = NULL) {
+        if (!(isTRUE(e$mostrar_linha) && ativo)) return(element_blank())
+        element_line(colour = cor %||% e$cor_linha, linewidth = .lw(e$espessura_linha_pt), lineend = ponta)
+      }
       t <- t + theme(panel.border = element_blank(),
-        axis.line.x.bottom = if (isTRUE(eh$mostrar_linha)) element_line(colour = eh$cor_linha, linewidth = .lw(eh$espessura_linha_pt), lineend = "square") else element_blank(),
-        axis.line.y.left  = if (isTRUE(ev$mostrar_linha)) element_line(colour = ev$cor_linha, linewidth = .lw(ev$espessura_linha_pt), lineend = "square") else element_blank(),
-        axis.line.y.right = if (isTRUE(ev$mostrar_linha) && "right" %in% lados$ver) element_line(colour = cor_y2 %||% ev$cor_linha, linewidth = .lw(ev$espessura_linha_pt)) else element_blank(),
-        axis.line.x.top = if (isTRUE(eh$mostrar_linha) && "top" %in% lados$hor) element_line(colour = eh$cor_linha, linewidth = .lw(eh$espessura_linha_pt)) else element_blank())
+        axis.line.x.bottom = linha(eh, TRUE, ponta = "square"),
+        axis.line.y.left   = linha(ev, TRUE, ponta = "square"),
+        axis.line.y.right  = linha(ev, "right" %in% lados$ver, cor = cor_y2),
+        axis.line.x.top    = linha(eh, "top" %in% lados$hor))
     }
     # ticks
     tk <- function(e, cor = NULL) element_line(colour = cor %||% e$cor_ticks, linewidth = .lw(e$espessura_ticks_pt))
@@ -82,9 +93,11 @@
       cor_l <- if (lado == lados$lado_y2) cor_y2 else NULL
       el <- list()
       el[[paste0("axis.ticks.", xy, ".", lado)]] <- tk(e, cor_l)
-      el[[paste0("axis.ticks.length.", xy, ".", lado)]] <- unit(.comp_tick(e$direcao_maiores, e$comprimento_maiores_pt), "pt")
+      el[[paste0("axis.ticks.length.", xy, ".", lado)]] <- unit(.comp_tick(e$direcao_maiores, e$comprimento_maiores_pt),
+                                                                "pt")
       el[[paste0("axis.minor.ticks.", xy, ".", lado)]] <- tk(e, cor_l)
-      el[[paste0("axis.minor.ticks.length.", xy, ".", lado)]] <- unit(.comp_tick(e$direcao_menores, e$comprimento_menores_pt), "pt")
+      el[[paste0("axis.minor.ticks.length.", xy, ".",
+                 lado)]] <- unit(.comp_tick(e$direcao_menores, e$comprimento_menores_pt), "pt")
       el[[paste0("axis.text.", xy, ".", lado)]] <- .elem_rotulo(e, cfg, lado, cor_l)
       el[[paste0("axis.title.", xy, ".", lado)]] <- .elem_titulo(e, cfg, lado, cor_l)
       t <- t + do.call(theme, el)
@@ -101,6 +114,7 @@
             plot.title.position = "panel")
 }
 
+# Parte do tema que controla posição, moldura, fundo, textos e espaçamento da legenda.
 .tema_legenda <- function(cfg, fonte) {
   lg <- cfg$legenda; tx <- cfg$texto
   pos <- switch(lg$posicao, dentro = "inside", direita = "right", esquerda = "left",
@@ -127,6 +141,7 @@
 }
 
 .fontes_cache <- new.env()
+# Nome de fonte utilizável: o pedido se existir no sistema; senão 'sans', com aviso.
 .fonte <- function(f) {
   if (is.null(f) || f %in% c("sans", "serif", "mono", "")) return(f %||% "sans")
   if (!is.null(.fontes_cache[[f]])) return(.fontes_cache[[f]])
@@ -143,11 +158,11 @@
   res
 }
 
-# Bordas do painel (com a margem) em unidades de DADOS, para annotation_custom(). Em escala linear
-# devolve c(-Inf, Inf); em log/raiz/recíproca usa valores finitos, porque transformar -Inf por
-# log() gera NaN (e um aviso do ggplot2) ao posicionar a anotação.
+# Bordas do painel para annotation_custom(). O ggplot2 4.0 lê esses limites em unidades de DADOS e os
+# transforma pela escala: em log/raiz/recíproca -Inf viraria NaN (e um aviso), então usa as bordas reais.
+# O ggplot2 3.5 NÃO transforma (já espera espaço transformado), e lá c(-Inf, Inf) serve para qualquer escala.
 .borda_painel <- function(ax) {
-  if (is.null(ax) || identical(ax$escala, "linear") || !is.null(ax$categorias)) return(c(-Inf, Inf))
+  if (!.GG4 || is.null(ax) || identical(ax$escala, "linear") || !is.null(ax$categorias)) return(c(-Inf, Inf))
   r <- sort(ax$trans$transform(ax$limites))
   r <- r + c(-1, 1) * diff(r) * ax$mult
   sort(ax$trans$inverse(r))

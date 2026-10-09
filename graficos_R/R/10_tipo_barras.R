@@ -3,6 +3,7 @@
 # =============================================================================
 
 # ---- Barras ---------------------------------------------------------------------
+# Barras agrupadas, empilhadas ou 100 %. Entra: dados e cfg. Sai: list(camadas, info).
 .construir_barras <- function(dados, cfg) {
   B <- cfg$barras
   xcol <- .coluna(dados, cfg$grafico$coluna_x, "cfg$grafico$coluna_x")
@@ -16,8 +17,13 @@
     passo <- if (length(unique(xs)) > 1) min(diff(sort(unique(xs)))) else 1
   } else {
     cats <- unique(as.character(dados[[xcol]]))
-    if (!is.null(cfg$grafico$ordem_itens) && all(cfg$grafico$ordem_itens %in% cats) && !any(cfg$grafico$ordem_itens %in% ycols))
-      cats <- c(cfg$grafico$ordem_itens, setdiff(cats, cfg$grafico$ordem_itens))
+    ordem <- cfg$grafico$ordem_itens
+    if (!is.null(ordem) && !any(ordem %in% ycols)) {   # (se citar colunas, a ordem é das séries)
+      if (all(ordem %in% cats)) cats <- c(ordem, setdiff(cats, ordem))
+      else .aviso("cfg$grafico$ordem_itens: não existe(m) a(s) categoria(s) ",
+                  paste0("'", setdiff(ordem, cats), "'", collapse = ", "), ". A ordem foi ignorada. Categorias: ",
+                  paste0("'", cats, "'", collapse = ", "))
+    }
     xs <- match(as.character(dados[[xcol]]), cats); passo <- 1
   }
   n <- length(ycols); W <- B$largura * passo
@@ -84,7 +90,8 @@
   # rótulos
   if (isTRUE(B$rotulos_valor)) {
     rr <- r
-    rr$rot <- if (B$arranjo == "empilhado_100") paste0(.fmt_num(rr$valor, B$rotulos_casas), "%") else .fmt_num(rr$valor, B$rotulos_casas)
+    rr$rot <- if (B$arranjo == "empilhado_100") paste0(.fmt_num(rr$valor, B$rotulos_casas),
+                                                       "%") else .fmt_num(rr$valor, B$rotulos_casas)
     pos <- B$rotulos_posicao
     rr$yl <- if (pos == "centro") (rr$ymin + rr$ymax) / 2 else rr$ymax
     neg <- rr$ymax < rr$ymin
@@ -97,14 +104,17 @@
   }
   aes_leg <- c("fill", if (contorno_serie) "colour")
   faixa_y <- c(r$ymin, r$ymax, base, faixa_err)
-  if (isTRUE(B$rotulos_valor) && B$rotulos_posicao == "fora") faixa_y <- c(faixa_y, max(faixa_y) + 0.08 * diff(range(faixa_y)))
+  if (isTRUE(B$rotulos_valor) && B$rotulos_posicao == "fora")
+    faixa_y <- c(faixa_y, max(faixa_y) + 0.08 * diff(range(faixa_y)))
   ax_x <- .calc_eixo(cfg$eixo_x, c(r$xmin, r$xmax), categorias = cats, forcar = cfg$.interno$forcar_x)
   if (numerico && is.null(cfg$eixo_x$inicio) && is.null(cfg$.interno$forcar_x)) {
-    ax_x <- .calc_eixo(utils::modifyList(cfg$eixo_x, list(inicio = min(r$xmin) - (1 - B$largura) * passo / 2,
-                                                         fim = max(r$xmax) + (1 - B$largura) * passo / 2)), c(r$xmin, r$xmax))
+    folga_x <- (1 - B$largura) * passo / 2
+    ax_x <- .calc_eixo(utils::modifyList(cfg$eixo_x, list(inicio = min(r$xmin) - folga_x, fim = max(r$xmax) + folga_x)),
+                       c(r$xmin, r$xmax))
   }
   ax_y <- .calc_eixo(cfg$eixo_y, faixa_y, forcar = cfg$.interno$forcar_y)
-  tit_y <- cfg$eixo_y$titulo %||% (if (B$arranjo == "empilhado_100") "Percentual (%)" else if (n == 1) ycols else "Valor")
+  tit_y <- cfg$eixo_y$titulo %||%
+    (if (B$arranjo == "empilhado_100") "Percentual (%)" else if (n == 1) ycols else "Valor")
   list(camadas = c(cam, .escalas_legenda(est, aes_leg, cfg)),
        info = list(ax_x = ax_x, ax_y = ax_y, flip = flip, titulo_x = cfg$eixo_x$titulo %||% xcol,
                    titulo_y = tit_y, legenda_auto = TRUE, faixa_x = c(r$xmin, r$xmax), faixa_y = faixa_y))

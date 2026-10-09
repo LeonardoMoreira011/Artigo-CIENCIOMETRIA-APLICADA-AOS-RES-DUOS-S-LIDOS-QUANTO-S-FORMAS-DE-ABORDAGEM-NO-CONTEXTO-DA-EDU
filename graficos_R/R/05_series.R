@@ -12,6 +12,8 @@
 .SIMBOLOS_INC <- c(21, 22, 24, 23, 25, 1, 0, 2, 5, 6, 3, 4, 8)
 .LINHAS_INC <- c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
 
+# Entra: cfg e nomes dos itens (séries/categorias).
+# Sai: lista com o estilo completo de cada item (cor, símbolo, linha, gradiente).
 .estilos <- function(cfg, itens, grupo_gradiente = FALSE, inverter_grad = FALSE) {
   n <- length(itens)
   cores <- .paleta(cfg$cores$paleta, n, cfg$cores)

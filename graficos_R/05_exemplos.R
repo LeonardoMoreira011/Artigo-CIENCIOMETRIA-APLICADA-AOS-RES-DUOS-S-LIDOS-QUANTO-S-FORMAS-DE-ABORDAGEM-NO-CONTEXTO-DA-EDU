@@ -1,7 +1,7 @@
 # =============================================================================
 #  05_exemplos.R — UM EXEMPLO DE CADA TIPO / RECURSO
 # =============================================================================
-#  Rode tudo (Ctrl+Shift+S) para gerar a pasta saida/exemplos/ com ~30 figuras.
+#  Rode tudo (Ctrl+Shift+S) para gerar a pasta saida/exemplos/ com 31 figuras.
 #  Cada bloco é independente: copie para o 03_executar.R o que quiser reaproveitar.
 #  Antes de cada exemplo, novo_cfg() volta tudo ao padrão do 01_config.R.
 # =============================================================================
@@ -86,7 +86,8 @@ gerar(calib, cfg)
 cfg <- novo_cfg("06_log_log")
 cfg$grafico$tipo <- "linha"
 cfg$grafico$colunas_y <- "Impedância"
-for (ax in c("eixo_x", "eixo_y")) { cfg[[ax]]$escala <- "log10"; cfg[[ax]]$n_menores <- 8; cfg[[ax]]$notacao <- "potencia10" }
+for (ax in c("eixo_x",
+             "eixo_y")) { cfg[[ax]]$escala <- "log10"; cfg[[ax]]$n_menores <- 8; cfg[[ax]]$notacao <- "potencia10" }
 cfg$eixo_y$titulo <- "|Z| (Ω)"
 gerar(freq, cfg)
 
@@ -98,7 +99,8 @@ cfg$eixo_x$escala <- "log10"; cfg$eixo_x$n_menores <- 8; cfg$eixo_x$notacao <- "
 cfg$eixo_y$titulo <- "Amplitude (V/V)"; cfg$eixo_y$inicio <- 0; cfg$eixo_y$fim <- 1.2
 cfg$eixo_y2$ativo <- TRUE
 cfg$eixo_y2$titulo <- "Impedância (Ω)"
-cfg$eixo_y2$inicio <- 0; cfg$eixo_y2$fim <- 120000; cfg$eixo_y2$incremento <- 20000; cfg$eixo_y2$ticks_modo <- "incremento"
+cfg$eixo_y2$inicio <- 0; cfg$eixo_y2$fim <- 120000
+cfg$eixo_y2$incremento <- 20000; cfg$eixo_y2$ticks_modo <- "incremento"
 cfg$eixo_y2$notacao <- "normal"
 cfg$series[["Impedância"]] <- list(eixo = "y2", cor = "#D62728")
 cfg$series[["Amplitude"]] <- list(cor = "#1F4E9E")
@@ -302,8 +304,10 @@ cfg$paineis$titulo_unico <- "Sinais medidos"
 cfg$paineis$tamanhos <- c(2, 1, 1)
 cfg$paineis$lista <- list(
   list(grafico = list(colunas_y = c("Tensão (V)"), tipo = "linha")),
-  list(grafico = list(colunas_y = "Pressão (kPa)", tipo = "linha"), series = list("Pressão (kPa)" = list(cor = "#8E44AD"))),
-  list(grafico = list(colunas_y = "Corrente (mA)", tipo = "linha"), series = list("Corrente (mA)" = list(cor = "#FF7F0E")))
+  list(grafico = list(colunas_y = "Pressão (kPa)", tipo = "linha"),
+       series = list("Pressão (kPa)" = list(cor = "#8E44AD"))),
+  list(grafico = list(colunas_y = "Corrente (mA)", tipo = "linha"),
+       series = list("Corrente (mA)" = list(cor = "#FF7F0E")))
 )
 cfg$paineis$legenda_unica <- TRUE
 cfg$legenda$posicao <- "topo"
@@ -351,5 +355,20 @@ cfg$grafico$tipo <- "barras"
 cfg$grafico$colunas_y <- c("Ensaio 1", "Ensaio 2")
 cfg$eixo_x$titulo <- ""; cfg$eixo_y$titulo <- "Resistência (MPa)"; cfg$eixo_y$inicio <- 0
 gerar(mat, cfg)
+
+# --- 31 Eixo de datas e horas (CSV do Excel: dd/mm/aaaa hh:mm) -----------------------
+serie <- ler_csv("dados/serie_temporal.csv")     # a coluna de datas é reconhecida sozinha
+cfg <- novo_cfg("31_eixo_de_datas")
+cfg$grafico$tipo <- "linha_pontos"
+cfg$grafico$colunas_y <- c("Temperatura (°C)", "Umidade (%)")
+cfg$series[["Umidade (%)"]] <- list(eixo = "y2")
+cfg$eixo_y2$ativo <- TRUE; cfg$eixo_y2$titulo <- "Umidade (%)"
+cfg$eixo_x$titulo <- "Data da coleta"
+cfg$eixo_x$ticks_modo <- "incremento"; cfg$eixo_x$incremento <- "2 semanas"   # "1 mes", "6 horas"...
+cfg$eixo_x$inicio <- "01/03/2024"; cfg$eixo_x$fim <- "24/05/2024"
+cfg$eixo_x$formato_rotulo_data <- "%d/%m"
+cfg$eixo_y$titulo <- "Temperatura (°C)"
+cfg$legenda$posicao <- "topo"
+gerar(serie, cfg)
 
 message("\nPronto! Veja a pasta saida/exemplos/")

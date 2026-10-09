@@ -5,11 +5,13 @@
 # =============================================================================
 #  LEITURA DE CSV
 # =============================================================================
+# Conta quantas vezes o separador aparece numa linha, ignorando o que está entre aspas.
 .contar_fora_aspas <- function(linha, sep) {
   sem <- gsub('"[^"]*"', "", linha)
   lengths(regmatches(sem, gregexpr(sep, sem, fixed = TRUE)))
 }
 
+# Entra: linhas do CSV. Sai: o separador mais provável (; tab , |).
 .detectar_separador <- function(linhas) {
   amostra <- utils::head(linhas[nzchar(trimws(linhas))], 30)
   for (sep in c(";", "\t", ",", "|")) {
@@ -151,7 +153,8 @@ ler_csv <- function(arquivo, opcoes = NULL) {
     cheio <- which(nzchar(trimws(tab[[j]])))
     if (length(cheio))
       estrutura <- c(estrutura, sprintf(
-        "%d linha(s) tem(têm) mais campos que o cabeçalho (linha %s do arquivo): os campos extras foram para a coluna '%s'. Confira o separador e as aspas.",
+        paste("%d linha(s) tem(têm) mais campos que o cabeçalho (linha %s do arquivo): os campos extras",
+              "foram para a coluna '%s'. Confira o separador e as aspas."),
         length(cheio), linhas_arq(cheio), names(tab)[j]))
   }
   if (length(lida$curtas))
@@ -214,7 +217,8 @@ ler_csv <- function(arquivo, opcoes = NULL) {
                   sum(is.na(v)),
                   if (is.numeric(v) && any(!is.na(v)))
                     sprintf("(%s a %s)", format(min(v, na.rm = TRUE)), format(max(v, na.rm = TRUE)))
-                  else if (!is.numeric(v)) sprintf("ex.: %s", paste(utils::head(unique(v[!is.na(v)]), 3), collapse = ", "))
+                  else if (!is.numeric(v)) sprintf("ex.: %s", paste(utils::head(unique(v[!is.na(v)]), 3),
+                                                                    collapse = ", "))
                   else ""))
     }
     if (length(avisos)) for (a in avisos) cat("  AVISO:", a, "\n")
@@ -232,6 +236,7 @@ colunas <- function(dados) {
              row.names = NULL)
 }
 
+# Entra: dados e referência (nome ou número). Sai: nome da coluna; erro com sugestão se não existir.
 .coluna <- function(dados, ref, onde) {
   if (is.null(ref)) return(NULL)
   if (is.numeric(ref)) {

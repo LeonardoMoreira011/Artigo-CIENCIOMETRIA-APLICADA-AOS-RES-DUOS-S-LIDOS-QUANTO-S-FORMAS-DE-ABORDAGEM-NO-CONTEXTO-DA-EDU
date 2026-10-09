@@ -5,8 +5,10 @@
 # =============================================================================
 #  EIXOS: limites, ticks maiores/menores, rótulos
 # =============================================================================
+# Base do logaritmo da escala (10, e ou 2); NA se a escala não é logarítmica.
 .base_log <- function(escala) switch(escala, log10 = 10, ln = exp(1), log2 = 2, NA)
 
+# Transformação de escala do scales (linear, log, 1/x, raiz), com inversão opcional.
 .transformacao <- function(escala, inverter) {
   t <- switch(escala,
               linear = scales::transform_identity(),
@@ -19,6 +21,7 @@
   t
 }
 
+# Limites automáticos de um eixo numérico a partir da faixa dos dados (décadas inteiras em log).
 .limites_auto <- function(faixa, escala) {
   faixa <- faixa[is.finite(faixa)]
   if (!length(faixa)) return(c(0, 1))
@@ -39,6 +42,7 @@
   lim
 }
 
+# Formata números com ponto decimal, sem zeros sobrando; casas fixas se informado.
 .fmt_num <- function(v, casas = NULL, milhar = FALSE) {
   if (!length(v)) return(character(0))
   if (!is.null(casas)) {
@@ -58,6 +62,7 @@
   s
 }
 
+# Entra: config do eixo. Sai: função que formata os rótulos (notação, casas, prefixo, sufixo, fator).
 .formatador <- function(e) {
   casas <- e$casas_decimais
   fator <- e$fator_divisao %||% 1
@@ -112,8 +117,10 @@
   b <- .base_log(escala)
   if ((!is.na(b) || escala == "reciproco") && is.null(forcar)) {
     ruins <- sum(is.finite(faixa) & faixa <= 0)
-    if (ruins && !is.na(b)) .aviso("Escala ", escala, ": ", ruins, " valor(es) <= 0 não podem ser desenhados e serão omitidos.")
-    if (escala == "reciproco" && any(faixa == 0, na.rm = TRUE)) .aviso("Escala recíproca: valores iguais a 0 (1/0 = infinito) serão omitidos.")
+    if (ruins && !is.na(b)) .aviso("Escala ", escala, ": ", ruins,
+                                   " valor(es) <= 0 não podem ser desenhados e serão omitidos.")
+    if (escala == "reciproco" && any(faixa == 0, na.rm = TRUE))
+      .aviso("Escala recíproca: valores iguais a 0 (1/0 = infinito) serão omitidos.")
   }
   auto <- if (!is.null(categorias)) c(0.5, length(categorias) + 0.5)
           else if (!is.null(tempo)) .limites_tempo(faixa, tempo$classe)

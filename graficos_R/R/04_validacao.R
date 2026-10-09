@@ -67,6 +67,7 @@
   cfg
 }
 
+# Erro em português (com sugestão) se 'valor' não está na lista de opções válidas.
 .checar_opcao <- function(valor, opcoes, onde) {
   if (is.null(valor)) return(invisible())
   if (!is.character(valor) || length(valor) != 1 || !valor %in% opcoes) {
@@ -77,6 +78,7 @@
   }
 }
 
+# Avisa blocos e parâmetros do cfg que não existem (digitados errado), comparando com o 01_config.R.
 .checar_nomes <- function(cfg) {
   ref <- .cfg_ref
   if (is.null(ref)) return(invisible())
@@ -120,6 +122,7 @@
   for (t in c("textos", "setas", "faixas")) um(cfg$anotacoes[[t]], t, paste0("cfg$anotacoes$", t))
 }
 
+# Confere opções, limites e combinações do cfg; para no primeiro erro, com mensagem em português.
 .validar <- function(cfg, checar_nomes = TRUE) {
   if (checar_nomes) { .checar_nomes(cfg); .checar_itens(cfg) }
   for (k in names(.OPCOES)) {

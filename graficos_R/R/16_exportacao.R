@@ -5,11 +5,14 @@
 # =============================================================================
 #  EXPORTAÇÃO E PRÉVIA
 # =============================================================================
+# TRUE se o cfg (ou algum painel) usa preenchimento em gradiente.
 .usa_gradiente <- function(cfg) {
   identical(cfg$cores$preenchimento, "gradiente") ||
-    (isTRUE(cfg$paineis$ativo) && any(vapply(cfg$paineis$lista, function(p) identical(p$cores$preenchimento, "gradiente"), TRUE)))
+    (isTRUE(cfg$paineis$ativo) && any(vapply(cfg$paineis$lista,
+                                             function(p) identical(p$cores$preenchimento, "gradiente"), TRUE)))
 }
 
+# TRUE se o ragg pode ser usado (e, se o gradiente é radial, se a versão corrige o bug do ragg < 1.5).
 .ragg_ok <- function(cfg = NULL) {
   if (!.tem("ragg")) return(FALSE)
   # ragg < 1.5 desenha errado gradiente radial (claro -> escuro): usa Cairo nesse caso
@@ -18,9 +21,12 @@
   TRUE
 }
 
+# Abre o dispositivo gráfico do formato pedido (png, tiff, jpeg, pdf, svg, emf), com os fallbacks do R base.
 .abrir_dispositivo <- function(formato, arq, larg_in, alt_in, dpi, fundo, usar_ragg = .tem("ragg")) {
+  fundo_jpeg <- if (identical(fundo, "transparent")) "white" else fundo   # JPEG não tem transparência
   switch(formato,
-    png = if (usar_ragg) ragg::agg_png(arq, width = larg_in, height = alt_in, units = "in", res = dpi, background = fundo)
+    png = if (usar_ragg) ragg::agg_png(arq, width = larg_in, height = alt_in, units = "in", res = dpi,
+                                       background = fundo)
           else grDevices::png(arq, width = larg_in, height = alt_in, units = "in", res = dpi, bg = fundo,
                               type = if (capabilities("cairo")) "cairo" else "windows"),
     tiff = if (usar_ragg) ragg::agg_tiff(arq, width = larg_in, height = alt_in, units = "in", res = dpi,
@@ -28,9 +34,9 @@
            else grDevices::tiff(arq, width = larg_in, height = alt_in, units = "in", res = dpi, bg = fundo,
                                 compression = "lzw", type = if (capabilities("cairo")) "cairo" else "windows"),
     jpeg = if (usar_ragg) ragg::agg_jpeg(arq, width = larg_in, height = alt_in, units = "in", res = dpi,
-                                            background = if (identical(fundo, "transparent")) "white" else fundo, quality = 95)
+                                         background = fundo_jpeg, quality = 95)
            else grDevices::jpeg(arq, width = larg_in, height = alt_in, units = "in", res = dpi, quality = 95,
-                                bg = if (identical(fundo, "transparent")) "white" else fundo),
+                                bg = fundo_jpeg),
     pdf = if (capabilities("cairo")) grDevices::cairo_pdf(arq, width = larg_in, height = alt_in, bg = fundo)
           else grDevices::pdf(arq, width = larg_in, height = alt_in, bg = fundo, useDingbats = FALSE),
     svg = if (.tem("svglite")) svglite::svglite(arq, width = larg_in, height = alt_in, bg = fundo)
@@ -40,9 +46,14 @@
     .erro("Formato '", formato, "' desconhecido. OPÇÕES: png, tiff, jpeg, pdf, svg, emf"))
 }
 
+# Cópia do cfg com todos os preenchimentos em cor sólida (formatos sem gradiente).
 .sem_gradiente <- function(cfg) {
   cfg$cores$preenchimento <- "solido"
-  if (isTRUE(cfg$paineis$ativo)) cfg$paineis$lista <- lapply(cfg$paineis$lista, function(p) { if (!is.null(p$cores)) p$cores$preenchimento <- "solido"; p })
+  if (isTRUE(cfg$paineis$ativo))
+    cfg$paineis$lista <- lapply(cfg$paineis$lista, function(p) {
+      if (!is.null(p$cores)) p$cores$preenchimento <- "solido"
+      p
+    })
   cfg
 }
 
@@ -55,6 +66,7 @@
   if (inherits(g, "patchwork")) g & t else g + t
 }
 
+# Exporta o gráfico nos formatos de cfg$exportacao. Entra: g (de plotar), cfg e nome opcional. Sai: caminhos gravados.
 salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()), nome = NULL) {
   cfg <- .completar_cfg(cfg)
   ex <- cfg$exportacao
@@ -74,7 +86,13 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
   for (f in tolower(ex$formatos)) {
     ext <- switch(f, jpeg = "jpg", f)
     arq <- file.path(ex$pasta, paste0(base, ".", ext))
-    if (!isTRUE(ex$sobrescrever)) { k <- 2; while (file.exists(arq)) { arq <- file.path(ex$pasta, paste0(base, "_", k, ".", ext)); k <- k + 1 } }
+    if (!isTRUE(ex$sobrescrever)) {
+      k <- 2
+      while (file.exists(arq)) {
+        arq <- file.path(ex$pasta, paste0(base, "_", k, ".", ext))
+        k <- k + 1
+      }
+    }
     .abrir_dispositivo(f, arq, larg, alt, ex$dpi, fundo, usar_ragg = .ragg_ok(cfg))
     disp <- grDevices::dev.cur()
     tryCatch({
@@ -111,8 +129,10 @@ visualizar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv
   viewer <- getOption("viewer")
   if (!is.null(viewer)) {
     html <- tempfile("previa_", fileext = ".html")
-    writeLines(sprintf('<html><body style="margin:0;background:#e5e5e5;display:flex;justify-content:center;align-items:flex-start;padding:12px"><img src="%s" style="max-width:100%%;box-shadow:0 1px 6px #888"></body></html>',
-                       basename(arq)), html)
+    writeLines(sprintf(paste0(
+      '<html><body style="margin:0;background:#e5e5e5;display:flex;justify-content:center;',
+      'align-items:flex-start;padding:12px"><img src="%s" style="max-width:100%%;',
+      'box-shadow:0 1px 6px #888"></body></html>'), basename(arq)), html)
     file.copy(arq, file.path(dirname(html), basename(arq)), overwrite = TRUE)
     viewer(html)
   } else {

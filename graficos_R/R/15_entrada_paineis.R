@@ -5,6 +5,8 @@
 # =============================================================================
 #  PLOTAR (ponto de entrada) — simples, painéis ou quebra de eixo
 # =============================================================================
+# Ponto de entrada: monta o gráfico, os painéis ou a quebra de eixo conforme o cfg.
+# Entra: dados (de ler_csv) e cfg. Sai: ggplot ou patchwork, com attr "cfg" e "dados".
 plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   if (missing(dados) || !is.data.frame(dados)) .erro("plotar(dados, cfg): 'dados' deve ser o resultado de ler_csv().")
   .checar_nomes(cfg); .checar_itens(cfg)   # avisa nomes digitados errado ANTES de completar com os padrões
@@ -18,6 +20,7 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   g
 }
 
+# Letra do painel (a), (A), (i)... conforme o formato escolhido.
 .formatar_letra <- function(i, formato) {
   l <- letters[i]; L <- LETTERS[i]
   rom <- tolower(as.character(utils::as.roman(i)))
@@ -25,6 +28,7 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
          "(A)" = paste0("(", L, ")"), "A" = L, "(i)" = paste0("(", rom, ")"))
 }
 
+# Título único (vertical ou horizontal) ao lado de um conjunto de painéis.
 .rotulo_lateral <- function(texto, cfg, vertical = TRUE) {
   e <- if (vertical) cfg$eixo_y else cfg$eixo_x
   face <- if (isTRUE(e$negrito_titulo)) "bold" else "plain"
@@ -33,6 +37,7 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
               fontfamily = .fonte(cfg$texto$fonte), col = e$cor_titulo %||% cfg$texto$cor)))
 }
 
+# Painéis com eixo comum: calcula os limites comuns e monta cada painel. Entra: dados e cfg. Sai: patchwork.
 .plotar_paineis <- function(dados, cfg) {
   P <- cfg$paineis; n <- length(P$lista)
   if (n < 1) .erro("cfg$paineis$ativo = TRUE, mas cfg$paineis$lista está vazia. Veja o exemplo em 01_config.R.")
@@ -60,7 +65,8 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   tempos <- Filter(Negate(is.null), lapply(previas, function(inf) inf$ax_x$tempo))
   tempo_comum <- if (vertical && length(tempos)) tempos[[1]] else NULL
   tipos <- vapply(cfgs, function(ci) ci$grafico$tipo, "")
-  conhecidos <- c(names(dados), unlist(lapply(names(dados), function(n) if (!is.numeric(dados[[n]])) unique(as.character(dados[[n]])))))
+  categorias <- lapply(names(dados), function(n) if (!is.numeric(dados[[n]])) unique(as.character(dados[[n]])))
+  conhecidos <- c(names(dados), unlist(categorias))
   for (s in setdiff(unique(unlist(lapply(cfgs, function(ci) names(ci$series)))), conhecidos))
     .aviso("cfg$series[[\"", s, "\"]] não corresponde a nenhuma coluna/categoria dos dados.")
   forcar <- if (vertical && all(tipos %in% c("barras", "boxplot"))) NULL
@@ -98,7 +104,8 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   pw <- if (vertical) patchwork::wrap_plots(plots, ncol = 1, heights = tam)
         else patchwork::wrap_plots(plots, nrow = 1, widths = tam)
   if (isTRUE(P$legenda_unica)) {
-    pos <- switch(cfg$legenda$posicao, dentro = "right", direita = "right", esquerda = "left", topo = "top", base = "bottom")
+    pos <- switch(cfg$legenda$posicao, dentro = "right", direita = "right", esquerda = "left", topo = "top",
+                  base = "bottom")
     pw <- pw + patchwork::plot_layout(guides = "collect") & theme(legend.position = pos)
   }
   if (!is.null(P$titulo_unico)) {
@@ -109,6 +116,7 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   pw
 }
 
+# Eixo Y com trecho omitido: monta as duas partes e as junta. Entra: dados e cfg. Sai: patchwork.
 .plotar_quebra <- function(dados, cfg) {
   Q <- cfg$quebra
   if (is.null(Q$de) || is.null(Q$ate) || Q$de >= Q$ate) .erro("cfg$quebra: defina de < ate (ex.: de = 20, ate = 80).")

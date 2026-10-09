@@ -23,6 +23,7 @@
   d
 }
 
+# Pontos, linhas e áreas. Entra: dados e cfg. Sai: list(camadas, info) com os eixos já calculados.
 .construir_xy <- function(dados, cfg) {
   tipo <- cfg$grafico$tipo; L <- cfg$linhas
   xcol <- .coluna(dados, cfg$grafico$coluna_x, "cfg$grafico$coluna_x")
@@ -39,8 +40,10 @@
     }
   }
   est <- .estilos(cfg, ycols)
-  mc <- if (!is.null(cfg$cores$mapear_coluna)) .coluna(dados, cfg$cores$mapear_coluna, "cfg$cores$mapear_coluna") else NULL
-  if (!is.null(mc) && !is.numeric(dados[[mc]])) .erro("cfg$cores$mapear_coluna: a coluna '", mc, "' precisa ser numérica.")
+  mc <- if (!is.null(cfg$cores$mapear_coluna)) .coluna(dados, cfg$cores$mapear_coluna,
+                                                       "cfg$cores$mapear_coluna") else NULL
+  if (!is.null(mc) && !is.numeric(dados[[mc]])) .erro("cfg$cores$mapear_coluna: a coluna '", mc,
+                                                      "' precisa ser numérica.")
   d <- .serie_longa(dados, xcol, ycols, est, mc)
   invalido <- function(v, esc) if (!is.na(.base_log(esc %||% "linear"))) !is.na(v) & v <= 0
                                else if (identical(esc, "reciproco")) !is.na(v) & v == 0 else rep(FALSE, length(v))
@@ -114,7 +117,8 @@
   mapa <- !is.null(cfg$cores$mapear_coluna) && com_pontos
   # áreas
   if (preench != "nenhum" || tipo == "area_empilhada") {
-    base_y <- if (preench == "ate_base") { if (isTRUE(cfg$eixo_y$inverter)) ax_y$limites[2] else ax_y$limites[1] } else 0
+    base_y <- 0
+    if (preench == "ate_base") base_y <- ax_y$limites[if (isTRUE(cfg$eixo_y$inverter)) 2 else 1]
     for (i in seq_along(ycols)) {
       s <- ycols[i]; ds <- d[d$serie == s, ]; ds <- ds[order(ds$x), ]
       if (!nrow(ds)) next
@@ -165,7 +169,8 @@
   # linhas
   if (com_linha) {
     if (mapa) {
-      for (s in ycols) cam[[length(cam) + 1]] <- .camada_linha(d[d$serie == s, ], L$ligacao, mapeado = FALSE, e = est[[s]])
+      for (s in ycols) cam[[length(cam) + 1]] <- .camada_linha(d[d$serie == s, ], L$ligacao, mapeado = FALSE,
+                                                               e = est[[s]])
     } else {
       cam[[length(cam) + 1]] <- .camada_linha(d, L$ligacao, mapeado = TRUE)
       aes_leg <- c(aes_leg, "colour", "linetype", "linewidth", "alpha")
@@ -199,8 +204,8 @@
       size = .tx(L$rotulos_tamanho_pt), vjust = if (k >= 0) -k else 1 - k, show.legend = FALSE,
       family = .fonte(cfg$texto$fonte))
   }
-  if (!"colour" %in% aes_leg && !mapa && (com_linha || nrow(de) || L$linhas_queda != "nenhuma" || L$rotulos_dados != "nenhum"))
-    aes_leg <- c(aes_leg, "colour")
+  usa_cor <- com_linha || nrow(de) || L$linhas_queda != "nenhuma" || L$rotulos_dados != "nenhum"
+  if (!"colour" %in% aes_leg && !mapa && usa_cor) aes_leg <- c(aes_leg, "colour")
   escalas <- .escalas_legenda(est, aes_leg, cfg)
   if (mapa) escalas <- c(escalas, .escala_mapa(cfg, dados))
   if (!com_pontos && !com_linha) escalas <- c(escalas, list(guides(fill = "none")))
@@ -212,6 +217,7 @@
                    legenda_auto = TRUE, faixa_x = faixa_x, faixa_y = faixa_y))
 }
 
+# Camada de linha (reta, spline ou degrau) de uma série ou de todas, com estilo mapeado ou fixo.
 .camada_linha <- function(d, ligacao, mapeado, e = NULL) {
   d <- d[!is.na(d$y), ]
   if (ligacao == "spline") {
@@ -239,6 +245,7 @@
   }
 }
 
+# Escala e barra de cores para o mapa de cor por coluna numérica (2 ou 3 cores).
 .escala_mapa <- function(cfg, dados) {
   c0 <- cfg$cores
   tit <- c0$mapa_titulo %||% c0$mapear_coluna

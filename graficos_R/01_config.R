@@ -396,22 +396,24 @@ cfg$pizza <- list(
   # linha_guia_espessura_pt / linha_guia_recuo: espessura (pt) da linha guia e quanto ela
   #   para antes do rótulo (em fração do raio).
   #   OPÇÕES: números >= 0 (padrões 0.6 e 0.07)
+  #   EX.: cfg$pizza$linha_guia_espessura_pt <- 1
   linha_guia_espessura_pt = 0.6,
   linha_guia_recuo = 0.07,
 
   # rotulos_raio_dentro / rotulos_raio_borda: posição dos rótulos, em fração do raio, quando
   #   rotulos_posicao = "dentro" (numa pizza cheia; na rosca fica no meio do anel) ou "borda".
   #   OPÇÕES: números > 0 (padrões 0.62 e 1.08)
+  #   EX.: cfg$pizza$rotulos_raio_borda <- 1.15
   rotulos_raio_dentro = 0.62,
   rotulos_raio_borda = 1.08,
 
   # rotulos_afastar: afasta rótulos "fora"/"borda" que se sobreporiam (fatias pequenas
   #   vizinhas). Só move os que colidem; os demais ficam onde estão.
-  #   OPÇÕES: TRUE | FALSE
+  #   OPÇÕES: TRUE | FALSE      EX.: cfg$pizza$rotulos_afastar <- FALSE
   rotulos_afastar = TRUE,
 
   # rotulos_margem: folga (fração do raio) entre os rótulos mais externos e a borda da figura.
-  #   OPÇÕES: número >= 0 (padrão 0.15)
+  #   OPÇÕES: número >= 0 (padrão 0.15)      EX.: cfg$pizza$rotulos_margem <- 0.3
   rotulos_margem = 0.15,
 
   # rotulos_casas: casas decimais de valor e percentual.
@@ -482,7 +484,7 @@ cfg$distribuicao <- list(
   marcas_rug = FALSE,
 
   # rug_comprimento_pt / rug_espessura_pt: tamanho e espessura dos tracinhos de marcas_rug.
-  #   OPÇÕES: números > 0 (padrões 5 e 0.6)
+  #   OPÇÕES: números > 0 (padrões 5 e 0.6)      EX.: cfg$distribuicao$rug_comprimento_pt <- 8
   rug_comprimento_pt = 5,
   rug_espessura_pt = 0.6
 )
@@ -586,13 +588,14 @@ cfg$boxplot <- list(
   # pontos_borda_pt / outliers_borda_pt / media_borda_pt: espessura (pt) da borda dos
   #   símbolos dos dados, dos outliers e da média.
   #   OPÇÕES: número >= 0 (padrões 0.4 / 0.8 / 0.9)
+  #   EX.: cfg$boxplot$outliers_borda_pt <- 1.2
   pontos_borda_pt = 0.4,
   outliers_borda_pt = 0.8,
   media_borda_pt = 0.9,
 
   # media_erro_ponto_fator: no estilo "ponto" de media_erro, o símbolo da média tem
   #   media_tamanho_pt multiplicado por este fator.
-  #   OPÇÕES: número > 0 (padrão 1.4)
+  #   OPÇÕES: número > 0 (padrão 1.4)      EX.: cfg$boxplot$media_erro_ponto_fator <- 2
   media_erro_ponto_fator = 1.4,
 
   # n_tamanho_pt: tamanho do texto "n = ..." de mostrar_n, em pt.
@@ -635,7 +638,8 @@ cfg$eixo_x <- list(
   formato_data = NULL,
 
   # formato_rotulo_data: como as datas aparecem nos ticks. NULL = automático conforme o
-  #   período mostrado (só números, para não depender do idioma do Windows).
+  #   passo entre os ticks (anos: 2024; meses: 03/2024; dias: 15/03; horas: 14:30). Só
+  #   números, para não depender do idioma do Windows.
   #   OPÇÕES: NULL | "formato"
   #   EX.: cfg$eixo_x$formato_rotulo_data <- "%d/%m/%Y"   ou   "%H:%M"
   formato_rotulo_data = NULL,
@@ -1048,7 +1052,7 @@ cfg$quebra <- list(
 
   # marca_largura_pt / marca_altura_pt: tamanho de cada traço diagonal da quebra, em pt
   #   (largura = quanto avança para os lados; altura = quanto sobe/desce).
-  #   OPÇÕES: números > 0 (padrões 5 e 4)
+  #   OPÇÕES: números > 0 (padrões 5 e 4)      EX.: cfg$quebra$marca_largura_pt <- 8
   marca_largura_pt = 5,
   marca_altura_pt = 4
 )
