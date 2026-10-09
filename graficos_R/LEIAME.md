@@ -3,6 +3,8 @@
 Entrada: arquivos **CSV**. Saída: figuras **PNG, TIFF, JPEG, PDF, SVG ou EMF** com controle fino de eixos, ticks, moldura, cores, legendas e painéis.
 Testado em R 4.3/4.4 com **ggplot2 4.0.3** e **ggplot2 3.5.2** (Linux). **Não foi testado em Windows:** rode `07_verificar_windows.R` uma vez (seção 8).
 
+> **Prefere um arquivo só?** Use `graficos_R_completo.R` (tudo junto: instalador, configuração, motor, ajuda, estilos e exemplos). Abra-o no RStudio, clique em *Source* e rode `demonstracao()`. É gerado a partir desta pasta por `python3 ferramentas/gerar_script_unico.py`.
+
 ## 1. Primeira vez (5 minutos)
 
 1. Descompacte a pasta `graficos_R` onde quiser (ex.: `Documentos`).

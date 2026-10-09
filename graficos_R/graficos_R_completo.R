@@ -1,0 +1,4533 @@
+# =============================================================================
+#  graficos_R_completo.R  —  TEMPLATE DE GRÁFICOS CIENTÍFICOS EM R (ARQUIVO ÚNICO)
+# =============================================================================
+#  Alternativa ao Origin: pontos, linhas, áreas, barras, pizza, histograma, densidade,
+#  ECDF e boxplot, com controle fino de eixos, ticks, moldura, cores, gradientes,
+#  legenda, painéis empilhados, quebra de eixo, eixo de datas e exportação
+#  (PNG, TIFF, JPEG, PDF, SVG, EMF). Tudo em um único arquivo.
+#
+#  COMO USAR (3 passos)
+#   1) Só na primeira vez:   instalar_pacotes()      (depois de rodar este arquivo, ver passo 2;
+#                            se faltar pacote, o script para e avisa; rode instalar_pacotes() e
+#                            depois este arquivo de novo)
+#   2) Abra este arquivo no RStudio e clique em  Source  (ou Ctrl+Shift+S).
+#   3) Teste:    demonstracao()          # gráfico de exemplo com dados fictícios
+#                demonstracao("datas")   # outras: "linha", "barras", "pizza", "boxplot", "datas"
+#      Seus dados:   dados <- ler_csv("C:/pasta/meu_arquivo.csv")
+#                    cfg$grafico$tipo <- "linha_pontos"
+#                    g <- plotar(dados, cfg);  visualizar(g);  salvar(g, cfg)
+#
+#  AJUDA:  ajuda()  |  ajuda("eixo_x")  |  ajuda("tipos")  |  galeria()
+#  (ajuda() lê a PARTE 1 deste arquivo: use Source, ou deixe o arquivo na pasta de trabalho
+#   com o nome graficos_R_completo.R)
+#
+#  Se os acentos aparecerem estranhos: File > Reopen with Encoding > UTF-8.
+#  Estrutura:  PARTE 0 instalador | PARTE 1 configuração (cfg) | PARTE 2 motor | PARTE 3 uso
+#  Requisitos: R >= 4.2, ggplot2 >= 3.5, scales, patchwork, ragg >= 1.5.
+# =============================================================================
+
+# #############################################################################
+#  PARTE 0 — INSTALADOR DE PACOTES
+# #############################################################################
+
+# Instala/atualiza os pacotes necessários. Rode UMA vez:  instalar_pacotes()
+#  (sem permissão de administrador, instala na sua pasta pessoal; com proxy, defina antes
+#   Sys.setenv(https_proxy = "http://usuario:senha@proxy.empresa.com:8080"))
+instalar_pacotes <- function() {
+  #  Instala/atualiza os pacotes usados pelo template. No notebook corporativo,
+  #  se não houver permissão de administrador, os pacotes vão para a sua pasta
+  #  pessoal de bibliotecas (criada automaticamente).
+  #
+  #  Se a rede da empresa usar proxy e o download falhar, descomente e ajuste:
+  #  Sys.setenv(https_proxy = "http://usuario:senha@proxy.empresa.com:8080")
+  #  Sys.setenv(http_proxy  = "http://usuario:senha@proxy.empresa.com:8080")
+  # =============================================================================
+
+  options(repos = c(CRAN = "https://cloud.r-project.org"))
+
+  # Versões mínimas testadas
+  minimos <- c(
+    ggplot2   = "3.5.0",   # gradientes, ticks menores, legenda "inside"  (testado 3.5.2 e 4.0.3)
+    scales    = "1.3.0",   # transformações de eixo (testado 1.4.0)
+    patchwork = "1.2.0",   # painéis empilhados (testado 1.3.2)
+    ragg      = "1.5.0"    # PNG/TIFF/JPEG de qualidade; < 1.5 tem bug no gradiente radial
+  )
+  opcionais <- c(
+    svglite      = "2.1.0",  # SVG editável (Inkscape/Illustrator)
+    devEMF       = "4.0",    # EMF para colar no Word/PowerPoint
+    viridisLite  = "0.4.0",  # paletas viridis/magma/plasma/cividis
+    RColorBrewer = "1.1-3",  # paletas brewer_*
+    systemfonts  = "1.0.0"   # checagem das fontes instaladas
+  )
+
+  # Pasta de instalação: a padrão, ou a pessoal se a padrão não for gravável
+  lib <- .libPaths()[1]
+  if (file.access(lib, 2) != 0) {
+    lib <- Sys.getenv("R_LIBS_USER")
+    dir.create(lib, recursive = TRUE, showWarnings = FALSE)
+    .libPaths(c(lib, .libPaths()))
+    message("Sem permissão na pasta padrão; instalando em: ", lib)
+  }
+
+  precisa <- function(p, v) {
+    !requireNamespace(p, quietly = TRUE) || utils::packageVersion(p) < v
+  }
+  instalar <- function(lista, obrigatorio) {
+    for (p in names(lista)) {
+      if (precisa(p, lista[[p]])) {
+        message(">> Instalando/atualizando ", p, " (>= ", lista[[p]], ")")
+        tryCatch(utils::install.packages(p, lib = lib, dependencies = c("Depends", "Imports", "LinkingTo"),
+                                         type = if (.Platform$OS.type == "windows") "binary" else getOption("pkgType")),
+                 error = function(e) message("   Falhou: ", conditionMessage(e)))
+      }
+    }
+  }
+  instalar(minimos, TRUE)
+  instalar(opcionais, FALSE)
+
+  cat("\n================ RESULTADO ================\n")
+  ok <- TRUE
+  for (p in names(c(minimos, opcionais))) {
+    v <- c(minimos, opcionais)[[p]]
+    tem <- requireNamespace(p, quietly = TRUE)
+    ver <- if (tem) as.character(utils::packageVersion(p)) else "-"
+    st <- if (!tem) "FALTA" else if (utils::packageVersion(p) < v) "ANTIGO" else "ok"
+    obrig <- p %in% names(minimos)
+    if (obrig && st != "ok") ok <- FALSE
+    cat(sprintf("  %-13s %-9s %-7s %s\n", p, ver, st, if (obrig) "(obrigatório)" else "(opcional)"))
+  }
+  cat(sprintf("  R             %-9s %s\n", as.character(getRversion()),
+              if (getRversion() >= "4.2.0") "ok" else "ANTIGO: gradientes exigem R >= 4.2"))
+  if (ok) {
+    cat("\nTudo pronto. Reinicie a sessão (Ctrl+Shift+F10) e rode este script de novo (Source).\n")
+  } else {
+    cat("\nAlgum pacote obrigatório falhou. Causas comuns no notebook corporativo:\n",
+        " 1) proxy: rode Sys.setenv(https_proxy = 'http://usuario:senha@proxy:8080') e tente de novo;\n",
+        " 2) bloqueio do CRAN: peça à TI liberação de https://cloud.r-project.org;\n",
+        " 3) RStudio aberto com pacotes carregados: reinicie a sessão (Ctrl+Shift+F10) e rode de novo.\n")
+  }
+
+  cat("\nDICA RStudio: Tools > Global Options > General > Graphics > Backend = \"AGG\"\n",
+      "  (deixa a aba Plots com as mesmas fontes e gradientes do arquivo final).\n", sep = "")
+}
+
+# #############################################################################
+#  PARTE 1 — CONFIGURAÇÃO (cfg): TODOS OS PARÂMETROS EDITÁVEIS
+# #############################################################################
+# @@INICIO_CONFIG@@
+# =============================================================================
+#  PARÂMETROS EDITÁVEIS DO GRÁFICO (o cfg)
+# =============================================================================
+#  Como usar:
+#   - Edite os valores aqui OU mude no console/script com atribuição direta:
+#       cfg$eixo_x$inicio <- 0
+#   - Cada parâmetro tem: descrição, "OPÇÕES:" (valores aceitos) e "EX.:".
+#   - No console:  ajuda()            -> lista os blocos
+#                  ajuda("eixo_x")    -> mostra todos os parâmetros do bloco
+#                  galeria()          -> PDF visual com símbolos, linhas, paletas
+#   - Unidades: espessuras, tamanhos de texto, símbolos e ticks em PONTOS (pt),
+#     como no Origin (1 pt = 1/72 polegada). Tamanho da figura em cm.
+#   - Números: ponto decimal SEMPRE (1.5). Nunca vírgula.
+#   - NULL significa "automático".
+# =============================================================================
+
+cfg <- list()
+
+# -----------------------------------------------------------------------------
+# DADOS — leitura do CSV
+# -----------------------------------------------------------------------------
+cfg$dados <- list(
+  # separador: caractere que separa as colunas do CSV.
+  #   OPÇÕES: "auto" | "," | ";" | "\t" (tabulação) | "|"
+  #   EX.: cfg$dados$separador <- ";"
+  separador = "auto",
+
+  # decimal_virgula: o arquivo usa vírgula como decimal (CSV de Excel em português)?
+  #   O resultado é SEMPRE convertido para ponto decimal (1,5 -> 1.5).
+  #   OPÇÕES: "auto" (detecta) | TRUE | FALSE
+  #   EX.: cfg$dados$decimal_virgula <- TRUE
+  decimal_virgula = "auto",
+
+  # codificacao: codificação de texto do arquivo (afeta acentos dos cabeçalhos).
+  #   "auto" reconhece UTF-8, latin1 (Excel) e UTF-16 ("Texto Unicode" do Excel).
+  #   OPÇÕES: "auto" | "UTF-8" | "latin1" | "UTF-16" | "UTF-16LE" | "UTF-16BE"
+  #   EX.: cfg$dados$codificacao <- "latin1"
+
+  # cabecalho: a primeira linha (após pular_linhas) contém os nomes das colunas?
+  #   OPÇÕES: TRUE | FALSE (colunas viram V1, V2, ...)
+  cabecalho = TRUE,
+
+  # pular_linhas: quantas linhas ignorar no topo do arquivo (comentários, unidades).
+  #   OPÇÕES: número inteiro >= 0
+  #   EX.: cfg$dados$pular_linhas <- 2
+  pular_linhas = 0,
+
+  # valores_ausentes: textos tratados como "sem dado" (NA).
+  #   OPÇÕES: vetor de textos
+  #   EX.: cfg$dados$valores_ausentes <- c("", "NA", "-", "n.d.")
+  valores_ausentes = c("", "NA", "NaN", "-", "--", "#N/D", "#N/A", "#DIV/0!"),
+
+  # relatorio: imprime no console o relatório de leitura (colunas, tipos, NAs, avisos).
+  #   OPÇÕES: TRUE | FALSE
+  relatorio = TRUE
+)
+
+# -----------------------------------------------------------------------------
+# GRAFICO — tipo e colunas usadas
+# -----------------------------------------------------------------------------
+cfg$grafico <- list(
+  # tipo: tipo de gráfico.
+  #   OPÇÕES: "pontos" | "linha" | "linha_pontos" | "area" | "area_empilhada" |
+  #           "barras" | "pizza" | "histograma" | "densidade" | "ecdf" | "boxplot"
+  #   EX.: cfg$grafico$tipo <- "boxplot"
+  tipo = "linha_pontos",
+
+  # coluna_x: coluna do eixo X (nome entre aspas ou número da coluna).
+  #   Em "barras" e "pizza" é a coluna das CATEGORIAS. Ignorada em histograma,
+  #   densidade, ecdf e boxplot.
+  #   OPÇÕES: número | "nome da coluna"
+  #   EX.: cfg$grafico$coluna_x <- "Tempo (s)"
+  coluna_x = 1,
+
+  # colunas_y: colunas plotadas (cada uma vira uma série / caixa / fatia).
+  #   NULL = todas as colunas numéricas, exceto a coluna_x.
+  #   Em "pizza" usa só a primeira.
+  #   OPÇÕES: NULL | vetor de nomes ou números
+  #   EX.: cfg$grafico$colunas_y <- c("Amostra A", "Amostra C")
+  colunas_y = NULL,
+
+  # coluna_grupo: (formato "longo") coluna categórica que separa os dados em grupos.
+  #   Usada em boxplot, histograma, densidade e ecdf: os valores de colunas_y[1]
+  #   são divididos pelos grupos desta coluna.
+  #   OPÇÕES: NULL | "nome da coluna"
+  #   EX.: cfg$grafico$coluna_grupo <- "Tratamento"
+  coluna_grupo = NULL,
+
+  # ordem_itens: ordem das séries/categorias/caixas (nomes). NULL = ordem do arquivo.
+  #   OPÇÕES: NULL | vetor de nomes
+  #   EX.: cfg$grafico$ordem_itens <- c("Controle", "Dose 1", "Dose 2")
+  ordem_itens = NULL
+)
+
+# -----------------------------------------------------------------------------
+# CORES — paletas, gradiente de 2 cores e mapa de cor
+# -----------------------------------------------------------------------------
+cfg$cores <- list(
+  # paleta: cores atribuídas automaticamente às séries, em sequência
+  #   (como o "incremento" de cor). Veja todas com mostrar_paletas().
+  #   OPÇÕES: "classico" | "okabe_ito" (segura p/ daltônicos) | "viridis" |
+  #           "magma" | "plasma" | "cividis" | "cinza" | "tableau" |
+  #           "brewer_Set1" | "brewer_Dark2" | "brewer_Paired" | (qualquer
+  #           "brewer_<nome>" do ColorBrewer) | "personalizada"
+  #   EX.: cfg$cores$paleta <- "okabe_ito"
+  paleta = "classico",
+
+  # personalizada: suas cores, usadas quando paleta = "personalizada".
+  #   OPÇÕES: vetor de cores (nome, "#RRGGBB", "#RRGGBBAA" ou rgb(…))
+  #   EX.: cfg$cores$personalizada <- c("#003F5C", "#BC5090", "#FFA600")
+  personalizada = c("#003F5C", "#BC5090", "#FFA600", "#58508D", "#FF6361"),
+
+  # preenchimento: tipo de preenchimento de barras, áreas, caixas, violinos,
+  #   fatias e histogramas.
+  #   OPÇÕES: "solido" | "gradiente" (2 cores: cor da série -> gradiente_cor2)
+  #   EX.: cfg$cores$preenchimento <- "gradiente"
+  preenchimento = "solido",
+
+  # gradiente_cor2: segunda cor do gradiente (a primeira é a cor da série).
+  #   Pode ser definida por série em cfg$series[["nome"]]$cor2.
+  #   OPÇÕES: qualquer cor
+  #   EX.: cfg$cores$gradiente_cor2 <- "white"
+  gradiente_cor2 = "white",
+
+  # gradiente_direcao: direção da transição de cor dentro de cada elemento.
+  #   "vertical" = cor da série embaixo -> cor2 em cima;
+  #   "horizontal" = esquerda -> direita; "diagonal" = canto inferior esq. ->
+  #   superior dir.; "radial" = centro em cor2 (clara) -> borda na cor da série.
+  #   Em barras/caixas HORIZONTAIS, "vertical" segue o comprimento da barra
+  #   (da base para a ponta). Em pizza, o gradiente cobre a pizza inteira.
+  #   OPÇÕES: "vertical" | "vertical_invertido" | "horizontal" |
+  #           "horizontal_invertido" | "diagonal" | "radial"
+  #   EX.: cfg$cores$gradiente_direcao <- "horizontal"
+  gradiente_direcao = "vertical",
+
+  # incrementar_simbolo: cada série recebe um símbolo diferente automaticamente.
+  #   OPÇÕES: TRUE | FALSE (todas usam o símbolo de serie_padrao$simbolo)
+  incrementar_simbolo = TRUE,
+
+  # incrementar_tipo_linha: cada série recebe um tipo de linha diferente.
+  #   OPÇÕES: TRUE | FALSE (todas sólidas, salvo definição por série)
+  incrementar_tipo_linha = FALSE,
+
+  # mapear_coluna: colore os PONTOS pelo valor de uma coluna numérica
+  #   (mapa de cor com barra de cores). Só para tipos com pontos.
+  #   OPÇÕES: NULL | "nome da coluna"
+  #   EX.: cfg$cores$mapear_coluna <- "Temperatura"
+  mapear_coluna = NULL,
+
+  # mapa_cores: cores do mapa (2 = gradiente simples; 3 = baixo, meio, alto).
+  #   OPÇÕES: vetor com 2 ou 3 cores
+  #   EX.: cfg$cores$mapa_cores <- c("blue", "white", "red")
+  mapa_cores = c("#2166AC", "#B2182B"),
+
+  # mapa_ponto_medio: valor do meio quando mapa_cores tem 3 cores. NULL = média.
+  #   OPÇÕES: NULL | número
+  mapa_ponto_medio = NULL,
+
+  # mapa_limites: limites da escala de cor. NULL = mín e máx dos dados.
+  #   OPÇÕES: NULL | c(min, max)
+  mapa_limites = NULL,
+
+  # mapa_titulo: título da barra de cores. NULL = nome da coluna; "" = sem título.
+  mapa_titulo = NULL
+)
+
+# -----------------------------------------------------------------------------
+# SERIE_PADRAO — estilo aplicado a todas as séries (sobrescrito por cfg$series)
+# -----------------------------------------------------------------------------
+cfg$serie_padrao <- list(
+  # simbolo: forma do símbolo quando incrementar_simbolo = FALSE.
+  #   0-14 = só contorno; 15-20 = sólidos; 21-25 = contorno + preenchimento.
+  #   21 círculo, 22 quadrado, 23 losango, 24 triângulo, 25 triângulo invertido.
+  #   OPÇÕES: número de 0 a 25 (veja galeria())
+  #   EX.: cfg$serie_padrao$simbolo <- 22
+  simbolo = 21,
+
+  # tamanho_simbolo_pt: tamanho do símbolo em pt.
+  #   OPÇÕES: número > 0      EX.: cfg$serie_padrao$tamanho_simbolo_pt <- 8
+  tamanho_simbolo_pt = 6,
+
+  # espessura_borda_pt: espessura do contorno do símbolo em pt.
+  #   OPÇÕES: número >= 0
+  espessura_borda_pt = 0.8,
+
+  # preenchimento_simbolo: preenchimento dos símbolos 21-25.
+  #   OPÇÕES: "serie" (mesma cor da série) | "branco" | "vazio" | qualquer cor
+  #   EX.: cfg$serie_padrao$preenchimento_simbolo <- "branco"
+  preenchimento_simbolo = "serie",
+
+  # linha_espessura_pt: espessura da linha da série em pt.
+  #   OPÇÕES: número > 0      EX.: cfg$serie_padrao$linha_espessura_pt <- 2
+  linha_espessura_pt = 1.5,
+
+  # linha_tipo: tipo de traço (quando incrementar_tipo_linha = FALSE).
+  #   OPÇÕES: "solid" | "dashed" | "dotted" | "dotdash" | "longdash" |
+  #           "twodash" | código hexadecimal, ex.: "44" (4 traço, 4 espaço),
+  #           "1343"
+  #   EX.: cfg$serie_padrao$linha_tipo <- "dashed"
+  linha_tipo = "solid",
+
+  # opacidade: opacidade de linhas e símbolos (1 = opaco, 0 = invisível).
+  #   OPÇÕES: número de 0 a 1
+  opacidade = 1,
+
+  # opacidade_preenchimento: opacidade de barras, áreas, caixas, fatias.
+  #   OPÇÕES: número de 0 a 1      EX.: cfg$serie_padrao$opacidade_preenchimento <- 0.7
+  opacidade_preenchimento = 1
+)
+
+# -----------------------------------------------------------------------------
+# SERIES — estilo individual por série/categoria/caixa (opcional)
+# -----------------------------------------------------------------------------
+#  Cada item tem o NOME da série (nome da coluna; em pizza, a categoria; em
+#  boxplot por grupo, o grupo). Só escreva o que quiser mudar.
+#  Parâmetros aceitos por série:
+#    cor, cor2 (2ª cor do gradiente), simbolo, tamanho_simbolo_pt,
+#    espessura_borda_pt, preenchimento_simbolo, linha_espessura_pt, linha_tipo,
+#    opacidade, opacidade_preenchimento,
+#    nome_legenda      (texto exibido na legenda),
+#    mostrar_na_legenda (TRUE/FALSE — apaga só esta entrada),
+#    eixo              ("y1" ou "y2" — eixo Y secundário),
+#    coluna_erro       (coluna com erro simétrico ±),
+#    coluna_erro_inferior / coluna_erro_superior (erros assimétricos),
+#    coluna_erro_x     (erro horizontal ±)
+#  EX.:
+#    cfg$series[["Amostra A"]] <- list(cor = "#D62728", simbolo = 22,
+#                                      nome_legenda = "Amostra A (25 °C)",
+#                                      coluna_erro = "Desvio A")
+#    cfg$series[["Amostra B"]] <- list(mostrar_na_legenda = FALSE)
+cfg$series <- list()
+
+# -----------------------------------------------------------------------------
+# LINHAS — opções dos tipos pontos / linha / linha_pontos / area
+# -----------------------------------------------------------------------------
+cfg$linhas <- list(
+  # ligacao: como os pontos são ligados.
+  #   OPÇÕES: "reta" | "spline" (curva suave) | "degrau_hv" (horizontal depois
+  #           vertical) | "degrau_vh" | "degrau_meio"
+  #   EX.: cfg$linhas$ligacao <- "spline"
+  ligacao = "reta",
+
+  # ordenar_x: ordena os pontos de cada série por X antes de ligá-los. Com FALSE (padrão,
+  #   como no Origin) a linha segue a ORDEM DAS LINHAS DO CSV, o que permite curvas que
+  #   voltam (laços, histerese, trajetórias). Use TRUE se o CSV está fora de ordem e você
+  #   quer a linha sempre da esquerda para a direita.
+  #   OPÇÕES: TRUE | FALSE
+  #   EX.: cfg$linhas$ordenar_x <- TRUE
+  ordenar_x = FALSE,
+
+  # preencher_area: preenchimento sob a curva (tipos linha / linha_pontos /
+  #   pontos). O tipo "area" usa "ate_zero" se aqui estiver "nenhum".
+  #   OPÇÕES: "nenhum" | "ate_zero" | "ate_base" (até o início do eixo Y) |
+  #           "proxima_serie" (entre cada série e a seguinte)
+  #   EX.: cfg$linhas$preencher_area <- "ate_base"
+  preencher_area = "nenhum",
+
+  # opacidade_area: opacidade do preenchimento sob a curva.
+  #   OPÇÕES: número de 0 a 1
+  opacidade_area = 0.35,
+
+  # linhas_queda: linhas ligando cada ponto ao eixo (drop lines).
+  #   OPÇÕES: "nenhuma" | "vertical" | "horizontal" | "ambas"
+  linhas_queda = "nenhuma",
+
+  # linhas_queda_tipo / linhas_queda_espessura_pt: estilo das linhas de queda.
+  linhas_queda_tipo = "dotted",
+  linhas_queda_espessura_pt = 0.75,
+
+  # erro_lado: quais lados das barras de erro desenhar.
+  #   OPÇÕES: "ambos" | "superior" | "inferior"
+  erro_lado = "ambos",
+
+  # erro_espessura_pt: espessura das barras de erro em pt.
+  erro_espessura_pt = 1,
+
+  # erro_chapeu_percentual: largura do "chapéu" da barra de erro, em % da
+  #   largura do eixo X. 0 = sem chapéu.
+  #   OPÇÕES: número >= 0      EX.: cfg$linhas$erro_chapeu_percentual <- 1.5
+  erro_chapeu_percentual = 2,
+
+  # rotulos_dados: escreve o valor ao lado de cada ponto.
+  #   OPÇÕES: "nenhum" | "y" | "x" | "xy" | "serie"
+  #   EX.: cfg$linhas$rotulos_dados <- "y"
+  rotulos_dados = "nenhum",
+
+  # rotulos_casas: casas decimais dos rótulos de dados.
+  rotulos_casas = 2,
+
+  # rotulos_tamanho_pt: tamanho do texto dos rótulos de dados.
+  rotulos_tamanho_pt = 8,
+
+  # rotulos_deslocamento_pt: distância vertical do rótulo ao ponto (+ acima, - abaixo).
+  rotulos_deslocamento_pt = 7
+)
+
+# -----------------------------------------------------------------------------
+# BARRAS — opções do tipo "barras" (colunas)
+# -----------------------------------------------------------------------------
+cfg$barras <- list(
+  # arranjo: como várias séries são combinadas.
+  #   OPÇÕES: "agrupado" | "empilhado" | "empilhado_100" (percentual)
+  #   EX.: cfg$barras$arranjo <- "empilhado"
+  arranjo = "agrupado",
+
+  # orientacao: OPÇÕES: "vertical" (colunas) | "horizontal" (barras deitadas).
+  #   Em "horizontal", eixo_x continua sendo o eixo das CATEGORIAS (fica na
+  #   vertical) e eixo_y o dos VALORES (fica na horizontal).
+  orientacao = "vertical",
+
+  # largura: fração do espaço de cada categoria ocupada pelas barras
+  #   (espaço entre grupos = 1 - largura).
+  #   OPÇÕES: número de 0.05 a 1      EX.: cfg$barras$largura <- 0.6
+  largura = 0.8,
+
+  # sobreposicao: sobreposição entre barras vizinhas do mesmo grupo
+  #   (só "agrupado"). 0 = lado a lado; 0.5 = metade sobreposta; negativo = espaço.
+  #   OPÇÕES: número de -0.5 a 0.9
+  sobreposicao = 0,
+
+  # contorno_cor / contorno_espessura_pt / contorno_tipo: borda das barras.
+  #   OPÇÕES cor: cor | "serie" | NA (sem contorno)
+  contorno_cor = "black",
+  contorno_espessura_pt = 0.75,
+  contorno_tipo = "solid",
+
+  # linha_base: valor de onde as barras partem.
+  #   OPÇÕES: número      EX.: cfg$barras$linha_base <- 100
+  linha_base = 0,
+
+  # rotulos_valor: escrever o valor em cada barra.
+  #   OPÇÕES: TRUE | FALSE
+  rotulos_valor = FALSE,
+
+  # rotulos_posicao: OPÇÕES: "fora" (acima da barra) | "dentro" (no topo, por
+  #   dentro) | "centro"
+  rotulos_posicao = "fora",
+
+  # rotulos_casas / rotulos_tamanho_pt / rotulos_cor: formato dos rótulos.
+  rotulos_casas = 1,
+  rotulos_tamanho_pt = 8,
+  rotulos_cor = "black",
+
+  # erro_espessura_pt / erro_chapeu: barras de erro (definidas por série com
+  #   coluna_erro). erro_chapeu = fração da largura da barra.
+  erro_espessura_pt = 0.75,
+  erro_chapeu = 0.4
+)
+
+# -----------------------------------------------------------------------------
+# PIZZA — opções do tipo "pizza" (e rosca)
+# -----------------------------------------------------------------------------
+cfg$pizza <- list(
+  # angulo_inicial: onde começa a 1ª fatia, em graus (0 = 12 h; 90 = 3 h).
+  #   OPÇÕES: número      EX.: cfg$pizza$angulo_inicial <- 90
+  angulo_inicial = 0,
+
+  # sentido: OPÇÕES: "horario" | "anti_horario"
+  sentido = "horario",
+
+  # angulo_total: abertura total da pizza em graus (360 = completa; 180 = meia).
+  #   OPÇÕES: número de 1 a 360
+  angulo_total = 360,
+
+  # raio_furo: furo central (rosca), como fração do raio. 0 = pizza cheia.
+  #   OPÇÕES: número de 0 a 0.9      EX.: cfg$pizza$raio_furo <- 0.5
+  raio_furo = 0,
+
+  # explodir: categorias destacadas (puxadas para fora).
+  #   OPÇÕES: NULL | vetor de nomes de categorias
+  #   EX.: cfg$pizza$explodir <- c("Ferro")
+  explodir = NULL,
+
+  # deslocamento_explosao: distância das fatias destacadas, em % do raio.
+  deslocamento_explosao = 10,
+
+  # rotulos: o que escrever em cada fatia (pode combinar).
+  #   OPÇÕES: vetor com "categoria", "valor", "percentual"  |  character(0) = nada
+  #   EX.: cfg$pizza$rotulos <- c("percentual")
+  rotulos = c("categoria", "percentual"),
+
+  # rotulos_separador: separador entre as partes do rótulo.
+  #   OPÇÕES: "\n" (quebra de linha) | " " | " - " | etc.
+  rotulos_separador = "\n",
+
+  # rotulos_posicao: OPÇÕES: "fora" | "dentro" | "borda"
+  rotulos_posicao = "fora",
+
+  # rotulos_distancia: distância do rótulo ao centro, em fração do raio
+  #   (usada em "fora"; ~1.25 fica logo fora da pizza).
+  rotulos_distancia = 1.25,
+
+  # linha_guia: liga rótulos "fora" à fatia.  OPÇÕES: TRUE | FALSE
+  linha_guia = TRUE,
+
+  # linha_guia_espessura_pt / linha_guia_recuo: espessura (pt) da linha guia e quanto ela
+  #   para antes do rótulo (em fração do raio).
+  #   OPÇÕES: números >= 0 (padrões 0.6 e 0.07)
+  #   EX.: cfg$pizza$linha_guia_espessura_pt <- 1
+  linha_guia_espessura_pt = 0.6,
+  linha_guia_recuo = 0.07,
+
+  # rotulos_raio_dentro / rotulos_raio_borda: posição dos rótulos, em fração do raio, quando
+  #   rotulos_posicao = "dentro" (numa pizza cheia; na rosca fica no meio do anel) ou "borda".
+  #   OPÇÕES: números > 0 (padrões 0.62 e 1.08)
+  #   EX.: cfg$pizza$rotulos_raio_borda <- 1.15
+  rotulos_raio_dentro = 0.62,
+  rotulos_raio_borda = 1.08,
+
+  # rotulos_afastar: afasta rótulos "fora"/"borda" que se sobreporiam (fatias pequenas
+  #   vizinhas). Só move os que colidem; os demais ficam onde estão.
+  #   OPÇÕES: TRUE | FALSE      EX.: cfg$pizza$rotulos_afastar <- FALSE
+  rotulos_afastar = TRUE,
+
+  # rotulos_margem: folga (fração do raio) entre os rótulos mais externos e a borda da figura.
+  #   OPÇÕES: número >= 0 (padrão 0.15)      EX.: cfg$pizza$rotulos_margem <- 0.3
+  rotulos_margem = 0.15,
+
+  # rotulos_casas: casas decimais de valor e percentual.
+  rotulos_casas = 1,
+
+  # rotulos_tamanho_pt / rotulos_cor: OPÇÕES cor: cor | "auto" (preto/branco
+  #   conforme o fundo, para rótulos "dentro").
+  rotulos_tamanho_pt = 9,
+  rotulos_cor = "auto",
+
+  # ocultar_rotulo_abaixo: não escreve rótulo em fatias menores que este %.
+  ocultar_rotulo_abaixo = 0,
+
+  # agrupar_abaixo: junta fatias menores que este % em uma só.
+  #   OPÇÕES: número (0 = não agrupa)      EX.: cfg$pizza$agrupar_abaixo <- 3
+  agrupar_abaixo = 0,
+  nome_agrupado = "Outros",
+
+  # contorno_cor / contorno_espessura_pt: borda das fatias.
+  contorno_cor = "white",
+  contorno_espessura_pt = 1
+)
+
+# -----------------------------------------------------------------------------
+# DISTRIBUICAO — histograma, densidade e ecdf
+# -----------------------------------------------------------------------------
+cfg$distribuicao <- list(
+  # largura_classe: largura de cada barra do histograma. NULL = automático.
+  #   OPÇÕES: NULL | número > 0      EX.: cfg$distribuicao$largura_classe <- 0.5
+  largura_classe = NULL,
+
+  # n_classes: número de classes (usado se largura_classe = NULL).
+  #   NULL = regra de Sturges.
+  n_classes = NULL,
+
+  # inicio_classe: início da primeira classe. NULL = automático.
+  inicio_classe = NULL,
+
+  # medida: o que o eixo Y do histograma mostra.
+  #   OPÇÕES: "contagem" | "frequencia" (0-1) | "percentual" | "densidade"
+  medida = "contagem",
+
+  # curva_densidade: sobrepõe curva de densidade (kernel) ao histograma.
+  curva_densidade = FALSE,
+
+  # curva_normal: sobrepõe a curva normal com a média e desvio dos dados.
+  curva_normal = FALSE,
+
+  # ajuste_banda: suavização da densidade (1 = padrão; <1 mais detalhada).
+  ajuste_banda = 1,
+
+  # espessura_curva_pt: espessura das curvas de densidade / normal / ecdf.
+  espessura_curva_pt = 1.5,
+
+  # preencher_densidade: preenche sob a curva no tipo "densidade".
+  preencher_densidade = TRUE,
+  opacidade_area = 0.35,
+
+  # contorno_cor / contorno_espessura_pt: borda das barras do histograma.
+  contorno_cor = "black",
+  contorno_espessura_pt = 0.5,
+
+  # opacidade_multiplas: opacidade das barras quando há várias séries
+  #   sobrepostas no mesmo histograma (se serie_padrao$opacidade_preenchimento = 1).
+  opacidade_multiplas = 0.55,
+
+  # marcas_rug: tracinhos com cada dado junto ao eixo X.
+  marcas_rug = FALSE,
+
+  # rug_comprimento_pt / rug_espessura_pt: tamanho e espessura dos tracinhos de marcas_rug.
+  #   OPÇÕES: números > 0 (padrões 5 e 0.6)      EX.: cfg$distribuicao$rug_comprimento_pt <- 8
+  rug_comprimento_pt = 5,
+  rug_espessura_pt = 0.6
+)
+
+# -----------------------------------------------------------------------------
+# BOXPLOT — box, violino, meio box, média ± erro
+# -----------------------------------------------------------------------------
+cfg$boxplot <- list(
+  # variacao: OPÇÕES: "box" | "box_pontos" (dados sobrepostos) | "meio_box"
+  #   (meia caixa + dados ao lado) | "violino" | "violino_box" | "media_erro"
+  #   EX.: cfg$boxplot$variacao <- "violino_box"
+  variacao = "box",
+
+  # orientacao: OPÇÕES: "vertical" | "horizontal" (caixas deitadas; eixo_x
+  #   continua sendo o das categorias e eixo_y o dos valores)
+  orientacao = "vertical",
+
+  # caixa_percentis: limites inferior e superior da caixa (percentis).
+  #   OPÇÕES: c(inferior, superior)      EX.: c(10, 90)
+  caixa_percentis = c(25, 75),
+
+  # bigode: critério dos bigodes (whiskers).
+  #   OPÇÕES: "tukey" (até 1.5×IQR, coef. editável) | "percentis" |
+  #           "min_max" | "desvio_padrao" (média ± DP) | "erro_padrao" |
+  #           "ic95" (intervalo de confiança 95% da média)
+  bigode = "tukey",
+
+  # bigode_coef: coeficiente do IQR no critério "tukey".
+  bigode_coef = 1.5,
+
+  # bigode_percentis: percentis dos bigodes no critério "percentis".
+  #   OPÇÕES: c(inferior, superior)      EX.: c(5, 95)
+  bigode_percentis = c(5, 95),
+
+  # bigode_lado: OPÇÕES: "ambos" | "superior" | "inferior"
+  bigode_lado = "ambos",
+
+  # bigode_chapeu: largura do traço na ponta do bigode (fração da caixa). 0 = sem.
+  bigode_chapeu = 0.5,
+
+  # largura: largura da caixa (fração do espaço da categoria).
+  largura = 0.5,
+
+  # entalhe: caixa com entalhe (notch) na mediana.  OPÇÕES: TRUE | FALSE
+  entalhe = FALSE,
+
+  # mediana / mediana_espessura_pt: linha da mediana.
+  mediana = TRUE,
+  mediana_espessura_pt = 1.5,
+
+  # media / media_simbolo / media_tamanho_pt / media_preenchimento: símbolo da média.
+  media = TRUE,
+  media_simbolo = 22,
+  media_tamanho_pt = 5,
+  media_preenchimento = "white",
+
+  # outliers: mostra os pontos fora dos bigodes.  OPÇÕES: TRUE | FALSE
+  outliers = TRUE,
+  outliers_simbolo = 4,
+  outliers_tamanho_pt = 5,
+
+  # pontos_disposicao: como os dados aparecem em "box_pontos"/"meio_box".
+  #   OPÇÕES: "jitter" (espalhados ao acaso) | "coluna" (em fila no centro) |
+  #           "enxame" (espalhados sem sobreposição)
+  pontos_disposicao = "enxame",
+  pontos_largura = 0.3,
+  pontos_tamanho_pt = 4,
+  pontos_opacidade = 0.6,
+  pontos_simbolo = 21,
+
+  # contorno_cor / contorno_espessura_pt: borda das caixas e violinos.
+  #   OPÇÕES cor: cor | "serie"
+  contorno_cor = "black",
+  contorno_espessura_pt = 1,
+
+  # violino_largura / violino_ajuste_banda / violino_cortar: forma do violino.
+  violino_largura = 0.8,
+  violino_ajuste_banda = 1,
+  violino_cortar = TRUE,
+
+  # media_erro_tipo: erro mostrado em "media_erro".
+  #   OPÇÕES: "desvio_padrao" | "erro_padrao" | "ic95"
+  media_erro_tipo = "desvio_padrao",
+
+  # media_erro_estilo: OPÇÕES: "barra" (coluna + erro) | "ponto" (símbolo + erro)
+  media_erro_estilo = "barra",
+
+  # mostrar_n: escreve o número de dados (n) acima de cada caixa.
+  mostrar_n = FALSE,
+
+  # semente: semente do sorteio do "jitter" (mesma figura toda vez). O sorteio do
+  #   restante da sua sessão do R não é alterado.
+  semente = 123,
+
+  # enxame_resolucao: altura de cada "faixa" do enxame (pontos_disposicao = "enxame"), em
+  #   fração da faixa dos dados. Pontos na mesma faixa são afastados para os lados.
+  #   OPÇÕES: número > 0 (padrão 0.025; menor = pontos mais espalhados)
+  #   EX.: cfg$boxplot$enxame_resolucao <- 0.04
+  enxame_resolucao = 0.025,
+
+  # pontos_borda_pt / outliers_borda_pt / media_borda_pt: espessura (pt) da borda dos
+  #   símbolos dos dados, dos outliers e da média.
+  #   OPÇÕES: número >= 0 (padrões 0.4 / 0.8 / 0.9)
+  #   EX.: cfg$boxplot$outliers_borda_pt <- 1.2
+  pontos_borda_pt = 0.4,
+  outliers_borda_pt = 0.8,
+  media_borda_pt = 0.9,
+
+  # media_erro_ponto_fator: no estilo "ponto" de media_erro, o símbolo da média tem
+  #   media_tamanho_pt multiplicado por este fator.
+  #   OPÇÕES: número > 0 (padrão 1.4)      EX.: cfg$boxplot$media_erro_ponto_fator <- 2
+  media_erro_ponto_fator = 1.4,
+
+  # n_tamanho_pt: tamanho do texto "n = ..." de mostrar_n, em pt.
+  #   OPÇÕES: NULL (80 % do tamanho base do texto) | número
+  #   EX.: cfg$boxplot$n_tamanho_pt <- 7
+  n_tamanho_pt = NULL
+)
+
+# -----------------------------------------------------------------------------
+# EIXO_X — escala, ticks, rótulos, título e linha do eixo horizontal
+# -----------------------------------------------------------------------------
+cfg$eixo_x <- list(
+  # titulo: título do eixo. NULL = nome da coluna; "" = sem título.
+  #   Sobrescrito com ^{ }, subscrito com _{ }. Letras gregas: digite direto (σ, μ, Δ).
+  #   OPÇÕES: NULL | "texto"
+  #   EX.: cfg$eixo_x$titulo <- "Área (m^{2})"   ou   "CO_{2} (ppm)"
+  titulo = NULL,
+
+  # inicio / fim: limites do eixo ("From" / "To"). NULL = automático.
+  #   Em eixo de datas, use texto: "2024-01-01", "01/01/2024" ou "01/01/2024 08:00".
+  #   OPÇÕES: NULL | número | "data"
+  #   EX.: cfg$eixo_x$inicio <- 0; cfg$eixo_x$fim <- 100
+  #        cfg$eixo_x$inicio <- "01/03/2024"; cfg$eixo_x$fim <- "30/06/2024"
+  inicio = NULL,
+  fim = NULL,
+
+  # tempo: a coluna X é uma data/hora? Colunas como 2024-03-15, 15/03/2024 ou
+  #   15/03/2024 14:30 viram eixo de datas (posição proporcional ao tempo, ticks em
+  #   dias, meses, anos...). "auto" detecta; FALSE trata o texto como categorias.
+  #   Só vale para pontos, linha, linha_pontos, area e area_empilhada.
+  #   OPÇÕES: "auto" | TRUE | FALSE
+  #   EX.: cfg$eixo_x$tempo <- FALSE
+  tempo = "auto",
+
+  # formato_data: formato das datas do CSV quando o "auto" não acerta (o "auto" entende
+  #   dia/mês/ano, ano-mês-dia e hora opcional). Códigos: %d dia, %m mês, %Y ano de
+  #   4 dígitos, %H hora, %M minuto, %S segundo.
+  #   OPÇÕES: NULL (auto) | "formato"
+  #   EX.: cfg$eixo_x$formato_data <- "%m/%d/%Y"   # mês/dia/ano (estilo americano)
+  formato_data = NULL,
+
+  # formato_rotulo_data: como as datas aparecem nos ticks. NULL = automático conforme o
+  #   passo entre os ticks (anos: 2024; meses: 03/2024; dias: 15/03; horas: 14:30). Só
+  #   números, para não depender do idioma do Windows.
+  #   OPÇÕES: NULL | "formato"
+  #   EX.: cfg$eixo_x$formato_rotulo_data <- "%d/%m/%Y"   ou   "%H:%M"
+  formato_rotulo_data = NULL,
+
+  # margem_percentual: espaço extra além de inicio/fim, em % da faixa.
+  #   OPÇÕES: número >= 0 (0 = eixo começa exatamente no limite)
+  margem_percentual = 0,
+
+  # escala: tipo de escala.
+  #   OPÇÕES: "linear" | "log10" | "ln" | "log2" | "reciproco" (1/x) | "raiz"
+  #   EX.: cfg$eixo_x$escala <- "log10"
+  escala = "linear",
+
+  # inverter: inverte o sentido do eixo (maior valor à esquerda).
+  #   OPÇÕES: TRUE | FALSE
+  inverter = FALSE,
+
+  # ticks_modo: como os ticks MAIORES são posicionados.
+  #   OPÇÕES: "auto" | "incremento" (usa incremento) | "quantidade" (usa
+  #           quantidade) | "min_max" (só nos extremos) | "manual" (ticks_manuais)
+  #   EX.: cfg$eixo_x$ticks_modo <- "incremento"; cfg$eixo_x$incremento <- 20
+  ticks_modo = "auto",
+
+  # incremento: distância entre ticks maiores. Em escalas log, conta em
+  #   DÉCADAS (1 = a cada potência de 10). Em eixo de datas, use um passo em texto:
+  #   número + unidade (sec/seg, min, hour/hora, day/dia, week/semana, month/mes, year/ano).
+  #   OPÇÕES: número > 0 | "passo de tempo"
+  #   EX.: cfg$eixo_x$incremento <- 20       cfg$eixo_x$incremento <- "1 mes"
+  #        cfg$eixo_x$incremento <- "2 semanas"      cfg$eixo_x$incremento <- "6 horas"
+  incremento = NULL,
+
+  # quantidade: número de ticks maiores (modo "quantidade").
+  quantidade = NULL,
+
+  # primeiro_tick: posição do primeiro tick maior (modo "incremento").
+  #   NULL = no início do eixo. Em eixo de datas aceita texto: "01/01/2024".
+  primeiro_tick = NULL,
+
+  # ticks_manuais: posições dos ticks (modo "manual"). Em eixo de datas, textos de data.
+  #   EX.: cfg$eixo_x$ticks_manuais <- c(0, 25, 60, 100)
+  #        cfg$eixo_x$ticks_manuais <- c("01/01/2024", "15/03/2024")
+  ticks_manuais = NULL,
+
+  # rotulos_manuais: textos no lugar dos números (mesmo tamanho de ticks_manuais).
+  #   EX.: cfg$eixo_x$rotulos_manuais <- c("início", "Q1", "pico", "fim")
+  rotulos_manuais = NULL,
+
+  # n_menores: quantos ticks menores entre dois maiores. 0 = nenhum.
+  #   Em log10 use 8 para marcar 2, 3, …, 9.
+  #   OPÇÕES: inteiro >= 0      EX.: cfg$eixo_x$n_menores <- 4
+  n_menores = 1,
+
+  # direcao_maiores / direcao_menores: para onde os ticks apontam.
+  #   OPÇÕES: "dentro" | "fora" | "ambos" (cruzando o eixo) | "nenhum"
+  #   EX.: cfg$eixo_x$direcao_maiores <- "fora"
+  direcao_maiores = "dentro",
+  direcao_menores = "dentro",
+
+  # comprimento_maiores_pt / comprimento_menores_pt: comprimento dos ticks em pt.
+  comprimento_maiores_pt = 5,
+  comprimento_menores_pt = 3,
+
+  # espessura_ticks_pt / cor_ticks: espessura (pt) e cor dos ticks.
+  espessura_ticks_pt = 1,
+  cor_ticks = "black",
+
+  # mostrar_linha / cor_linha / espessura_linha_pt: linha do eixo
+  #   (com caixa fechada, a linha é a da caixa: veja cfg$caixa).
+  mostrar_linha = TRUE,
+  cor_linha = "black",
+  espessura_linha_pt = 1,
+
+  # mostrar_rotulos: mostra os números dos ticks.  OPÇÕES: TRUE | FALSE
+  mostrar_rotulos = TRUE,
+
+  # casas_decimais: casas decimais fixas nos rótulos. NULL = automático
+  #   (sem zeros sobrando à direita).
+  #   OPÇÕES: NULL | inteiro >= 0      EX.: cfg$eixo_x$casas_decimais <- 1
+  casas_decimais = NULL,
+
+  # notacao: formato dos números.
+  #   OPÇÕES: "normal" (1500) | "milhar" (1,500 — vírgula só como separador de
+  #           milhar) | "cientifica" (1.5×10³) | "cientifica_E" (1.5E3) |
+  #           "potencia10" (10³, ideal para log10) | "percentual" (0.15 -> 15%)
+  notacao = "normal",
+
+  # fator_divisao: divide os rótulos por este número (ex.: 1000 para mostrar
+  #   em milhares — lembre de indicar no título).
+  fator_divisao = 1,
+
+  # prefixo / sufixo: texto antes/depois de cada número (ex.: sufixo = " %").
+  prefixo = "",
+  sufixo = "",
+
+  # tamanho_rotulos_pt / cor_rotulos / negrito_rotulos / rotacao_rotulos:
+  #   aparência dos números. tamanho NULL = cfg$texto$tamanho_base_pt.
+  #   rotacao em graus (ex.: 45, 90).
+  tamanho_rotulos_pt = NULL,
+  cor_rotulos = "black",
+  negrito_rotulos = FALSE,
+  rotacao_rotulos = 0,
+
+  # distancia_rotulos_pt: distância entre números e eixo, em pt.
+  distancia_rotulos_pt = 3,
+
+  # mostrar_titulo / tamanho_titulo_pt / cor_titulo / negrito_titulo /
+  # italico_titulo / distancia_titulo_pt: aparência do título do eixo.
+  mostrar_titulo = TRUE,
+  tamanho_titulo_pt = NULL,
+  cor_titulo = "black",
+  negrito_titulo = FALSE,
+  italico_titulo = FALSE,
+  distancia_titulo_pt = 4
+)
+
+# -----------------------------------------------------------------------------
+# EIXO_Y — mesmos parâmetros do eixo_x (veja ajuda("eixo_x") para detalhes)
+# -----------------------------------------------------------------------------
+cfg$eixo_y <- list(
+  # titulo: NULL = nome da coluna (1 série) ou "Y" (várias); "" = sem título.
+  #   EX.: cfg$eixo_y$titulo <- "Tensão (MPa)"
+  titulo = NULL,
+  # inicio / fim: limites. NULL = automático.  EX.: cfg$eixo_y$fim <- 50
+  inicio = NULL,
+  fim = NULL,
+  # margem_percentual: espaço extra (%).
+  margem_percentual = 0,
+  # escala: "linear" | "log10" | "ln" | "log2" | "reciproco" | "raiz"
+  escala = "linear",
+  # inverter: TRUE | FALSE
+  inverter = FALSE,
+  # ticks_modo: "auto" | "incremento" | "quantidade" | "min_max" | "manual"
+  ticks_modo = "auto",
+  incremento = NULL,
+  quantidade = NULL,
+  primeiro_tick = NULL,
+  ticks_manuais = NULL,
+  rotulos_manuais = NULL,
+  # n_menores: ticks menores entre maiores (0 = nenhum)
+  n_menores = 1,
+  # direcao_maiores / direcao_menores: "dentro" | "fora" | "ambos" | "nenhum"
+  direcao_maiores = "dentro",
+  direcao_menores = "dentro",
+  comprimento_maiores_pt = 5,
+  comprimento_menores_pt = 3,
+  espessura_ticks_pt = 1,
+  cor_ticks = "black",
+  mostrar_linha = TRUE,
+  cor_linha = "black",
+  espessura_linha_pt = 1,
+  mostrar_rotulos = TRUE,
+  # casas_decimais: NULL | inteiro
+  casas_decimais = NULL,
+  # notacao: "normal" | "milhar" | "cientifica" | "cientifica_E" | "potencia10" | "percentual"
+  notacao = "normal",
+  fator_divisao = 1,
+  prefixo = "",
+  sufixo = "",
+  tamanho_rotulos_pt = NULL,
+  cor_rotulos = "black",
+  negrito_rotulos = FALSE,
+  rotacao_rotulos = 0,
+  distancia_rotulos_pt = 3,
+  mostrar_titulo = TRUE,
+  tamanho_titulo_pt = NULL,
+  cor_titulo = "black",
+  negrito_titulo = FALSE,
+  italico_titulo = FALSE,
+  distancia_titulo_pt = 4
+)
+
+# -----------------------------------------------------------------------------
+# EIXO_Y2 — eixo Y secundário (à direita)
+# -----------------------------------------------------------------------------
+#  Para usar: cfg$eixo_y2$ativo <- TRUE e, no modo "independente", diga quais
+#  séries vão para ele:  cfg$series[["Pressão"]] <- list(eixo = "y2")
+#  Estilo dos ticks (direção, comprimento, espessura) segue o eixo_y.
+cfg$eixo_y2 <- list(
+  # ativo: liga o eixo Y secundário.  OPÇÕES: TRUE | FALSE
+  ativo = FALSE,
+
+  # modo: "independente" = séries com eixo = "y2" têm escala própria;
+  #       "transformado" = mesmo dado em outra unidade: y2 = fator*y + deslocamento
+  #   OPÇÕES: "independente" | "transformado"
+  modo = "independente",
+  fator = 1,
+  deslocamento = 0,
+
+  # titulo: título do eixo. NULL = nome da série no y2.
+  titulo = NULL,
+
+  # inicio / fim: limites do eixo secundário. NULL = automático.
+  inicio = NULL,
+  fim = NULL,
+
+  # ticks_modo / incremento / quantidade / ticks_manuais / n_menores: como no eixo_y.
+  ticks_modo = "auto",
+  incremento = NULL,
+  quantidade = NULL,
+  ticks_manuais = NULL,
+  n_menores = 1,
+
+  # casas_decimais / notacao / prefixo / sufixo: formato dos números.
+  casas_decimais = NULL,
+  notacao = "normal",
+  prefixo = "",
+  sufixo = "",
+
+  # cor_eixo: pinta números, título e ticks do eixo secundário.
+  #   OPÇÕES: NULL (preto) | "serie" (cor da 1ª série do y2) | qualquer cor
+  cor_eixo = "serie"
+)
+
+# -----------------------------------------------------------------------------
+# CAIXA — moldura do gráfico (caixa fechada), fundo e proporção
+# -----------------------------------------------------------------------------
+cfg$caixa <- list(
+  # fechada: moldura nos 4 lados.  OPÇÕES: TRUE | FALSE (só eixos esquerdo e inferior)
+  fechada = TRUE,
+
+  # cor / espessura_pt: cor e espessura (pt) da moldura.
+  cor = "black",
+  espessura_pt = 1,
+
+  # ticks_espelhados: repete os ticks no topo e à direita (mesma direção e
+  #   intervalos dos eixos principais).  OPÇÕES: TRUE | FALSE
+  ticks_espelhados = TRUE,
+
+  # rotulos_espelhados: repete também os números no topo e à direita.
+  rotulos_espelhados = FALSE,
+
+  # fundo_painel / fundo_pagina: cores de fundo da área de plotagem e da figura.
+  #   OPÇÕES: cor | "transparente"
+  fundo_painel = "white",
+  fundo_pagina = "white",
+
+  # proporcao: altura/largura da área de plotagem. NULL = ocupa o espaço.
+  #   OPÇÕES: NULL | número (1 = quadrado; 0.75 = 4:3)
+  proporcao = NULL,
+
+  # margens_cm: margens externas c(topo, direita, baixo, esquerda) em cm.
+  margens_cm = c(0.3, 0.5, 0.3, 0.3),
+
+  # recortar: esconde o que passar dos limites dos eixos.  OPÇÕES: TRUE | FALSE
+  recortar = TRUE
+)
+
+# -----------------------------------------------------------------------------
+# GRADE — linhas de grade
+# -----------------------------------------------------------------------------
+cfg$grade <- list(
+  # maior_x / maior_y / menor_x / menor_y: liga cada conjunto de grade.
+  #   OPÇÕES: TRUE | FALSE      EX.: cfg$grade$maior_y <- TRUE
+  maior_x = FALSE,
+  maior_y = FALSE,
+  menor_x = FALSE,
+  menor_y = FALSE,
+
+  # cor_maior / espessura_maior_pt / tipo_maior: estilo da grade maior.
+  cor_maior = "grey80",
+  espessura_maior_pt = 0.5,
+  tipo_maior = "solid",
+
+  # cor_menor / espessura_menor_pt / tipo_menor: estilo da grade menor.
+  cor_menor = "grey92",
+  espessura_menor_pt = 0.4,
+  tipo_menor = "dashed"
+)
+
+# -----------------------------------------------------------------------------
+# LEGENDA
+# -----------------------------------------------------------------------------
+cfg$legenda <- list(
+  # mostrar: exibe a legenda. "auto" = sim, exceto em boxplot (os nomes já
+  #   estão no eixo).  OPÇÕES: "auto" | TRUE | FALSE (apaga a legenda)
+  mostrar = "auto",
+
+  # posicao: OPÇÕES: "dentro" | "direita" | "esquerda" | "topo" | "base"
+  posicao = "dentro",
+
+  # dentro_x / dentro_y: posição quando "dentro", em fração do painel
+  #   (0,0 = canto inferior esquerdo; 1,1 = superior direito).
+  #   EX.: cfg$legenda$dentro_x <- 0.95; cfg$legenda$dentro_y <- 0.95
+  dentro_x = 0.04,
+  dentro_y = 0.96,
+
+  # ancora: qual ponto da legenda fica em (dentro_x, dentro_y).
+  #   OPÇÕES: "auto" (= mesmo canto da posição) | c(x, y) entre 0 e 1
+  ancora = "auto",
+
+  # titulo: título da legenda. NULL = sem título.
+  titulo = NULL,
+
+  # n_colunas: número de colunas de itens.  OPÇÕES: NULL | inteiro
+  n_colunas = NULL,
+
+  # inverter_ordem: inverte a ordem dos itens.  OPÇÕES: TRUE | FALSE
+  inverter_ordem = FALSE,
+
+  # moldura / cor_moldura / espessura_moldura_pt: borda da caixa da legenda.
+  moldura = FALSE,
+  cor_moldura = "black",
+  espessura_moldura_pt = 0.5,
+
+  # fundo: OPÇÕES: cor | "transparente"
+  fundo = "transparente",
+
+  # tamanho_texto_pt / tamanho_titulo_pt: NULL = tamanho base.
+  tamanho_texto_pt = NULL,
+  tamanho_titulo_pt = NULL,
+
+  # tamanho_chave_pt: tamanho do quadradinho/linha de cada item.
+  tamanho_chave_pt = 14,
+
+  # espacamento_pt: espaço vertical entre os itens.
+  espacamento_pt = 2,
+
+  # margem_interna_pt: folga entre o texto da legenda e a sua moldura: c(cima, direita,
+  #   baixo, esquerda), em pt.
+  #   OPÇÕES: vetor de 4 números >= 0      EX.: cfg$legenda$margem_interna_pt <- c(6, 8, 6, 8)
+  margem_interna_pt = c(4, 6, 4, 6)
+)
+
+# -----------------------------------------------------------------------------
+# TITULOS — título e subtítulo do gráfico
+# -----------------------------------------------------------------------------
+cfg$titulos <- list(
+  # titulo / subtitulo: NULL = nenhum.   EX.: cfg$titulos$titulo <- "Ensaio 1"
+  titulo = NULL,
+  subtitulo = NULL,
+  # alinhamento: OPÇÕES: "esquerda" | "centro" | "direita"
+  alinhamento = "centro",
+  # tamanho_titulo_pt / negrito_titulo / tamanho_subtitulo_pt
+  tamanho_titulo_pt = NULL,
+  negrito_titulo = TRUE,
+  tamanho_subtitulo_pt = NULL
+)
+
+# -----------------------------------------------------------------------------
+# TEXTO — fonte global
+# -----------------------------------------------------------------------------
+cfg$texto <- list(
+  # fonte: família tipográfica. "sans" = Arial no Windows / Helvetica no Mac.
+  #   Veja as instaladas com listar_fontes().
+  #   OPÇÕES: "sans" | "serif" | "mono" | "Arial" | "Times New Roman" | ...
+  fonte = "sans",
+
+  # tamanho_base_pt: tamanho padrão de todos os textos.
+  tamanho_base_pt = 11,
+
+  # cor: cor padrão dos textos.
+  cor = "black"
+)
+
+# -----------------------------------------------------------------------------
+# REFERENCIAS — linhas de referência horizontais/verticais
+# -----------------------------------------------------------------------------
+#  Lista de linhas. Cada linha: eixo ("x" vertical | "y" horizontal), valor,
+#  e opcionalmente cor, espessura_pt, tipo, rotulo, rotulo_tamanho_pt.
+#  EX.:
+#   cfg$referencias <- list(
+#     list(eixo = "y", valor = 0,  cor = "grey40", tipo = "dashed"),
+#     list(eixo = "x", valor = 50, cor = "red", rotulo = "limite")
+#   )
+cfg$referencias <- list()
+
+# -----------------------------------------------------------------------------
+# ANOTACOES — textos, setas, faixas destacadas e letra do painel
+# -----------------------------------------------------------------------------
+cfg$anotacoes <- list(
+  # textos: lista de textos em coordenadas dos dados.
+  #   Cada item: x, y, texto, e opcional tamanho_pt, cor, negrito, alinhamento
+  #   ("esquerda" | "centro" | "direita").
+  #   EX.: cfg$anotacoes$textos <- list(list(x = 20, y = 5, texto = "pico"))
+  textos = list(),
+
+  # setas: lista de setas. Cada item: x, y (início), x_fim, y_fim, e opcional
+  #   cor, espessura_pt, tamanho_ponta_pt.
+  setas = list(),
+
+  # faixas: regiões sombreadas. Cada item: eixo ("x" | "y"), de, ate, e
+  #   opcional cor, opacidade.
+  #   EX.: cfg$anotacoes$faixas <- list(list(eixo = "x", de = 10, ate = 20))
+  faixas = list(),
+
+  # letra: letra do painel, ex.: "(a)". NULL = nenhuma.
+  letra = NULL,
+  # letra_posicao: c(x, y) em fração do painel.  EX.: c(0.03, 0.95)
+  letra_posicao = c(0.03, 0.95),
+  letra_tamanho_pt = NULL,
+  letra_negrito = TRUE
+)
+
+# -----------------------------------------------------------------------------
+# QUEBRA — quebra (interrupção) do eixo Y
+# -----------------------------------------------------------------------------
+cfg$quebra <- list(
+  # ativo: liga a quebra do eixo Y.  OPÇÕES: TRUE | FALSE
+  ativo = FALSE,
+  # de / ate: trecho do eixo Y que será omitido.
+  #   EX.: cfg$quebra$de <- 20; cfg$quebra$ate <- 80
+  de = NULL,
+  ate = NULL,
+  # proporcao_superior: fração da altura para a parte de cima.
+  proporcao_superior = 0.35,
+  # espaco_pt: espaço entre as duas partes.
+  espaco_pt = 4,
+  # marcas: desenha os traços diagonais "//" da quebra.
+  marcas = TRUE,
+
+  # marca_largura_pt / marca_altura_pt: tamanho de cada traço diagonal da quebra, em pt
+  #   (largura = quanto avança para os lados; altura = quanto sobe/desce).
+  #   OPÇÕES: números > 0 (padrões 5 e 4)      EX.: cfg$quebra$marca_largura_pt <- 8
+  marca_largura_pt = 5,
+  marca_altura_pt = 4
+)
+
+# -----------------------------------------------------------------------------
+# PAINEIS — gráficos empilhados com eixo X fixo (ou Y fixo)
+# -----------------------------------------------------------------------------
+#  Cada item de 'lista' é um painel e aceita QUALQUER bloco do cfg (grafico,
+#  eixo_y, series, cores, legenda, referencias, anotacoes, ...), só com o que
+#  muda. O eixo X (vertical) ou Y (horizontal) é o mesmo para todos.
+#  EX.:
+#   cfg$paineis$ativo <- TRUE
+#   cfg$paineis$lista <- list(
+#     list(grafico = list(colunas_y = "Sinal A", tipo = "linha"),
+#          eixo_y  = list(titulo = "A (V)", inicio = -2, fim = 2)),
+#     list(grafico = list(colunas_y = "Sinal B", tipo = "pontos"),
+#          eixo_y  = list(titulo = "B (mA)")),
+#     list(grafico = list(colunas_y = "Sinal C", tipo = "area"))
+#   )
+cfg$paineis <- list(
+  # ativo: liga o modo painéis.  OPÇÕES: TRUE | FALSE
+  ativo = FALSE,
+
+  # direcao: "vertical" = empilhados (X comum) | "horizontal" = lado a lado (Y comum)
+  direcao = "vertical",
+
+  # lista: definição de cada painel (veja exemplo acima).
+  lista = list(),
+
+  # espaco_pt: espaço entre painéis. 0 = colados (moldura compartilhada).
+  espaco_pt = 0,
+
+  # rotulos_eixo_comum: OPÇÕES: "ultimo" (números/título do eixo comum só no
+  #   painel de baixo/esquerda) | "todos"
+  rotulos_eixo_comum = "ultimo",
+
+  # alternar_lado: alterna os números do eixo NÃO comum entre esquerda/direita
+  #   (ou baixo/topo).  OPÇÕES: TRUE | FALSE
+  alternar_lado = FALSE,
+
+  # titulo_unico: um só título para o eixo não comum (ex.: "Intensidade (u.a.)").
+  #   NULL = um título por painel.
+  titulo_unico = NULL,
+
+  # tamanhos: altura (vertical) ou largura (horizontal) relativa de cada painel.
+  #   NULL = iguais.      EX.: cfg$paineis$tamanhos <- c(2, 1, 1)
+  tamanhos = NULL,
+
+  # ocultar_rotulo_encostado: com painéis colados (espaco_pt < 10), esconde o
+  #   número da borda que encostaria no painel vizinho (evita "200" sobre "-2").
+  #   OPÇÕES: TRUE | FALSE
+  ocultar_rotulo_encostado = TRUE,
+
+  # legenda_unica: junta as legendas de todos os painéis em uma só (fora).
+  #   OPÇÕES: TRUE | FALSE (cada painel com a sua, conforme cfg$legenda)
+  legenda_unica = FALSE,
+
+  # letras: escreve (a), (b), (c) ... em cada painel.  OPÇÕES: TRUE | FALSE
+  letras = TRUE,
+  # formato_letra: OPÇÕES: "(a)" | "a)" | "a" | "(A)" | "A" | "(i)"
+  formato_letra = "(a)"
+)
+
+# -----------------------------------------------------------------------------
+# EXPORTACAO — arquivos de saída
+# -----------------------------------------------------------------------------
+cfg$exportacao <- list(
+  # pasta: onde salvar.
+  pasta = "saida",
+
+  # nome_arquivo: nome sem extensão. NULL = nome do CSV + tipo do gráfico.
+  #   EX.: cfg$exportacao$nome_arquivo <- "figura_3"
+  nome_arquivo = NULL,
+
+  # formatos: um ou mais.
+  #   OPÇÕES: "png" | "tiff" | "jpeg" | "pdf" | "svg" | "emf" (Word/PowerPoint)
+  #   EX.: cfg$exportacao$formatos <- c("png", "pdf", "tiff")
+  formatos = c("png", "pdf"),
+
+  # largura / altura / unidade: tamanho final da figura.
+  #   OPÇÕES unidade: "cm" | "mm" | "in"
+  largura = 12,
+  altura = 9,
+  unidade = "cm",
+
+  # dpi: resolução das imagens (png, tiff, jpeg). Revistas: 300-600; linhas: 1200.
+  dpi = 600,
+
+  # fundo_transparente: OPÇÕES: TRUE | FALSE
+  fundo_transparente = FALSE,
+
+  # carimbo_data: acrescenta data e hora ao nome do arquivo.  OPÇÕES: TRUE | FALSE
+  carimbo_data = FALSE,
+
+  # sobrescrever: se FALSE e o arquivo existir, cria nome_2, nome_3, ...
+  sobrescrever = TRUE
+)
+# @@FIM_CONFIG@@
+.CFG_PADRAO <- cfg   # guarda o padrão: resetar_cfg() e a checagem de nomes usam esta cópia
+
+# #############################################################################
+#  PARTE 2 — MOTOR (não precisa editar)
+# #############################################################################
+
+# Caminho deste arquivo (quando rodado com Source) e pasta do projeto.
+.achar_arquivo_script <- function() {
+  for (i in rev(seq_len(sys.nframe()))) {
+    quadro <- tryCatch(sys.frame(i), error = function(e) NULL)
+    if (!is.null(quadro) && exists("ofile", envir = quadro, inherits = FALSE)) {
+      of <- get("ofile", envir = quadro, inherits = FALSE)
+      if (is.character(of) && length(of) == 1 && file.exists(of) && grepl("@@INICIO_CONFIG@@", paste(readLines(of, n = 400, warn = FALSE, encoding = "UTF-8"), collapse = "\n"), fixed = TRUE))
+        return(normalizePath(of, winslash = "/"))
+    }
+  }
+  if (file.exists("graficos_R_completo.R")) return(normalizePath("graficos_R_completo.R", winslash = "/"))
+  NULL
+}
+.ARQUIVO_SCRIPT <- .achar_arquivo_script()
+.motor_pasta <- if (!is.null(.ARQUIVO_SCRIPT)) dirname(.ARQUIVO_SCRIPT) else getwd()
+
+# Linhas da PARTE 1 deste arquivo (ajuda() mostra os comentários de cada parâmetro).
+.config_linhas <- function() {
+  if (is.null(.ARQUIVO_SCRIPT) || !file.exists(.ARQUIVO_SCRIPT))
+    stop("ajuda() precisa ler este arquivo. Rode-o com Source (ou deixe-o na pasta de trabalho ",
+         "com o nome graficos_R_completo.R).", call. = FALSE)
+  L <- readLines(.ARQUIVO_SCRIPT, encoding = "UTF-8", warn = FALSE)
+  i <- grep("^# @@INICIO_CONFIG@@", L); f <- grep("^# @@FIM_CONFIG@@", L)
+  L[(i[1] + 1):(f[1] - 1)]
+}
+
+# Estilos prontos (equivalem aos arquivos da pasta estilos/ do projeto).
+.ESTILOS_EMBUTIDOS <- list(
+  apresentacao = # Estilo "apresentacao" — slides 16:9, fontes grandes, cores vivas.
+  # Carregue com: cfg <- carregar_estilo("apresentacao", cfg)
+  list(
+    texto = list(fonte = "sans", tamanho_base_pt = 16),
+    cores = list(paleta = "tableau", incrementar_simbolo = FALSE),
+    serie_padrao = list(simbolo = 21, tamanho_simbolo_pt = 9, espessura_borda_pt = 1.2,
+                        linha_espessura_pt = 3, preenchimento_simbolo = "serie"),
+    caixa = list(fechada = FALSE, ticks_espelhados = FALSE, margens_cm = c(0.5, 0.8, 0.5, 0.5)),
+    eixo_x = list(direcao_maiores = "fora", direcao_menores = "nenhum", n_menores = 0,
+                  comprimento_maiores_pt = 6, espessura_ticks_pt = 1.5, espessura_linha_pt = 1.5,
+                  cor_rotulos = "grey25", cor_linha = "grey25", cor_ticks = "grey25"),
+    eixo_y = list(direcao_maiores = "fora", direcao_menores = "nenhum", n_menores = 0,
+                  comprimento_maiores_pt = 6, espessura_ticks_pt = 1.5, espessura_linha_pt = 1.5,
+                  cor_rotulos = "grey25", cor_linha = "grey25", cor_ticks = "grey25"),
+    grade = list(maior_y = TRUE, cor_maior = "grey88", espessura_maior_pt = 0.8),
+    barras = list(contorno_cor = NA, largura = 0.75),
+    legenda = list(posicao = "topo", tamanho_chave_pt = 18),
+    exportacao = list(largura = 24, altura = 13.5, unidade = "cm", dpi = 200, formatos = c("png"))
+  ),
+  padrao_cientifico = # Estilo "padrao_cientifico" — moldura completa, ticks maiores e menores para
+  # dentro nos 4 lados, linhas de 1.5 pt (visual clássico de software científico).
+  # Carregue com: cfg <- carregar_estilo("padrao_cientifico", cfg)
+  list(
+    texto = list(fonte = "Arial", tamanho_base_pt = 12),
+    cores = list(paleta = "classico", incrementar_simbolo = TRUE),
+    serie_padrao = list(tamanho_simbolo_pt = 7, espessura_borda_pt = 1, linha_espessura_pt = 1.5),
+    caixa = list(fechada = TRUE, espessura_pt = 1.5, ticks_espelhados = TRUE, rotulos_espelhados = FALSE),
+    eixo_x = list(direcao_maiores = "dentro", direcao_menores = "dentro", comprimento_maiores_pt = 6,
+                  comprimento_menores_pt = 3.5, espessura_ticks_pt = 1.5, n_menores = 1,
+                  distancia_rotulos_pt = 5),
+    eixo_y = list(direcao_maiores = "dentro", direcao_menores = "dentro", comprimento_maiores_pt = 6,
+                  comprimento_menores_pt = 3.5, espessura_ticks_pt = 1.5, n_menores = 1,
+                  distancia_rotulos_pt = 5),
+    legenda = list(posicao = "dentro", moldura = FALSE, fundo = "transparente"),
+    exportacao = list(largura = 12, altura = 9, unidade = "cm", dpi = 600)
+  ),
+  publicacao_classico = # Estilo "publicacao_classico" — artigo científico, 1 coluna (8.5 cm), P&B.
+  # Carregue com: cfg <- carregar_estilo("publicacao_classico", cfg)
+  # Edite à vontade: só o que estiver aqui é alterado no cfg.
+  list(
+    texto = list(fonte = "Arial", tamanho_base_pt = 9),
+    cores = list(paleta = "cinza", incrementar_simbolo = TRUE, incrementar_tipo_linha = TRUE),
+    serie_padrao = list(tamanho_simbolo_pt = 5, espessura_borda_pt = 0.7, linha_espessura_pt = 1,
+                        preenchimento_simbolo = "branco"),
+    caixa = list(fechada = TRUE, espessura_pt = 0.8, ticks_espelhados = TRUE, rotulos_espelhados = FALSE,
+                 margens_cm = c(0.2, 0.3, 0.2, 0.2)),
+    eixo_x = list(direcao_maiores = "dentro", direcao_menores = "dentro", comprimento_maiores_pt = 4,
+                  comprimento_menores_pt = 2, espessura_ticks_pt = 0.8, n_menores = 1),
+    eixo_y = list(direcao_maiores = "dentro", direcao_menores = "dentro", comprimento_maiores_pt = 4,
+                  comprimento_menores_pt = 2, espessura_ticks_pt = 0.8, n_menores = 1),
+    grade = list(maior_x = FALSE, maior_y = FALSE, menor_x = FALSE, menor_y = FALSE),
+    legenda = list(posicao = "dentro", moldura = FALSE, fundo = "transparente", tamanho_chave_pt = 12),
+    exportacao = list(largura = 8.5, altura = 6.5, unidade = "cm", dpi = 600, formatos = c("pdf", "tiff"))
+  )
+)
+
+# -----------------------------------------------------------------------------
+#  01_base.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/01_base.R — opções, checagem de pacotes, utilitários e conversões de unidade
+# =============================================================================
+# (parte do motor carregado por 02_motor.R; não precisa editar)
+
+options(OutDec = ".", scipen = 6)
+
+local({
+  falta <- c("ggplot2", "scales", "patchwork")[
+    !vapply(c("ggplot2", "scales", "patchwork"), requireNamespace, logical(1), quietly = TRUE)]
+  if (length(falta))
+    stop("Pacotes ausentes: ", paste(falta, collapse = ", "),
+         ". Rode primeiro: instalar_pacotes()", call. = FALSE)
+  if (utils::packageVersion("ggplot2") < "3.5.0")
+    stop("ggplot2 ", utils::packageVersion("ggplot2"), " é antigo. É preciso >= 3.5.0. ",
+         "Rode instalar_pacotes() para atualizar.", call. = FALSE)
+  if (utils::packageVersion("scales") < "1.3.0")
+    stop("scales ", utils::packageVersion("scales"), " é antigo. É preciso >= 1.3.0.", call. = FALSE)
+  if (utils::packageVersion("patchwork") < "1.2.0")
+    stop("patchwork ", utils::packageVersion("patchwork"), " é antigo. É preciso >= 1.2.0.", call. = FALSE)
+})
+
+suppressPackageStartupMessages({
+  library(ggplot2)
+  library(grid)
+})
+
+`%||%` <- function(a, b) if (is.null(a)) b else a
+# TRUE se o pacote p está instalado (pacotes opcionais ficam desativados sem erro).
+.tem <- function(p) requireNamespace(p, quietly = TRUE)
+.R42 <- getRversion() >= "4.2.0"
+.GG4 <- utils::packageVersion("ggplot2") >= "4.0.0"
+
+# Cópia de referência do cfg (para detectar nomes digitados errado)
+.cfg_ref <- .CFG_PADRAO   # cópia do cfg padrão (PARTE 1), antes de qualquer edição sua
+
+# ---- Conversões de unidade (tudo do usuário em pt) --------------------------
+# ggplot: linewidth em "mm" de ggplot; texto/símbolo em mm; stroke próprio.
+.lw <- function(pt) pt * 96 / 72 / ggplot2::.pt          # espessura de linha
+# Tamanho de texto/símbolo: pt do usuário -> unidade interna do ggplot2.
+.tx <- function(pt) pt / ggplot2::.pt                    # texto e símbolos
+# Espessura da borda de símbolo: pt do usuário -> unidade 'stroke' do ggplot2.
+.st <- function(pt) pt * 96 / 72 * 2 / ggplot2::.stroke  # borda de símbolo
+
+# Pasta/arquivo relativo (ex.: "estilos", "dados/x.csv"): se não existe a partir da pasta de trabalho
+# mas existe dentro da pasta do projeto, usa o do projeto (funciona mesmo com setwd() em outro lugar).
+.eh_absoluto <- function(p) grepl("^([A-Za-z]:|/|\\\\|~)", p)
+# Entra: caminho de pasta. Sai: o mesmo caminho, ou a pasta de mesmo nome dentro do projeto se só ela existir.
+.pasta_proj <- function(p) {
+  if (.eh_absoluto(p) || dir.exists(p)) return(p)
+  alt <- file.path(.motor_pasta, p)
+  if (dir.exists(alt)) alt else p
+}
+# Entra: caminho de arquivo. Sai: o mesmo caminho, ou o arquivo dentro do projeto se só ele existir.
+.arquivo_proj <- function(a) {
+  if (.eh_absoluto(a) || file.exists(a)) return(a)
+  alt <- file.path(.motor_pasta, a)
+  if (file.exists(alt)) alt else a
+}
+
+# Emite um aviso (warning) em português, sem mostrar a chamada interna.
+.aviso <- function(...) warning(paste0(...), call. = FALSE, immediate. = TRUE)
+.erro  <- function(...) stop(paste0(...), call. = FALSE)
+
+# -----------------------------------------------------------------------------
+#  02_cores_texto.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/02_cores_texto.R — cores, paletas, gradientes, sobrescrito/subscrito, mescla de listas
+# =============================================================================
+
+# ---- Cores ------------------------------------------------------------------
+# Valida e normaliza uma cor (nome, #RRGGBB, c(R,G,B) ou "transparente"). Erro em português se inválida.
+.cor <- function(x, onde = "cor") {
+  if (is.null(x)) return(NULL)
+  if (length(x) == 3 && is.numeric(x)) return(grDevices::rgb(x[1], x[2], x[3], maxColorValue = 255))
+  if (length(x) == 1 && is.na(x)) return(NA_character_)
+  if (identical(x, "transparente")) return("transparent")
+  ok <- tryCatch({ grDevices::col2rgb(x); TRUE }, error = function(e) FALSE)
+  if (!ok) .erro("Cor inválida em ", onde, ": '", x, "'. Use nome (\"red\"), \"#RRGGBB\" ou c(R,G,B).")
+  x
+}
+# Aplica opacidade a uma cor (a = 1 não altera; NA e NULL passam direto).
+.alfa <- function(cor, a) {
+  if (is.null(cor) || (length(cor) == 1 && is.na(cor))) return(cor)
+  if (is.null(a) || a >= 1) return(cor)
+  scales::alpha(cor, a)
+}
+# Cor intermediária entre c1 e c2.
+.cor_media <- function(c1, c2) grDevices::colorRampPalette(c(c1, c2))(3)[2]
+# Brilho percebido (0 a 1) de uma cor; decide texto branco ou preto sobre ela.
+.luminancia <- function(cor) {
+  v <- grDevices::col2rgb(cor) / 255
+  sum(c(0.299, 0.587, 0.114) * v)
+}
+
+.PALETAS <- list(
+  classico  = c("#000000", "#D62728", "#1F4E9E", "#2CA02C", "#8E44AD", "#FF7F0E",
+                "#17BECF", "#8C564B", "#E377C2", "#7F7F7F"),
+  okabe_ito = c("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9",
+                "#000000", "#F0E442"),
+  tableau   = c("#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F", "#EDC948",
+                "#B07AA1", "#FF9DA7", "#9C755F", "#BAB0AC")
+)
+
+# Entra: nome da paleta e n. Sai: vetor com n cores (interpola se a paleta for menor que n).
+.paleta <- function(nome, n, cfg_cores = NULL) {
+  n <- max(n, 1)
+  base <- if (nome %in% names(.PALETAS)) {
+    .PALETAS[[nome]]
+  } else if (nome %in% c("viridis", "magma", "plasma", "cividis", "inferno")) {
+    if (!.tem("viridisLite")) .erro("Paleta '", nome, "' precisa do pacote viridisLite.")
+    fun <- getExportedValue("viridisLite", nome)
+    return(fun(n, end = if (nome == "viridis" || nome == "cividis") 0.92 else 0.88))
+  } else if (nome == "cinza") {
+    return(grDevices::grey.colors(n, start = 0, end = 0.75))
+  } else if (startsWith(nome, "brewer_")) {
+    if (!.tem("RColorBrewer")) .erro("Paletas brewer_ precisam do pacote RColorBrewer.")
+    pal <- sub("^brewer_", "", nome)
+    info <- RColorBrewer::brewer.pal.info
+    if (!pal %in% rownames(info))
+      .erro("Paleta ColorBrewer '", pal, "' não existe. Opções: ",
+            paste(rownames(info), collapse = ", "))
+    RColorBrewer::brewer.pal(info[pal, "maxcolors"], pal)
+  } else if (nome == "personalizada") {
+    vapply(cfg_cores$personalizada, .cor, character(1), onde = "cores$personalizada")
+  } else {
+    .erro("Paleta '", nome, "' desconhecida. Opções: classico, okabe_ito, tableau, viridis, ",
+          "magma, plasma, cividis, cinza, brewer_<nome>, personalizada. Veja mostrar_paletas().")
+  }
+  if (n <= length(base)) base[seq_len(n)] else grDevices::colorRampPalette(base)(n)
+}
+
+# Gradiente de 2 cores (padrão grid). grupo = TRUE: relativo ao conjunto inteiro.
+.gradiente <- function(c1, c2, direcao, grupo = FALSE) {
+  cores <- c(c1, c2)
+  if (grepl("invertido", direcao)) cores <- rev(cores)
+  dir <- sub("_invertido", "", direcao)
+  args <- list(colours = cores)
+  if (.R42) args$group <- grupo
+  if (dir == "radial") {
+    args$colours <- rev(args$colours)   # centro = cor2 (clara), borda = cor da série
+    args <- c(args, list(cx1 = 0.5, cy1 = 0.5, r1 = 0, cx2 = 0.5, cy2 = 0.5, r2 = 0.5))
+    return(do.call(grid::radialGradient, args))
+  }
+  xy <- switch(dir,
+               vertical   = c(0.5, 0, 0.5, 1),
+               horizontal = c(0, 0.5, 1, 0.5),
+               diagonal   = c(0, 0, 1, 1),
+               .erro("gradiente_direcao '", direcao, "' inválida."))
+  args <- c(args, list(x1 = xy[1], y1 = xy[2], x2 = xy[3], y2 = xy[4]))
+  do.call(grid::linearGradient, args)
+}
+
+# ---- Texto com sobrescrito ^{ } e subscrito _{ } -----------------------------
+# TRUE se o texto tem sobrescrito ^{ } ou subscrito _{ }.
+.tem_formatacao <- function(s) is.character(s) && length(s) == 1 && grepl("[\\^_]\\{", s)
+
+# Converte "Área (m^{2})" em string plotmath: "Área (m"*""^"2"*")"
+.plotmath <- function(s) {
+  if (!.tem_formatacao(s)) return(deparse(s))
+  partes <- character(0)
+  resto <- s
+  while (nchar(resto) > 0) {
+    m <- regexpr("[\\^_]\\{[^}]*\\}", resto)
+    if (m == -1) { partes <- c(partes, deparse(resto)); break }
+    if (m > 1) partes <- c(partes, deparse(substr(resto, 1, m - 1)))
+    tok <- regmatches(resto, m)
+    conteudo <- substr(tok, 3, nchar(tok) - 1)
+    partes <- c(partes, if (substr(tok, 1, 1) == "^")
+      paste0('""^', deparse(conteudo)) else paste0('""[', deparse(conteudo), "]"))
+    resto <- substr(resto, m + attr(m, "match.length"), nchar(resto))
+  }
+  paste(partes, collapse = "*")
+}
+# Texto simples ou expressão plotmath (se tiver ^{ } ou _{ }), pronto para títulos e rótulos.
+.texto <- function(s) {
+  if (is.null(s)) return(NULL)
+  if (.tem_formatacao(s)) parse(text = .plotmath(s))[[1]] else s
+}
+# Rótulos de legenda: vetor de textos ou expressões, conforme tenham ^{ } / _{ }.
+.rotulos_legenda <- function(x) {
+  if (any(vapply(x, .tem_formatacao, logical(1))))
+    parse(text = vapply(x, .plotmath, character(1)))
+  else x
+}
+
+# ---- Mescla de listas (para painéis e estilos) -------------------------------
+# Entra: lista base e lista novo. Sai: base com os valores de novo por cima (recursivo; séries por nome).
+.mesclar <- function(base, novo) {
+  if (!is.list(novo) || is.null(names(novo))) return(novo)
+  for (nm in names(novo)) {
+    if (is.list(base[[nm]]) && !is.null(names(base[[nm]])) && is.list(novo[[nm]]) &&
+        !is.null(names(novo[[nm]])) && !nm %in% c("series")) {
+      base[[nm]] <- .mesclar(base[[nm]], novo[[nm]])
+    } else if (nm == "series" && is.list(novo[[nm]])) {
+      for (s in names(novo[[nm]]))
+        base$series[[s]] <- utils::modifyList(base$series[[s]] %||% list(), novo[[nm]][[s]])
+    } else {
+      base[nm] <- list(novo[[nm]])
+    }
+  }
+  base
+}
+
+# -----------------------------------------------------------------------------
+#  03_leitura.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/03_leitura.R — leitura de CSV e referência a colunas
+# =============================================================================
+
+# =============================================================================
+#  LEITURA DE CSV
+# =============================================================================
+# Conta quantas vezes o separador aparece numa linha, ignorando o que está entre aspas.
+.contar_fora_aspas <- function(linha, sep) {
+  sem <- gsub('"[^"]*"', "", linha)
+  lengths(regmatches(sem, gregexpr(sep, sem, fixed = TRUE)))
+}
+
+# Entra: linhas do CSV. Sai: o separador mais provável (; tab , |).
+.detectar_separador <- function(linhas) {
+  amostra <- utils::head(linhas[nzchar(trimws(linhas))], 30)
+  for (sep in c(";", "\t", ",", "|")) {
+    n <- vapply(amostra, .contar_fora_aspas, integer(1), sep = sep, USE.NAMES = FALSE)
+    if (all(n > 0) && length(unique(n)) == 1) return(sep)
+  }
+  for (sep in c(";", "\t", ",", "|")) {
+    n <- vapply(amostra, .contar_fora_aspas, integer(1), sep = sep, USE.NAMES = FALSE)
+    if (mean(n > 0) > 0.8) return(sep)
+  }
+  ","
+}
+
+# Detecta UTF-16 pelo BOM (FF FE / FE FF) ou por bytes nulos alternados (texto ASCII em UTF-16).
+# Entra: bytes do arquivo e cfg$dados$codificacao. Sai: "UTF-16LE", "UTF-16BE" ou NULL.
+.detectar_utf16 <- function(bytes, cod = "auto") {
+  cod <- toupper(cod)
+  if (cod %in% c("UTF-16LE", "UTF-16BE")) return(cod)
+  if (!cod %in% c("AUTO", "UTF-16") || length(bytes) < 2) return(NULL)
+  b <- as.integer(bytes)
+  if (b[1] == 255L && b[2] == 254L) return("UTF-16LE")
+  if (b[1] == 254L && b[2] == 255L) return("UTF-16BE")
+  a <- b[seq_len(min(length(b), 4000))]
+  nulos_impar <- mean(a[c(TRUE, FALSE)] == 0L)   # bytes nº 1, 3, 5...
+  nulos_par   <- mean(a[c(FALSE, TRUE)] == 0L)   # bytes nº 2, 4, 6...
+  if (nulos_par > 0.3 && nulos_impar < 0.05) return("UTF-16LE")
+  if (nulos_impar > 0.3 && nulos_par < 0.05) return("UTF-16BE")
+  if (cod == "UTF-16") "UTF-16LE" else NULL
+}
+
+# Converte os bytes de um arquivo UTF-16 em texto UTF-8 (descarta o BOM).
+.decodificar_utf16 <- function(bytes, cod16, arquivo) {
+  b <- as.integer(bytes)
+  if (length(b) >= 2 && ((b[1] == 255L && b[2] == 254L) || (b[1] == 254L && b[2] == 255L))) bytes <- bytes[-(1:2)]
+  if (length(bytes) %% 2 == 1) bytes <- bytes[-length(bytes)]
+  txt <- iconv(list(bytes), from = cod16, to = "UTF-8")
+  if (length(txt) != 1 || is.na(txt))
+    .erro("Não consegui decodificar '", arquivo, "' como ", cod16,
+          ". Salve como CSV UTF-8 ou defina cfg$dados$codificacao.")
+  txt
+}
+
+# Lê as linhas (já separadas) como tabela de TEXTO sem embaralhar linhas com mais ou menos
+# campos que o cabeçalho (read.table com fill = TRUE empurraria os campos extras para uma
+# linha nova). Devolve list(tab, n_cab = nº de campos do cabeçalho, curtas = linhas de dados
+# com campos faltando).
+.ler_tabela <- function(linhas, sep, cabecalho, arquivo) {
+  erro_leitura <- function(e) .erro("Não consegui ler '", arquivo, "' com separador '",
+                                    if (sep == "\t") "\\t" else sep, "': ", conditionMessage(e),
+                                    "\n  Tente definir cfg$dados$separador manualmente.")
+  con <- textConnection(linhas); on.exit(close(con))
+  nc <- tryCatch(utils::count.fields(con, sep = sep, quote = "\"", comment.char = "",
+                                     blank.lines.skip = FALSE),
+                 error = function(e) rep(NA_integer_, length(linhas)))
+  nmax <- suppressWarnings(max(nc, na.rm = TRUE))
+  ler <- function(...) tryCatch(
+    utils::read.table(text = linhas, sep = sep, colClasses = "character", check.names = FALSE,
+                      quote = "\"", na.strings = character(0), strip.white = TRUE,
+                      comment.char = "", fill = TRUE, blank.lines.skip = TRUE,
+                      encoding = "UTF-8", ...),
+    error = erro_leitura)
+  if (!is.finite(nmax)) {  # contagem impossível (aspas abertas): leitura comum do R
+    tab <- ler(header = cabecalho)
+    return(list(tab = tab, n_cab = ncol(tab), curtas = integer(0)))
+  }
+  tab <- ler(header = FALSE, col.names = paste0("V", seq_len(nmax)))
+  if (cabecalho) {
+    nomes <- as.character(unlist(tab[1, ], use.names = FALSE))
+    nomes[is.na(nomes)] <- ""
+    tab <- tab[-1, , drop = FALSE]
+    names(tab) <- nomes
+    rownames(tab) <- NULL
+    n_cab <- if (is.na(nc[1])) nmax else nc[1]
+    curtas <- which(nc[-1] < n_cab)
+  } else {
+    n_cab <- nmax
+    curtas <- which(nc < nmax)
+  }
+  list(tab = tab, n_cab = n_cab, curtas = curtas)
+}
+
+#' Lê um CSV e devolve um data.frame com números em ponto decimal.
+ler_csv <- function(arquivo, opcoes = NULL) {
+  op <- opcoes %||% (if (exists("cfg", envir = globalenv())) get("cfg", envir = globalenv())$dados) %||%
+    .cfg_ref$dados
+  arquivo <- .arquivo_proj(arquivo)
+  if (!file.exists(arquivo))
+    .erro("Arquivo não encontrado: '", arquivo, "'.\n  Pasta atual: ", getwd(),
+          "\n  Dica: use o caminho completo do arquivo (ex.: 'C:/pasta/dados.csv') ou confira a pasta de trabalho com getwd().")
+  tam <- file.info(arquivo)$size
+  if (is.na(tam) || tam == 0) .erro("O arquivo '", arquivo, "' está vazio.")
+  bytes <- readBin(arquivo, "raw", tam)
+  cod <- op$codificacao %||% "auto"
+  utf16 <- .detectar_utf16(bytes, cod)
+  if (!is.null(utf16)) {
+    txt <- .decodificar_utf16(bytes, utf16, arquivo)
+    cod <- utf16
+  } else {
+    if (length(bytes) >= 3 && all(bytes[1:3] == as.raw(c(0xEF, 0xBB, 0xBF)))) bytes <- bytes[-(1:3)]
+    bytes <- bytes[bytes != as.raw(0)]
+    txt <- rawToChar(bytes)
+    if (cod == "auto") cod <- if (validUTF8(txt)) "UTF-8" else "latin1"
+    if (toupper(cod) != "UTF-8") {
+      conv <- iconv(txt, if (cod == "latin1") "CP1252" else cod, "UTF-8")
+      if (is.na(conv)) conv <- iconv(txt, "latin1", "UTF-8")
+      txt <- conv
+    }
+  }
+  Encoding(txt) <- "UTF-8"
+
+  linhas <- strsplit(txt, "\r\n|\n|\r")[[1]]
+  numeros <- seq_along(linhas)          # nº da linha no arquivo, para as mensagens
+  pular <- op$pular_linhas %||% 0
+  if (pular > 0) {
+    fora <- seq_len(min(pular, length(linhas)))
+    linhas <- linhas[-fora]; numeros <- numeros[-fora]
+  }
+  sep <- op$separador %||% "auto"
+  if (length(linhas) && grepl('^"?sep=.', linhas[1])) {
+    if (sep == "auto") sep <- substr(sub('^"?sep=', "", linhas[1]), 1, 1)
+    linhas <- linhas[-1]; numeros <- numeros[-1]
+  }
+  cheias <- nzchar(trimws(linhas))
+  linhas <- linhas[cheias]; numeros <- numeros[cheias]
+  if (!length(linhas)) .erro("Nenhuma linha com dados em '", arquivo, "'.")
+  if (sep == "auto") sep <- .detectar_separador(linhas)
+
+  cabecalho <- isTRUE(op$cabecalho %||% TRUE)
+  lida <- .ler_tabela(linhas, sep, cabecalho, arquivo)
+  tab <- lida$tab
+  estrutura <- character(0)
+  nomes <- trimws(names(tab))
+  nomes[!nzchar(nomes)] <- paste0("V", which(!nzchar(nomes)))
+  names(tab) <- make.unique(nomes, sep = "_")
+  # campos a mais que o cabeçalho (com conteúdo) ou a menos: avisa em vez de embaralhar
+  desloc <- as.integer(cabecalho)
+  linhas_arq <- function(i) paste(utils::head(numeros[i + desloc], 3), collapse = ", ")
+  for (j in seq_len(max(0, ncol(tab) - lida$n_cab)) + lida$n_cab) {
+    cheio <- which(nzchar(trimws(tab[[j]])))
+    if (length(cheio))
+      estrutura <- c(estrutura, sprintf(
+        paste("%d linha(s) tem(têm) mais campos que o cabeçalho (linha %s do arquivo): os campos extras",
+              "foram para a coluna '%s'. Confira o separador e as aspas."),
+        length(cheio), linhas_arq(cheio), names(tab)[j]))
+  }
+  if (length(lida$curtas))
+    estrutura <- c(estrutura, sprintf(
+      "%d linha(s) tem(têm) menos campos que o cabeçalho (linha %s do arquivo): completada(s) com vazio (NA).",
+      length(lida$curtas), linhas_arq(lida$curtas)))
+  for (a in estrutura) .aviso("Leitura de '", basename(arquivo), "': ", a)
+  # remove colunas totalmente vazias no fim (separador sobrando)
+  vazias <- vapply(tab, function(v) all(!nzchar(trimws(v))), logical(1))
+  if (any(vazias)) tab <- tab[, !vazias, drop = FALSE]
+
+  na_txt <- op$valores_ausentes %||% c("", "NA")
+  limpas <- lapply(tab, function(v) { v <- trimws(v); v[v %in% na_txt] <- NA; v })
+
+  # Decide se a vírgula é decimal
+  padrao_virg  <- "^[-+]?([0-9]{1,3}(\\.[0-9]{3})+|[0-9]*),[0-9]+([eE][-+]?[0-9]+)?$"
+  padrao_ponto <- "^[-+]?[0-9]*\\.[0-9]+([eE][-+]?[0-9]+)?$"
+  todos <- unlist(limpas, use.names = FALSE)
+  todos <- todos[!is.na(todos)]
+  dv <- op$decimal_virgula %||% "auto"
+  if (identical(dv, "auto")) {
+    dv <- sep != "," && sum(grepl(padrao_virg, todos)) > sum(grepl(padrao_ponto, todos))
+  }
+
+  avisos <- character(0)   # conversões numéricas: aparecem no relatório de leitura
+  conv <- lapply(names(limpas), function(nm) {
+    v <- limpas[[nm]]
+    v2 <- v
+    if (isTRUE(dv)) {
+      milhar <- !is.na(v2) & grepl("^[-+]?[0-9]{1,3}(\\.[0-9]{3})+(,[0-9]+)?$", v2)
+      v2[milhar] <- gsub(".", "", v2[milhar], fixed = TRUE)
+      v2 <- sub(",", ".", v2, fixed = TRUE)
+    }
+    num <- suppressWarnings(as.numeric(v2))
+    ok <- sum(!is.na(num)); tot <- sum(!is.na(v))
+    if (tot > 0 && ok == tot) return(num)
+    if (tot > 0 && ok / tot >= 0.5) {
+      ruins <- which(!is.na(v) & is.na(num))
+      avisos <<- c(avisos, sprintf(
+        "Coluna '%s': %d valor(es) não numérico(s) virou(aram) NA. Ex.: linha %s = '%s'",
+        nm, length(ruins), linhas_arq(ruins),
+        paste(utils::head(v[ruins], 3), collapse = "', '")))
+      return(num)
+    }
+    v
+  })
+  dados <- as.data.frame(stats::setNames(conv, names(limpas)), check.names = FALSE,
+                         stringsAsFactors = FALSE)
+
+  attr(dados, "arquivo") <- arquivo
+  if (isTRUE(op$relatorio %||% TRUE)) {
+    cat("\n=== Leitura de", basename(arquivo), "===\n")
+    cat(sprintf("Codificação: %s | Separador: '%s' | Decimal no arquivo: %s -> convertido para ponto\n",
+                cod, if (sep == "\t") "\\t" else sep, if (isTRUE(dv)) "vírgula" else "ponto"))
+    cat(sprintf("%d linhas x %d colunas\n", nrow(dados), ncol(dados)))
+    for (i in seq_along(dados)) {
+      v <- dados[[i]]
+      cat(sprintf("  [%d] %-28s %-9s NAs: %-4d %s\n", i, paste0("'", names(dados)[i], "'"),
+                  if (is.numeric(v)) "numérica" else if (!is.null(.detectar_tempo(v))) "data" else "texto",
+                  sum(is.na(v)),
+                  if (is.numeric(v) && any(!is.na(v)))
+                    sprintf("(%s a %s)", format(min(v, na.rm = TRUE)), format(max(v, na.rm = TRUE)))
+                  else if (!is.numeric(v)) sprintf("ex.: %s", paste(utils::head(unique(v[!is.na(v)]), 3),
+                                                                    collapse = ", "))
+                  else ""))
+    }
+    if (length(avisos)) for (a in avisos) cat("  AVISO:", a, "\n")
+    cat("\n")
+  }
+  if (length(c(estrutura, avisos))) attr(dados, "avisos") <- c(estrutura, avisos)
+  dados
+}
+
+#' Lista as colunas de um data.frame lido
+colunas <- function(dados) {
+  data.frame(n = seq_along(dados), coluna = names(dados),
+             tipo = vapply(dados, function(v)
+               if (is.numeric(v)) "numérica" else if (!is.null(.detectar_tempo(v))) "data" else "texto", ""),
+             row.names = NULL)
+}
+
+# Entra: dados e referência (nome ou número). Sai: nome da coluna; erro com sugestão se não existir.
+.coluna <- function(dados, ref, onde) {
+  if (is.null(ref)) return(NULL)
+  if (is.numeric(ref)) {
+    if (ref < 1 || ref > ncol(dados))
+      .erro(onde, ": coluna número ", ref, " não existe (o arquivo tem ", ncol(dados), " colunas).")
+    return(names(dados)[ref])
+  }
+  if (!ref %in% names(dados)) {
+    sug <- names(dados)[utils::adist(ref, names(dados), ignore.case = TRUE) <= max(2, nchar(ref) %/% 4)]
+    .erro(onde, ": coluna '", ref, "' não encontrada.",
+          if (length(sug)) paste0(" Você quis dizer '", sug[1], "'?") else "",
+          "\n  Colunas disponíveis: ", paste0("'", names(dados), "'", collapse = ", "))
+  }
+  ref
+}
+
+# -----------------------------------------------------------------------------
+#  04_validacao.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/04_validacao.R — validação do cfg (nomes, opções, limites)
+# =============================================================================
+
+# =============================================================================
+#  VALIDAÇÃO DO cfg
+# =============================================================================
+# TRUE se v é uma data (Date, POSIXct ou texto reconhecível como data); NULL conta como FALSE
+.valor_tempo <- function(v) {
+  !is.null(v) && length(v) == 1 &&
+    (inherits(v, c("Date", "POSIXt")) || (is.character(v) && !is.null(.detectar_tempo(v))))
+}
+
+.OPCOES <- list(
+  "grafico$tipo" = c("pontos", "linha", "linha_pontos", "area", "area_empilhada", "barras",
+                     "pizza", "histograma", "densidade", "ecdf", "boxplot"),
+  "cores$preenchimento" = c("solido", "gradiente"),
+  "cores$gradiente_direcao" = c("vertical", "vertical_invertido", "horizontal",
+                                "horizontal_invertido", "diagonal", "radial"),
+  "linhas$ligacao" = c("reta", "spline", "degrau_hv", "degrau_vh", "degrau_meio"),
+  "linhas$preencher_area" = c("nenhum", "ate_zero", "ate_base", "proxima_serie"),
+  "linhas$linhas_queda" = c("nenhuma", "vertical", "horizontal", "ambas"),
+  "linhas$erro_lado" = c("ambos", "superior", "inferior"),
+  "linhas$rotulos_dados" = c("nenhum", "y", "x", "xy", "serie"),
+  "barras$arranjo" = c("agrupado", "empilhado", "empilhado_100"),
+  "barras$orientacao" = c("vertical", "horizontal"),
+  "barras$rotulos_posicao" = c("fora", "dentro", "centro"),
+  "pizza$sentido" = c("horario", "anti_horario"),
+  "pizza$rotulos_posicao" = c("fora", "dentro", "borda"),
+  "distribuicao$medida" = c("contagem", "frequencia", "percentual", "densidade"),
+  "boxplot$variacao" = c("box", "box_pontos", "meio_box", "violino", "violino_box", "media_erro"),
+  "boxplot$orientacao" = c("vertical", "horizontal"),
+  "boxplot$bigode" = c("tukey", "percentis", "min_max", "desvio_padrao", "erro_padrao", "ic95"),
+  "boxplot$bigode_lado" = c("ambos", "superior", "inferior"),
+  "boxplot$pontos_disposicao" = c("jitter", "coluna", "enxame"),
+  "boxplot$media_erro_tipo" = c("desvio_padrao", "erro_padrao", "ic95"),
+  "boxplot$media_erro_estilo" = c("barra", "ponto"),
+  "eixo_y2$modo" = c("independente", "transformado"),
+  "legenda$posicao" = c("dentro", "direita", "esquerda", "topo", "base"),
+  "titulos$alinhamento" = c("esquerda", "centro", "direita"),
+  "paineis$direcao" = c("vertical", "horizontal"),
+  "paineis$rotulos_eixo_comum" = c("ultimo", "todos"),
+  "paineis$formato_letra" = c("(a)", "a)", "a", "(A)", "A", "(i)"),
+  "exportacao$unidade" = c("cm", "mm", "in")
+)
+.OPCOES_EIXO <- list(
+  escala = c("linear", "log10", "ln", "log2", "reciproco", "raiz"),
+  ticks_modo = c("auto", "incremento", "quantidade", "min_max", "manual"),
+  direcao_maiores = c("dentro", "fora", "ambos", "nenhum"),
+  direcao_menores = c("dentro", "fora", "ambos", "nenhum"),
+  notacao = c("normal", "milhar", "cientifica", "cientifica_E", "potencia10", "percentual")
+)
+
+# Completa o cfg com os padrões da PARTE 1 para tudo o que faltar nos blocos. Assim continuam
+# funcionando scripts que SUBSTITUEM um bloco inteiro (cfg$quebra <- list(...)) e estilos salvos
+# antes de um parâmetro existir. Não mexe em cfg$series e cfg$referencias (livres).
+.completar_cfg <- function(cfg) {
+  ref <- .cfg_ref
+  if (is.null(ref)) return(cfg)
+  for (bl in setdiff(names(ref), c("series", "referencias"))) {
+    if (!is.list(ref[[bl]]) || is.null(names(ref[[bl]]))) next
+    if (is.null(cfg[[bl]])) { cfg[[bl]] <- ref[[bl]]; next }
+    if (!is.list(cfg[[bl]])) next
+    for (nm in setdiff(names(ref[[bl]]), names(cfg[[bl]])))
+      if (!is.null(ref[[bl]][[nm]])) cfg[[bl]][[nm]] <- ref[[bl]][[nm]]
+  }
+  cfg
+}
+
+# Erro em português (com sugestão) se 'valor' não está na lista de opções válidas.
+.checar_opcao <- function(valor, opcoes, onde) {
+  if (is.null(valor)) return(invisible())
+  if (!is.character(valor) || length(valor) != 1 || !valor %in% opcoes) {
+    sug <- opcoes[utils::adist(as.character(valor)[1], opcoes, ignore.case = TRUE) <= 3]
+    .erro("cfg$", onde, " = '", paste(valor, collapse = ","), "' não é válido.",
+          if (length(sug)) paste0(" Você quis dizer '", sug[1], "'?") else "",
+          "\n  OPÇÕES: ", paste0('"', opcoes, '"', collapse = " | "))
+  }
+}
+
+# Avisa blocos e parâmetros do cfg que não existem (digitados errado), comparando com a PARTE 1.
+.checar_nomes <- function(cfg) {
+  ref <- .cfg_ref
+  if (is.null(ref)) return(invisible())
+  livres <- c("series", "referencias", "interno")
+  for (bl in names(cfg)) {
+    if (bl %in% c(".interno")) next
+    if (!bl %in% names(ref)) {
+      sug <- names(ref)[utils::adist(bl, names(ref)) <= 3]
+      .aviso("Bloco cfg$", bl, " não existe e será ignorado.",
+             if (length(sug)) paste0(" Você quis dizer cfg$", sug[1], "?") else "")
+      next
+    }
+    if (bl %in% livres || !is.list(cfg[[bl]]) || is.null(names(cfg[[bl]]))) next
+    desconhecidos <- setdiff(names(cfg[[bl]]), c(names(ref[[bl]]), ".ocultar_extremo"))
+    for (p in desconhecidos) {
+      sug <- names(ref[[bl]])[utils::adist(p, names(ref[[bl]])) <= 3]
+      .aviso("Parâmetro cfg$", bl, "$", p, " não existe e será ignorado.",
+             if (length(sug)) paste0(" Você quis dizer cfg$", bl, "$", sug[1], "?") else "")
+    }
+  }
+}
+
+# Chaves aceitas em cada item de cfg$referencias e de cfg$anotacoes$textos/setas/faixas
+.CHAVES_ITENS <- list(
+  referencias = c("eixo", "valor", "cor", "espessura_pt", "tipo", "rotulo", "rotulo_tamanho_pt"),
+  textos = c("x", "y", "texto", "tamanho_pt", "cor", "negrito", "alinhamento"),
+  setas = c("x", "y", "x_fim", "y_fim", "cor", "espessura_pt", "tamanho_ponta_pt"),
+  faixas = c("eixo", "de", "ate", "cor", "opacidade"))
+
+# Avisa chave digitada errado dentro dos itens (ex.: tamanho_ptt), que antes era ignorada em silêncio.
+.checar_itens <- function(cfg) {
+  um <- function(lista, tipo, onde) for (i in seq_along(lista)) {
+    ruins <- setdiff(names(lista[[i]]), .CHAVES_ITENS[[tipo]])
+    for (r in ruins) {
+      sug <- .CHAVES_ITENS[[tipo]][utils::adist(r, .CHAVES_ITENS[[tipo]]) <= 3]
+      .aviso(onde, "[[", i, "]]$", r, " não existe e será ignorado.",
+             if (length(sug)) paste0(" Você quis dizer '", sug[1], "'?") else "")
+    }
+  }
+  um(cfg$referencias, "referencias", "cfg$referencias")
+  for (t in c("textos", "setas", "faixas")) um(cfg$anotacoes[[t]], t, paste0("cfg$anotacoes$", t))
+}
+
+# Confere opções, limites e combinações do cfg; para no primeiro erro, com mensagem em português.
+.validar <- function(cfg, checar_nomes = TRUE) {
+  if (checar_nomes) { .checar_nomes(cfg); .checar_itens(cfg) }
+  for (k in names(.OPCOES)) {
+    p <- strsplit(k, "$", fixed = TRUE)[[1]]
+    .checar_opcao(cfg[[p[1]]][[p[2]]], .OPCOES[[k]], k)
+  }
+  for (ax in c("eixo_x", "eixo_y")) {
+    e <- cfg[[ax]]
+    for (k in names(.OPCOES_EIXO)) .checar_opcao(e[[k]], .OPCOES_EIXO[[k]], paste0(ax, "$", k))
+    if (!is.null(e$tempo) && !(identical(e$tempo, "auto") || is.logical(e$tempo)))
+      .erro("cfg$", ax, "$tempo deve ser \"auto\", TRUE ou FALSE.")
+    datas <- .valor_tempo(e$inicio) && .valor_tempo(e$fim)   # inicio/fim como datas: .calc_eixo confere a ordem
+    if (!is.null(e$inicio) && !is.null(e$fim) && !datas) {
+      if (!is.numeric(e$inicio) || !is.numeric(e$fim))
+        .erro("cfg$", ax, "$inicio e $fim devem ser números (use ponto decimal: 2.5).")
+      if (e$inicio >= e$fim)
+        .erro("cfg$", ax, "$inicio (", e$inicio, ") deve ser menor que cfg$", ax, "$fim (", e$fim,
+              "). Para inverter o eixo use cfg$", ax, "$inverter <- TRUE.")
+    }
+    if (identical(e$ticks_modo, "incremento") && is.null(e$incremento))
+      .erro("cfg$", ax, "$ticks_modo = \"incremento\" exige cfg$", ax, "$incremento (ex.: 10).")
+    if (!is.null(e$incremento) && is.null(.passo_tempo(e$incremento)) &&
+        (!is.numeric(e$incremento) || e$incremento <= 0))
+      .erro("cfg$", ax, "$incremento deve ser um número > 0 (ou, em eixo de datas, um passo como \"1 mes\").")
+    if (identical(e$ticks_modo, "quantidade") && is.null(e$quantidade))
+      .erro("cfg$", ax, "$ticks_modo = \"quantidade\" exige cfg$", ax, "$quantidade (ex.: 5).")
+    if (identical(e$ticks_modo, "manual") && is.null(e$ticks_manuais))
+      .erro("cfg$", ax, "$ticks_modo = \"manual\" exige cfg$", ax, "$ticks_manuais (ex.: c(0, 5, 10)).")
+    if (!is.null(e$rotulos_manuais) && length(e$rotulos_manuais) != length(e$ticks_manuais))
+      .erro("cfg$", ax, "$rotulos_manuais tem ", length(e$rotulos_manuais),
+            " textos mas ticks_manuais tem ", length(e$ticks_manuais), " posições.")
+  }
+  if (isTRUE(cfg$eixo_y2$ativo)) {
+    for (k in c("ticks_modo", "notacao")) .checar_opcao(cfg$eixo_y2[[k]], .OPCOES_EIXO[[k]], paste0("eixo_y2$", k))
+  }
+  if (cfg$legenda$posicao == "dentro") {
+    if (any(c(cfg$legenda$dentro_x, cfg$legenda$dentro_y) < 0 | c(cfg$legenda$dentro_x, cfg$legenda$dentro_y) > 1))
+      .erro("cfg$legenda$dentro_x e dentro_y devem estar entre 0 e 1.")
+  }
+  if (!is.null(cfg$pizza$raio_furo) && (cfg$pizza$raio_furo < 0 || cfg$pizza$raio_furo > 0.9))
+    .erro("cfg$pizza$raio_furo deve estar entre 0 e 0.9.")
+  if (!identical(cfg$legenda$mostrar, "auto") && !is.logical(cfg$legenda$mostrar))
+    .erro("cfg$legenda$mostrar deve ser \"auto\", TRUE ou FALSE.")
+  invisible(TRUE)
+}
+
+# -----------------------------------------------------------------------------
+#  05_series.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/05_series.R — estilo das séries e escalas de legenda
+# =============================================================================
+
+# =============================================================================
+#  ESTILO DAS SÉRIES
+# =============================================================================
+.CHAVES_SERIE <- c("cor", "cor2", "simbolo", "tamanho_simbolo_pt", "espessura_borda_pt",
+                   "preenchimento_simbolo", "linha_espessura_pt", "linha_tipo", "opacidade",
+                   "opacidade_preenchimento", "nome_legenda", "mostrar_na_legenda", "eixo",
+                   "coluna_erro", "coluna_erro_inferior", "coluna_erro_superior", "coluna_erro_x")
+.SIMBOLOS_INC <- c(21, 22, 24, 23, 25, 1, 0, 2, 5, 6, 3, 4, 8)
+.LINHAS_INC <- c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+
+# Entra: cfg e nomes dos itens (séries/categorias).
+# Sai: lista com o estilo completo de cada item (cor, símbolo, linha, gradiente).
+.estilos <- function(cfg, itens, grupo_gradiente = FALSE, inverter_grad = FALSE) {
+  n <- length(itens)
+  cores <- .paleta(cfg$cores$paleta, n, cfg$cores)
+  if (!isTRUE(cfg$.interno$em_painel)) for (s in setdiff(names(cfg$series), itens))
+    .aviso("cfg$series[[\"", s, "\"]] não corresponde a nenhuma série/categoria deste gráfico. ",
+           "Disponíveis: ", paste0("'", itens, "'", collapse = ", "))
+  out <- lapply(seq_len(n), function(i) {
+    it <- itens[i]
+    s <- cfg$series[[it]] %||% list()
+    ruins <- setdiff(names(s), .CHAVES_SERIE)
+    for (r in ruins) {
+      sug <- .CHAVES_SERIE[utils::adist(r, .CHAVES_SERIE) <= 3]
+      .aviso("cfg$series[[\"", it, "\"]]$", r, " não existe.",
+             if (length(sug)) paste0(" Você quis dizer '", sug[1], "'?") else "")
+    }
+    p <- cfg$serie_padrao
+    cor <- .cor(s$cor %||% cores[i], paste0("series '", it, "'"))
+    cor2 <- .cor(s$cor2 %||% cfg$cores$gradiente_cor2, paste0("series '", it, "' cor2"))
+    simb <- s$simbolo %||% (if (isTRUE(cfg$cores$incrementar_simbolo))
+      .SIMBOLOS_INC[(i - 1) %% length(.SIMBOLOS_INC) + 1] else p$simbolo)
+    lt <- s$linha_tipo %||% (if (isTRUE(cfg$cores$incrementar_tipo_linha))
+      .LINHAS_INC[(i - 1) %% length(.LINHAS_INC) + 1] else p$linha_tipo)
+    ps <- s$preenchimento_simbolo %||% p$preenchimento_simbolo
+    fill_simb <- switch(ps, serie = cor, branco = "white", vazio = NA_character_,
+                        .cor(ps, paste0("preenchimento_simbolo de '", it, "'")))
+    op <- s$opacidade %||% p$opacidade
+    opf <- s$opacidade_preenchimento %||% p$opacidade_preenchimento
+    preench <- if (identical(cfg$cores$preenchimento, "gradiente")) {
+      dir <- cfg$cores$gradiente_direcao
+      if (inverter_grad) dir <- switch(sub("_invertido", "", dir),
+                                       vertical = sub("vertical", "horizontal", dir),
+                                       horizontal = sub("horizontal", "vertical", dir), dir)
+      .gradiente(.alfa(cor, opf), .alfa(cor2, opf), dir, grupo_gradiente)
+    } else .alfa(cor, opf)
+    list(item = it,
+         rotulo = s$nome_legenda %||% it,
+         legenda = s$mostrar_na_legenda %||% TRUE,
+         cor = cor, cor2 = cor2,
+         cor_solida = .alfa(cor, opf),
+         preench = preench,
+         simbolo = simb,
+         tam = s$tamanho_simbolo_pt %||% p$tamanho_simbolo_pt,
+         borda = s$espessura_borda_pt %||% p$espessura_borda_pt,
+         fill_simb = fill_simb,
+         lw = s$linha_espessura_pt %||% p$linha_espessura_pt,
+         lt = lt, op = op, opf = opf,
+         eixo = s$eixo %||% "y1",
+         erro = s$coluna_erro, erro_inf = s$coluna_erro_inferior,
+         erro_sup = s$coluna_erro_superior, erro_x = s$coluna_erro_x)
+  })
+  stats::setNames(out, itens)
+}
+
+# Escalas manuais "fundidas" numa só legenda
+.escalas_legenda <- function(est, aes_usadas, cfg) {
+  itens <- names(est)
+  quebras <- itens[vapply(est, function(e) isTRUE(e$legenda), logical(1))]
+  if (isTRUE(cfg$legenda$inverter_ordem)) quebras <- rev(quebras)
+  rotulos <- .rotulos_legenda(vapply(est[quebras], function(e) as.character(e$rotulo), ""))
+  nome <- if (is.null(cfg$legenda$titulo)) NULL else .texto(cfg$legenda$titulo)
+  guia <- guide_legend(ncol = cfg$legenda$n_colunas, byrow = TRUE)
+  valores <- list(
+    colour    = function() stats::setNames(vapply(est, function(e) e$cor, ""), itens),
+    fill      = function() stats::setNames(lapply(est, function(e) e$preench), itens),
+    fill_simb = function() stats::setNames(vapply(est, function(e) e$fill_simb, ""), itens),
+    shape     = function() stats::setNames(vapply(est, function(e) e$simbolo, 0), itens),
+    size      = function() stats::setNames(vapply(est, function(e) .tx(e$tam), 0), itens),
+    stroke    = function() stats::setNames(vapply(est, function(e) .st(e$borda), 0), itens),
+    linetype  = function() stats::setNames(vapply(est, function(e) as.character(e$lt), ""), itens),
+    linewidth = function() stats::setNames(vapply(est, function(e) .lw(e$lw), 0), itens),
+    alpha     = function() stats::setNames(vapply(est, function(e) e$op, 0), itens)
+  )
+  radial <- identical(cfg$cores$preenchimento, "gradiente") && grepl("radial", cfg$cores$gradiente_direcao)
+  lapply(aes_usadas, function(a) {
+    v <- valores[[a]]()
+    if (a == "fill" && radial && length(quebras))
+      guia <- guide_legend(ncol = cfg$legenda$n_colunas, byrow = TRUE,
+                           override.aes = list(fill = unname(vapply(est[quebras], function(e) e$cor_solida, ""))))
+    estetica <- if (a == "fill_simb") "fill" else a
+    if (estetica == "fill" && !is.list(v)) v <- as.list(v)
+    if (length(quebras) == 0)
+      return(scale_discrete_manual(aesthetics = estetica, values = v, guide = "none"))
+    scale_discrete_manual(aesthetics = estetica, values = v, breaks = quebras,
+                          labels = rotulos, name = nome, guide = guia, drop = FALSE,
+                          na.value = NA)
+  })
+}
+
+# -----------------------------------------------------------------------------
+#  06_eixos.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/06_eixos.R — limites, ticks maiores/menores e rótulos dos eixos
+# =============================================================================
+
+# =============================================================================
+#  EIXOS: limites, ticks maiores/menores, rótulos
+# =============================================================================
+# Base do logaritmo da escala (10, e ou 2); NA se a escala não é logarítmica.
+.base_log <- function(escala) switch(escala, log10 = 10, ln = exp(1), log2 = 2, NA)
+
+# Transformação de escala do scales (linear, log, 1/x, raiz), com inversão opcional.
+.transformacao <- function(escala, inverter) {
+  t <- switch(escala,
+              linear = scales::transform_identity(),
+              log10 = scales::transform_log10(),
+              ln = scales::transform_log(),
+              log2 = scales::transform_log(2),
+              reciproco = scales::transform_reciprocal(),
+              raiz = scales::transform_sqrt())
+  if (isTRUE(inverter)) t <- scales::transform_compose(t, scales::transform_reverse())
+  t
+}
+
+# Limites automáticos de um eixo numérico a partir da faixa dos dados (décadas inteiras em log).
+.limites_auto <- function(faixa, escala) {
+  faixa <- faixa[is.finite(faixa)]
+  if (!length(faixa)) return(c(0, 1))
+  r <- range(faixa)
+  b <- .base_log(escala)
+  if (!is.na(b)) {
+    r <- r[r > 0]
+    if (!length(r)) .erro("Escala logarítmica precisa de valores > 0.")
+    r <- range(r)
+    lo <- b^floor(log(r[1], b) + 1e-9); hi <- b^ceiling(log(r[2], b) - 1e-9)
+    if (lo == hi) { lo <- lo / b; hi <- hi * b }
+    return(c(lo, hi))
+  }
+  if (diff(r) == 0) r <- r + c(-1, 1) * max(abs(r[1]) * 0.1, 1)
+  p <- pretty(r, n = 5)
+  lim <- range(p)
+  if (escala %in% c("raiz") && lim[1] < 0) lim[1] <- 0
+  lim
+}
+
+# Formata números com ponto decimal, sem zeros sobrando; casas fixas se informado.
+.fmt_num <- function(v, casas = NULL, milhar = FALSE) {
+  if (!length(v)) return(character(0))
+  if (!is.null(casas)) {
+    s <- formatC(v, format = "f", digits = casas, big.mark = if (milhar) "," else "",
+                 decimal.mark = ".")
+  } else {
+    fin <- v[is.finite(v)]
+    dig <- 0
+    if (length(fin)) {
+      for (d in 0:10) if (all(abs(round(fin, d) - fin) < 1e-9 * pmax(1, abs(fin)))) { dig <- d; break } else dig <- d
+    }
+    s <- formatC(v, format = "f", digits = dig, big.mark = if (milhar) "," else "",
+                 decimal.mark = ".")
+  }
+  s[s %in% c("-0", sub("^", "-", formatC(0, format = "f", digits = casas %||% 0)))] <-
+    formatC(0, format = "f", digits = casas %||% 0)
+  s
+}
+
+# Entra: config do eixo. Sai: função que formata os rótulos (notação, casas, prefixo, sufixo, fator).
+.formatador <- function(e) {
+  casas <- e$casas_decimais
+  fator <- e$fator_divisao %||% 1
+  pre <- e$prefixo %||% ""; suf <- e$sufixo %||% ""
+  notacao <- e$notacao %||% "normal"
+  function(x) {
+    if (!length(x)) return(character(0))
+    na <- is.na(x)
+    v <- x / fator
+    out <- switch(notacao,
+      normal = .fmt_num(v, casas),
+      milhar = .fmt_num(v, casas, milhar = TRUE),
+      percentual = paste0(.fmt_num(v * 100, casas), "%"),
+      cientifica_E = {
+        s <- formatC(v, format = "E", digits = casas %||% 1)
+        s <- sub("E\\+?(-?)0*([0-9])", "E\\1\\2", s)
+        s[v == 0] <- "0"
+        if (is.null(casas)) s <- sub("\\.?0+E", "E", s)
+        s
+      },
+      cientifica = , potencia10 = {
+        ex <- ifelse(v == 0, 0, floor(log10(abs(v)) + 1e-9))
+        m <- v / 10^ex
+        expr <- vapply(seq_along(v), function(i) {
+          if (is.na(v[i])) return('""')
+          if (v[i] == 0) return('"0"')
+          mi <- if (is.null(casas)) .fmt_num(round(m[i], 3)) else .fmt_num(m[i], casas)
+          if (notacao == "potencia10" && abs(m[i] - round(m[i])) < 1e-9 && round(m[i]) %in% c(1, -1))
+            return(paste0(if (m[i] < 0) "-" else "", "10^", ex[i]))
+          paste0('"', mi, '"%*%10^', ex[i])
+        }, "")
+        if (nzchar(pre) || nzchar(suf))
+          expr <- paste0(deparse(pre), "*", expr, "*", deparse(suf))
+        out <- parse(text = expr)
+        return(out)
+      }
+    )
+    out <- paste0(pre, out, suf)
+    out[na] <- ""
+    out
+  }
+}
+
+# Calcula a escala de um eixo. Entra: config do eixo (e), valores dos dados (faixa), rótulos das
+# categorias (eixo categórico), limites impostos pelos painéis (forcar) e a informação de
+# tempo (list(classe, formato) de .detectar_tempo(), para eixo de datas/horas).
+# Sai: list(limites, maiores, menores, rotulos, trans, mult, cfg, escala, categorias, tempo).
+.calc_eixo <- function(e, faixa, categorias = NULL, forcar = NULL, tempo = NULL) {
+  escala <- if (!is.null(categorias)) "linear" else e$escala %||% "linear"
+  if (!is.null(tempo) && !identical(escala, "linear"))
+    .erro("Eixo de datas/horas exige escala linear (cfg$eixo_x$escala = \"linear\").")
+  b <- .base_log(escala)
+  if ((!is.na(b) || escala == "reciproco") && is.null(forcar)) {
+    ruins <- sum(is.finite(faixa) & faixa <= 0)
+    if (ruins && !is.na(b)) .aviso("Escala ", escala, ": ", ruins,
+                                   " valor(es) <= 0 não podem ser desenhados e serão omitidos.")
+    if (escala == "reciproco" && any(faixa == 0, na.rm = TRUE))
+      .aviso("Escala recíproca: valores iguais a 0 (1/0 = infinito) serão omitidos.")
+  }
+  auto <- if (!is.null(categorias)) c(0.5, length(categorias) + 0.5)
+          else if (!is.null(tempo)) .limites_tempo(faixa, tempo$classe)
+          else .limites_auto(faixa, escala)
+  if (!is.null(forcar)) auto <- forcar
+  ini_usuario <- if (!is.null(tempo)) .tempo_num(e$inicio, tempo, "cfg$eixo_x$inicio") else e$inicio
+  fim_usuario <- if (!is.null(tempo)) .tempo_num(e$fim, tempo, "cfg$eixo_x$fim") else e$fim
+  lo <- ini_usuario %||% auto[1]; hi <- fim_usuario %||% auto[2]
+  if (lo >= hi) {
+    if (!is.null(tempo) && !is.null(ini_usuario) && !is.null(fim_usuario))
+      .erro("cfg$eixo_x$inicio deve ser anterior a cfg$eixo_x$fim.")
+    folga <- if (!is.null(tempo)) (if (tempo$classe == "Date") 1 else 3600) else NULL
+    if (is.null(ini_usuario)) lo <- hi - (folga %||% (abs(hi) * 0.1 + 1))
+    else hi <- lo + (folga %||% (abs(lo) * 0.1 + 1))
+  }
+  if (!is.na(b) && lo <= 0)
+    .erro("Escala logarítmica: o início do eixo deve ser > 0 (atual: ", lo, ").")
+  if (escala == "reciproco" && lo <= 0 && hi >= 0)
+    .erro("Escala recíproca não pode incluir o zero (", lo, " a ", hi, ").")
+  if (escala == "raiz" && lo < 0) .erro("Escala raiz: o início do eixo deve ser >= 0.")
+  lim <- c(lo, hi)
+  tol <- 1e-9 * max(abs(lim))
+  # em escala log a tolerância é relativa (senão 1e-9 "gruda" em 1e-10 num eixo de 10 décadas)
+  perto <- function(v, alvo) if (!is.na(b)) abs(v / alvo - 1) <= 1e-9 else abs(v - alvo) <= tol
+  dentro <- function(v) if (!is.na(b)) v >= lo * (1 - 1e-9) & v <= hi * (1 + 1e-9) else v >= lo - tol & v <= hi + tol
+
+  modo <- e$ticks_modo %||% "auto"
+  if (!is.null(tempo) && modo %in% c("auto", "incremento", "manual")) {
+    maiores <- .maiores_tempo(e, lo, hi, tempo, modo)
+  } else if (!is.null(categorias) && modo == "auto") {
+    maiores <- seq_along(categorias)
+  } else if (modo == "auto") {
+    maiores <- if (!is.na(b)) {
+      ex <- seq(ceiling(log(lo, b) - 1e-9), floor(log(hi, b) + 1e-9))
+      if (length(ex) > 8) ex <- ex[ex %% ceiling(length(ex) / 6) == 0]
+      if (length(ex) < 2) scales::breaks_log(5, base = b)(lim) else b^ex
+    } else if (escala == "reciproco") {
+      dec <- 10^(floor(log10(min(abs(lim)))):ceiling(log10(max(abs(lim)))))
+      cand <- sort(unique(c(lo, hi, sign(hi) * as.vector(outer(c(1, 1.5, 2, 2.5, 3, 4, 5, 6, 8), dec)))))
+      cand <- cand[cand >= lo & cand <= hi & cand != 0]
+      alvo <- 1 / seq(1 / hi, 1 / lo, length.out = 6)
+      unique(vapply(alvo, function(a) cand[which.min(abs(1 / cand - 1 / a))], 0))
+    } else pretty(lim, n = 5)
+  } else if (modo == "incremento") {
+    if (!is.na(b)) {
+      ex0 <- if (!is.null(e$primeiro_tick)) log(e$primeiro_tick, b) else ceiling(log(lo, b) - 1e-9)
+      maiores <- b^seq(ex0, log(hi, b) + 1e-9, by = e$incremento)
+    } else {
+      ini <- e$primeiro_tick %||% lo
+      n <- floor((hi - ini) / e$incremento + 1e-9)
+      if (n > 1000) .erro("incremento muito pequeno: geraria ", n, " ticks.")
+      maiores <- round(ini + (0:max(n, 0)) * e$incremento, 12)
+    }
+  } else if (modo == "quantidade") {
+    maiores <- if (!is.na(b)) exp(seq(log(lo), log(hi), length.out = e$quantidade))
+               else seq(lo, hi, length.out = e$quantidade)
+  } else if (modo == "min_max") {
+    maiores <- lim
+  } else {
+    maiores <- e$ticks_manuais
+  }
+  .ajustar <- function(v) {
+    v <- signif(v, 12)
+    v[perto(v, lo)] <- lo; v[perto(v, hi)] <- hi
+    v
+  }
+  maiores <- .ajustar(maiores)
+  if (modo != "manual") maiores <- maiores[dentro(maiores)]
+
+  # ticks menores
+  nm <- if (!is.null(categorias)) 0 else e$n_menores %||% 0
+  menores <- NULL
+  mm <- sort(unique(maiores))
+  if (nm > 0 && length(mm) >= 2) {
+    entre <- function(a, z) a + (seq_len(nm)) * (z - a) / (nm + 1)
+    menores <- unlist(lapply(seq_len(length(mm) - 1), function(i) entre(mm[i], mm[i + 1])))
+    if (!is.na(b) || escala == "reciproco") {
+      r1 <- mm[2] / mm[1]; r2 <- mm[length(mm)] / mm[length(mm) - 1]
+      ext <- c(entre(mm[1] / r1, mm[1]), entre(mm[length(mm)], mm[length(mm)] * r2))
+    } else {
+      d1 <- mm[2] - mm[1]; d2 <- mm[length(mm)] - mm[length(mm) - 1]
+      ext <- c(unlist(lapply(1:20, function(k) entre(mm[1] - k * d1, mm[1] - (k - 1) * d1))),
+               unlist(lapply(1:20, function(k) entre(mm[length(mm)] + (k - 1) * d2, mm[length(mm)] + k * d2))))
+    }
+    menores <- .ajustar(c(menores, ext))
+    menores <- menores[dentro(menores)]
+  }
+
+  rotulos <- if (!is.null(e$rotulos_manuais)) as.character(e$rotulos_manuais)
+             else if (!is.null(categorias) && modo == "auto") categorias
+             else if (!is.null(tempo)) .formatador_tempo(e, tempo$classe, lim, maiores)
+             else .formatador(e)
+  # painéis colados: esconde o número que encosta no painel vizinho
+  ocultar <- e$.ocultar_extremo
+  if (!is.null(ocultar)) {
+    alvo <- if (identical(ocultar, "max")) hi else lo
+    if (is.function(rotulos)) {
+      f0 <- rotulos
+      rotulos <- function(x) {
+        r <- f0(x); sel <- !is.na(x) & perto(x, alvo)
+        if (is.expression(r)) { r <- as.list(r); r[sel] <- list(""); return(as.expression(r)) }
+        r[sel] <- ""; r
+      }
+    } else if (is.character(rotulos) && is.null(categorias) && length(rotulos) == length(maiores)) {
+      rotulos[perto(maiores, alvo)] <- ""      # rótulos manuais: esconde o do extremo
+    }
+  }
+  list(limites = lim, maiores = maiores, menores = menores %||% numeric(0),
+       rotulos = rotulos, trans = .transformacao(escala, e$inverter),
+       mult = (e$margem_percentual %||% 0) / 100, cfg = e, escala = escala,
+       categorias = categorias, tempo = tempo)
+}
+
+# posição (0-1 no painel) de valores num eixo calculado
+.npc <- function(v, ax) {
+  tl <- sort(ax$trans$transform(ax$limites))
+  r <- tl + c(-1, 1) * diff(tl) * ax$mult
+  (ax$trans$transform(v) - r[1]) / diff(r)
+}
+
+# -----------------------------------------------------------------------------
+#  06_eixos_tempo.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/06_eixos_tempo.R — eixo de datas e horas (colunas como 15/03/2024 14:30)
+# =============================================================================
+#  O eixo continua numérico por dentro: dias desde 1970 (só data) ou segundos
+#  desde 1970 em UTC (data e hora). Os ticks e os rótulos é que são calculados
+#  como datas. Tudo isto é chamado por .calc_eixo() e .construir_xy().
+# =============================================================================
+
+# Formatos de data reconhecidos sozinhos (dia antes do mês, como no Excel em português).
+# Para outro formato (ex.: mês/dia/ano) use cfg$eixo_x$formato_data <- "%m/%d/%Y".
+.FMT_DATAS <- list(
+  list(re = "[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}",      f = "%Y-%m-%d"),
+  list(re = "[0-9]{1,2}/[0-9]{1,2}/[0-9]{4}",      f = "%d/%m/%Y"),
+  list(re = "[0-9]{1,2}-[0-9]{1,2}-[0-9]{4}",      f = "%d-%m-%Y"),
+  list(re = "[0-9]{1,2}\\.[0-9]{1,2}\\.[0-9]{4}",  f = "%d.%m.%Y"),
+  list(re = "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}",      f = "%Y/%m/%d"))
+
+# Passos de tick automáticos: nome no formato do seq() e duração aproximada (s).
+.PASSOS_TEMPO <- c("1 sec" = 1, "5 sec" = 5, "15 sec" = 15, "30 sec" = 30,
+                   "1 min" = 60, "5 min" = 300, "15 min" = 900, "30 min" = 1800,
+                   "1 hour" = 3600, "3 hour" = 10800, "6 hour" = 21600, "12 hour" = 43200,
+                   "1 day" = 86400, "2 day" = 172800, "1 week" = 604800, "2 week" = 1209600,
+                   "1 month" = 2629800, "3 month" = 7889400, "6 month" = 15778800,
+                   "1 year" = 31557600, "2 year" = 63115200, "5 year" = 157788000,
+                   "10 year" = 315576000, "20 year" = 631152000, "50 year" = 1577880000,
+                   "100 year" = 3155760000)
+
+# Unidades aceitas em cfg$eixo_x$incremento (português ou inglês) -> unidade do seq()
+.UNIDADES_TEMPO <- c(sec = "sec", secs = "sec", s = "sec", seg = "sec", segundo = "sec", segundos = "sec",
+                     min = "min", mins = "min", minuto = "min", minutos = "min",
+                     hour = "hour", hours = "hour", h = "hour", hora = "hour", horas = "hour",
+                     day = "day", days = "day", d = "day", dia = "day", dias = "day",
+                     week = "week", weeks = "week", semana = "week", semanas = "week",
+                     month = "month", months = "month", mes = "month", "mês" = "month", meses = "month",
+                     year = "year", years = "year", ano = "year", anos = "year")
+.SEG_UNIDADE <- c(sec = 1, min = 60, hour = 3600, day = 86400, week = 604800,
+                  month = 2629800, year = 31557600)
+
+# Reconhece uma coluna de datas/horas. Entra: vetor (texto, Date ou POSIXct) e, opcional, um
+# formato strptime. Sai: NULL (não é data) ou list(classe = "Date"|"POSIXct", num, formato).
+# num = posições no eixo (dias para Date, segundos para POSIXct); NA onde o texto é vazio.
+.detectar_tempo <- function(v, formato = NULL) {
+  if (inherits(v, "Date")) return(list(classe = "Date", num = as.numeric(v), formato = NA_character_))
+  if (inherits(v, "POSIXct")) return(list(classe = "POSIXct", num = as.numeric(v), formato = NA_character_))
+  if (!is.character(v)) return(NULL)
+  vazio <- is.na(v) | !nzchar(trimws(v))
+  x <- sub("T", " ", trimws(v[!vazio]), fixed = TRUE)
+  if (!length(x)) return(NULL)
+  devolver <- function(seg, classe, fmt) {
+    num <- rep(NA_real_, length(v))
+    num[!vazio] <- if (classe == "Date") seg / 86400 else seg
+    list(classe = classe, num = num, formato = fmt)
+  }
+  if (!is.null(formato) && !is.na(formato) && !identical(formato, "auto")) {
+    p <- as.numeric(as.POSIXct(strptime(x, formato, tz = "UTC")))
+    if (anyNA(p)) return(NULL)
+    return(devolver(p, if (grepl("%[HMSIpTR]", formato)) "POSIXct" else "Date", formato))
+  }
+  for (fm in .FMT_DATAS) {
+    if (!all(grepl(paste0("^", fm$re, "( [0-9]{1,2}:[0-9]{2}(:[0-9]{2})?)?$"), x))) next
+    com_seg <- grepl(":[0-9]{2}:[0-9]{2}$", x)
+    com_hm <- !com_seg & grepl(":", x, fixed = TRUE)
+    so_data <- !com_seg & !com_hm
+    seg <- rep(NA_real_, length(x))
+    ler <- function(sel, f) as.numeric(as.POSIXct(strptime(x[sel], f, tz = "UTC")))
+    if (any(com_seg)) seg[com_seg] <- ler(com_seg, paste(fm$f, "%H:%M:%S"))
+    if (any(com_hm))  seg[com_hm]  <- ler(com_hm, paste(fm$f, "%H:%M"))
+    if (any(so_data)) seg[so_data] <- ler(so_data, fm$f)
+    if (anyNA(seg)) next                         # data impossível (ex.: 31/02): tenta o próximo formato
+    return(devolver(seg, if (any(com_seg | com_hm)) "POSIXct" else "Date", fm$f))
+  }
+  NULL
+}
+
+# Interpreta "1 month", "2 semanas", "6 horas"... Sai: NULL ou list(n, un, by, seg).
+.passo_tempo <- function(x) {
+  if (!is.character(x) || length(x) != 1 || is.na(x)) return(NULL)
+  m <- regmatches(tolower(x), regexec("^\\s*([0-9]+)\\s*([^0-9[:space:]]+)\\s*$", tolower(x)))[[1]]
+  if (length(m) != 3) return(NULL)
+  un <- unname(.UNIDADES_TEMPO[m[3]])
+  n <- as.integer(m[2])
+  if (is.na(un) || is.na(n) || n < 1) return(NULL)
+  list(n = n, un = un, by = paste(n, un), seg = n * unname(.SEG_UNIDADE[un]))
+}
+
+# Posição no eixo -> objeto Date ou POSIXct (UTC)
+.eixo_para_tempo <- function(v, classe) {
+  if (classe == "Date") as.Date(v, origin = "1970-01-01")
+  else as.POSIXct(v, origin = "1970-01-01", tz = "UTC")
+}
+
+# Converte um limite/tick dado pelo usuário (texto, Date, POSIXct ou número) para a posição
+# no eixo. Número é aceito como já está na unidade do eixo (dias ou segundos).
+.tempo_num <- function(v, tempo, onde) {
+  if (is.null(v)) return(NULL)
+  if (is.numeric(v)) return(as.numeric(v))
+  d <- .detectar_tempo(v, tempo$formato)
+  if (is.null(d) && is.character(v)) d <- .detectar_tempo(v)
+  if (is.null(d) || anyNA(d$num))
+    .erro(onde, ": não entendi a data '", paste(v, collapse = "', '"),
+          "'. Use \"2024-03-15\", \"15/03/2024\" ou \"15/03/2024 14:30\".")
+  if (d$classe == tempo$classe) d$num
+  else if (tempo$classe == "POSIXct") d$num * 86400   # data -> segundos
+  else d$num / 86400                                  # data/hora -> dias
+}
+
+# Primeiro tick <= lo alinhado ao passo (início do mês, da semana, do ano, da hora...)
+.alinhar_tempo <- function(lo, passo, classe) {
+  por_dia <- if (classe == "Date") 1 else 86400
+  if (passo$un %in% c("month", "year")) {
+    d <- .eixo_para_tempo(lo, classe)
+    y <- as.integer(format(d, "%Y")); m <- as.integer(format(d, "%m"))
+    ini <- if (passo$un == "month") as.Date(sprintf("%04d-%02d-01", y, ((m - 1L) %/% passo$n) * passo$n + 1L))
+           else as.Date(sprintf("%04d-01-01", (y %/% passo$n) * passo$n))
+    return(as.numeric(ini) * por_dia)
+  }
+  u <- passo$seg / (if (classe == "Date") 86400 else 1)    # duração do passo na unidade do eixo
+  if (passo$un == "week") return(floor((lo - 4 * por_dia) / u) * u + 4 * por_dia)   # semanas começam na segunda
+  floor(lo / u) * u
+}
+
+# Sequência de ticks entre ini e fim (posições no eixo) a cada 'passo'
+.sequencia_tempo <- function(ini, fim, passo, classe) {
+  if (classe == "Date" && passo$un %in% c("sec", "min", "hour"))
+    .erro("O eixo tem só datas (sem hora): use passos de dia, semana, mês ou ano em vez de '", passo$by, "'.")
+  if (ini > fim) return(numeric(0))
+  if ((fim - ini) * (if (classe == "Date") 86400 else 1) / passo$seg > 2000)
+    .erro("O passo '", passo$by, "' geraria mais de 2000 ticks no eixo. Use um passo maior.")
+  s <- seq(.eixo_para_tempo(ini, classe), .eixo_para_tempo(fim, classe), by = passo$by)
+  as.numeric(s)
+}
+
+# Ticks automáticos "redondos" (cerca de 'alvo' deles). cobrir = TRUE estende até passar de hi.
+.quebras_tempo <- function(lo, hi, classe, alvo = 6, cobrir = FALSE) {
+  por_dia <- if (classe == "Date") 1 else 86400
+  cand <- .PASSOS_TEMPO
+  if (classe == "Date") cand <- cand[cand >= 86400]
+  n_ticks <- pmax((hi - lo) / por_dia * 86400 / cand, 1e-9)
+  passo <- .passo_tempo(names(cand)[which.min(abs(log(n_ticks / alvo)))])
+  ini <- .alinhar_tempo(lo, passo, classe)
+  tk <- .sequencia_tempo(ini, hi + passo$seg * 1.1 / (86400 / por_dia), passo, classe)
+  if (!cobrir) return(tk[tk <= hi])
+  i <- which(tk >= hi)[1]
+  if (is.na(i)) tk else tk[seq_len(i)]
+}
+
+# Limites automáticos do eixo de tempo: arredonda os dados para fora até um tick redondo
+.limites_tempo <- function(faixa, classe) {
+  r <- range(faixa[is.finite(faixa)])
+  if (diff(r) == 0) r <- r + c(-1, 1) * (if (classe == "Date") 1 else 3600)
+  range(.quebras_tempo(r[1], r[2], classe, cobrir = TRUE))
+}
+
+# Ticks maiores em eixo de tempo nos modos "auto", "incremento" e "manual".
+.maiores_tempo <- function(e, lo, hi, tempo, modo) {
+  if (modo == "manual") return(.tempo_num(e$ticks_manuais, tempo, "cfg$eixo_x$ticks_manuais"))
+  if (modo == "auto") return(.quebras_tempo(lo, hi, tempo$classe))
+  passo <- .passo_tempo(e$incremento)
+  ini <- .tempo_num(e$primeiro_tick, tempo, "cfg$eixo_x$primeiro_tick") %||% lo
+  if (!is.null(passo)) return(.sequencia_tempo(ini, hi, passo, tempo$classe))
+  if (!is.numeric(e$incremento))
+    .erro("cfg$eixo_x$incremento = '", e$incremento, "' não é um passo de tempo válido. ",
+          "Exemplos: \"1 day\", \"2 semanas\", \"1 mes\", \"6 horas\", \"30 min\".")
+  ini + (0:floor((hi - ini) / e$incremento + 1e-9)) * e$incremento
+}
+
+# Formatador dos rótulos de um eixo de tempo. O formato automático depende do passo entre os ticks
+# (anos -> "2024"; meses -> "03/2024"; dias -> "15/03"; horas -> "14:30"): só números, para não
+# depender do idioma do computador. cfg$eixo_x$formato_rotulo_data troca o formato.
+# Entra: config do eixo, classe, limites e os ticks maiores (posições no eixo).
+.formatador_tempo <- function(e, classe, lim, maiores = NULL) {
+  por_dia <- if (classe == "Date") 1 else 86400
+  dias <- (lim[2] - lim[1]) / por_dia
+  passo <- if (length(maiores) >= 2) stats::median(diff(sort(maiores))) / por_dia * 86400 else dias * 86400 / 5
+  fmt <- e$formato_rotulo_data %||% if (passo >= 300 * 86400) "%Y"
+    else if (passo >= 25 * 86400) "%m/%Y"
+    else if (passo >= 0.9 * 86400) (if (dias > 300) "%d/%m/%y" else "%d/%m")
+    else if (passo >= 60) (if (dias >= 1) "%d/%m %H:%M" else "%H:%M")
+    else "%H:%M:%S"
+  pre <- e$prefixo %||% ""; suf <- e$sufixo %||% ""
+  function(x) {
+    out <- format(.eixo_para_tempo(x, classe), fmt)
+    out <- paste0(pre, out, suf)
+    out[is.na(x)] <- ""
+    out
+  }
+}
+
+# -----------------------------------------------------------------------------
+#  07_tema.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/07_tema.R — tema (caixa, ticks, rótulos, grade, legenda) e fontes
+# =============================================================================
+
+# =============================================================================
+#  TEMA (aparência: caixa, ticks, rótulos, grade, legenda)
+# =============================================================================
+# Comprimento do tick com sinal: negativo = para dentro, 0 = nenhum.
+.comp_tick <- function(direcao, comp) {
+  switch(direcao %||% "dentro", dentro = -comp, fora = comp, ambos = comp, nenhum = 0)
+}
+
+# Elemento de tema para os números de um eixo (tamanho, cor, rotação, distância).
+.elem_rotulo <- function(e, cfg, lado, cor_forcada = NULL) {
+  if (!isTRUE(e$mostrar_rotulos %||% TRUE)) return(element_blank())
+  d <- e$distancia_rotulos_pt %||% 3
+  m <- switch(lado, bottom = margin(t = d), top = margin(b = d),
+              left = margin(r = d), right = margin(l = d))
+  ang <- e$rotacao_rotulos %||% 0
+  just <- if (ang == 0) list(h = NULL, v = NULL) else switch(lado,
+    bottom = list(h = 1, v = if (ang == 90) 0.5 else 1),
+    top = list(h = 0, v = if (ang == 90) 0.5 else 0),
+    left = list(h = 1, v = 0.5), right = list(h = 0, v = 0.5))
+  element_text(size = e$tamanho_rotulos_pt %||% cfg$texto$tamanho_base_pt,
+               colour = cor_forcada %||% e$cor_rotulos %||% cfg$texto$cor,
+               face = if (isTRUE(e$negrito_rotulos)) "bold" else "plain",
+               angle = ang, hjust = just$h, vjust = just$v, margin = m)
+}
+
+# Elemento de tema para o título de um eixo (tamanho, cor, estilo, distância).
+.elem_titulo <- function(e, cfg, lado, cor_forcada = NULL) {
+  if (!isTRUE(e$mostrar_titulo %||% TRUE)) return(element_blank())
+  d <- e$distancia_titulo_pt %||% 4
+  m <- switch(lado, bottom = margin(t = d), top = margin(b = d),
+              left = margin(r = d), right = margin(l = d))
+  face <- if (isTRUE(e$negrito_titulo) && isTRUE(e$italico_titulo)) "bold.italic"
+          else if (isTRUE(e$negrito_titulo)) "bold" else if (isTRUE(e$italico_titulo)) "italic" else "plain"
+  element_text(size = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt,
+               colour = cor_forcada %||% e$cor_titulo %||% cfg$texto$cor, face = face,
+               angle = switch(lado, left = 90, right = -90, 0), margin = m)
+}
+
+# Entra: cfg, config do eixo horizontal e do vertical (como aparecem na tela) e os lados com eixo.
+# Sai: tema ggplot2 completo.
+.tema <- function(cfg, eh, ev, lados, sem_eixos = FALSE, cor_y2 = NULL) {
+  # eh = config do eixo HORIZONTAL na tela; ev = do VERTICAL
+  # lados = lista(hor = c("bottom", "top"?), ver = c("left", "right"?)), lado_principal
+  tx <- cfg$texto; cx <- cfg$caixa; gr <- cfg$grade; lg <- cfg$legenda
+  fonte <- .fonte(tx$fonte)
+  fundo <- function(v) if (identical(v, "transparente")) NA else .cor(v)
+  t <- theme_grey(base_size = tx$tamanho_base_pt, base_family = fonte) +
+    theme(text = element_text(colour = tx$cor, family = fonte),
+          plot.background = element_rect(fill = fundo(cx$fundo_pagina), colour = NA),
+          panel.background = element_rect(fill = fundo(cx$fundo_painel), colour = NA),
+          plot.margin = margin(cx$margens_cm[1], cx$margens_cm[2], cx$margens_cm[3],
+                               cx$margens_cm[4], unit = "cm"),
+          aspect.ratio = cx$proporcao,
+          strip.background = element_blank())
+  # grade (respeita o que está na horizontal/vertical da TELA)
+  gl <- function(on, cor, esp, tipo) if (isTRUE(on)) element_line(colour = cor, linewidth = .lw(esp),
+                                                                  linetype = tipo) else element_blank()
+  t <- t + theme(
+    panel.grid.major.x = gl(lados$grade_x_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior),
+    panel.grid.major.y = gl(lados$grade_y_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior),
+    panel.grid.minor.x = gl(lados$grade_x_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor),
+    panel.grid.minor.y = gl(lados$grade_y_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor))
+  if (sem_eixos) {
+    t <- t + theme(axis.text = element_blank(), axis.title = element_blank(),
+                   axis.ticks = element_blank(), axis.line = element_blank(),
+                   panel.grid = element_blank(), panel.border = element_blank())
+  } else {
+    # caixa / linhas de eixo
+    if (isTRUE(cx$fechada)) {
+      t <- t + theme(panel.border = element_rect(fill = NA, colour = .cor(cx$cor), linewidth = .lw(cx$espessura_pt)),
+                     axis.line = element_blank())
+    } else {
+      # linha de cada eixo (só se mostrar_linha e, nos lados opostos, só se o lado existe)
+      linha <- function(e, ativo, cor = NULL, ponta = NULL) {
+        if (!(isTRUE(e$mostrar_linha) && ativo)) return(element_blank())
+        element_line(colour = cor %||% e$cor_linha, linewidth = .lw(e$espessura_linha_pt), lineend = ponta)
+      }
+      t <- t + theme(panel.border = element_blank(),
+        axis.line.x.bottom = linha(eh, TRUE, ponta = "square"),
+        axis.line.y.left   = linha(ev, TRUE, ponta = "square"),
+        axis.line.y.right  = linha(ev, "right" %in% lados$ver, cor = cor_y2),
+        axis.line.x.top    = linha(eh, "top" %in% lados$hor))
+    }
+    # ticks
+    tk <- function(e, cor = NULL) element_line(colour = cor %||% e$cor_ticks, linewidth = .lw(e$espessura_ticks_pt))
+    for (lado in c("bottom", "top", "left", "right")) {
+      e <- if (lado %in% c("bottom", "top")) eh else ev
+      xy <- if (lado %in% c("bottom", "top")) "x" else "y"
+      cor_l <- if (lado == lados$lado_y2) cor_y2 else NULL
+      el <- list()
+      el[[paste0("axis.ticks.", xy, ".", lado)]] <- tk(e, cor_l)
+      el[[paste0("axis.ticks.length.", xy, ".", lado)]] <- unit(.comp_tick(e$direcao_maiores, e$comprimento_maiores_pt),
+                                                                "pt")
+      el[[paste0("axis.minor.ticks.", xy, ".", lado)]] <- tk(e, cor_l)
+      el[[paste0("axis.minor.ticks.length.", xy, ".",
+                 lado)]] <- unit(.comp_tick(e$direcao_menores, e$comprimento_menores_pt), "pt")
+      el[[paste0("axis.text.", xy, ".", lado)]] <- .elem_rotulo(e, cfg, lado, cor_l)
+      el[[paste0("axis.title.", xy, ".", lado)]] <- .elem_titulo(e, cfg, lado, cor_l)
+      t <- t + do.call(theme, el)
+    }
+  }
+  # legenda
+  t <- t + .tema_legenda(cfg, fonte)
+  # títulos
+  ti <- cfg$titulos
+  hj <- switch(ti$alinhamento, esquerda = 0, centro = 0.5, direita = 1)
+  t + theme(plot.title = element_text(hjust = hj, size = ti$tamanho_titulo_pt %||% (tx$tamanho_base_pt * 1.2),
+                                      face = if (isTRUE(ti$negrito_titulo)) "bold" else "plain"),
+            plot.subtitle = element_text(hjust = hj, size = ti$tamanho_subtitulo_pt %||% tx$tamanho_base_pt),
+            plot.title.position = "panel")
+}
+
+# Parte do tema que controla posição, moldura, fundo, textos e espaçamento da legenda.
+.tema_legenda <- function(cfg, fonte) {
+  lg <- cfg$legenda; tx <- cfg$texto
+  pos <- switch(lg$posicao, dentro = "inside", direita = "right", esquerda = "left",
+                topo = "top", base = "bottom")
+  fundo <- if (identical(lg$fundo, "transparente")) NA else .cor(lg$fundo)
+  t <- theme(
+    legend.position = pos,
+    legend.background = element_rect(fill = fundo, colour = if (isTRUE(lg$moldura)) .cor(lg$cor_moldura) else NA,
+                                     linewidth = .lw(lg$espessura_moldura_pt)),
+    legend.key = element_rect(fill = NA, colour = NA),
+    legend.key.size = unit(lg$tamanho_chave_pt, "pt"),
+    legend.key.spacing.y = unit(lg$espacamento_pt, "pt"),
+    legend.text = element_text(size = lg$tamanho_texto_pt %||% tx$tamanho_base_pt),
+    legend.title = if (is.null(lg$titulo)) element_blank() else
+      element_text(size = lg$tamanho_titulo_pt %||% tx$tamanho_base_pt),
+    legend.margin = do.call(margin, as.list(lg$margem_interna_pt)))
+  if (pos == "inside") {
+    anc <- if (identical(lg$ancora, "auto")) c(lg$dentro_x, lg$dentro_y) else lg$ancora
+    t <- t + theme(legend.position.inside = c(lg$dentro_x, lg$dentro_y),
+                   legend.justification.inside = anc)
+  }
+  if (pos %in% c("top", "bottom")) t <- t + theme(legend.direction = "horizontal")
+  t
+}
+
+.fontes_cache <- new.env()
+# Nome de fonte utilizável: o pedido se existir no sistema; senão 'sans', com aviso.
+.fonte <- function(f) {
+  if (is.null(f) || f %in% c("sans", "serif", "mono", "")) return(f %||% "sans")
+  if (!is.null(.fontes_cache[[f]])) return(.fontes_cache[[f]])
+  ok <- TRUE
+  if (.tem("systemfonts")) {
+    fams <- unique(systemfonts::system_fonts()$family)
+    ok <- tolower(f) %in% tolower(fams)
+  }
+  res <- if (ok) f else {
+    .aviso("Fonte '", f, "' não encontrada no sistema; usando 'sans'. Veja listar_fontes().")
+    "sans"
+  }
+  .fontes_cache[[f]] <- res
+  res
+}
+
+# Bordas do painel para annotation_custom(). O ggplot2 4.0 lê esses limites em unidades de DADOS e os
+# transforma pela escala: em log/raiz/recíproca -Inf viraria NaN (e um aviso), então usa as bordas reais.
+# O ggplot2 3.5 NÃO transforma (já espera espaço transformado), e lá c(-Inf, Inf) serve para qualquer escala.
+.borda_painel <- function(ax) {
+  if (!.GG4 || is.null(ax) || identical(ax$escala, "linear") || !is.null(ax$categorias)) return(c(-Inf, Inf))
+  r <- sort(ax$trans$transform(ax$limites))
+  r <- r + c(-1, 1) * diff(r) * ax$mult
+  sort(ax$trans$inverse(r))
+}
+
+# Ticks menores do eixo Y2: o sec_axis() do ggplot2 não os desenha na escala própria do Y2, então
+# são traços no lado direito nas posições dos menores calculados para o Y2.
+# Entra: y2 (list(ax, para1, cor)), eixo Y1 calculado e a config do eixo vertical.
+.ticks_y2_menores <- function(y2, ax_y, ev, ax_x = NULL) {
+  menores <- y2$ax$menores
+  dir <- ev$direcao_menores %||% "dentro"
+  if (!length(menores) || identical(dir, "nenhum") || is.null(y2$para1)) return(NULL)
+  p <- .npc(y2$para1(menores), ax_y)
+  p <- p[p >= -1e-6 & p <= 1 + 1e-6]
+  if (!length(p)) return(NULL)
+  L <- unit(ev$comprimento_menores_pt, "pt")
+  gp <- gpar(col = .cor(y2$cor), lwd = .lw(ev$espessura_ticks_pt) * ggplot2::.pt, lineend = "butt")
+  x0 <- unit(1, "npc"); y <- unit(p, "npc")
+  filhos <- switch(dir,
+    dentro = list(segmentsGrob(x0, y, x0 - L, y, gp = gp)),
+    fora   = list(segmentsGrob(x0, y, x0 + L, y, gp = gp)),
+    ambos  = list(segmentsGrob(x0, y, x0 - L, y, gp = gp), segmentsGrob(x0, y, x0 + L, y, gp = gp)))
+  bx <- .borda_painel(ax_x); by <- .borda_painel(ax_y)
+  annotation_custom(gTree(children = do.call(gList, filhos)), xmin = bx[1], xmax = bx[2], ymin = by[1], ymax = by[2])
+}
+
+# Ticks "ambos" (cruzando o eixo): parte interna desenhada como anotação
+.ticks_internos <- function(axh, axv, lados, ax_x = NULL, ax_y = NULL) {
+  segs <- list()
+  add <- function(ax, lado) {
+    e <- ax$cfg
+    for (tipo in c("maiores", "menores")) {
+      dir <- if (tipo == "maiores") e$direcao_maiores else e$direcao_menores
+      if (!identical(dir, "ambos")) next
+      v <- if (tipo == "maiores") ax$maiores else ax$menores
+      if (!length(v)) next
+      p <- .npc(v, ax); p <- p[p >= -1e-6 & p <= 1 + 1e-6]
+      L <- unit(if (tipo == "maiores") e$comprimento_maiores_pt else e$comprimento_menores_pt, "pt")
+      gp <- gpar(col = e$cor_ticks, lwd = .lw(e$espessura_ticks_pt) * ggplot2::.pt, lineend = "butt")
+      g <- switch(lado,
+        bottom = segmentsGrob(unit(p, "npc"), unit(0, "npc"), unit(p, "npc"), L, gp = gp),
+        top    = segmentsGrob(unit(p, "npc"), unit(1, "npc"), unit(p, "npc"), unit(1, "npc") - L, gp = gp),
+        left   = segmentsGrob(unit(0, "npc"), unit(p, "npc"), L, unit(p, "npc"), gp = gp),
+        right  = segmentsGrob(unit(1, "npc"), unit(p, "npc"), unit(1, "npc") - L, unit(p, "npc"), gp = gp))
+      segs[[length(segs) + 1]] <<- g
+    }
+  }
+  for (l in lados$hor) add(axh, l)
+  for (l in lados$ver) if (!(l == lados$lado_y2)) add(axv, l)
+  if (!length(segs)) return(NULL)
+  bx <- .borda_painel(ax_x); by <- .borda_painel(ax_y)   # eixos de DADOS (antes de qualquer coord_flip)
+  annotation_custom(do.call(gTree, list(children = do.call(gList, segs))),
+                    xmin = bx[1], xmax = bx[2], ymin = by[1], ymax = by[2])
+}
+
+# -----------------------------------------------------------------------------
+#  08_tipos_comum.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/08_tipos_comum.R — auxiliares comuns aos construtores de gráfico
+# =============================================================================
+
+# =============================================================================
+#  CONSTRUÇÃO POR TIPO — cada função devolve list(camadas, info)
+# =============================================================================
+# Entra: dados e colunas Y. Sai: data.frame longo (x, y, serie, mapa, barras de erro) de todas as séries.
+.serie_longa <- function(dados, xcol, ycols, est, mapa_col = NULL) {
+  do.call(rbind, lapply(ycols, function(yc) {
+    e <- est[[yc]]
+    d <- data.frame(x = dados[[xcol]], y = dados[[yc]], serie = yc, stringsAsFactors = FALSE)
+    d$mapa <- if (is.null(mapa_col)) NA_real_ else dados[[mapa_col]]
+    erro_col <- function(ref, nome) {
+      if (is.null(ref)) return(rep(NA_real_, nrow(dados)))
+      cc <- .coluna(dados, ref, paste0("cfg$series[[\"", yc, "\"]]$", nome))
+      if (!is.numeric(dados[[cc]])) .erro("Coluna de erro '", cc, "' não é numérica.")
+      dados[[cc]]
+    }
+    d$e_inf <- erro_col(e$erro_inf %||% e$erro, "coluna_erro")
+    d$e_sup <- erro_col(e$erro_sup %||% e$erro, "coluna_erro")
+    d$e_x <- erro_col(e$erro_x, "coluna_erro_x")
+    d
+  }))
+}
+
+# Guarda o gerador de números aleatórios da sessão e devolve a função que o restaura
+# (os gráficos com sorteio, como o jitter do boxplot, não podem mexer na semente do usuário).
+.guardar_rng <- function() {
+  existia <- exists(".Random.seed", envir = globalenv(), inherits = FALSE)
+  antigo <- if (existia) get(".Random.seed", envir = globalenv(), inherits = FALSE)
+  function() {
+    if (existia) assign(".Random.seed", antigo, envir = globalenv())
+    else if (exists(".Random.seed", envir = globalenv(), inherits = FALSE))
+      rm(".Random.seed", envir = globalenv())
+  }
+}
+
+# Nomes das colunas Y a plotar (cfg$grafico$colunas_y ou todas as numéricas, sem as de erro/mapa de cor).
+.colunas_y <- function(dados, cfg, excluir = NULL, so_numericas = TRUE) {
+  g <- cfg$grafico
+  ys <- if (is.null(g$colunas_y)) {
+    setdiff(names(dados)[vapply(dados, is.numeric, logical(1))], excluir)
+  } else vapply(g$colunas_y, function(r) .coluna(dados, r, "cfg$grafico$colunas_y"), "")
+  # tira colunas usadas como erro ou como mapa de cor (referidas por nome OU por número)
+  nome_da_coluna <- function(r) if (is.numeric(r) && r >= 1 && r <= ncol(dados)) names(dados)[r] else as.character(r)
+  refs <- unlist(lapply(cfg$series, function(s) list(s$coluna_erro, s$coluna_erro_inferior,
+                                                     s$coluna_erro_superior, s$coluna_erro_x)),
+                 recursive = FALSE)     # lista plana: mantém número como número e texto como texto
+  usadas_erro <- vapply(Filter(Negate(is.null), refs), nome_da_coluna, "")
+  if (is.null(g$colunas_y)) ys <- setdiff(ys, usadas_erro)
+  if (!is.null(cfg$cores$mapear_coluna) && is.null(g$colunas_y))
+    ys <- setdiff(ys, nome_da_coluna(cfg$cores$mapear_coluna))
+  if (!length(ys)) .erro("Nenhuma coluna Y numérica encontrada. Defina cfg$grafico$colunas_y.")
+  if (so_numericas) for (y in ys) if (!is.numeric(dados[[y]]))
+    .erro("A coluna '", y, "' não é numérica (veja o relatório de leitura). ",
+          "Se o arquivo usa vírgula decimal, defina cfg$dados$decimal_virgula <- TRUE.")
+  if (!is.null(g$ordem_itens)) ys <- c(intersect(g$ordem_itens, ys), setdiff(ys, g$ordem_itens))
+  ys
+}
+
+# -----------------------------------------------------------------------------
+#  09_tipo_xy.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/09_tipo_xy.R — pontos, linhas e áreas
+# =============================================================================
+
+# ---- Pontos / linhas / áreas --------------------------------------------------
+# Avisa quantos pontos saem do gráfico por não existirem na escala do eixo (<= 0 em log, 0 em 1/x).
+.avisar_omitidos <- function(n, eixo, escala) {
+  if (n > 0)
+    .aviso("Eixo ", eixo, " em escala ", escala, ": ", n, " ponto(s) com valor ",
+           if (identical(escala, "reciproco")) "igual a 0" else "<= 0",
+           " não existe(m) nessa escala e foi(ram) omitido(s) do gráfico.")
+}
+
+# Decide se a coluna X de texto é um eixo de datas (cfg$eixo_x$tempo = "auto", TRUE ou FALSE).
+# Sai: NULL (eixo categórico) ou o resultado de .detectar_tempo().
+.tempo_do_eixo <- function(v, e) {
+  modo <- e$tempo %||% "auto"
+  if (identical(modo, FALSE)) return(NULL)
+  d <- .detectar_tempo(v, e$formato_data)
+  if (is.null(d) && isTRUE(modo))
+    .erro("cfg$eixo_x$tempo = TRUE, mas a coluna X não é reconhecida como data. ",
+          "Defina cfg$eixo_x$formato_data (ex.: \"%d/%m/%Y %H:%M\").")
+  d
+}
+
+# Pontos, linhas e áreas. Entra: dados e cfg. Sai: list(camadas, info) com os eixos já calculados.
+.construir_xy <- function(dados, cfg) {
+  tipo <- cfg$grafico$tipo; L <- cfg$linhas
+  xcol <- .coluna(dados, cfg$grafico$coluna_x, "cfg$grafico$coluna_x")
+  ycols <- .colunas_y(dados, cfg, excluir = xcol)
+  cats <- NULL; tempo <- NULL
+  if (!is.numeric(dados[[xcol]])) {
+    d_tempo <- .tempo_do_eixo(dados[[xcol]], cfg$eixo_x)
+    if (!is.null(d_tempo)) {                     # coluna de datas/horas: eixo temporal
+      dados[[xcol]] <- d_tempo$num
+      tempo <- d_tempo[c("classe", "formato")]
+    } else {                                     # texto: eixo categórico
+      cats <- unique(as.character(dados[[xcol]][!is.na(dados[[xcol]])]))
+      dados[[xcol]] <- match(as.character(dados[[xcol]]), cats)
+    }
+  }
+  est <- .estilos(cfg, ycols)
+  mc <- if (!is.null(cfg$cores$mapear_coluna)) .coluna(dados, cfg$cores$mapear_coluna,
+                                                       "cfg$cores$mapear_coluna") else NULL
+  if (!is.null(mc) && !is.numeric(dados[[mc]])) .erro("cfg$cores$mapear_coluna: a coluna '", mc,
+                                                      "' precisa ser numérica.")
+  d <- .serie_longa(dados, xcol, ycols, est, mc)
+  invalido <- function(v, esc) if (!is.na(.base_log(esc %||% "linear"))) !is.na(v) & v <= 0
+                               else if (identical(esc, "reciproco")) !is.na(v) & v == 0 else rep(FALSE, length(v))
+  if (is.null(cats)) {
+    inv_x <- invalido(d$x, cfg$eixo_x$escala)
+    .avisar_omitidos(sum(inv_x), "X", cfg$eixo_x$escala)
+    d$x[inv_x] <- NA
+  }
+  inv_y <- invalido(d$y, cfg$eixo_y$escala)
+  .avisar_omitidos(sum(inv_y), "Y", cfg$eixo_y$escala)
+  d$y[inv_y] <- NA
+  d <- d[!is.na(d$x), ]
+  d$serie <- factor(d$serie, levels = ycols)
+  if (isTRUE(L$ordenar_x)) d <- d[order(d$serie, d$x), ]
+
+  usa_y2 <- isTRUE(cfg$eixo_y2$ativo) && identical(cfg$eixo_y2$modo, "independente")
+  ser_y2 <- if (usa_y2) ycols[vapply(est, function(e) identical(e$eixo, "y2"), logical(1))] else character(0)
+  if (usa_y2 && !length(ser_y2))
+    .erro("eixo_y2 ativo no modo \"independente\", mas nenhuma série tem eixo = \"y2\".\n",
+          "  Ex.: cfg$series[[\"", ycols[length(ycols)], "\"]] <- list(eixo = \"y2\")")
+
+  com_pontos <- tipo %in% c("pontos", "linha_pontos")
+  com_linha <- tipo %in% c("linha", "linha_pontos", "area", "area_empilhada")
+  preench <- L$preencher_area
+  if (tipo == "area" && preench == "nenhum") preench <- "ate_zero"
+
+  # empilhamento
+  if (tipo == "area_empilhada") {
+    if (usa_y2) .erro("area_empilhada não combina com eixo_y2.")
+    larga <- stats::reshape(d[, c("x", "y", "serie")], idvar = "x", timevar = "serie", direction = "wide")
+    larga <- larga[order(larga$x), ]
+    acum <- 0
+    pilha <- list()
+    for (s in ycols) {
+      v <- larga[[paste0("y.", s)]]; v[is.na(v)] <- 0
+      pilha[[s]] <- data.frame(x = larga$x, ymin = acum, y = acum + v, serie = s)
+      acum <- acum + v
+    }
+    d <- do.call(rbind, pilha); d$serie <- factor(d$serie, levels = ycols)
+    d$e_inf <- d$e_sup <- d$e_x <- NA_real_
+  }
+
+  # faixa de dados para Y1 e Y2
+  d1 <- d[!d$serie %in% ser_y2, ]
+  faixa_y <- c(d1$y, d1$y - d1$e_inf, d1$y + d1$e_sup, if (tipo == "area_empilhada") 0,
+               if (preench == "ate_zero") 0)
+  faixa_x <- c(d$x, d$x - d$e_x, d$x + d$e_x)
+  ax_y <- .calc_eixo(cfg$eixo_y, faixa_y, forcar = cfg$.interno$forcar_y)
+  ax_x <- .calc_eixo(cfg$eixo_x, faixa_x, categorias = cats, forcar = cfg$.interno$forcar_x, tempo = tempo)
+
+  y2 <- NULL
+  if (usa_y2) {
+    if (ax_y$escala != "linear") .erro("eixo_y2 \"independente\" exige eixo_y linear.")
+    d2 <- d[d$serie %in% ser_y2, ]
+    e2 <- utils::modifyList(cfg$eixo_y, cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))])
+    e2$escala <- "linear"; e2$inverter <- FALSE
+    ax2 <- .calc_eixo(e2, c(d2$y, d2$y - d2$e_inf, d2$y + d2$e_sup))
+    l1 <- ax_y$limites; l2 <- ax2$limites
+    para1 <- function(v) l1[1] + (v - l2[1]) * diff(l1) / diff(l2)
+    para2 <- function(v) l2[1] + (v - l1[1]) * diff(l2) / diff(l1)
+    sel <- d$serie %in% ser_y2
+    d$y[sel] <- para1(d$y[sel])
+    d$e_inf[sel] <- d$e_inf[sel] * diff(l1) / diff(l2)
+    d$e_sup[sel] <- d$e_sup[sel] * diff(l1) / diff(l2)
+    y2 <- list(ax = ax2, para2 = para2, para1 = para1,
+               titulo = cfg$eixo_y2$titulo %||% paste(ser_y2, collapse = ", "),
+               cor = if (identical(cfg$eixo_y2$cor_eixo, "serie")) est[[ser_y2[1]]]$cor else cfg$eixo_y2$cor_eixo)
+  }
+
+  cam <- list()
+  mapa <- !is.null(cfg$cores$mapear_coluna) && com_pontos
+  # áreas
+  if (preench != "nenhum" || tipo == "area_empilhada") {
+    base_y <- 0
+    if (preench == "ate_base") base_y <- ax_y$limites[if (isTRUE(cfg$eixo_y$inverter)) 2 else 1]
+    for (i in seq_along(ycols)) {
+      s <- ycols[i]; ds <- d[d$serie == s, ]; ds <- ds[order(ds$x), ]
+      if (!nrow(ds)) next
+      if (tipo == "area_empilhada") {
+        rib <- data.frame(x = ds$x, ymin = ds$ymin, ymax = ds$y)
+      } else if (preench == "proxima_serie") {
+        if (i == length(ycols)) next
+        prox <- d[d$serie == ycols[i + 1], ]
+        yb <- stats::approx(prox$x, prox$y, xout = ds$x, rule = 2)$y
+        rib <- data.frame(x = ds$x, ymin = pmin(ds$y, yb), ymax = pmax(ds$y, yb))
+      } else rib <- data.frame(x = ds$x, ymin = base_y, ymax = ds$y)
+      e <- est[[s]]
+      a_area <- if (tipo == "area_empilhada") e$opf else L$opacidade_area
+      fill <- if (identical(cfg$cores$preenchimento, "gradiente"))
+        .gradiente(.alfa(e$cor, a_area), .alfa(e$cor2, a_area), cfg$cores$gradiente_direcao, FALSE)
+        else .alfa(e$cor, a_area)
+      cam[[length(cam) + 1]] <- geom_ribbon(data = rib, aes(x = x, ymin = ymin, ymax = ymax),
+                                            fill = fill, colour = NA, inherit.aes = FALSE)
+    }
+  }
+  # linhas de queda
+  if (L$linhas_queda != "nenhuma") {
+    bx <- if (isTRUE(cfg$eixo_x$inverter)) ax_x$limites[2] else ax_x$limites[1]
+    by <- if (isTRUE(cfg$eixo_y$inverter)) ax_y$limites[2] else ax_y$limites[1]
+    if (L$linhas_queda %in% c("vertical", "ambas"))
+      cam[[length(cam) + 1]] <- geom_segment(data = d, aes(x = x, xend = x, y = y, yend = by, colour = serie),
+        linetype = L$linhas_queda_tipo, linewidth = .lw(L$linhas_queda_espessura_pt), show.legend = FALSE)
+    if (L$linhas_queda %in% c("horizontal", "ambas"))
+      cam[[length(cam) + 1]] <- geom_segment(data = d, aes(x = x, xend = bx, y = y, yend = y, colour = serie),
+        linetype = L$linhas_queda_tipo, linewidth = .lw(L$linhas_queda_espessura_pt), show.legend = FALSE)
+  }
+  # barras de erro
+  de <- d[!is.na(d$e_inf) | !is.na(d$e_sup), ]
+  if (nrow(de)) {
+    larg <- if (ax_x$escala == "linear") L$erro_chapeu_percentual / 100 * diff(ax_x$limites) else 0
+    de$ymin <- if (L$erro_lado == "superior") de$y else de$y - de$e_inf
+    de$ymax <- if (L$erro_lado == "inferior") de$y else de$y + de$e_sup
+    cam[[length(cam) + 1]] <- geom_errorbar(data = de, aes(x = x, ymin = ymin, ymax = ymax, colour = serie),
+      width = larg, linewidth = .lw(L$erro_espessura_pt), show.legend = FALSE, inherit.aes = FALSE)
+  }
+  dx <- d[!is.na(d$e_x), ]
+  if (nrow(dx)) {
+    alt <- if (ax_y$escala == "linear") L$erro_chapeu_percentual / 100 * diff(ax_y$limites) else 0
+    cam[[length(cam) + 1]] <- geom_errorbar(data = dx, aes(y = y, xmin = x - e_x, xmax = x + e_x, colour = serie),
+      width = alt, orientation = "y", linewidth = .lw(L$erro_espessura_pt), show.legend = FALSE, inherit.aes = FALSE)
+  }
+  aes_leg <- character(0)
+  # linhas
+  if (com_linha) {
+    if (mapa) {
+      for (s in ycols) cam[[length(cam) + 1]] <- .camada_linha(d[d$serie == s, ], L$ligacao, mapeado = FALSE,
+                                                               e = est[[s]])
+    } else {
+      cam[[length(cam) + 1]] <- .camada_linha(d, L$ligacao, mapeado = TRUE)
+      aes_leg <- c(aes_leg, "colour", "linetype", "linewidth", "alpha")
+    }
+  }
+  # pontos
+  if (com_pontos) {
+    if (mapa) {
+      cam[[length(cam) + 1]] <- geom_point(data = d, aes(x = x, y = y, colour = mapa, fill = mapa,
+                                                         shape = serie, size = serie, stroke = serie))
+      aes_leg <- unique(c(aes_leg, "shape", "size", "stroke"))
+    } else {
+      cam[[length(cam) + 1]] <- geom_point(data = d, aes(x = x, y = y, colour = serie, fill = serie,
+                                                         shape = serie, size = serie, stroke = serie, alpha = serie))
+      aes_leg <- unique(c(aes_leg, "colour", "fill_simb", "shape", "size", "stroke", "alpha"))
+    }
+  }
+  # rótulos de dados
+  if (L$rotulos_dados != "nenhum") {
+    dd <- d
+    if (usa_y2) { sel <- dd$serie %in% ser_y2; dd$yv <- dd$y; dd$yv[sel] <- y2$para2(dd$y[sel]) } else dd$yv <- dd$y
+    xv <- if (!is.null(cats)) cats[dd$x]
+          else if (!is.null(tempo)) .formatador_tempo(cfg$eixo_x, tempo$classe, ax_x$limites, ax_x$maiores)(dd$x)
+          else .fmt_num(dd$x, L$rotulos_casas)
+    dd$rot <- switch(L$rotulos_dados,
+                     y = .fmt_num(dd$yv, L$rotulos_casas), x = xv,
+                     xy = paste0("(", xv, ", ", .fmt_num(dd$yv, L$rotulos_casas), ")"),
+                     serie = as.character(dd$serie))
+    k <- L$rotulos_deslocamento_pt / L$rotulos_tamanho_pt
+    cam[[length(cam) + 1]] <- geom_text(data = dd, aes(x = x, y = y, label = rot, colour = serie),
+      size = .tx(L$rotulos_tamanho_pt), vjust = if (k >= 0) -k else 1 - k, show.legend = FALSE,
+      family = .fonte(cfg$texto$fonte))
+  }
+  usa_cor <- com_linha || nrow(de) || L$linhas_queda != "nenhuma" || L$rotulos_dados != "nenhum"
+  if (!"colour" %in% aes_leg && !mapa && usa_cor) aes_leg <- c(aes_leg, "colour")
+  escalas <- .escalas_legenda(est, aes_leg, cfg)
+  if (mapa) escalas <- c(escalas, .escala_mapa(cfg, dados))
+  if (!com_pontos && !com_linha) escalas <- c(escalas, list(guides(fill = "none")))
+
+  titulo_y <- cfg$eixo_y$titulo %||% (if (length(setdiff(ycols, ser_y2)) == 1) setdiff(ycols, ser_y2) else "Y")
+  list(camadas = c(cam, escalas),
+       info = list(ax_x = ax_x, ax_y = ax_y, y2 = y2, flip = FALSE,
+                   titulo_x = cfg$eixo_x$titulo %||% xcol, titulo_y = titulo_y,
+                   legenda_auto = TRUE, faixa_x = faixa_x, faixa_y = faixa_y))
+}
+
+# Camada de linha (reta, spline ou degrau) de uma série ou de todas, com estilo mapeado ou fixo.
+.camada_linha <- function(d, ligacao, mapeado, e = NULL) {
+  d <- d[!is.na(d$y), ]
+  if (ligacao == "spline") {
+    niveis <- levels(d$serie)
+    partes <- lapply(split(d, d$serie, drop = TRUE), function(s) {
+      nm <- as.character(s$serie[1])
+      s <- stats::aggregate(y ~ x, data = s, FUN = mean)
+      if (nrow(s) < 3) return(data.frame(x = s$x, y = s$y, serie = nm))
+      sp <- stats::spline(s$x, s$y, n = max(200, 10 * nrow(s)), method = "fmm")
+      data.frame(x = sp$x, y = sp$y, serie = nm)
+    })
+    d <- do.call(rbind, partes)
+    d$serie <- factor(d$serie, levels = niveis)
+  }
+  geo <- switch(ligacao, reta = geom_path, spline = geom_path,
+                degrau_hv = function(...) geom_step(..., direction = "hv"),
+                degrau_vh = function(...) geom_step(..., direction = "vh"),
+                degrau_meio = function(...) geom_step(..., direction = "mid"))
+  if (mapeado) {
+    geo(data = d, aes(x = x, y = y, colour = serie, linetype = serie, linewidth = serie,
+                      alpha = serie, group = serie), lineend = "round", linejoin = "round")
+  } else {
+    geo(data = d, aes(x = x, y = y), colour = .alfa(e$cor, e$op), linetype = e$lt,
+        linewidth = .lw(e$lw), lineend = "round", linejoin = "round")
+  }
+}
+
+# Escala e barra de cores para o mapa de cor por coluna numérica (2 ou 3 cores).
+.escala_mapa <- function(cfg, dados) {
+  c0 <- cfg$cores
+  tit <- c0$mapa_titulo %||% c0$mapear_coluna
+  guia <- guide_colourbar(title = if (identical(tit, "")) NULL else .texto(tit))
+  cores <- vapply(c0$mapa_cores, .cor, "", onde = "cores$mapa_cores")
+  if (length(cores) >= 3) {
+    mc <- dados[[c0$mapear_coluna]]
+    meio <- c0$mapa_ponto_medio %||% mean(range(mc, na.rm = TRUE))
+    sc <- scale_colour_gradient2(low = cores[1], mid = cores[2], high = cores[3], midpoint = meio,
+                                 limits = c0$mapa_limites, aesthetics = c("colour", "fill"),
+                                 guide = guia, labels = .formatador(list()))
+  } else {
+    sc <- scale_colour_gradient(low = cores[1], high = cores[2], limits = c0$mapa_limites,
+                                aesthetics = c("colour", "fill"), guide = guia,
+                                labels = .formatador(list()))
+  }
+  list(sc)
+}
+
+# -----------------------------------------------------------------------------
+#  10_tipo_barras.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/10_tipo_barras.R — barras
+# =============================================================================
+
+# ---- Barras ---------------------------------------------------------------------
+# Barras agrupadas, empilhadas ou 100 %. Entra: dados e cfg. Sai: list(camadas, info).
+.construir_barras <- function(dados, cfg) {
+  B <- cfg$barras
+  xcol <- .coluna(dados, cfg$grafico$coluna_x, "cfg$grafico$coluna_x")
+  ycols <- .colunas_y(dados, cfg, excluir = xcol)
+  flip <- B$orientacao == "horizontal"
+  est <- .estilos(cfg, ycols, inverter_grad = flip)
+  numerico <- is.numeric(dados[[xcol]])
+  dados <- dados[!is.na(dados[[xcol]]), , drop = FALSE]
+  if (numerico) {
+    xs <- dados[[xcol]]; cats <- NULL
+    passo <- if (length(unique(xs)) > 1) min(diff(sort(unique(xs)))) else 1
+  } else {
+    cats <- unique(as.character(dados[[xcol]]))
+    ordem <- cfg$grafico$ordem_itens
+    if (!is.null(ordem) && !any(ordem %in% ycols)) {   # (se citar colunas, a ordem é das séries)
+      if (all(ordem %in% cats)) cats <- c(ordem, setdiff(cats, ordem))
+      else .aviso("cfg$grafico$ordem_itens: não existe(m) a(s) categoria(s) ",
+                  paste0("'", setdiff(ordem, cats), "'", collapse = ", "), ". A ordem foi ignorada. Categorias: ",
+                  paste0("'", cats, "'", collapse = ", "))
+    }
+    xs <- match(as.character(dados[[xcol]]), cats); passo <- 1
+  }
+  n <- length(ycols); W <- B$largura * passo
+  base <- B$linha_base %||% 0
+  erro_de <- function(yc) {
+    e <- est[[yc]]
+    col <- function(ref) if (is.null(ref)) rep(0, nrow(dados)) else {
+      v <- dados[[.coluna(dados, ref, paste0("cfg$series[[\"", yc, "\"]] coluna de erro"))]]; v[is.na(v)] <- 0; v }
+    tem <- !is.null(e$erro) || !is.null(e$erro_inf) || !is.null(e$erro_sup)
+    list(tem = tem, inf = col(e$erro_inf %||% e$erro), sup = col(e$erro_sup %||% e$erro))
+  }
+  ret <- list()
+  if (B$arranjo == "agrupado") {
+    sob <- B$sobreposicao %||% 0
+    w <- W / (1 + (n - 1) * (1 - sob))
+    for (i in seq_len(n)) {
+      v <- dados[[ycols[i]]]
+      x0 <- xs - W / 2 + (i - 1) * w * (1 - sob)
+      er <- erro_de(ycols[i])
+      ret[[i]] <- data.frame(xmin = x0, xmax = x0 + w, ymin = base, ymax = v, serie = ycols[i],
+                             xc = x0 + w / 2, topo = v, valor = v, tem_erro = er$tem,
+                             e_inf = er$inf, e_sup = er$sup, row.names = NULL)
+    }
+  } else {
+    m <- sapply(ycols, function(y) { v <- dados[[y]]; v[is.na(v)] <- 0; v })
+    if (is.null(dim(m))) m <- matrix(m, nrow = 1, dimnames = list(NULL, ycols))
+    if (B$arranjo == "empilhado_100") {
+      tot <- rowSums(abs(m)); tot[tot == 0] <- 1
+      m <- m / tot * 100
+      base <- 0
+    }
+    pos <- rep(base, nrow(m)); neg <- rep(base, nrow(m))
+    for (i in seq_len(n)) {
+      v <- m[, i]
+      y0 <- ifelse(v >= 0, pos, neg); y1 <- y0 + v
+      pos <- ifelse(v >= 0, y1, pos); neg <- ifelse(v < 0, y1, neg)
+      er <- erro_de(ycols[i])
+      ret[[i]] <- data.frame(xmin = xs - W / 2, xmax = xs + W / 2, ymin = y0, ymax = y1,
+                             serie = ycols[i], xc = xs, topo = y1, valor = v, tem_erro = er$tem,
+                             e_inf = er$inf, e_sup = er$sup, row.names = NULL)
+    }
+  }
+  r <- do.call(rbind, ret); r <- r[!is.na(r$ymax), ]
+  r$serie <- factor(r$serie, levels = ycols)
+
+  contorno_serie <- identical(B$contorno_cor, "serie")
+  cam <- list(if (contorno_serie)
+    geom_rect(data = r, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = serie, colour = serie),
+              linewidth = .lw(B$contorno_espessura_pt), linetype = B$contorno_tipo)
+  else
+    geom_rect(data = r, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = serie),
+              colour = if (is.na(B$contorno_cor)) NA else .cor(B$contorno_cor),
+              linewidth = .lw(B$contorno_espessura_pt), linetype = B$contorno_tipo))
+  # erros (linha a linha, já alinhados com cada barra)
+  faixa_err <- numeric(0)
+  erros <- r[r$tem_erro & B$arranjo != "empilhado_100", ]
+  if (nrow(erros)) {
+    erros$ymin <- erros$topo - erros$e_inf; erros$ymax <- erros$topo + erros$e_sup
+    cam[[length(cam) + 1]] <- geom_errorbar(data = erros, aes(x = xc, ymin = ymin, ymax = ymax),
+      width = (erros$xmax[1] - erros$xmin[1]) * B$erro_chapeu, linewidth = .lw(B$erro_espessura_pt),
+      colour = cfg$texto$cor, inherit.aes = FALSE)
+    faixa_err <- c(erros$ymin, erros$ymax)
+  }
+  # rótulos
+  if (isTRUE(B$rotulos_valor)) {
+    rr <- r
+    rr$rot <- if (B$arranjo == "empilhado_100") paste0(.fmt_num(rr$valor, B$rotulos_casas),
+                                                       "%") else .fmt_num(rr$valor, B$rotulos_casas)
+    pos <- B$rotulos_posicao
+    rr$yl <- if (pos == "centro") (rr$ymin + rr$ymax) / 2 else rr$ymax
+    neg <- rr$ymax < rr$ymin
+    j <- switch(pos, fora = ifelse(neg, 1.3, -0.3), dentro = ifelse(neg, -0.3, 1.3), centro = 0.5)
+    cam[[length(cam) + 1]] <- if (flip)
+      geom_text(data = rr, aes(x = xc, y = yl, label = rot), hjust = j, size = .tx(B$rotulos_tamanho_pt),
+                colour = .cor(B$rotulos_cor), family = .fonte(cfg$texto$fonte))
+    else geom_text(data = rr, aes(x = xc, y = yl, label = rot), vjust = j, size = .tx(B$rotulos_tamanho_pt),
+                   colour = .cor(B$rotulos_cor), family = .fonte(cfg$texto$fonte))
+  }
+  aes_leg <- c("fill", if (contorno_serie) "colour")
+  faixa_y <- c(r$ymin, r$ymax, base, faixa_err)
+  if (isTRUE(B$rotulos_valor) && B$rotulos_posicao == "fora")
+    faixa_y <- c(faixa_y, max(faixa_y) + 0.08 * diff(range(faixa_y)))
+  ax_x <- .calc_eixo(cfg$eixo_x, c(r$xmin, r$xmax), categorias = cats, forcar = cfg$.interno$forcar_x)
+  if (numerico && is.null(cfg$eixo_x$inicio) && is.null(cfg$.interno$forcar_x)) {
+    folga_x <- (1 - B$largura) * passo / 2
+    ax_x <- .calc_eixo(utils::modifyList(cfg$eixo_x, list(inicio = min(r$xmin) - folga_x, fim = max(r$xmax) + folga_x)),
+                       c(r$xmin, r$xmax))
+  }
+  ax_y <- .calc_eixo(cfg$eixo_y, faixa_y, forcar = cfg$.interno$forcar_y)
+  tit_y <- cfg$eixo_y$titulo %||%
+    (if (B$arranjo == "empilhado_100") "Percentual (%)" else if (n == 1) ycols else "Valor")
+  list(camadas = c(cam, .escalas_legenda(est, aes_leg, cfg)),
+       info = list(ax_x = ax_x, ax_y = ax_y, flip = flip, titulo_x = cfg$eixo_x$titulo %||% xcol,
+                   titulo_y = tit_y, legenda_auto = TRUE, faixa_x = c(r$xmin, r$xmax), faixa_y = faixa_y))
+}
+
+# -----------------------------------------------------------------------------
+#  11_tipo_pizza.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/11_tipo_pizza.R — pizza e rosca
+# =============================================================================
+
+# ---- Pizza ----------------------------------------------------------------------
+# Afasta verticalmente os rótulos de um mesmo lado que se sobreporiam; os que não colidem não
+# se movem. Entra: tabela de rótulos (x, y, rot, hj, gx0, gy0, gx1, gy1), cfg e o limite
+# aproximado do gráfico (para converter a altura do texto em unidades do raio).
+# Sai: a mesma tabela com y, hj e fim da linha guia ajustados.
+.afastar_rotulos_pizza <- function(rd, cfg, lim) {
+  P <- cfg$pizza; ex <- cfg$exportacao; m <- cfg$caixa$margens_cm
+  cm_por_unidade <- switch(ex$unidade, cm = 1, mm = 0.1, `in` = 2.54)
+  lado_cm <- max(min(ex$largura * cm_por_unidade - m[2] - m[4], ex$altura * cm_por_unidade - m[1] - m[3]), 1)
+  linhas <- lengths(strsplit(rd$rot, "\n", fixed = TRUE))
+  alt <- linhas * P$rotulos_tamanho_pt * 1.2 / 72 * 2.54 * (2 * lim / lado_cm)  # altura de cada rótulo
+  y0 <- rd$y; y <- y0
+  for (lado in list(rd$x >= 0, rd$x < 0)) {
+    idx <- which(lado)
+    if (length(idx) < 2) next
+    idx <- idx[order(y[idx], decreasing = TRUE)]
+    for (volta in 1:200) {
+      mexeu <- FALSE
+      for (k in seq_len(length(idx) - 1)) {
+        a <- idx[k]; b <- idx[k + 1]
+        falta <- (alt[a] + alt[b]) / 2 - (y[a] - y[b])
+        if (falta > 1e-9) { y[a] <- y[a] + falta / 2; y[b] <- y[b] - falta / 2; mexeu <- TRUE }
+      }
+      if (!mexeu) break
+    }
+  }
+  mov <- abs(y - y0) > 1e-9
+  if (!any(mov)) return(rd)
+  rd$y <- y
+  rd$hj[mov & rd$hj == 0.5] <- ifelse(rd$x[mov & rd$hj == 0.5] >= 0, 0, 1)   # texto para fora, longe do centro
+  dx <- rd$x[mov] - rd$gx0[mov]; dy <- rd$y[mov] - rd$gy0[mov]
+  n <- sqrt(dx^2 + dy^2)
+  rd$gx1[mov] <- rd$x[mov] - P$linha_guia_recuo * dx / n
+  rd$gy1[mov] <- rd$y[mov] - P$linha_guia_recuo * dy / n
+  rd
+}
+
+# Pizza e rosca. Entra: dados e cfg. Sai: list(camadas, info) (info$pizza = TRUE).
+.construir_pizza <- function(dados, cfg) {
+  P <- cfg$pizza
+  xcol <- .coluna(dados, cfg$grafico$coluna_x, "cfg$grafico$coluna_x")
+  ycol <- .colunas_y(dados, cfg, excluir = xcol)[1]
+  cat_ <- as.character(dados[[xcol]]); val <- dados[[ycol]]
+  ok <- !is.na(cat_) & !is.na(val)
+  if (any(val[ok] < 0)) .aviso("Pizza: valores negativos em '", ycol, "' foram ignorados.")
+  ok <- ok & val > 0
+  cat_ <- cat_[ok]; val <- val[ok]
+  if (anyDuplicated(cat_)) { ag <- tapply(val, factor(cat_, levels = unique(cat_)),
+                                          sum); cat_ <- names(ag); val <- as.numeric(ag) }
+  if (!is.null(cfg$grafico$ordem_itens)) {
+    o <- c(intersect(cfg$grafico$ordem_itens, cat_), setdiff(cat_, cfg$grafico$ordem_itens))
+    val <- val[match(o, cat_)]; cat_ <- o
+  }
+  pct <- val / sum(val) * 100
+  if ((P$agrupar_abaixo %||% 0) > 0 && any(pct < P$agrupar_abaixo)) {
+    peq <- pct < P$agrupar_abaixo
+    cat_ <- c(cat_[!peq], P$nome_agrupado); val <- c(val[!peq], sum(val[peq]))
+    pct <- val / sum(val) * 100
+  }
+  inexistentes <- setdiff(P$explodir, cat_)
+  if (length(inexistentes))
+    .aviso("cfg$pizza$explodir: não existe(m) a(s) categoria(s) ", paste0("'", inexistentes, "'", collapse = ", "),
+           ". Categorias: ", paste0("'", cat_, "'", collapse = ", "))
+  est <- .estilos(cfg, cat_, grupo_gradiente = TRUE)
+  dir <- if (P$sentido == "horario") 1 else -1
+  fr <- cumsum(c(0, val)) / sum(val)
+  a0 <- P$angulo_inicial + dir * fr[-length(fr)] * P$angulo_total
+  a1 <- P$angulo_inicial + dir * fr[-1] * P$angulo_total
+  r0 <- P$raio_furo
+  polys <- list(); rot <- list()
+  for (i in seq_along(cat_)) {
+    am <- (a0[i] + a1[i]) / 2 * pi / 180
+    desl <- if (cat_[i] %in% P$explodir) P$deslocamento_explosao / 100 else 0
+    cx <- desl * sin(am); cy <- desl * cos(am)
+    ang <- seq(a0[i], a1[i], length.out = max(3, ceiling(abs(a1[i] - a0[i])) + 1)) * pi / 180
+    px <- c(sin(ang), if (r0 > 0) r0 * sin(rev(ang)) else 0)
+    py <- c(cos(ang), if (r0 > 0) r0 * cos(rev(ang)) else 0)
+    polys[[i]] <- data.frame(x = px + cx, y = py + cy, serie = cat_[i])
+    partes <- c(categoria = cat_[i], valor = .fmt_num(val[i], P$rotulos_casas),
+                percentual = paste0(.fmt_num(pct[i], P$rotulos_casas), "%"))
+    texto <- paste(partes[intersect(P$rotulos, names(partes))], collapse = P$rotulos_separador)
+    rr <- switch(P$rotulos_posicao, dentro = if (r0 > 0) (1 + r0) / 2 else P$rotulos_raio_dentro,
+                 borda = P$rotulos_raio_borda, fora = P$rotulos_distancia)
+    lado <- sin(am)
+    hj <- if (P$rotulos_posicao == "dentro") 0.5 else if (abs(lado) < 0.15) 0.5 else if (lado > 0) 0 else 1
+    corr <- if (identical(P$rotulos_cor, "auto")) {
+      if (P$rotulos_posicao == "dentro") (if (.luminancia(est[[i]]$cor) < 0.5) "white" else "black") else cfg$texto$cor
+    } else .cor(P$rotulos_cor)
+    if (nzchar(texto) && pct[i] >= (P$ocultar_rotulo_abaixo %||% 0))
+      rot[[length(rot) + 1]] <- data.frame(x = cx + rr * sin(am), y = cy + rr * cos(am), rot = texto,
+        hj = hj, cor = corr, gx0 = cx + 1.0 * sin(am), gy0 = cy + 1.0 * cos(am),
+        gx1 = cx + (rr - P$linha_guia_recuo) * sin(am), gy1 = cy + (rr - P$linha_guia_recuo) * cos(am))
+  }
+  pl <- do.call(rbind, polys); pl$serie <- factor(pl$serie, levels = cat_)
+  cam <- list(geom_polygon(data = pl, aes(x = x, y = y, group = serie, fill = serie),
+                           colour = if (is.na(P$contorno_cor)) NA else .cor(P$contorno_cor),
+                           linewidth = .lw(P$contorno_espessura_pt)))
+  lim <- 1 + max(c(0, P$deslocamento_explosao / 100 * (length(P$explodir) > 0)))
+  if (length(rot)) {
+    rd <- do.call(rbind, rot)
+    if (P$rotulos_posicao != "dentro" && isTRUE(P$rotulos_afastar) && nrow(rd) > 1)
+      rd <- .afastar_rotulos_pizza(rd, cfg, max(lim, max(abs(c(rd$x, rd$y))) + P$rotulos_margem))
+    if (P$rotulos_posicao == "fora" && isTRUE(P$linha_guia))
+      cam[[length(cam) + 1]] <- geom_segment(data = rd, aes(x = gx0, y = gy0, xend = gx1, yend = gy1),
+                                             colour = cfg$texto$cor, linewidth = .lw(P$linha_guia_espessura_pt))
+    cam[[length(cam) + 1]] <- geom_text(data = rd, aes(x = x, y = y, label = rot), hjust = rd$hj,
+      colour = rd$cor, size = .tx(P$rotulos_tamanho_pt), lineheight = 0.95, family = .fonte(cfg$texto$fonte))
+    if (P$rotulos_posicao != "dentro") lim <- max(lim, max(abs(c(rd$x, rd$y))) + P$rotulos_margem)
+  }
+  leg <- !("categoria" %in% P$rotulos)
+  list(camadas = c(cam, .escalas_legenda(est, "fill", cfg)),
+       info = list(pizza = TRUE, lim = lim, legenda_auto = leg))
+}
+
+# -----------------------------------------------------------------------------
+#  12_tipo_distribuicao.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/12_tipo_distribuicao.R — histograma, densidade e ECDF
+# =============================================================================
+
+# ---- Distribuições ----------------------------------------------------------------
+# Entra: dados e cfg. Sai: lista de amostras (uma por série ou grupo) para distribuições e boxplot.
+.amostras <- function(dados, cfg) {
+  gcol <- cfg$grafico$coluna_grupo
+  if (!is.null(gcol)) {
+    gcol <- .coluna(dados, gcol, "cfg$grafico$coluna_grupo")
+    vcol <- .colunas_y(dados, cfg, excluir = gcol)[1]
+    g <- as.character(dados[[gcol]])
+    itens <- unique(g[!is.na(g)])
+    if (!is.null(cfg$grafico$ordem_itens)) itens <- c(intersect(cfg$grafico$ordem_itens, itens),
+                                                      setdiff(itens, cfg$grafico$ordem_itens))
+    am <- lapply(itens, function(i) { v <- dados[[vcol]][g %in% i]; v[!is.na(v)] })
+    return(list(am = stats::setNames(am, itens), nome_valor = vcol, nome_grupo = gcol))
+  }
+  ycols <- .colunas_y(dados, cfg, excluir = NULL)
+  am <- lapply(ycols, function(y) { v <- dados[[y]]; v[!is.na(v)] })
+  list(am = stats::setNames(am, ycols), nome_valor = if (length(ycols) == 1) ycols else "Valor", nome_grupo = NULL)
+}
+
+# Histograma, densidade e ECDF. Entra: dados e cfg. Sai: list(camadas, info).
+.construir_distribuicao <- function(dados, cfg) {
+  D <- cfg$distribuicao; tipo <- cfg$grafico$tipo
+  A <- .amostras(dados, cfg); am <- A$am; itens <- names(am)
+  vazio <- vapply(am, length, 0) < 2
+  if (any(vazio)) .erro("Distribuição: a(s) série(s) ", paste(itens[vazio], collapse = ", "),
+                        " tem(têm) menos de 2 valores.")
+  est <- .estilos(cfg, itens)
+  multi <- length(itens) > 1
+  todos <- unlist(am)
+  cam <- list(); faixa_y <- 0; aes_leg <- character(0); tit_y <- NULL
+  escalar <- function(dens, n, w) switch(D$medida, contagem = dens * n * w, frequencia = dens * w,
+                                         percentual = dens * w * 100, densidade = dens)
+  if (tipo == "histograma") {
+    if (!is.null(D$largura_classe)) {
+      w <- D$largura_classe
+      ini <- D$inicio_classe %||% (floor(min(todos) / w) * w)
+      quebras <- seq(ini, max(todos) + w, by = w)
+      quebras <- quebras[seq_len(max(2, which(quebras > max(todos))[1]))]
+    } else if (!is.null(D$n_classes)) {
+      ini <- D$inicio_classe %||% min(todos)
+      quebras <- seq(ini, max(todos), length.out = D$n_classes + 1)
+    } else {
+      quebras <- graphics::hist(todos, plot = FALSE)$breaks
+      if (!is.null(D$inicio_classe)) { w <- diff(quebras)[1]; quebras <- seq(D$inicio_classe, max(todos) + w, by = w) }
+    }
+    if (min(todos) < min(quebras)) .erro("distribuicao$inicio_classe (", min(quebras), ") é maior que o menor dado (",
+                                         min(todos), ").")
+    ret <- do.call(rbind, lapply(itens, function(i) {
+      h <- graphics::hist(am[[i]], breaks = quebras, plot = FALSE, right = FALSE, include.lowest = TRUE)
+      n <- length(am[[i]]); w <- diff(quebras)
+      y <- switch(D$medida, contagem = h$counts, frequencia = h$counts / n,
+                  percentual = h$counts / n * 100, densidade = h$counts / (n * w))
+      data.frame(xmin = quebras[-length(quebras)], xmax = quebras[-1], ymin = 0, ymax = y, serie = i)
+    }))
+    ret$serie <- factor(ret$serie, levels = itens)
+    if (multi && all(vapply(est, function(e) e$opf >= 1, TRUE))) {
+      cfg2 <- cfg; cfg2$serie_padrao$opacidade_preenchimento <- D$opacidade_multiplas %||% 0.55
+      est <- .estilos(cfg2, itens)
+    }
+    cam[[1]] <- geom_rect(data = ret, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = serie),
+                          colour = if (is.na(D$contorno_cor)) NA else .cor(D$contorno_cor),
+                          linewidth = .lw(D$contorno_espessura_pt))
+    aes_leg <- "fill"; faixa_y <- c(0, ret$ymax); faixa_x <- range(quebras)
+    tit_y <- switch(D$medida, contagem = "Contagem", frequencia = "Frequência relativa",
+                    percentual = "Frequência (%)", densidade = "Densidade")
+    curvas <- list()
+    for (i in itens) {
+      x <- am[[i]]; n <- length(x); w <- diff(quebras)[1]
+      grade <- seq(min(quebras), max(quebras), length.out = 300)
+      if (isTRUE(D$curva_densidade)) {
+        dd <- stats::density(x, adjust = D$ajuste_banda, from = min(grade), to = max(grade), n = 300)
+        curvas[[length(curvas) + 1]] <- data.frame(x = dd$x, y = escalar(dd$y, n, w), serie = i, tipo = "dens")
+      }
+      if (isTRUE(D$curva_normal)) {
+        curvas[[length(curvas) + 1]] <- data.frame(x = grade,
+                                                   y = escalar(stats::dnorm(grade, mean(x), stats::sd(x)), n, w),
+                                                   serie = i, tipo = "normal")
+      }
+    }
+    if (length(curvas)) {
+      cv <- do.call(rbind, curvas); cv$serie <- factor(cv$serie, levels = itens)
+      cam[[length(cam) + 1]] <- geom_line(
+        data = cv, aes(x = x, y = y, colour = serie, group = interaction(serie, tipo), linetype = tipo),
+        linewidth = .lw(D$espessura_curva_pt), show.legend = FALSE)
+      cam[[length(cam) + 1]] <- scale_linetype_manual(values = c(dens = "solid", normal = "dashed"), guide = "none")
+      aes_leg <- c(aes_leg, "colour"); faixa_y <- c(faixa_y, cv$y)
+    }
+  } else if (tipo == "densidade") {
+    dd <- do.call(rbind, lapply(itens, function(i) {
+      d <- stats::density(am[[i]], adjust = D$ajuste_banda)
+      data.frame(x = d$x, y = d$y, serie = i)
+    }))
+    dd$serie <- factor(dd$serie, levels = itens)
+    if (isTRUE(D$preencher_densidade)) {
+      for (i in itens) {
+        e <- est[[i]]; s <- dd[dd$serie == i, ]
+        fill <- if (identical(cfg$cores$preenchimento, "gradiente"))
+          .gradiente(.alfa(e$cor, D$opacidade_area), .alfa(e$cor2, D$opacidade_area), cfg$cores$gradiente_direcao)
+          else .alfa(e$cor, D$opacidade_area)
+        cam[[length(cam) + 1]] <- geom_ribbon(data = s, aes(x = x, ymin = 0, ymax = y), fill = fill, colour = NA)
+      }
+    }
+    cam[[length(cam) + 1]] <- geom_line(data = dd, aes(x = x, y = y, colour = serie, linetype = serie,
+                                                       linewidth = serie, alpha = serie))
+    aes_leg <- c("colour", "linetype", "linewidth", "alpha")
+    faixa_y <- c(0, dd$y); faixa_x <- range(dd$x); tit_y <- "Densidade"
+  } else {
+    ec <- do.call(rbind, lapply(itens, function(i) {
+      x <- sort(am[[i]]); n <- length(x)
+      data.frame(x = c(x[1], x), y = c(0, seq_len(n) / n), serie = i)
+    }))
+    ec$serie <- factor(ec$serie, levels = itens)
+    cam[[1]] <- geom_step(data = ec, aes(x = x, y = y, colour = serie, linetype = serie, linewidth = serie,
+                                         alpha = serie),
+                          direction = "hv")
+    aes_leg <- c("colour", "linetype", "linewidth", "alpha")
+    faixa_y <- c(0, 1); faixa_x <- range(ec$x); tit_y <- "Probabilidade acumulada"
+  }
+  if (isTRUE(D$marcas_rug)) {
+    escura <- vapply(itens, function(i) grDevices::colorRampPalette(c(est[[i]]$cor, "black"))(3)[2], "")
+    rg <- data.frame(x = todos, cor = rep(escura, vapply(am, length, 0)))
+    cam[[length(cam) + 1]] <- geom_rug(data = rg, aes(x = x), colour = rg$cor, sides = "b",
+                                       length = unit(D$rug_comprimento_pt, "pt"), linewidth = .lw(D$rug_espessura_pt),
+                                       inherit.aes = FALSE)
+  }
+  ax_x <- .calc_eixo(cfg$eixo_x, faixa_x, forcar = cfg$.interno$forcar_x)
+  ax_y <- .calc_eixo(cfg$eixo_y, faixa_y, forcar = cfg$.interno$forcar_y)
+  list(camadas = c(cam, .escalas_legenda(est, aes_leg, cfg)),
+       info = list(ax_x = ax_x, ax_y = ax_y, flip = FALSE,
+                   titulo_x = cfg$eixo_x$titulo %||% A$nome_valor, titulo_y = cfg$eixo_y$titulo %||% tit_y,
+                   legenda_auto = TRUE, faixa_x = faixa_x, faixa_y = faixa_y))
+}
+
+# -----------------------------------------------------------------------------
+#  13_tipo_boxplot.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/13_tipo_boxplot.R — boxplot, violino e média ± erro
+# =============================================================================
+
+# ---- Boxplot e variações ------------------------------------------------------------
+# Posições X dos pontos em "enxame" (sem sobreposição). Entra: valores y, centro e largura da
+# faixa, faixa de dados e a altura relativa de cada faixa (cfg$boxplot$enxame_resolucao).
+.enxame <- function(y, centro, largura, faixa_y, tam_rel = 0.025) {
+  n <- length(y); if (!n) return(numeric(0))
+  h <- max(diff(faixa_y) * tam_rel, 1e-12)
+  bin <- floor((y - min(y)) / h)
+  off <- numeric(n)
+  for (b in unique(bin)) {
+    idx <- which(bin == b); k <- length(idx)
+    passo <- min(largura / max(k, 1), largura / 6)
+    pos <- c(0, as.vector(rbind(seq_len(k), -seq_len(k))))[seq_len(k)]
+    off[idx[order(y[idx])]] <- pos * passo
+  }
+  off <- pmax(pmin(off, largura / 2), -largura / 2)
+  centro + off
+}
+
+# Boxplot, violino e média ± erro. Entra: dados e cfg. Sai: list(camadas, info).
+.construir_boxplot <- function(dados, cfg) {
+  X <- cfg$boxplot; var <- X$variacao
+  A <- .amostras(dados, cfg); am <- A$am; itens <- names(am)
+  if (any(vapply(am, length, 0) == 0)) .erro("Boxplot: série(s) sem dados: ",
+                                             paste(itens[vapply(am, length, 0) == 0], collapse = ", "))
+  flip <- identical(X$orientacao, "horizontal")
+  est <- .estilos(cfg, itens, inverter_grad = flip)
+  k <- length(itens); w <- X$largura
+  contorno <- function(i) if (identical(X$contorno_cor, "serie")) est[[i]]$cor else .cor(X$contorno_cor)
+  polys <- list(); segs <- list(); pts_media <- list(); pts_out <- list(); pts_dados <- list(); txt_n <- list()
+  faixa <- range(unlist(am))
+  restaurar_rng <- .guardar_rng(); on.exit(restaurar_rng(), add = TRUE)
+  set.seed(X$semente %||% 123)
+  erro_media <- function(x, tipo) {
+    n <- length(x); s <- stats::sd(x); if (is.na(s)) s <- 0
+    switch(tipo, desvio_padrao = s, erro_padrao = s / sqrt(n),
+           ic95 = if (n > 1) stats::qt(0.975, n - 1) * s / sqrt(n) else 0)
+  }
+  for (j in seq_len(k)) {
+    it <- itens[j]; x <- am[[it]]; p <- j; cc <- contorno(it)
+    q <- stats::quantile(x, c(X$caixa_percentis[1], 50, X$caixa_percentis[2]) / 100, names = FALSE, type = 7)
+    md <- mean(x)
+    wl <- switch(X$bigode,
+      tukey = { iqr <- q[3] - q[1]; c(min(x[x >= q[1] - X$bigode_coef * iqr]),
+                                      max(x[x <= q[3] + X$bigode_coef * iqr])) },
+      percentis = stats::quantile(x, X$bigode_percentis / 100, names = FALSE, type = 7),
+      min_max = range(x),
+      desvio_padrao = , erro_padrao = , ic95 = md + c(-1, 1) * erro_media(x, X$bigode))
+    out <- if (X$bigode %in% c("tukey", "percentis")) x[x < wl[1] | x > wl[2]] else numeric(0)
+    if (var == "media_erro") {
+      er <- erro_media(x, X$media_erro_tipo)
+      if (X$media_erro_estilo == "barra")
+        polys[[length(polys) + 1]] <- data.frame(x = p + c(-w, w, w, -w) / 2, y = c(0, 0, md, md), item = it)
+      segs[[length(segs) + 1]] <- data.frame(x = p, xend = p, y = md - er, yend = md + er, cor = cc,
+                                             lw = X$contorno_espessura_pt)
+      segs[[length(segs) + 1]] <- data.frame(x = p - w * X$bigode_chapeu / 2, xend = p + w * X$bigode_chapeu / 2,
+                                             y = c(md - er,
+                                                   md + er), yend = c(md - er,
+                                                                      md + er), cor = cc, lw = X$contorno_espessura_pt)
+      if (X$media_erro_estilo == "ponto")
+        pts_media[[length(pts_media) + 1]] <- data.frame(x = p, y = md, fill = est[[it]]$cor,
+                                                         tam = X$media_tamanho_pt * X$media_erro_ponto_fator, item = it)
+      faixa <- range(c(faixa, 0, md + er, md - er))
+      if (isTRUE(X$mostrar_n))
+        txt_n[[length(txt_n) + 1]] <- data.frame(x = p, y = md + er, rot = paste0("n = ", length(x)))
+      next
+    }
+    # caixa (ou violino)
+    xb0 <- p - w / 2; xb1 <- p + w / 2
+    if (var == "meio_box") { xb0 <- p; xb1 <- p + w / 2 }
+    if (var == "violino_box") { xb0 <- p - w * 0.12; xb1 <- p + w * 0.12 }
+    if (var %in% c("violino", "violino_box")) {
+      if (length(x) < 2) {
+        .aviso("Violino: o grupo '", it, "' tem ", length(x), " valor; são precisos pelo menos 2 para ",
+               "estimar a densidade. O violino desse grupo não foi desenhado.")
+      } else {
+        dd <- stats::density(x, adjust = X$violino_ajuste_banda, cut = if (isTRUE(X$violino_cortar)) 0 else 3)
+        lv <- dd$y / max(dd$y) * X$violino_largura / 2
+        polys[[length(polys) + 1]] <- data.frame(x = c(p - lv, rev(p + lv)), y = c(dd$x, rev(dd$x)), item = it)
+        faixa <- range(c(faixa, dd$x))
+      }
+    }
+    if (var != "violino") {
+      if (isTRUE(X$entalhe)) {
+        nt <- 1.58 * (q[3] - q[1]) / sqrt(length(x)); ind <- (xb1 - xb0) * 0.25
+        bx <- data.frame(x = c(xb0, xb0, xb0 + ind, xb0, xb0, xb1, xb1, xb1 - ind, xb1, xb1),
+                         y = c(q[1], q[2] - nt, q[2], q[2] + nt, q[3], q[3], q[2] + nt, q[2], q[2] - nt, q[1]))
+        mx <- c(xb0 + ind, xb1 - ind)
+      } else {
+        bx <- data.frame(x = c(xb0, xb1, xb1, xb0), y = c(q[1], q[1], q[3], q[3])); mx <- c(xb0, xb1)
+      }
+      bx$item <- if (var == "violino_box") paste0(".branco.", it) else it
+      polys[[length(polys) + 1]] <- bx
+      xm <- (xb0 + xb1) / 2; cap <- (xb1 - xb0) * X$bigode_chapeu / 2
+      if (X$bigode_lado %in% c("ambos", "inferior"))
+        segs[[length(segs) + 1]] <- data.frame(x = c(xm, xm - cap), xend = c(xm, xm + cap), y = c(q[1], wl[1]),
+                                               yend = c(wl[1], wl[1]), cor = cc, lw = X$contorno_espessura_pt)
+      if (X$bigode_lado %in% c("ambos", "superior"))
+        segs[[length(segs) + 1]] <- data.frame(x = c(xm, xm - cap), xend = c(xm, xm + cap), y = c(q[3], wl[2]),
+                                               yend = c(wl[2], wl[2]), cor = cc, lw = X$contorno_espessura_pt)
+      if (isTRUE(X$mediana))
+        segs[[length(segs) + 1]] <- data.frame(x = mx[1], xend = mx[2], y = q[2], yend = q[2], cor = cc,
+                                               lw = X$mediana_espessura_pt)
+      if (isTRUE(X$outliers) && length(out))
+        pts_out[[length(pts_out) + 1]] <- data.frame(x = xm, y = out, cor = cc)
+      faixa <- range(c(faixa, wl))
+    }
+    if (isTRUE(X$media))
+      pts_media[[length(pts_media) + 1]] <- data.frame(
+        x = if (var == "meio_box") (xb0 + xb1) / 2 else p, y = md,
+        fill = .cor(X$media_preenchimento), tam = X$media_tamanho_pt, item = it)
+    if (var %in% c("box_pontos", "meio_box")) {
+      centro <- if (var == "meio_box") p - w / 4 else p
+      larg <- if (var == "meio_box") min(X$pontos_largura, w / 2 * 0.9) else X$pontos_largura
+      xs <- switch(X$pontos_disposicao, coluna = rep(centro, length(x)),
+                   jitter = centro + stats::runif(length(x), -larg / 2, larg / 2),
+                   enxame = .enxame(x, centro, larg, range(unlist(am)), X$enxame_resolucao))
+      pts_dados[[length(pts_dados) + 1]] <- data.frame(x = xs, y = x, fill = .alfa(est[[it]]$cor, X$pontos_opacidade))
+    }
+    if (isTRUE(X$mostrar_n)) txt_n[[length(txt_n) + 1]] <- data.frame(x = p, y = max(wl[2], q[3], max(x)),
+                                                                      rot = paste0("n = ", length(x)))
+  }
+  cam <- list()
+  if (length(polys)) {
+    pl <- do.call(rbind, polys)
+    brancos <- grepl("^\\.branco\\.", pl$item)
+    if (any(!brancos)) {
+      pp <- pl[!brancos, ]; pp$item <- factor(pp$item, levels = itens)
+      cam[[length(cam) + 1]] <- geom_polygon(data = pp, aes(x = x, y = y, group = item, fill = item),
+        colour = if (identical(X$contorno_cor, "serie")) NA else .cor(X$contorno_cor),
+        linewidth = .lw(X$contorno_espessura_pt))
+      if (identical(X$contorno_cor, "serie"))
+        for (it in levels(droplevels(pp$item)))
+          cam[[length(cam) + 1]] <- geom_polygon(data = pp[pp$item == it, ], aes(x = x, y = y, group = item),
+            fill = NA, colour = est[[it]]$cor, linewidth = .lw(X$contorno_espessura_pt), show.legend = FALSE)
+    }
+    if (any(brancos)) {
+      pb <- pl[brancos, ]
+      cam[[length(cam) + 1]] <- geom_polygon(data = pb, aes(x = x, y = y, group = item), fill = "white",
+        colour = .cor(if (identical(X$contorno_cor,
+                                    "serie")) "black" else X$contorno_cor), linewidth = .lw(X$contorno_espessura_pt))
+    }
+  }
+  if (length(pts_dados)) {
+    pd <- do.call(rbind, pts_dados)
+    cam[[length(cam) + 1]] <- geom_point(data = pd, aes(x = x, y = y), shape = X$pontos_simbolo, fill = pd$fill,
+      colour = if (X$pontos_simbolo >= 21) scales::alpha("black", 0.8) else pd$fill,
+      size = .tx(X$pontos_tamanho_pt), stroke = .st(X$pontos_borda_pt))
+  }
+  if (length(segs)) {
+    sg <- do.call(rbind, segs)
+    cam[[length(cam) + 1]] <- geom_segment(data = sg, aes(x = x, xend = xend, y = y, yend = yend),
+      colour = sg$cor, linewidth = .lw(sg$lw), lineend = "butt")
+  }
+  if (length(pts_out)) {
+    po <- do.call(rbind, pts_out)
+    cam[[length(cam) + 1]] <- geom_point(data = po, aes(x = x, y = y), shape = X$outliers_simbolo,
+      colour = po$cor, size = .tx(X$outliers_tamanho_pt), stroke = .st(X$outliers_borda_pt))
+  }
+  if (length(pts_media)) {
+    pm <- do.call(rbind, pts_media)
+    cor_media <- .cor(if (identical(X$contorno_cor, "serie")) "black" else X$contorno_cor)
+    cam[[length(cam) + 1]] <- geom_point(data = pm, aes(x = x, y = y), shape = X$media_simbolo, fill = pm$fill,
+      colour = cor_media, size = .tx(pm$tam), stroke = .st(X$media_borda_pt))
+  }
+  if (length(txt_n)) {
+    tn <- do.call(rbind, txt_n); faixa <- range(c(faixa, tn$y + 0.06 * diff(faixa)))
+    tam_n <- X$n_tamanho_pt %||% cfg$texto$tamanho_base_pt * 0.8
+    cam[[length(cam) + 1]] <- if (flip) geom_text(data = tn, aes(x = x, y = y, label = rot), hjust = -0.2,
+                                                   size = .tx(tam_n), family = .fonte(cfg$texto$fonte))
+      else geom_text(data = tn, aes(x = x, y = y, label = rot), vjust = -0.6,
+                     size = .tx(tam_n), family = .fonte(cfg$texto$fonte))
+  }
+  ax_x <- .calc_eixo(cfg$eixo_x, c(0.5, k + 0.5), categorias = itens, forcar = cfg$.interno$forcar_x)
+  ax_y <- .calc_eixo(cfg$eixo_y, faixa, forcar = cfg$.interno$forcar_y)
+  aes_leg <- if (length(polys) && any(!grepl("^\\.branco\\.", do.call(rbind, polys)$item))) "fill" else character(0)
+  list(camadas = c(cam, .escalas_legenda(est, aes_leg, cfg)),
+       info = list(ax_x = ax_x, ax_y = ax_y, flip = flip, titulo_x = cfg$eixo_x$titulo %||% (A$nome_grupo %||% ""),
+                   titulo_y = cfg$eixo_y$titulo %||% A$nome_valor, legenda_auto = FALSE,
+                   faixa_x = c(0.5, k + 0.5), faixa_y = faixa))
+}
+
+# -----------------------------------------------------------------------------
+#  14_montagem.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/14_montagem.R — montagem final de um gráfico (eixos + tema + anotações)
+# =============================================================================
+
+# =============================================================================
+#  MONTAGEM FINAL (eixos + tema + anotações)
+# =============================================================================
+# Escala contínua X ou Y a partir de um eixo calculado (limites, ticks, rótulos, margem).
+.escala_continua <- function(ax, xy, sec, posicao = NULL) {
+  f <- if (xy == "x") scale_x_continuous else scale_y_continuous
+  args <- list(limits = ax$limites, breaks = ax$maiores, minor_breaks = ax$menores,
+               labels = ax$rotulos, transform = ax$trans, expand = expansion(mult = ax$mult),
+               oob = scales::oob_keep)
+  if (!is.null(sec)) args$sec.axis <- sec
+  if (!is.null(posicao)) args$position <- posicao
+  do.call(f, args)
+}
+
+# Camadas de anotação: faixas (antes do gráfico) e referências, setas, textos e letra (depois).
+.camadas_extra <- function(cfg, info) {
+  cam <- list(); fonte <- .fonte(cfg$texto$fonte)
+  an <- cfg$anotacoes
+  antes <- list()
+  for (fx in an$faixas) {
+    cor <- .cor(fx$cor %||% "grey60"); op <- fx$opacidade %||% 0.25
+    antes[[length(antes) + 1]] <- if ((fx$eixo %||% "x") == "x")
+      annotate("rect", xmin = fx$de, xmax = fx$ate, ymin = -Inf, ymax = Inf, fill = cor, alpha = op)
+      else annotate("rect", ymin = fx$de, ymax = fx$ate, xmin = -Inf, xmax = Inf, fill = cor, alpha = op)
+  }
+  for (r in cfg$referencias) {
+    if (is.null(r$valor)) .erro("cfg$referencias: cada linha precisa de 'valor'.")
+    cor <- .cor(r$cor %||% "grey40"); esp <- .lw(r$espessura_pt %||% 0.75); tp <- r$tipo %||% "dashed"
+    if ((r$eixo %||% "y") == "y") {
+      cam[[length(cam) + 1]] <- geom_hline(yintercept = r$valor, colour = cor, linewidth = esp, linetype = tp)
+      if (!is.null(r$rotulo)) cam[[length(cam) + 1]] <- annotate("text", x = Inf, y = r$valor, label = r$rotulo,
+        hjust = 1.05, vjust = -0.4, colour = cor, size = .tx(r$rotulo_tamanho_pt %||% 8), family = fonte)
+    } else {
+      cam[[length(cam) + 1]] <- geom_vline(xintercept = r$valor, colour = cor, linewidth = esp, linetype = tp)
+      if (!is.null(r$rotulo)) cam[[length(cam) + 1]] <- annotate("text", x = r$valor, y = Inf, label = r$rotulo,
+        hjust = 1.05, vjust = -0.4, angle = 90, colour = cor, size = .tx(r$rotulo_tamanho_pt %||% 8), family = fonte)
+    }
+  }
+  for (s in an$setas) {
+    cam[[length(cam) + 1]] <- annotate("segment", x = s$x, y = s$y, xend = s$x_fim, yend = s$y_fim,
+      colour = .cor(s$cor %||% cfg$texto$cor), linewidth = .lw(s$espessura_pt %||% 0.8),
+      arrow = arrow(length = unit(s$tamanho_ponta_pt %||% 6, "pt"), type = "closed"))
+  }
+  for (t in an$textos) {
+    pm <- .tem_formatacao(t$texto)
+    cam[[length(cam) + 1]] <- annotate("text", x = t$x, y = t$y,
+      label = if (pm) .plotmath(t$texto) else t$texto, parse = pm,
+      hjust = switch(t$alinhamento %||% "centro", esquerda = 0, centro = 0.5, direita = 1),
+      colour = .cor(t$cor %||% cfg$texto$cor), size = .tx(t$tamanho_pt %||% cfg$texto$tamanho_base_pt),
+      fontface = if (isTRUE(t$negrito)) "bold" else "plain", family = fonte)
+  }
+  if (!is.null(an$letra)) {
+    cam[[length(cam) + 1]] <- annotation_custom(textGrob(an$letra, x = an$letra_posicao[1], y = an$letra_posicao[2],
+      hjust = 0, vjust = 1, gp = gpar(fontsize = an$letra_tamanho_pt %||% cfg$texto$tamanho_base_pt,
+                                      fontface = if (isTRUE(an$letra_negrito)) "bold" else "plain",
+                                      fontfamily = fonte, col = cfg$texto$cor)),
+      xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
+  }
+  list(antes = antes, depois = cam)
+}
+
+# Monta UM gráfico. Entra: dados e cfg. Sai: objeto ggplot (com attr "info" = eixos calculados) ou,
+# com so_info = TRUE, só a lista 'info' (faixas de dados e eixos), sem montar nada: é o que a
+# passada prévia dos painéis precisa.
+.plotar_um <- function(dados, cfg, so_info = FALSE) {
+  tipo <- cfg$grafico$tipo
+  res <- switch(tipo,
+    pontos = , linha = , linha_pontos = , area = , area_empilhada = .construir_xy(dados, cfg),
+    barras = .construir_barras(dados, cfg),
+    pizza = .construir_pizza(dados, cfg),
+    histograma = , densidade = , ecdf = .construir_distribuicao(dados, cfg),
+    boxplot = .construir_boxplot(dados, cfg))
+  info <- res$info
+  if (isTRUE(so_info)) return(info)
+  extra <- .camadas_extra(cfg, info)
+  g <- ggplot() + extra$antes + res$camadas + extra$depois
+  mostrar_leg <- if (identical(cfg$legenda$mostrar, "auto")) info$legenda_auto else isTRUE(cfg$legenda$mostrar)
+
+  if (isTRUE(info$pizza)) {
+    g <- g + coord_fixed(xlim = c(-info$lim, info$lim), ylim = c(-info$lim, info$lim), expand = FALSE, clip = "off") +
+      .tema(cfg, cfg$eixo_x, cfg$eixo_y, list(hor = "bottom", ver = "left", lado_y2 = ""), sem_eixos = TRUE) +
+      labs(title = .texto(cfg$titulos$titulo), subtitle = .texto(cfg$titulos$subtitulo))
+    if (!mostrar_leg) g <- g + theme(legend.position = "none")
+    attr(g, "info") <- info
+    return(g)
+  }
+
+  if (is.null(info$y2) && isTRUE(cfg$eixo_y2$ativo) && identical(cfg$eixo_y2$modo, "transformado")) {
+    if (isTRUE(info$flip)) .erro("eixo_y2 \"transformado\" não é suportado em barras/caixas horizontais.")
+    if (info$ax_y$escala != "linear") .erro("eixo_y2 \"transformado\" exige eixo_y linear.")
+    fa <- cfg$eixo_y2$fator %||% 1; de <- cfg$eixo_y2$deslocamento %||% 0
+    if (fa == 0) .erro("cfg$eixo_y2$fator não pode ser 0.")
+    e2 <- utils::modifyList(cfg$eixo_y, cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))])
+    e2$escala <- "linear"; e2$inverter <- FALSE
+    l2 <- sort(fa * info$ax_y$limites + de)
+    e2$inicio <- e2$inicio %||% l2[1]; e2$fim <- e2$fim %||% l2[2]
+    if (e2$inicio != l2[1] || e2$fim != l2[2]) {
+      .aviso("eixo_y2 \"transformado\": os limites seguem o eixo_y (", l2[1], " a ", l2[2],
+             "); inicio/fim do y2 ignorados.")
+      e2$inicio <- l2[1]; e2$fim <- l2[2]
+    }
+    ax2 <- .calc_eixo(e2, l2)
+    cor2 <- if (is.null(cfg$eixo_y2$cor_eixo) || identical(cfg$eixo_y2$cor_eixo,
+                                                           "serie")) NULL else cfg$eixo_y2$cor_eixo
+    info$y2 <- list(ax = ax2, para2 = function(v) fa * v + de, para1 = function(v) (v - de) / fa,
+                    titulo = cfg$eixo_y2$titulo %||% "",
+                    cor = cor2 %||% cfg$texto$cor)
+  }
+  cx <- cfg$caixa; it <- cfg$.interno %||% list()
+  espelhar <- isTRUE(cx$fechada) && isTRUE(cx$ticks_espelhados)
+  sec_dup <- function(ax) {
+    if (!espelhar) return(NULL)
+    dup_axis(name = NULL, labels = if (isTRUE(cx$rotulos_espelhados)) derive() else NULL)
+  }
+  y_dir <- isTRUE(it$y_direita) && is.null(info$y2)
+  x_topo <- isTRUE(it$x_topo)
+  # secundários
+  sec_x <- sec_dup(info$ax_x)
+  sec_y <- if (!is.null(info$y2)) {
+    a2 <- info$y2$ax
+    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo), breaks = a2$maiores, labels = a2$rotulos)
+  } else sec_dup(info$ax_y)
+  g <- g + .escala_continua(info$ax_x, "x", sec_x, if (x_topo) "top") +
+    .escala_continua(info$ax_y, "y", sec_y, if (y_dir) "right")
+  gm <- list(x = guide_axis(minor.ticks = length(info$ax_x$menores) > 0),
+             y = guide_axis(minor.ticks = length(info$ax_y$menores) > 0))
+  if (!is.null(sec_x)) gm$x.sec <- guide_axis(minor.ticks = length(info$ax_x$menores) > 0)
+  if (!is.null(sec_y)) gm$y.sec <- guide_axis(minor.ticks = is.null(info$y2) && length(info$ax_y$menores) > 0)
+  g <- g + do.call(guides, gm)
+  g <- g + labs(x = .texto(info$titulo_x), y = .texto(info$titulo_y),
+                title = .texto(cfg$titulos$titulo), subtitle = .texto(cfg$titulos$subtitulo))
+  g <- g + if (isTRUE(info$flip)) coord_flip(clip = if (isTRUE(cx$recortar)) "on" else "off")
+           else coord_cartesian(clip = if (isTRUE(cx$recortar)) "on" else "off")
+
+  # eixos na TELA (com barras/box horizontais, x e y trocam de lugar)
+  eh <- if (isTRUE(info$flip)) cfg$eixo_y else cfg$eixo_x
+  ev <- if (isTRUE(info$flip)) cfg$eixo_x else cfg$eixo_y
+  axh <- if (isTRUE(info$flip)) info$ax_y else info$ax_x
+  axv <- if (isTRUE(info$flip)) info$ax_x else info$ax_y
+  tem_sec_v <- !is.null(sec_y); tem_sec_h <- !is.null(sec_x)
+  if (isTRUE(info$flip)) { tmp <- tem_sec_v; tem_sec_v <- tem_sec_h; tem_sec_h <- tmp }
+  lados <- list(hor = c("bottom", if (tem_sec_h) "top"), ver = c("left", if (tem_sec_v) "right"),
+                lado_y2 = if (!is.null(info$y2)) "right" else "",
+                grade_x_maior = if (isTRUE(info$flip)) cfg$grade$maior_y else cfg$grade$maior_x,
+                grade_y_maior = if (isTRUE(info$flip)) cfg$grade$maior_x else cfg$grade$maior_y,
+                grade_x_menor = if (isTRUE(info$flip)) cfg$grade$menor_y else cfg$grade$menor_x,
+                grade_y_menor = if (isTRUE(info$flip)) cfg$grade$menor_x else cfg$grade$menor_y)
+  ev_y2 <- ev
+  g <- g + .tema(cfg, eh, ev, lados, cor_y2 = if (!is.null(info$y2)) .cor(info$y2$cor) else NULL)
+  if (!is.null(info$y2)) {
+    # estilo de rótulos do y2: casas/notação próprias já nos rótulos; mostra sempre
+    g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, list(mostrar_rotulos = TRUE)), cfg, "right",
+                                                    .cor(info$y2$cor)),
+                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, list(mostrar_titulo = TRUE)), cfg, "right",
+                                                     .cor(info$y2$cor)))
+  }
+  if (y_dir && espelhar) {
+    g <- g + theme(axis.text.y.left = element_blank(), axis.title.y.left = element_blank(),
+                   axis.text.y.right = .elem_rotulo(ev, cfg,
+                                                    "right"), axis.title.y.right = .elem_titulo(ev, cfg, "right"))
+  }
+  ti <- .ticks_internos(axh, axv, lados, info$ax_x, info$ax_y)
+  if (!is.null(ti)) g <- g + ti
+  if (!is.null(info$y2)) {
+    tm <- .ticks_y2_menores(info$y2, info$ax_y, ev, info$ax_x)
+    if (!is.null(tm)) g <- g + tm
+  }
+  if (!mostrar_leg) g <- g + theme(legend.position = "none")
+  attr(g, "info") <- info
+  g
+}
+
+# -----------------------------------------------------------------------------
+#  15_entrada_paineis.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/15_entrada_paineis.R — plotar() (ponto de entrada), painéis e quebra de eixo
+# =============================================================================
+
+# =============================================================================
+#  PLOTAR (ponto de entrada) — simples, painéis ou quebra de eixo
+# =============================================================================
+# Ponto de entrada: monta o gráfico, os painéis ou a quebra de eixo conforme o cfg.
+# Entra: dados (de ler_csv) e cfg. Sai: ggplot ou patchwork, com attr "cfg" e "dados".
+plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
+  if (missing(dados) || !is.data.frame(dados)) .erro("plotar(dados, cfg): 'dados' deve ser o resultado de ler_csv().")
+  .checar_nomes(cfg); .checar_itens(cfg)   # avisa nomes digitados errado ANTES de completar com os padrões
+  cfg <- .completar_cfg(cfg)
+  .validar(cfg, checar_nomes = FALSE)
+  g <- if (isTRUE(cfg$paineis$ativo)) .plotar_paineis(dados, cfg)
+       else if (isTRUE(cfg$quebra$ativo)) .plotar_quebra(dados, cfg)
+       else .plotar_um(dados, cfg)
+  attr(g, "dados") <- dados
+  attr(g, "cfg") <- cfg
+  g
+}
+
+# Letra do painel (a), (A), (i)... conforme o formato escolhido.
+.formatar_letra <- function(i, formato) {
+  l <- letters[i]; L <- LETTERS[i]
+  rom <- tolower(as.character(utils::as.roman(i)))
+  switch(formato, "(a)" = paste0("(", l, ")"), "a)" = paste0(l, ")"), "a" = l,
+         "(A)" = paste0("(", L, ")"), "A" = L, "(i)" = paste0("(", rom, ")"))
+}
+
+# Título único (vertical ou horizontal) ao lado de um conjunto de painéis.
+.rotulo_lateral <- function(texto, cfg, vertical = TRUE) {
+  e <- if (vertical) cfg$eixo_y else cfg$eixo_x
+  face <- if (isTRUE(e$negrito_titulo)) "bold" else "plain"
+  patchwork::wrap_elements(full = textGrob(.texto(texto), rot = if (vertical) 90 else 0,
+    gp = gpar(fontsize = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt, fontface = face,
+              fontfamily = .fonte(cfg$texto$fonte), col = e$cor_titulo %||% cfg$texto$cor)))
+}
+
+# Painéis com eixo comum: calcula os limites comuns e monta cada painel. Entra: dados e cfg. Sai: patchwork.
+.plotar_paineis <- function(dados, cfg) {
+  P <- cfg$paineis; n <- length(P$lista)
+  if (n < 1) .erro("cfg$paineis$ativo = TRUE, mas cfg$paineis$lista está vazia. Veja o exemplo na PARTE 1 deste script.")
+  vertical <- P$direcao == "vertical"
+  comum <- if (vertical) "eixo_x" else "eixo_y"
+  cfgs <- lapply(seq_len(n), function(i) {
+    p <- P$lista[[i]]
+    if (!is.null(p[[comum]]) && length(setdiff(names(p[[comum]]), c("mostrar_rotulos", "mostrar_titulo"))))
+      .aviso("Painel ", i, ": ajustes em ", comum, " são ignorados — o ", comum, " é comum a todos os painéis.")
+    ajustes <- p[[comum]][intersect(names(p[[comum]]), c("mostrar_rotulos", "mostrar_titulo"))]
+    p[[comum]] <- if (length(ajustes)) ajustes else NULL   # só estes dois valem por painel
+    ci <- .mesclar(cfg, p)
+    ci$paineis$ativo <- FALSE; ci$quebra$ativo <- FALSE
+    ci$.interno <- list(em_painel = TRUE)
+    .validar(ci)
+    ci
+  })
+  # 1ª passada: só as faixas de dados de cada painel (sem montar o gráfico e sem repetir os avisos,
+  # que saem na 2ª passada), para calcular o eixo comum
+  previas <- lapply(cfgs, function(ci) suppressWarnings(.plotar_um(dados, ci, so_info = TRUE)))
+  faixas <- lapply(previas, function(inf) {
+    if (isTRUE(inf$pizza)) .erro("Pizza não pode ser usada em painéis com eixo comum.")
+    if (vertical) inf$faixa_x else inf$faixa_y
+  })
+  tempos <- Filter(Negate(is.null), lapply(previas, function(inf) inf$ax_x$tempo))
+  tempo_comum <- if (vertical && length(tempos)) tempos[[1]] else NULL
+  tipos <- vapply(cfgs, function(ci) ci$grafico$tipo, "")
+  categorias <- lapply(names(dados), function(n) if (!is.numeric(dados[[n]])) unique(as.character(dados[[n]])))
+  conhecidos <- c(names(dados), unlist(categorias))
+  for (s in setdiff(unique(unlist(lapply(cfgs, function(ci) names(ci$series)))), conhecidos))
+    .aviso("cfg$series[[\"", s, "\"]] não corresponde a nenhuma coluna/categoria dos dados.")
+  forcar <- if (vertical && all(tipos %in% c("barras", "boxplot"))) NULL
+            else .calc_eixo(cfg[[comum]], unlist(faixas), tempo = tempo_comum)$limites
+  plots <- vector("list", n)
+  for (i in seq_len(n)) {
+    ci <- cfgs[[i]]
+    ci$.interno <- list(em_painel = TRUE)
+    if (vertical) ci$.interno$forcar_x <- forcar else ci$.interno$forcar_y <- forcar
+    ultimo <- if (vertical) i == n else i == 1
+    if (P$rotulos_eixo_comum == "ultimo" && !ultimo) {
+      ci[[comum]]$mostrar_rotulos <- FALSE; ci[[comum]]$mostrar_titulo <- FALSE
+    }
+    if (isTRUE(P$alternar_lado) && i %% 2 == 0) {
+      if (vertical) ci$.interno$y_direita <- TRUE else ci$.interno$x_topo <- TRUE
+    }
+    outro <- if (vertical) "eixo_y" else "eixo_x"
+    if (isTRUE(P$ocultar_rotulo_encostado) && P$espaco_pt < 10) {
+      if (vertical && i > 1) ci[[outro]]$.ocultar_extremo <- if (isTRUE(ci[[outro]]$inverter)) "min" else "max"
+      if (!vertical && i < n) ci[[outro]]$.ocultar_extremo <- if (isTRUE(ci[[outro]]$inverter)) "min" else "max"
+    }
+    if (!is.null(P$titulo_unico)) ci[[outro]]$mostrar_titulo <- FALSE
+    if (isTRUE(P$letras)) ci$anotacoes$letra <- ci$anotacoes$letra %||% .formatar_letra(i, P$formato_letra)
+    m <- cfg$caixa$margens_cm; esp <- P$espaco_pt / 2 / 72 * 2.54
+    if (vertical) {
+      ci$caixa$margens_cm <- c(if (i == 1) m[1] else esp, m[2], if (i == n) m[3] else esp, m[4])
+    } else {
+      ci$caixa$margens_cm <- c(m[1], if (i == n) m[2] else esp, m[3], if (i == 1) m[4] else esp)
+    }
+    if (i > 1) { ci$titulos$titulo <- NULL; ci$titulos$subtitulo <- NULL }   # título só no 1º painel
+    plots[[i]] <- .plotar_um(dados, ci)
+  }
+  tam <- P$tamanhos %||% rep(1, n)
+  if (length(tam) != n) .erro("cfg$paineis$tamanhos deve ter ", n, " valores (um por painel).")
+  pw <- if (vertical) patchwork::wrap_plots(plots, ncol = 1, heights = tam)
+        else patchwork::wrap_plots(plots, nrow = 1, widths = tam)
+  if (isTRUE(P$legenda_unica)) {
+    pos <- switch(cfg$legenda$posicao, dentro = "right", direita = "right", esquerda = "left", topo = "top",
+                  base = "bottom")
+    pw <- pw + patchwork::plot_layout(guides = "collect") & theme(legend.position = pos)
+  }
+  if (!is.null(P$titulo_unico)) {
+    lab <- .rotulo_lateral(P$titulo_unico, cfg, vertical)
+    pw <- if (vertical) patchwork::wrap_plots(lab, pw, nrow = 1, widths = grid::unit(c(1.6, 1), c("lines", "null")))
+          else patchwork::wrap_plots(pw, lab, ncol = 1, heights = grid::unit(c(1, 1.6), c("null", "lines")))
+  }
+  pw
+}
+
+# Eixo Y com trecho omitido: monta as duas partes e as junta. Entra: dados e cfg. Sai: patchwork.
+.plotar_quebra <- function(dados, cfg) {
+  Q <- cfg$quebra
+  if (is.null(Q$de) || is.null(Q$ate) || Q$de >= Q$ate) .erro("cfg$quebra: defina de < ate (ex.: de = 20, ate = 80).")
+  if (cfg$grafico$tipo == "pizza") .erro("Quebra de eixo não se aplica a pizza.")
+  base <- cfg; base$quebra$ativo <- FALSE
+  inf <- .plotar_um(dados, base, so_info = TRUE)
+  lim <- inf$ax_y$limites
+  if (Q$de <= lim[1] || Q$ate >= lim[2]) .erro("cfg$quebra: o trecho omitido (", Q$de, " a ", Q$ate,
+                                               ") precisa estar dentro do eixo Y (", lim[1], " a ", lim[2], ").")
+  inferior <- base; superior <- base
+  inferior$eixo_y$inicio <- lim[1]; inferior$eixo_y$fim <- Q$de
+  superior$eixo_y$inicio <- Q$ate; superior$eixo_y$fim <- lim[2]
+  m <- cfg$caixa$margens_cm; esp <- Q$espaco_pt / 2 / 72 * 2.54
+  # a parte de cima fica sem números/título do X; a de baixo sem legenda, títulos e letra
+  ajustar_parte <- function(ck, parte) {
+    ck$eixo_y$mostrar_titulo <- FALSE
+    if (parte == "superior") {
+      ck$caixa$margens_cm <- c(m[1], m[2], esp, m[4])
+      ck$eixo_x$mostrar_rotulos <- FALSE; ck$eixo_x$mostrar_titulo <- FALSE
+    } else {
+      ck$caixa$margens_cm <- c(esp, m[2], m[3], m[4])
+      ck$legenda$mostrar <- FALSE; ck$titulos$titulo <- NULL; ck$titulos$subtitulo <- NULL
+      ck$anotacoes$letra <- NULL
+    }
+    ck
+  }
+  gs <- .plotar_um(dados, ajustar_parte(superior, "superior"))
+  gi <- .plotar_um(dados, ajustar_parte(inferior, "inferior"))
+  if (isTRUE(Q$marcas)) {
+    marca <- function(y) {
+      gp <- gpar(col = cfg$caixa$cor, lwd = .lw(cfg$caixa$espessura_pt) * ggplot2::.pt)
+      dx <- unit(Q$marca_largura_pt, "pt"); dy <- unit(Q$marca_altura_pt, "pt")
+      gTree(children = gList(
+        segmentsGrob(unit(0, "npc") - dx, unit(y, "npc") - dy, unit(0, "npc") + dx, unit(y, "npc") + dy, gp = gp),
+        segmentsGrob(unit(1, "npc") - dx, unit(y, "npc") - dy, unit(1, "npc") + dx, unit(y, "npc") + dy, gp = gp)))
+    }
+    gs <- gs + annotation_custom(marca(0), -Inf, Inf, -Inf, Inf)
+    gi <- gi + annotation_custom(marca(1), -Inf, Inf, -Inf, Inf)
+  }
+  pr <- Q$proporcao_superior
+  pw <- patchwork::wrap_plots(gs, gi, ncol = 1, heights = c(pr, 1 - pr))
+  tit <- inf$titulo_y
+  if (isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(tit, ""))
+    pw <- patchwork::wrap_plots(.rotulo_lateral(tit, cfg, TRUE), pw, nrow = 1,
+                                widths = grid::unit(c(1.6, 1), c("lines", "null")))
+  pw
+}
+
+# -----------------------------------------------------------------------------
+#  16_exportacao.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/16_exportacao.R — exportação (salvar), prévia (visualizar) e lote
+# =============================================================================
+
+# =============================================================================
+#  EXPORTAÇÃO E PRÉVIA
+# =============================================================================
+# TRUE se o cfg (ou algum painel) usa preenchimento em gradiente.
+.usa_gradiente <- function(cfg) {
+  identical(cfg$cores$preenchimento, "gradiente") ||
+    (isTRUE(cfg$paineis$ativo) && any(vapply(cfg$paineis$lista,
+                                             function(p) identical(p$cores$preenchimento, "gradiente"), TRUE)))
+}
+
+# TRUE se o ragg pode ser usado (e, se o gradiente é radial, se a versão corrige o bug do ragg < 1.5).
+.ragg_ok <- function(cfg = NULL) {
+  if (!.tem("ragg")) return(FALSE)
+  # ragg < 1.5 desenha errado gradiente radial (claro -> escuro): usa Cairo nesse caso
+  if (!is.null(cfg) && identical(cfg$cores$preenchimento, "gradiente") &&
+      grepl("radial", cfg$cores$gradiente_direcao) && utils::packageVersion("ragg") < "1.5.0") return(FALSE)
+  TRUE
+}
+
+# Abre o dispositivo gráfico do formato pedido (png, tiff, jpeg, pdf, svg, emf), com os fallbacks do R base.
+.abrir_dispositivo <- function(formato, arq, larg_in, alt_in, dpi, fundo, usar_ragg = .tem("ragg")) {
+  fundo_jpeg <- if (identical(fundo, "transparent")) "white" else fundo   # JPEG não tem transparência
+  switch(formato,
+    png = if (usar_ragg) ragg::agg_png(arq, width = larg_in, height = alt_in, units = "in", res = dpi,
+                                       background = fundo)
+          else grDevices::png(arq, width = larg_in, height = alt_in, units = "in", res = dpi, bg = fundo,
+                              type = if (capabilities("cairo")) "cairo" else "windows"),
+    tiff = if (usar_ragg) ragg::agg_tiff(arq, width = larg_in, height = alt_in, units = "in", res = dpi,
+                                            background = fundo, compression = "lzw")
+           else grDevices::tiff(arq, width = larg_in, height = alt_in, units = "in", res = dpi, bg = fundo,
+                                compression = "lzw", type = if (capabilities("cairo")) "cairo" else "windows"),
+    jpeg = if (usar_ragg) ragg::agg_jpeg(arq, width = larg_in, height = alt_in, units = "in", res = dpi,
+                                         background = fundo_jpeg, quality = 95)
+           else grDevices::jpeg(arq, width = larg_in, height = alt_in, units = "in", res = dpi, quality = 95,
+                                bg = fundo_jpeg),
+    pdf = if (capabilities("cairo")) grDevices::cairo_pdf(arq, width = larg_in, height = alt_in, bg = fundo)
+          else grDevices::pdf(arq, width = larg_in, height = alt_in, bg = fundo, useDingbats = FALSE),
+    svg = if (.tem("svglite")) svglite::svglite(arq, width = larg_in, height = alt_in, bg = fundo)
+          else grDevices::svg(arq, width = larg_in, height = alt_in, bg = fundo),
+    emf = if (.tem("devEMF")) devEMF::emf(arq, width = larg_in, height = alt_in, bg = fundo, emfPlus = TRUE)
+          else .erro("Formato emf precisa do pacote devEMF (rode instalar_pacotes())."),
+    .erro("Formato '", formato, "' desconhecido. OPÇÕES: png, tiff, jpeg, pdf, svg, emf"))
+}
+
+# Cópia do cfg com todos os preenchimentos em cor sólida (formatos sem gradiente).
+.sem_gradiente <- function(cfg) {
+  cfg$cores$preenchimento <- "solido"
+  if (isTRUE(cfg$paineis$ativo))
+    cfg$paineis$lista <- lapply(cfg$paineis$lista, function(p) {
+      if (!is.null(p$cores)) p$cores$preenchimento <- "solido"
+      p
+    })
+  cfg
+}
+
+#' Exporta o gráfico nos formatos de cfg$exportacao
+# Deixa transparentes o fundo da página e o do painel SEM refazer o gráfico, para não perder o que
+# o usuário somou ao objeto (+ theme(), + labs(), + camadas). Serve para ggplot e para patchwork.
+.fundo_transparente <- function(g) {
+  t <- theme(plot.background = element_rect(fill = NA, colour = NA),
+             panel.background = element_rect(fill = NA, colour = NA))
+  if (inherits(g, "patchwork")) g & t else g + t
+}
+
+# Exporta o gráfico nos formatos de cfg$exportacao. Entra: g (de plotar), cfg e nome opcional. Sai: caminhos gravados.
+salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()), nome = NULL) {
+  cfg <- .completar_cfg(cfg)
+  ex <- cfg$exportacao
+  fator <- switch(ex$unidade, cm = 1 / 2.54, mm = 1 / 25.4, `in` = 1)
+  larg <- ex$largura * fator; alt <- ex$altura * fator
+  ex$pasta <- .pasta_proj(ex$pasta)
+  if (!dir.exists(ex$pasta)) dir.create(ex$pasta, recursive = TRUE)
+  dados <- attr(g, "dados")
+  base <- nome %||% ex$nome_arquivo %||% paste0(
+    if (!is.null(attr(dados, "arquivo"))) tools::file_path_sans_ext(basename(attr(dados, "arquivo"))) else "grafico",
+    "_", cfg$grafico$tipo)
+  if (isTRUE(ex$carimbo_data)) base <- paste0(base, "_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+  fundo <- if (isTRUE(ex$fundo_transparente)) "transparent" else "white"
+  transparente <- isTRUE(ex$fundo_transparente)
+  if (transparente) g <- .fundo_transparente(g)
+  saidas <- character(0)
+  for (f in tolower(ex$formatos)) {
+    ext <- switch(f, jpeg = "jpg", f)
+    arq <- file.path(ex$pasta, paste0(base, ".", ext))
+    if (!isTRUE(ex$sobrescrever)) {
+      k <- 2
+      while (file.exists(arq)) {
+        arq <- file.path(ex$pasta, paste0(base, "_", k, ".", ext))
+        k <- k + 1
+      }
+    }
+    .abrir_dispositivo(f, arq, larg, alt, ex$dpi, fundo, usar_ragg = .ragg_ok(cfg))
+    disp <- grDevices::dev.cur()
+    tryCatch({
+      gg <- g
+      if (.usa_gradiente(cfg)) {
+        cap <- tryCatch(unlist(grDevices::dev.capabilities()$patterns), error = function(e) character(0))
+        if (!"LinearGradient" %in% cap) {
+          .aviso("O formato '", f, "' não suporta gradiente; usando cor sólida neste arquivo ",
+                 "(o gráfico é refeito a partir do cfg: ajustes feitos depois com + theme() ou ",
+                 "+ camadas não entram nele).")
+          if (!is.null(dados)) {
+            gg <- plotar(dados, .sem_gradiente(cfg))
+            if (transparente) gg <- .fundo_transparente(gg)
+          }
+        }
+      }
+      print(gg)
+    }, finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
+    saidas <- c(saidas, arq)
+  }
+  message("Salvo: ", paste(normalizePath(saidas, winslash = "/", mustWork = FALSE), collapse = "\n       "))
+  invisible(saidas)
+}
+
+#' Prévia fiel (mesmo tamanho e fontes do arquivo final) no Viewer do RStudio
+visualizar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()), dpi = 150) {
+  cfg <- .completar_cfg(cfg)
+  ex <- cfg$exportacao
+  fator <- switch(ex$unidade, cm = 1 / 2.54, mm = 1 / 25.4, `in` = 1)
+  arq <- tempfile("previa_", fileext = ".png")
+  .abrir_dispositivo("png", arq, ex$largura * fator, ex$altura * fator, dpi, "white", usar_ragg = .ragg_ok(cfg))
+  disp <- grDevices::dev.cur()
+  tryCatch(print(g), finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
+  viewer <- getOption("viewer")
+  if (!is.null(viewer)) {
+    html <- tempfile("previa_", fileext = ".html")
+    writeLines(sprintf(paste0(
+      '<html><body style="margin:0;background:#e5e5e5;display:flex;justify-content:center;',
+      'align-items:flex-start;padding:12px"><img src="%s" style="max-width:100%%;',
+      'box-shadow:0 1px 6px #888"></body></html>'), basename(arq)), html)
+    file.copy(arq, file.path(dirname(html), basename(arq)), overwrite = TRUE)
+    viewer(html)
+  } else {
+    print(g)
+  }
+  invisible(arq)
+}
+
+#' Aplica o mesmo cfg a todos os CSVs de uma pasta
+exportar_lote <- function(pasta = "dados", cfg = get("cfg", envir = globalenv()), padrao = "\\.csv$") {
+  pasta <- .pasta_proj(pasta)
+  arqs <- list.files(pasta, pattern = padrao, full.names = TRUE, ignore.case = TRUE)
+  if (!length(arqs)) .erro("Nenhum CSV em '", pasta, "'.")
+  res <- list()
+  for (a in arqs) {
+    message("\n>> ", basename(a))
+    r <- tryCatch({
+      d <- ler_csv(a, cfg$dados); g <- plotar(d, cfg)
+      c2 <- cfg; c2$exportacao$nome_arquivo <- NULL
+      salvar(g, c2)
+    }, error = function(e) { message("   ERRO: ", conditionMessage(e)); NULL })
+    res[[basename(a)]] <- r
+  }
+  invisible(res)
+}
+
+# -----------------------------------------------------------------------------
+#  17_estilos.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/17_estilos.R — estilos salvos, reset do cfg e lista de fontes
+# =============================================================================
+
+# =============================================================================
+#  ESTILOS (presets) E RESET
+# =============================================================================
+.BLOCOS_ESTILO <- c("cores", "serie_padrao", "linhas", "barras", "pizza", "distribuicao", "boxplot",
+                    "eixo_x", "eixo_y", "eixo_y2", "caixa", "grade", "legenda", "titulos", "texto", "exportacao")
+
+# Grava os blocos de aparência do cfg em estilos/<nome>.R (sem títulos nem limites dos dados).
+salvar_estilo <- function(cfg, nome, pasta = "estilos") {
+  pasta <- .pasta_proj(pasta)
+  if (!dir.exists(pasta)) dir.create(pasta)
+  est <- cfg[.BLOCOS_ESTILO]
+  # não guarda o que é específico de um conjunto de dados
+  for (ax in c("eixo_x", "eixo_y", "eixo_y2")) est[[ax]][c("titulo", "inicio", "fim", "ticks_manuais",
+                                                           "rotulos_manuais")] <- NULL
+  est$exportacao$nome_arquivo <- NULL
+  arq <- file.path(pasta, paste0(nome, ".R"))
+  con <- file(arq, "w", encoding = "UTF-8")
+  writeLines(c(paste0("# Estilo '", nome, "' salvo em ", format(Sys.time(), "%d/%m/%Y %H:%M")),
+               paste0("# Pode ser editado à mão. Carregue com: cfg <- carregar_estilo(\"", nome, "\", cfg)")), con)
+  dput(est, con, control = c("keepNA", "keepInteger", "niceNames", "showAttributes"))
+  close(con)
+  message("Estilo salvo em ", arq)
+  invisible(arq)
+}
+
+# Entra: nome do estilo e cfg. Sai: o cfg com o estilo aplicado por cima.
+carregar_estilo <- function(nome, cfg = get("cfg", envir = globalenv()), pasta = "estilos") {
+  pasta <- .pasta_proj(pasta)
+  if (!file.exists(nome) && !file.exists(file.path(pasta, paste0(nome, ".R"))) && nome %in% names(.ESTILOS_EMBUTIDOS))
+    return(.mesclar(cfg, .ESTILOS_EMBUTIDOS[[nome]]))      # estilo embutido neste script
+  arq <- if (file.exists(nome)) nome else file.path(pasta, paste0(nome, ".R"))
+  if (!file.exists(arq)) {
+    disp <- listar_estilos(pasta)
+    .erro("Estilo '", nome, "' não encontrado. Disponíveis: ", paste(disp, collapse = ", "))
+  }
+  est <- eval(parse(arq, encoding = "UTF-8"))
+  .mesclar(cfg, est)
+}
+
+# Nomes dos estilos disponíveis: os 3 embutidos neste script e os arquivos da pasta de estilos.
+listar_estilos <- function(pasta = "estilos") {
+  pasta <- .pasta_proj(pasta)
+  sort(unique(c(names(.ESTILOS_EMBUTIDOS), sub("\\.R$", "", list.files(pasta, pattern = "\\.R$")))))
+}
+
+# Volta o cfg do console ao padrão da PARTE 1 deste script.
+resetar_cfg <- function() {
+  assign("cfg", .CFG_PADRAO, envir = globalenv())
+  message("cfg voltou ao padrão (PARTE 1 do script)")
+  invisible(.CFG_PADRAO)
+}
+
+# Imprime os nomes de fonte instalados (pelo systemfonts) para usar em cfg$texto$fonte.
+listar_fontes <- function() {
+  if (!.tem("systemfonts")) {
+    message("Instale 'systemfonts' (vem com ragg) para listar as fontes.")
+    return(invisible())
+  }
+  f <- sort(unique(systemfonts::system_fonts()$family))
+  print(f)
+  invisible(f)
+}
+
+# -----------------------------------------------------------------------------
+#  04_catalogo.R — ajuda(), galeria(), mostrar_paletas()
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  04_catalogo.R — "LEGENDA DE POSSIBILIDADES"
+# =============================================================================
+#  ajuda()                 lista os blocos do cfg e para que servem
+#  ajuda("eixo_x")         mostra TODOS os parâmetros do bloco, com OPÇÕES e EX.
+#  ajuda("tipos")          resumo dos tipos de gráfico e o que cada um usa
+#  mostrar_paletas()       desenha as paletas disponíveis
+#  galeria()               gera saida/galeria_referencia.pdf (símbolos, linhas,
+#                          paletas, ticks, gradientes e um exemplo de cada tipo)
+#  O texto de ajuda é lido diretamente da PARTE 1 deste script: o que você vê aqui é
+#  exatamente o que está documentado lá.
+# =============================================================================
+
+.APELIDOS <- c(x = "eixo_x", y = "eixo_y", y2 = "eixo_y2", eixo = "eixo_x", eixos = "eixo_x",
+               pontos = "linhas", linha = "linhas", linha_pontos = "linhas", area = "linhas",
+               erro = "linhas", erros = "linhas", histograma = "distribuicao", densidade = "distribuicao",
+               ecdf = "distribuicao", violino = "boxplot", box = "boxplot", rosca = "pizza",
+               cor = "cores", gradiente = "cores", paleta = "cores", serie = "series",
+               simbolo = "serie_padrao", simbolos = "serie_padrao", moldura = "caixa", ticks = "eixo_x",
+               fonte = "texto", painel = "paineis", empilhar = "paineis", exportar = "exportacao",
+               salvar = "exportacao", grid = "grade", titulo = "titulos", referencia = "referencias",
+               tempo = "eixo_x", data = "eixo_x", datas = "eixo_x", ordenar_x = "linhas")
+
+ajuda <- function(bloco = NULL) {
+  L <- .config_linhas()
+  ini <- grep("^cfg\\$[a-z_0-9]+ <- ", L)
+  nomes <- sub("^cfg\\$([a-z_0-9]+) <- .*", "\\1", L[ini])
+  tracos <- grep("^# -{20,}", L)
+  cab <- function(i) { t <- tracos[tracos < ini[i]]; if (length(t) >= 2) t[length(t) - 1] else ini[i] }
+  if (is.null(bloco)) {
+    cat("\nBLOCOS DO cfg (use ajuda(\"nome\") para ver os parâmetros):\n\n")
+    for (i in seq_along(ini)) {
+      t <- tracos[tracos < ini[i]]
+      tit <- if (length(t)) sub("^#\\s*", "", L[t[length(t)] - 1]) else nomes[i]
+      cat(sprintf("  %-14s %s\n", nomes[i], sub("^[A-Z_0-9]+\\s*[—-]\\s*", "", tit)))
+    }
+    cat("\nOutros:  ajuda(\"tipos\")   mostrar_paletas()   galeria()   listar_fontes()   listar_estilos()\n\n")
+    return(invisible(nomes))
+  }
+  if (identical(bloco, "tipos")) {
+    cat('
+TIPOS DE GRÁFICO  (cfg$grafico$tipo)            colunas usadas / bloco de opções
+  "pontos"          dispersão                    coluna_x + colunas_y    -> ajuda("linhas")
+  "linha"           só linhas                    coluna_x + colunas_y    -> ajuda("linhas")
+  "linha_pontos"    linha com símbolos           coluna_x + colunas_y    -> ajuda("linhas")
+  "area"            linha com área preenchida    coluna_x + colunas_y    -> ajuda("linhas")
+  "area_empilhada"  áreas somadas                coluna_x + colunas_y    -> ajuda("linhas")
+  "barras"          colunas/barras               coluna_x (categorias) + colunas_y -> ajuda("barras")
+  "pizza"           pizza / rosca                coluna_x (categorias) + 1 coluna_y -> ajuda("pizza")
+  "histograma"      histograma (+curvas)         colunas_y ou coluna_grupo -> ajuda("distribuicao")
+  "densidade"       curva de densidade           colunas_y ou coluna_grupo -> ajuda("distribuicao")
+  "ecdf"            distribuição acumulada       colunas_y ou coluna_grupo -> ajuda("distribuicao")
+  "boxplot"         box, violino, meio box, média±erro  colunas_y ou coluna_grupo -> ajuda("boxplot")
+
+RECURSOS QUE VALEM PARA TODOS (exceto pizza): eixo_x, eixo_y, eixo_y2, caixa, grade,
+  legenda, titulos, texto, referencias, anotacoes, quebra, paineis, exportacao.
+')
+    return(invisible())
+  }
+  b <- if (bloco %in% nomes) bloco else .APELIDOS[bloco]
+  if (is.na(b) || !b %in% nomes) {
+    sug <- nomes[utils::adist(bloco, nomes) <= 3]
+    stop("Bloco '", bloco, "' não existe.", if (length(sug)) paste0(" Você quis dizer '", sug[1], "'?") else "",
+         " Use ajuda() para ver a lista.", call. = FALSE)
+  }
+  i <- match(b, nomes)
+  fim <- if (i < length(ini)) cab(i + 1) - 1 else length(L)
+  trecho <- L[cab(i):fim]
+  while (length(trecho) && !nzchar(trimws(trecho[length(trecho)]))) trecho <- trecho[-length(trecho)]
+  cat("\n", paste(trecho, collapse = "\n"), "\n\n", sep = "")
+  if (exists("cfg", envir = globalenv())) {
+    atual <- get("cfg", envir = globalenv())[[b]]
+    cat("# VALORES ATUAIS em cfg$", b, ":\n", sep = "")
+    utils::str(atual, give.attr = FALSE, no.list = TRUE, comp.str = "  $ ")
+  }
+  invisible(trecho)
+}
+
+.grafico_paletas <- function(n = 8) {
+  nomes <- c("classico", "okabe_ito", "tableau", "viridis", "magma", "plasma", "cividis", "cinza",
+             "brewer_Set1", "brewer_Set2", "brewer_Dark2", "brewer_Paired", "brewer_Blues", "brewer_RdBu",
+             "personalizada")
+  cfg0 <- if (exists("cfg", envir = globalenv())) get("cfg", envir = globalenv())$cores else .cfg_ref$cores
+  d <- do.call(rbind, lapply(nomes, function(p) {
+    cores <- tryCatch(.paleta(p, n, cfg0), error = function(e) rep("grey90", n))
+    data.frame(paleta = p, i = seq_len(n), cor = cores)
+  }))
+  d$paleta <- factor(d$paleta, levels = rev(nomes))
+  g <- ggplot(d, aes(i, paleta)) + geom_tile(aes(fill = I(cor)), colour = "white", linewidth = 0.8) +
+    geom_text(aes(label = i), size = 2.6, colour = "white") +
+    scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
+    labs(x = NULL, y = NULL, title = "Paletas  (cfg$cores$paleta <- \"nome\")") +
+    theme_minimal(11) + theme(panel.grid = element_blank(), axis.text.y = element_text(face = "bold"))
+  g
+}
+
+mostrar_paletas <- function(n = 8) {
+  g <- .grafico_paletas(n)
+  print(g)
+  invisible(g)
+}
+
+galeria <- function(arquivo = "saida/galeria_referencia.pdf") {
+  if (!dir.exists(dirname(arquivo))) dir.create(dirname(arquivo), recursive = TRUE)
+  cfg0 <- .cfg_ref
+  pag <- list()
+  # 1. símbolos
+  s <- data.frame(s = 0:25, x = (0:25) %% 9, y = -((0:25) %/% 9))
+  pag[[1]] <- ggplot(s, aes(x, y)) +
+    geom_point(aes(shape = I(s)), size = 6, fill = "#4E79A7", colour = "black", stroke = 1) +
+    geom_text(aes(label = s), vjust = 2.6, size = 3.5) +
+    scale_y_continuous(expand = expansion(add = 0.7)) + scale_x_continuous(expand = expansion(add = 0.6)) +
+    labs(title = "Símbolos  —  cfg$serie_padrao$simbolo  ou  cfg$series[[\"nome\"]]$simbolo",
+         subtitle = paste("0–14: só contorno | 15–20: sólidos (cor da série) |",
+                          "21–25: contorno + preenchimento (preenchimento_simbolo)")) +
+    theme_void(12) + theme(plot.margin = margin(20, 20, 20, 20))
+  # 2. tipos de linha
+  lt <- c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash", "44", "13", "1343", "73", "2262")
+  ld <- data.frame(t = factor(lt, levels = rev(lt)), x = 0, xend = 1)
+  pag[[2]] <- ggplot(ld, aes(x = x, xend = xend, y = t, yend = t)) +
+    geom_segment(aes(linetype = I(as.character(t))), linewidth = .lw(2)) +
+    scale_x_continuous(limits = c(-0.05, 1.05)) +
+    labs(title = "Tipos de linha  —  cfg$serie_padrao$linha_tipo",
+         subtitle = "Códigos hexadecimais: pares (traço, espaço). Ex.: \"44\", \"1343\"", x = NULL, y = NULL) +
+    theme_minimal(12) + theme(panel.grid = element_blank(), axis.text.x = element_blank(),
+                              axis.text.y = element_text(face = "bold",
+                                                         size = 12), plot.margin = margin(20, 20, 20, 20))
+  # 3. paletas
+  pag[[3]] <- .grafico_paletas() + theme(plot.margin = margin(20, 20, 20, 20))
+  # dados sintéticos para exemplos
+  set.seed(1)
+  xy <- data.frame(X = 1:10, `Série 1` = cumsum(stats::runif(10, 0, 3)), `Série 2` = cumsum(stats::runif(10, 0, 2)),
+                   check.names = FALSE)
+  cat_ <- data.frame(Categoria = c("A", "B", "C", "D"), `Grupo 1` = c(5, 8, 3, 6), `Grupo 2` = c(4, 6, 5, 7),
+                     check.names = FALSE)
+  am <- data.frame(G1 = stats::rnorm(40, 10, 2), G2 = stats::rnorm(40, 13, 2.5), G3 = stats::rnorm(40, 12, 1.5))
+  mini <- function(d, mod, tit) {
+    c1 <- .mesclar(cfg0, mod); c1$texto$tamanho_base_pt <- 8; c1$legenda$tamanho_chave_pt <- 9
+    c1$titulos$titulo <- tit; c1$titulos$tamanho_titulo_pt <- 9
+    .plotar_um(d, c1)
+  }
+  # 4. ticks e gradientes
+  tk <- lapply(c("dentro", "fora", "ambos", "nenhum"), function(dd)
+    mini(xy, list(grafico = list(tipo = "linha"), legenda = list(mostrar = FALSE),
+                  eixo_x = list(direcao_maiores = dd, direcao_menores = dd, n_menores = 1),
+                  eixo_y = list(direcao_maiores = dd, direcao_menores = dd, n_menores = 1)),
+         paste0("direcao_maiores = \"", dd, "\"")))
+  gr <- lapply(c("vertical", "vertical_invertido", "horizontal", "horizontal_invertido", "diagonal", "radial"),
+               function(dd)
+    mini(cat_, list(grafico = list(tipo = "barras", colunas_y = "Grupo 1"), legenda = list(mostrar = FALSE),
+                    cores = list(preenchimento = "gradiente", gradiente_direcao = dd, gradiente_cor2 = "white"),
+                    series = list(`Grupo 1` = list(cor = "#1F4E9E"))),
+         paste0("gradiente_direcao = \"", dd, "\"")))
+  pag[[4]] <- patchwork::wrap_plots(c(tk, gr), ncol = 4) +
+    patchwork::plot_annotation(title = "Direção dos ticks (eixo_x/eixo_y) e direção do gradiente (cores)")
+  # 5. tipos
+  tipos <- list(
+    mini(xy, list(grafico = list(tipo = "pontos")), "tipo = \"pontos\""),
+    mini(xy, list(grafico = list(tipo = "linha")), "\"linha\""),
+    mini(xy, list(grafico = list(tipo = "linha_pontos")), "\"linha_pontos\""),
+    mini(xy, list(grafico = list(tipo = "area"), legenda = list(mostrar = FALSE)), "\"area\""),
+    mini(xy, list(grafico = list(tipo = "area_empilhada"), cores = list(paleta = "okabe_ito")), "\"area_empilhada\""),
+    mini(xy, list(grafico = list(tipo = "linha"), linhas = list(ligacao = "degrau_hv")),
+         "linhas$ligacao = \"degrau_hv\""),
+    mini(cat_, list(grafico = list(tipo = "barras"), cores = list(paleta = "tableau")), "\"barras\" agrupado"),
+    mini(cat_, list(grafico = list(tipo = "barras"), barras = list(arranjo = "empilhado"),
+                    cores = list(paleta = "tableau")), "barras empilhado"),
+    mini(cat_, list(grafico = list(tipo = "barras"), barras = list(orientacao = "horizontal"),
+                    cores = list(paleta = "tableau")), "barras horizontal"),
+    mini(cat_, list(grafico = list(tipo = "pizza", colunas_y = "Grupo 1"), cores = list(paleta = "tableau"),
+                    pizza = list(explodir = "B", rotulos_tamanho_pt = 7)), "\"pizza\""),
+    mini(cat_, list(grafico = list(tipo = "pizza", colunas_y = "Grupo 1"), cores = list(paleta = "tableau"),
+                    pizza = list(raio_furo = 0.5, rotulos_tamanho_pt = 7)), "pizza raio_furo = 0.5"),
+    mini(am, list(grafico = list(tipo = "histograma", colunas_y = "G1"), distribuicao = list(curva_normal = TRUE),
+                  legenda = list(mostrar = FALSE)), "\"histograma\""),
+    mini(am, list(grafico = list(tipo = "densidade"), cores = list(paleta = "viridis")), "\"densidade\""),
+    mini(am, list(grafico = list(tipo = "ecdf"), cores = list(paleta = "okabe_ito")), "\"ecdf\""),
+    mini(am, list(grafico = list(tipo = "boxplot"), cores = list(paleta = "tableau")), "boxplot \"box\""),
+    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "box_pontos"),
+                  cores = list(paleta = "tableau")), "\"box_pontos\""),
+    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "meio_box"),
+                  cores = list(paleta = "tableau")), "\"meio_box\""),
+    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "violino_box"),
+                  cores = list(paleta = "tableau")), "\"violino_box\""),
+    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "violino"),
+                  cores = list(paleta = "tableau")), "\"violino\""),
+    mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "media_erro"),
+                  cores = list(paleta = "tableau")), "\"media_erro\"")
+  )
+  pag[[5]] <- patchwork::wrap_plots(lapply(tipos, function(g) patchwork::wrap_elements(full = g)), ncol = 4) +
+    patchwork::plot_annotation(
+      title = "Tipos e variações (cfg$grafico$tipo, cfg$boxplot$variacao, cfg$barras$arranjo ...)")
+  dev <- if (capabilities("cairo")) grDevices::cairo_pdf else grDevices::pdf
+  dev(arquivo, width = 11.7, height = 8.3, onefile = TRUE)
+  for (p in pag) print(p)
+  grDevices::dev.off()
+  message("Galeria salva em ", arquivo)
+  invisible(arquivo)
+}
+
+# #############################################################################
+#  PARTE 3 — COMO USAR
+# #############################################################################
+
+# Exemplos rápidos com dados fictícios (para testar a instalação e ver o resultado).
+# Os arquivos vão para a pasta saida/demonstracao/ dentro da sua pasta de trabalho.
+demonstracao <- function(tipo = c("linha", "barras", "pizza", "boxplot", "datas")) {
+  tipo <- match.arg(tipo)
+  cfg <- .CFG_PADRAO
+  cfg$exportacao$pasta <- "saida/demonstracao"; cfg$exportacao$formatos <- c("png", "pdf")
+  cfg$exportacao$dpi <- 200; cfg$exportacao$nome_arquivo <- paste0("demo_", tipo)
+  dados <- switch(tipo,
+    linha = {
+      t <- seq(0, 60, by = 5)
+      cfg$grafico$tipo <- "linha_pontos"; cfg$eixo_x$titulo <- "Tempo (min)"; cfg$eixo_y$titulo <- "Temperatura (°C)"
+      cfg$eixo_x$ticks_modo <- "incremento"; cfg$eixo_x$incremento <- 10
+      cfg$caixa$fechada <- TRUE; cfg$caixa$ticks_espelhados <- TRUE; cfg$legenda$posicao <- "dentro"
+      cfg$legenda$dentro_x <- 0.04; cfg$legenda$dentro_y <- 0.96
+      data.frame(`Tempo (min)` = t, `Amostra A` = 20 + 0.9 * t - 0.004 * t^2,
+                 `Amostra B` = 20 + 0.55 * t, `Amostra C` = 20 + 0.3 * t + 3 * sin(t / 8), check.names = FALSE)
+    },
+    barras = {
+      cfg$grafico$tipo <- "barras"; cfg$eixo_y$titulo <- "Resistência (MPa)"; cfg$eixo_x$titulo <- ""
+      cfg$eixo_y$inicio <- 0; cfg$barras$rotulos_valor <- TRUE; cfg$barras$rotulos_casas <- 0
+      cfg$cores$preenchimento <- "gradiente"; cfg$legenda$posicao <- "dentro"
+      data.frame(Material = c("Aço", "Alumínio", "Cobre", "Titânio", "Polímero"),
+                 `Ensaio 1` = c(420, 270, 220, 880, 65), `Ensaio 2` = c(405, 262, 231, 861, 58), check.names = FALSE)
+    },
+    pizza = {
+      cfg$grafico$tipo <- "pizza"; cfg$pizza$raio_furo <- 0.45; cfg$pizza$rotulos <- c("categoria", "percentual")
+      cfg$pizza$rotulos_separador <- "\n"; cfg$titulos$titulo <- "Composição da liga (% massa)"
+      data.frame(Elemento = c("Ferro", "Carbono", "Cromo", "Níquel", "Manganês", "Silício", "Vanádio"),
+                 Massa = c(70, 12, 6, 5, 3, 2.2, 1.8))
+    },
+    boxplot = {
+      set.seed(42)
+      cfg$grafico$tipo <- "boxplot"; cfg$boxplot$variacao <- "box_pontos"; cfg$eixo_y$titulo <- "Resposta (u.a.)"
+      data.frame(Controle = round(rnorm(20, 50, 5), 1), `Dose 1` = round(rnorm(20, 57, 6), 1),
+                 `Dose 2` = round(rnorm(20, 65, 8), 1), check.names = FALSE)
+    },
+    datas = {
+      cfg$grafico$tipo <- "linha_pontos"; cfg$eixo_x$titulo <- "Data da coleta"; cfg$eixo_y$titulo <- "Temperatura (°C)"
+      cfg$eixo_x$ticks_modo <- "incremento"; cfg$eixo_x$incremento <- "2 semanas"; cfg$eixo_x$formato_rotulo_data <- "%d/%m"
+      cfg$legenda$mostrar <- FALSE                 # só há uma série: dispensa a legenda
+      d <- as.Date("2024-03-01") + seq(0, 77, by = 7)
+      data.frame(`Data` = format(d, "%d/%m/%Y"), `Temperatura (°C)` = round(22 + 3 * sin(seq(0, 6, length.out = length(d))), 1),
+                 check.names = FALSE)
+    })
+  g <- plotar(dados, cfg)
+  visualizar(g, cfg)
+  salvar(g, cfg)
+  invisible(g)
+}
+
+# -----------------------------------------------------------------------------
+#  SEU TRABALHO (copie para um script seu, tire o "#" das linhas e adapte)
+# -----------------------------------------------------------------------------
+#  dados <- ler_csv("C:/pasta/meu_arquivo.csv")        # relatório de leitura no console
+#  colunas(dados)                                      # números e nomes das colunas
+#  cfg$grafico$tipo      <- "linha_pontos"             # ajuda("tipos")
+#  cfg$grafico$coluna_x  <- 1
+#  cfg$grafico$colunas_y <- c(2, 3)
+#  cfg$eixo_x$titulo <- "Tempo (min)";  cfg$eixo_y$titulo <- "Temperatura (°C)"
+#  cfg$eixo_x$inicio <- 0; cfg$eixo_x$fim <- 60
+#  cfg$exportacao$formatos <- c("png", "pdf"); cfg$exportacao$nome_arquivo <- "minha_figura"
+#  g <- plotar(dados, cfg)
+#  visualizar(g)             # prévia com o tamanho e as fontes reais do arquivo final
+#  salvar(g, cfg)            # grava na pasta saida/ (dentro da pasta de trabalho)
+#  resetar_cfg()             # volta tudo ao padrão
+
+message("\nTemplate de gráficos carregado. Para um teste rápido rode:  demonstracao()   (ou ajuda())")
+
