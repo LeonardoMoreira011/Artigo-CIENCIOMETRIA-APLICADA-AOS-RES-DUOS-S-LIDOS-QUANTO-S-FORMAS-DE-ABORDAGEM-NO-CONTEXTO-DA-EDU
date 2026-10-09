@@ -32,9 +32,9 @@ cfg$dados <- list(
   decimal_virgula = "auto",
 
   # codificacao: codificação de texto do arquivo (afeta acentos dos cabeçalhos).
-  #   OPÇÕES: "auto" | "UTF-8" | "latin1"
+  #   "auto" reconhece UTF-8, latin1 (Excel) e UTF-16 ("Texto Unicode" do Excel).
+  #   OPÇÕES: "auto" | "UTF-8" | "latin1" | "UTF-16" | "UTF-16LE" | "UTF-16BE"
   #   EX.: cfg$dados$codificacao <- "latin1"
-  codificacao = "auto",
 
   # cabecalho: a primeira linha (após pular_linhas) contém os nomes das colunas?
   #   OPÇÕES: TRUE | FALSE (colunas viram V1, V2, ...)
@@ -240,6 +240,14 @@ cfg$linhas <- list(
   #   EX.: cfg$linhas$ligacao <- "spline"
   ligacao = "reta",
 
+  # ordenar_x: ordena os pontos de cada série por X antes de ligá-los. Com FALSE (padrão,
+  #   como no Origin) a linha segue a ORDEM DAS LINHAS DO CSV, o que permite curvas que
+  #   voltam (laços, histerese, trajetórias). Use TRUE se o CSV está fora de ordem e você
+  #   quer a linha sempre da esquerda para a direita.
+  #   OPÇÕES: TRUE | FALSE
+  #   EX.: cfg$linhas$ordenar_x <- TRUE
+  ordenar_x = FALSE,
+
   # preencher_area: preenchimento sob a curva (tipos linha / linha_pontos /
   #   pontos). O tipo "area" usa "ate_zero" se aqui estiver "nenhum".
   #   OPÇÕES: "nenhum" | "ate_zero" | "ate_base" (até o início do eixo Y) |
@@ -385,6 +393,27 @@ cfg$pizza <- list(
   # linha_guia: liga rótulos "fora" à fatia.  OPÇÕES: TRUE | FALSE
   linha_guia = TRUE,
 
+  # linha_guia_espessura_pt / linha_guia_recuo: espessura (pt) da linha guia e quanto ela
+  #   para antes do rótulo (em fração do raio).
+  #   OPÇÕES: números >= 0 (padrões 0.6 e 0.07)
+  linha_guia_espessura_pt = 0.6,
+  linha_guia_recuo = 0.07,
+
+  # rotulos_raio_dentro / rotulos_raio_borda: posição dos rótulos, em fração do raio, quando
+  #   rotulos_posicao = "dentro" (numa pizza cheia; na rosca fica no meio do anel) ou "borda".
+  #   OPÇÕES: números > 0 (padrões 0.62 e 1.08)
+  rotulos_raio_dentro = 0.62,
+  rotulos_raio_borda = 1.08,
+
+  # rotulos_afastar: afasta rótulos "fora"/"borda" que se sobreporiam (fatias pequenas
+  #   vizinhas). Só move os que colidem; os demais ficam onde estão.
+  #   OPÇÕES: TRUE | FALSE
+  rotulos_afastar = TRUE,
+
+  # rotulos_margem: folga (fração do raio) entre os rótulos mais externos e a borda da figura.
+  #   OPÇÕES: número >= 0 (padrão 0.15)
+  rotulos_margem = 0.15,
+
   # rotulos_casas: casas decimais de valor e percentual.
   rotulos_casas = 1,
 
@@ -450,7 +479,12 @@ cfg$distribuicao <- list(
   opacidade_multiplas = 0.55,
 
   # marcas_rug: tracinhos com cada dado junto ao eixo X.
-  marcas_rug = FALSE
+  marcas_rug = FALSE,
+
+  # rug_comprimento_pt / rug_espessura_pt: tamanho e espessura dos tracinhos de marcas_rug.
+  #   OPÇÕES: números > 0 (padrões 5 e 0.6)
+  rug_comprimento_pt = 5,
+  rug_espessura_pt = 0.6
 )
 
 # -----------------------------------------------------------------------------
@@ -539,8 +573,32 @@ cfg$boxplot <- list(
   # mostrar_n: escreve o número de dados (n) acima de cada caixa.
   mostrar_n = FALSE,
 
-  # semente: semente do sorteio do "jitter" (mesma figura toda vez).
-  semente = 123
+  # semente: semente do sorteio do "jitter" (mesma figura toda vez). O sorteio do
+  #   restante da sua sessão do R não é alterado.
+  semente = 123,
+
+  # enxame_resolucao: altura de cada "faixa" do enxame (pontos_disposicao = "enxame"), em
+  #   fração da faixa dos dados. Pontos na mesma faixa são afastados para os lados.
+  #   OPÇÕES: número > 0 (padrão 0.025; menor = pontos mais espalhados)
+  #   EX.: cfg$boxplot$enxame_resolucao <- 0.04
+  enxame_resolucao = 0.025,
+
+  # pontos_borda_pt / outliers_borda_pt / media_borda_pt: espessura (pt) da borda dos
+  #   símbolos dos dados, dos outliers e da média.
+  #   OPÇÕES: número >= 0 (padrões 0.4 / 0.8 / 0.9)
+  pontos_borda_pt = 0.4,
+  outliers_borda_pt = 0.8,
+  media_borda_pt = 0.9,
+
+  # media_erro_ponto_fator: no estilo "ponto" de media_erro, o símbolo da média tem
+  #   media_tamanho_pt multiplicado por este fator.
+  #   OPÇÕES: número > 0 (padrão 1.4)
+  media_erro_ponto_fator = 1.4,
+
+  # n_tamanho_pt: tamanho do texto "n = ..." de mostrar_n, em pt.
+  #   OPÇÕES: NULL (80 % do tamanho base do texto) | número
+  #   EX.: cfg$boxplot$n_tamanho_pt <- 7
+  n_tamanho_pt = NULL
 )
 
 # -----------------------------------------------------------------------------
@@ -554,9 +612,33 @@ cfg$eixo_x <- list(
   titulo = NULL,
 
   # inicio / fim: limites do eixo ("From" / "To"). NULL = automático.
-  #   OPÇÕES: NULL | número      EX.: cfg$eixo_x$inicio <- 0; cfg$eixo_x$fim <- 100
+  #   Em eixo de datas, use texto: "2024-01-01", "01/01/2024" ou "01/01/2024 08:00".
+  #   OPÇÕES: NULL | número | "data"
+  #   EX.: cfg$eixo_x$inicio <- 0; cfg$eixo_x$fim <- 100
+  #        cfg$eixo_x$inicio <- "01/03/2024"; cfg$eixo_x$fim <- "30/06/2024"
   inicio = NULL,
   fim = NULL,
+
+  # tempo: a coluna X é uma data/hora? Colunas como 2024-03-15, 15/03/2024 ou
+  #   15/03/2024 14:30 viram eixo de datas (posição proporcional ao tempo, ticks em
+  #   dias, meses, anos...). "auto" detecta; FALSE trata o texto como categorias.
+  #   Só vale para pontos, linha, linha_pontos, area e area_empilhada.
+  #   OPÇÕES: "auto" | TRUE | FALSE
+  #   EX.: cfg$eixo_x$tempo <- FALSE
+  tempo = "auto",
+
+  # formato_data: formato das datas do CSV quando o "auto" não acerta (o "auto" entende
+  #   dia/mês/ano, ano-mês-dia e hora opcional). Códigos: %d dia, %m mês, %Y ano de
+  #   4 dígitos, %H hora, %M minuto, %S segundo.
+  #   OPÇÕES: NULL (auto) | "formato"
+  #   EX.: cfg$eixo_x$formato_data <- "%m/%d/%Y"   # mês/dia/ano (estilo americano)
+  formato_data = NULL,
+
+  # formato_rotulo_data: como as datas aparecem nos ticks. NULL = automático conforme o
+  #   período mostrado (só números, para não depender do idioma do Windows).
+  #   OPÇÕES: NULL | "formato"
+  #   EX.: cfg$eixo_x$formato_rotulo_data <- "%d/%m/%Y"   ou   "%H:%M"
+  formato_rotulo_data = NULL,
 
   # margem_percentual: espaço extra além de inicio/fim, em % da faixa.
   #   OPÇÕES: número >= 0 (0 = eixo começa exatamente no limite)
@@ -578,18 +660,23 @@ cfg$eixo_x <- list(
   ticks_modo = "auto",
 
   # incremento: distância entre ticks maiores. Em escalas log, conta em
-  #   DÉCADAS (1 = a cada potência de 10).
+  #   DÉCADAS (1 = a cada potência de 10). Em eixo de datas, use um passo em texto:
+  #   número + unidade (sec/seg, min, hour/hora, day/dia, week/semana, month/mes, year/ano).
+  #   OPÇÕES: número > 0 | "passo de tempo"
+  #   EX.: cfg$eixo_x$incremento <- 20       cfg$eixo_x$incremento <- "1 mes"
+  #        cfg$eixo_x$incremento <- "2 semanas"      cfg$eixo_x$incremento <- "6 horas"
   incremento = NULL,
 
   # quantidade: número de ticks maiores (modo "quantidade").
   quantidade = NULL,
 
   # primeiro_tick: posição do primeiro tick maior (modo "incremento").
-  #   NULL = no início do eixo.
+  #   NULL = no início do eixo. Em eixo de datas aceita texto: "01/01/2024".
   primeiro_tick = NULL,
 
-  # ticks_manuais: posições dos ticks (modo "manual").
+  # ticks_manuais: posições dos ticks (modo "manual"). Em eixo de datas, textos de data.
   #   EX.: cfg$eixo_x$ticks_manuais <- c(0, 25, 60, 100)
+  #        cfg$eixo_x$ticks_manuais <- c("01/01/2024", "15/03/2024")
   ticks_manuais = NULL,
 
   # rotulos_manuais: textos no lugar dos números (mesmo tamanho de ticks_manuais).
@@ -864,7 +951,12 @@ cfg$legenda <- list(
   tamanho_chave_pt = 14,
 
   # espacamento_pt: espaço vertical entre os itens.
-  espacamento_pt = 2
+  espacamento_pt = 2,
+
+  # margem_interna_pt: folga entre o texto da legenda e a sua moldura: c(cima, direita,
+  #   baixo, esquerda), em pt.
+  #   OPÇÕES: vetor de 4 números >= 0      EX.: cfg$legenda$margem_interna_pt <- c(6, 8, 6, 8)
+  margem_interna_pt = c(4, 6, 4, 6)
 )
 
 # -----------------------------------------------------------------------------
@@ -952,7 +1044,13 @@ cfg$quebra <- list(
   # espaco_pt: espaço entre as duas partes.
   espaco_pt = 4,
   # marcas: desenha os traços diagonais "//" da quebra.
-  marcas = TRUE
+  marcas = TRUE,
+
+  # marca_largura_pt / marca_altura_pt: tamanho de cada traço diagonal da quebra, em pt
+  #   (largura = quanto avança para os lados; altura = quanto sobe/desce).
+  #   OPÇÕES: números > 0 (padrões 5 e 4)
+  marca_largura_pt = 5,
+  marca_altura_pt = 4
 )
 
 # -----------------------------------------------------------------------------

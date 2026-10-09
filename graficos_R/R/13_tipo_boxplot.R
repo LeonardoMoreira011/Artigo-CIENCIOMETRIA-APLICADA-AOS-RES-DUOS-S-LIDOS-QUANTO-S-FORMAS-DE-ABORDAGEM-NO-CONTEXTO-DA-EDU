@@ -3,6 +3,8 @@
 # =============================================================================
 
 # ---- Boxplot e variações ------------------------------------------------------------
+# Posições X dos pontos em "enxame" (sem sobreposição). Entra: valores y, centro e largura da
+# faixa, faixa de dados e a altura relativa de cada faixa (cfg$boxplot$enxame_resolucao).
 .enxame <- function(y, centro, largura, faixa_y, tam_rel = 0.025) {
   n <- length(y); if (!n) return(numeric(0))
   h <- max(diff(faixa_y) * tam_rel, 1e-12)
@@ -28,6 +30,7 @@
   contorno <- function(i) if (identical(X$contorno_cor, "serie")) est[[i]]$cor else .cor(X$contorno_cor)
   polys <- list(); segs <- list(); pts_media <- list(); pts_out <- list(); pts_dados <- list(); txt_n <- list()
   faixa <- range(unlist(am))
+  restaurar_rng <- .guardar_rng(); on.exit(restaurar_rng(), add = TRUE)
   set.seed(X$semente %||% 123)
   erro_media <- function(x, tipo) {
     n <- length(x); s <- stats::sd(x); if (is.na(s)) s <- 0
@@ -52,7 +55,7 @@
       segs[[length(segs) + 1]] <- data.frame(x = p - w * X$bigode_chapeu / 2, xend = p + w * X$bigode_chapeu / 2,
                                              y = c(md - er, md + er), yend = c(md - er, md + er), cor = cc, lw = X$contorno_espessura_pt)
       if (X$media_erro_estilo == "ponto")
-        pts_media[[length(pts_media) + 1]] <- data.frame(x = p, y = md, fill = est[[it]]$cor, tam = X$media_tamanho_pt * 1.4, item = it)
+        pts_media[[length(pts_media) + 1]] <- data.frame(x = p, y = md, fill = est[[it]]$cor, tam = X$media_tamanho_pt * X$media_erro_ponto_fator, item = it)
       faixa <- range(c(faixa, 0, md + er, md - er))
       if (isTRUE(X$mostrar_n)) txt_n[[length(txt_n) + 1]] <- data.frame(x = p, y = md + er, rot = paste0("n = ", length(x)))
       next
@@ -62,10 +65,15 @@
     if (var == "meio_box") { xb0 <- p; xb1 <- p + w / 2 }
     if (var == "violino_box") { xb0 <- p - w * 0.12; xb1 <- p + w * 0.12 }
     if (var %in% c("violino", "violino_box")) {
-      dd <- stats::density(x, adjust = X$violino_ajuste_banda, cut = if (isTRUE(X$violino_cortar)) 0 else 3)
-      lv <- dd$y / max(dd$y) * X$violino_largura / 2
-      polys[[length(polys) + 1]] <- data.frame(x = c(p - lv, rev(p + lv)), y = c(dd$x, rev(dd$x)), item = it)
-      faixa <- range(c(faixa, dd$x))
+      if (length(x) < 2) {
+        .aviso("Violino: o grupo '", it, "' tem ", length(x), " valor; são precisos pelo menos 2 para ",
+               "estimar a densidade. O violino desse grupo não foi desenhado.")
+      } else {
+        dd <- stats::density(x, adjust = X$violino_ajuste_banda, cut = if (isTRUE(X$violino_cortar)) 0 else 3)
+        lv <- dd$y / max(dd$y) * X$violino_largura / 2
+        polys[[length(polys) + 1]] <- data.frame(x = c(p - lv, rev(p + lv)), y = c(dd$x, rev(dd$x)), item = it)
+        faixa <- range(c(faixa, dd$x))
+      }
     }
     if (var != "violino") {
       if (isTRUE(X$entalhe)) {
@@ -98,7 +106,7 @@
       larg <- if (var == "meio_box") min(X$pontos_largura, w / 2 * 0.9) else X$pontos_largura
       xs <- switch(X$pontos_disposicao, coluna = rep(centro, length(x)),
                    jitter = centro + stats::runif(length(x), -larg / 2, larg / 2),
-                   enxame = .enxame(x, centro, larg, range(unlist(am))))
+                   enxame = .enxame(x, centro, larg, range(unlist(am)), X$enxame_resolucao))
       pts_dados[[length(pts_dados) + 1]] <- data.frame(x = xs, y = x, fill = .alfa(est[[it]]$cor, X$pontos_opacidade))
     }
     if (isTRUE(X$mostrar_n)) txt_n[[length(txt_n) + 1]] <- data.frame(x = p, y = max(wl[2], q[3], max(x)), rot = paste0("n = ", length(x)))
@@ -127,7 +135,7 @@
     pd <- do.call(rbind, pts_dados)
     cam[[length(cam) + 1]] <- geom_point(data = pd, aes(x = x, y = y), shape = X$pontos_simbolo, fill = pd$fill,
       colour = if (X$pontos_simbolo >= 21) scales::alpha("black", 0.8) else pd$fill,
-      size = .tx(X$pontos_tamanho_pt), stroke = .st(0.4))
+      size = .tx(X$pontos_tamanho_pt), stroke = .st(X$pontos_borda_pt))
   }
   if (length(segs)) {
     sg <- do.call(rbind, segs)
@@ -137,19 +145,20 @@
   if (length(pts_out)) {
     po <- do.call(rbind, pts_out)
     cam[[length(cam) + 1]] <- geom_point(data = po, aes(x = x, y = y), shape = X$outliers_simbolo,
-      colour = po$cor, size = .tx(X$outliers_tamanho_pt), stroke = .st(0.8))
+      colour = po$cor, size = .tx(X$outliers_tamanho_pt), stroke = .st(X$outliers_borda_pt))
   }
   if (length(pts_media)) {
     pm <- do.call(rbind, pts_media)
     cam[[length(cam) + 1]] <- geom_point(data = pm, aes(x = x, y = y), shape = X$media_simbolo, fill = pm$fill,
-      colour = .cor(if (identical(X$contorno_cor, "serie")) "black" else X$contorno_cor), size = .tx(pm$tam), stroke = .st(0.9))
+      colour = .cor(if (identical(X$contorno_cor, "serie")) "black" else X$contorno_cor), size = .tx(pm$tam), stroke = .st(X$media_borda_pt))
   }
   if (length(txt_n)) {
     tn <- do.call(rbind, txt_n); faixa <- range(c(faixa, tn$y + 0.06 * diff(faixa)))
+    tam_n <- X$n_tamanho_pt %||% cfg$texto$tamanho_base_pt * 0.8
     cam[[length(cam) + 1]] <- if (flip) geom_text(data = tn, aes(x = x, y = y, label = rot), hjust = -0.2,
-                                                   size = .tx(cfg$texto$tamanho_base_pt * 0.8), family = .fonte(cfg$texto$fonte))
+                                                   size = .tx(tam_n), family = .fonte(cfg$texto$fonte))
       else geom_text(data = tn, aes(x = x, y = y, label = rot), vjust = -0.6,
-                     size = .tx(cfg$texto$tamanho_base_pt * 0.8), family = .fonte(cfg$texto$fonte))
+                     size = .tx(tam_n), family = .fonte(cfg$texto$fonte))
   }
   ax_x <- .calc_eixo(cfg$eixo_x, c(0.5, k + 0.5), categorias = itens, forcar = cfg$.interno$forcar_x)
   ax_y <- .calc_eixo(cfg$eixo_y, faixa, forcar = cfg$.interno$forcar_y)

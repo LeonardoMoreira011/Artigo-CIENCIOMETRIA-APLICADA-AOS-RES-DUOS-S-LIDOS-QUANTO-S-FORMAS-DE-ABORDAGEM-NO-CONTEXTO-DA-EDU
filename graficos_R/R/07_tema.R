@@ -116,7 +116,7 @@
     legend.text = element_text(size = lg$tamanho_texto_pt %||% tx$tamanho_base_pt),
     legend.title = if (is.null(lg$titulo)) element_blank() else
       element_text(size = lg$tamanho_titulo_pt %||% tx$tamanho_base_pt),
-    legend.margin = margin(4, 6, 4, 6))
+    legend.margin = do.call(margin, as.list(lg$margem_interna_pt)))
   if (pos == "inside") {
     anc <- if (identical(lg$ancora, "auto")) c(lg$dentro_x, lg$dentro_y) else lg$ancora
     t <- t + theme(legend.position.inside = c(lg$dentro_x, lg$dentro_y),
@@ -143,8 +143,39 @@
   res
 }
 
+# Bordas do painel (com a margem) em unidades de DADOS, para annotation_custom(). Em escala linear
+# devolve c(-Inf, Inf); em log/raiz/recíproca usa valores finitos, porque transformar -Inf por
+# log() gera NaN (e um aviso do ggplot2) ao posicionar a anotação.
+.borda_painel <- function(ax) {
+  if (is.null(ax) || identical(ax$escala, "linear") || !is.null(ax$categorias)) return(c(-Inf, Inf))
+  r <- sort(ax$trans$transform(ax$limites))
+  r <- r + c(-1, 1) * diff(r) * ax$mult
+  sort(ax$trans$inverse(r))
+}
+
+# Ticks menores do eixo Y2: o sec_axis() do ggplot2 não os desenha na escala própria do Y2, então
+# são traços no lado direito nas posições dos menores calculados para o Y2.
+# Entra: y2 (list(ax, para1, cor)), eixo Y1 calculado e a config do eixo vertical.
+.ticks_y2_menores <- function(y2, ax_y, ev, ax_x = NULL) {
+  menores <- y2$ax$menores
+  dir <- ev$direcao_menores %||% "dentro"
+  if (!length(menores) || identical(dir, "nenhum") || is.null(y2$para1)) return(NULL)
+  p <- .npc(y2$para1(menores), ax_y)
+  p <- p[p >= -1e-6 & p <= 1 + 1e-6]
+  if (!length(p)) return(NULL)
+  L <- unit(ev$comprimento_menores_pt, "pt")
+  gp <- gpar(col = .cor(y2$cor), lwd = .lw(ev$espessura_ticks_pt) * ggplot2::.pt, lineend = "butt")
+  x0 <- unit(1, "npc"); y <- unit(p, "npc")
+  filhos <- switch(dir,
+    dentro = list(segmentsGrob(x0, y, x0 - L, y, gp = gp)),
+    fora   = list(segmentsGrob(x0, y, x0 + L, y, gp = gp)),
+    ambos  = list(segmentsGrob(x0, y, x0 - L, y, gp = gp), segmentsGrob(x0, y, x0 + L, y, gp = gp)))
+  bx <- .borda_painel(ax_x); by <- .borda_painel(ax_y)
+  annotation_custom(gTree(children = do.call(gList, filhos)), xmin = bx[1], xmax = bx[2], ymin = by[1], ymax = by[2])
+}
+
 # Ticks "ambos" (cruzando o eixo): parte interna desenhada como anotação
-.ticks_internos <- function(axh, axv, lados) {
+.ticks_internos <- function(axh, axv, lados, ax_x = NULL, ax_y = NULL) {
   segs <- list()
   add <- function(ax, lado) {
     e <- ax$cfg
@@ -167,6 +198,7 @@
   for (l in lados$hor) add(axh, l)
   for (l in lados$ver) if (!(l == lados$lado_y2)) add(axv, l)
   if (!length(segs)) return(NULL)
+  bx <- .borda_painel(ax_x); by <- .borda_painel(ax_y)   # eixos de DADOS (antes de qualquer coord_flip)
   annotation_custom(do.call(gTree, list(children = do.call(gList, segs))),
-                    xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
+                    xmin = bx[1], xmax = bx[2], ymin = by[1], ymax = by[2])
 }

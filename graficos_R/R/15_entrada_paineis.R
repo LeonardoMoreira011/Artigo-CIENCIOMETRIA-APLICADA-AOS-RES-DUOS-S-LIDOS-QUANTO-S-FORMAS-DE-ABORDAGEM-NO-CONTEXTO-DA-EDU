@@ -7,7 +7,9 @@
 # =============================================================================
 plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   if (missing(dados) || !is.data.frame(dados)) .erro("plotar(dados, cfg): 'dados' deve ser o resultado de ler_csv().")
-  .validar(cfg)
+  .checar_nomes(cfg); .checar_itens(cfg)   # avisa nomes digitados errado ANTES de completar com os padrões
+  cfg <- .completar_cfg(cfg)
+  .validar(cfg, checar_nomes = FALSE)
   g <- if (isTRUE(cfg$paineis$ativo)) .plotar_paineis(dados, cfg)
        else if (isTRUE(cfg$quebra$ativo)) .plotar_quebra(dados, cfg)
        else .plotar_um(dados, cfg)
@@ -40,27 +42,29 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
     p <- P$lista[[i]]
     if (!is.null(p[[comum]]) && length(setdiff(names(p[[comum]]), c("mostrar_rotulos", "mostrar_titulo"))))
       .aviso("Painel ", i, ": ajustes em ", comum, " são ignorados — o ", comum, " é comum a todos os painéis.")
-    p[[comum]] <- NULL
+    ajustes <- p[[comum]][intersect(names(p[[comum]]), c("mostrar_rotulos", "mostrar_titulo"))]
+    p[[comum]] <- if (length(ajustes)) ajustes else NULL   # só estes dois valem por painel
     ci <- .mesclar(cfg, p)
     ci$paineis$ativo <- FALSE; ci$quebra$ativo <- FALSE
     ci$.interno <- list(em_painel = TRUE)
     .validar(ci)
     ci
   })
-  # 1ª passada: faixa comum
-  faixas <- lapply(cfgs, function(ci) {
-    g <- .plotar_um(dados, ci); inf <- attr(g, "info")
+  # 1ª passada: só as faixas de dados de cada painel (sem montar o gráfico e sem repetir os avisos,
+  # que saem na 2ª passada), para calcular o eixo comum
+  previas <- lapply(cfgs, function(ci) suppressWarnings(.plotar_um(dados, ci, so_info = TRUE)))
+  faixas <- lapply(previas, function(inf) {
     if (isTRUE(inf$pizza)) .erro("Pizza não pode ser usada em painéis com eixo comum.")
     if (vertical) inf$faixa_x else inf$faixa_y
   })
+  tempos <- Filter(Negate(is.null), lapply(previas, function(inf) inf$ax_x$tempo))
+  tempo_comum <- if (vertical && length(tempos)) tempos[[1]] else NULL
   tipos <- vapply(cfgs, function(ci) ci$grafico$tipo, "")
   conhecidos <- c(names(dados), unlist(lapply(names(dados), function(n) if (!is.numeric(dados[[n]])) unique(as.character(dados[[n]])))))
   for (s in setdiff(unique(unlist(lapply(cfgs, function(ci) names(ci$series)))), conhecidos))
     .aviso("cfg$series[[\"", s, "\"]] não corresponde a nenhuma coluna/categoria dos dados.")
-  forcar <- if (vertical && all(tipos %in% c("barras", "boxplot")) || (!vertical && FALSE)) NULL else {
-    ax <- .calc_eixo(cfg[[comum]], unlist(faixas))
-    ax$limites
-  }
+  forcar <- if (vertical && all(tipos %in% c("barras", "boxplot"))) NULL
+            else .calc_eixo(cfg[[comum]], unlist(faixas), tempo = tempo_comum)$limites
   plots <- vector("list", n)
   for (i in seq_len(n)) {
     ci <- cfgs[[i]]
@@ -86,7 +90,7 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
     } else {
       ci$caixa$margens_cm <- c(m[1], if (i == n) m[2] else esp, m[3], if (i == 1) m[4] else esp)
     }
-    if (i > 1 || !is.null(cfg$titulos$titulo)) { if (i > 1) { ci$titulos$titulo <- NULL; ci$titulos$subtitulo <- NULL } }
+    if (i > 1) { ci$titulos$titulo <- NULL; ci$titulos$subtitulo <- NULL }   # título só no 1º painel
     plots[[i]] <- .plotar_um(dados, ci)
   }
   tam <- P$tamanhos %||% rep(1, n)
@@ -110,27 +114,33 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   if (is.null(Q$de) || is.null(Q$ate) || Q$de >= Q$ate) .erro("cfg$quebra: defina de < ate (ex.: de = 20, ate = 80).")
   if (cfg$grafico$tipo == "pizza") .erro("Quebra de eixo não se aplica a pizza.")
   base <- cfg; base$quebra$ativo <- FALSE
-  g0 <- .plotar_um(dados, base); inf <- attr(g0, "info")
+  inf <- .plotar_um(dados, base, so_info = TRUE)
   lim <- inf$ax_y$limites
   if (Q$de <= lim[1] || Q$ate >= lim[2]) .erro("cfg$quebra: o trecho omitido (", Q$de, " a ", Q$ate,
                                                ") precisa estar dentro do eixo Y (", lim[1], " a ", lim[2], ").")
   inferior <- base; superior <- base
   inferior$eixo_y$inicio <- lim[1]; inferior$eixo_y$fim <- Q$de
   superior$eixo_y$inicio <- Q$ate; superior$eixo_y$fim <- lim[2]
-  for (k in c("inferior", "superior")) {
-    ck <- get(k)
+  m <- cfg$caixa$margens_cm; esp <- Q$espaco_pt / 2 / 72 * 2.54
+  # a parte de cima fica sem números/título do X; a de baixo sem legenda, títulos e letra
+  ajustar_parte <- function(ck, parte) {
     ck$eixo_y$mostrar_titulo <- FALSE
-    m <- cfg$caixa$margens_cm; esp <- Q$espaco_pt / 2 / 72 * 2.54
-    ck$caixa$margens_cm <- if (k == "superior") c(m[1], m[2], esp, m[4]) else c(esp, m[2], m[3], m[4])
-    if (k == "superior") { ck$eixo_x$mostrar_rotulos <- FALSE; ck$eixo_x$mostrar_titulo <- FALSE }
-    else { ck$legenda$mostrar <- FALSE; ck$titulos$titulo <- NULL; ck$titulos$subtitulo <- NULL; ck$anotacoes$letra <- NULL }
-    assign(k, ck)
+    if (parte == "superior") {
+      ck$caixa$margens_cm <- c(m[1], m[2], esp, m[4])
+      ck$eixo_x$mostrar_rotulos <- FALSE; ck$eixo_x$mostrar_titulo <- FALSE
+    } else {
+      ck$caixa$margens_cm <- c(esp, m[2], m[3], m[4])
+      ck$legenda$mostrar <- FALSE; ck$titulos$titulo <- NULL; ck$titulos$subtitulo <- NULL
+      ck$anotacoes$letra <- NULL
+    }
+    ck
   }
-  gs <- .plotar_um(dados, superior); gi <- .plotar_um(dados, inferior)
+  gs <- .plotar_um(dados, ajustar_parte(superior, "superior"))
+  gi <- .plotar_um(dados, ajustar_parte(inferior, "inferior"))
   if (isTRUE(Q$marcas)) {
     marca <- function(y) {
       gp <- gpar(col = cfg$caixa$cor, lwd = .lw(cfg$caixa$espessura_pt) * ggplot2::.pt)
-      dx <- unit(5, "pt"); dy <- unit(4, "pt")
+      dx <- unit(Q$marca_largura_pt, "pt"); dy <- unit(Q$marca_altura_pt, "pt")
       gTree(children = gList(
         segmentsGrob(unit(0, "npc") - dx, unit(y, "npc") - dy, unit(0, "npc") + dx, unit(y, "npc") + dy, gp = gp),
         segmentsGrob(unit(1, "npc") - dx, unit(y, "npc") - dy, unit(1, "npc") + dx, unit(y, "npc") + dy, gp = gp)))

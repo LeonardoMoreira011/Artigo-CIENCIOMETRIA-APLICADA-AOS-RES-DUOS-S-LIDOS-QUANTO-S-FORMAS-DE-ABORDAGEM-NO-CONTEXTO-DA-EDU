@@ -5,6 +5,12 @@
 # =============================================================================
 #  VALIDAÇÃO DO cfg
 # =============================================================================
+# TRUE se v é uma data (Date, POSIXct ou texto reconhecível como data); NULL conta como FALSE
+.valor_tempo <- function(v) {
+  !is.null(v) && length(v) == 1 &&
+    (inherits(v, c("Date", "POSIXt")) || (is.character(v) && !is.null(.detectar_tempo(v))))
+}
+
 .OPCOES <- list(
   "grafico$tipo" = c("pontos", "linha", "linha_pontos", "area", "area_empilhada", "barras",
                      "pizza", "histograma", "densidade", "ecdf", "boxplot"),
@@ -45,6 +51,22 @@
   notacao = c("normal", "milhar", "cientifica", "cientifica_E", "potencia10", "percentual")
 )
 
+# Completa o cfg com os padrões do 01_config.R para tudo o que faltar nos blocos. Assim continuam
+# funcionando scripts que SUBSTITUEM um bloco inteiro (cfg$quebra <- list(...)) e estilos salvos
+# antes de um parâmetro existir. Não mexe em cfg$series e cfg$referencias (livres).
+.completar_cfg <- function(cfg) {
+  ref <- .cfg_ref
+  if (is.null(ref)) return(cfg)
+  for (bl in setdiff(names(ref), c("series", "referencias"))) {
+    if (!is.list(ref[[bl]]) || is.null(names(ref[[bl]]))) next
+    if (is.null(cfg[[bl]])) { cfg[[bl]] <- ref[[bl]]; next }
+    if (!is.list(cfg[[bl]])) next
+    for (nm in setdiff(names(ref[[bl]]), names(cfg[[bl]])))
+      if (!is.null(ref[[bl]][[nm]])) cfg[[bl]][[nm]] <- ref[[bl]][[nm]]
+  }
+  cfg
+}
+
 .checar_opcao <- function(valor, opcoes, onde) {
   if (is.null(valor)) return(invisible())
   if (!is.character(valor) || length(valor) != 1 || !valor %in% opcoes) {
@@ -77,8 +99,29 @@
   }
 }
 
-.validar <- function(cfg) {
-  .checar_nomes(cfg)
+# Chaves aceitas em cada item de cfg$referencias e de cfg$anotacoes$textos/setas/faixas
+.CHAVES_ITENS <- list(
+  referencias = c("eixo", "valor", "cor", "espessura_pt", "tipo", "rotulo", "rotulo_tamanho_pt"),
+  textos = c("x", "y", "texto", "tamanho_pt", "cor", "negrito", "alinhamento"),
+  setas = c("x", "y", "x_fim", "y_fim", "cor", "espessura_pt", "tamanho_ponta_pt"),
+  faixas = c("eixo", "de", "ate", "cor", "opacidade"))
+
+# Avisa chave digitada errado dentro dos itens (ex.: tamanho_ptt), que antes era ignorada em silêncio.
+.checar_itens <- function(cfg) {
+  um <- function(lista, tipo, onde) for (i in seq_along(lista)) {
+    ruins <- setdiff(names(lista[[i]]), .CHAVES_ITENS[[tipo]])
+    for (r in ruins) {
+      sug <- .CHAVES_ITENS[[tipo]][utils::adist(r, .CHAVES_ITENS[[tipo]]) <= 3]
+      .aviso(onde, "[[", i, "]]$", r, " não existe e será ignorado.",
+             if (length(sug)) paste0(" Você quis dizer '", sug[1], "'?") else "")
+    }
+  }
+  um(cfg$referencias, "referencias", "cfg$referencias")
+  for (t in c("textos", "setas", "faixas")) um(cfg$anotacoes[[t]], t, paste0("cfg$anotacoes$", t))
+}
+
+.validar <- function(cfg, checar_nomes = TRUE) {
+  if (checar_nomes) { .checar_nomes(cfg); .checar_itens(cfg) }
   for (k in names(.OPCOES)) {
     p <- strsplit(k, "$", fixed = TRUE)[[1]]
     .checar_opcao(cfg[[p[1]]][[p[2]]], .OPCOES[[k]], k)
@@ -86,7 +129,10 @@
   for (ax in c("eixo_x", "eixo_y")) {
     e <- cfg[[ax]]
     for (k in names(.OPCOES_EIXO)) .checar_opcao(e[[k]], .OPCOES_EIXO[[k]], paste0(ax, "$", k))
-    if (!is.null(e$inicio) && !is.null(e$fim)) {
+    if (!is.null(e$tempo) && !(identical(e$tempo, "auto") || is.logical(e$tempo)))
+      .erro("cfg$", ax, "$tempo deve ser \"auto\", TRUE ou FALSE.")
+    datas <- .valor_tempo(e$inicio) && .valor_tempo(e$fim)   # inicio/fim como datas: .calc_eixo confere a ordem
+    if (!is.null(e$inicio) && !is.null(e$fim) && !datas) {
       if (!is.numeric(e$inicio) || !is.numeric(e$fim))
         .erro("cfg$", ax, "$inicio e $fim devem ser números (use ponto decimal: 2.5).")
       if (e$inicio >= e$fim)
@@ -95,8 +141,9 @@
     }
     if (identical(e$ticks_modo, "incremento") && is.null(e$incremento))
       .erro("cfg$", ax, "$ticks_modo = \"incremento\" exige cfg$", ax, "$incremento (ex.: 10).")
-    if (!is.null(e$incremento) && (!is.numeric(e$incremento) || e$incremento <= 0))
-      .erro("cfg$", ax, "$incremento deve ser um número > 0.")
+    if (!is.null(e$incremento) && is.null(.passo_tempo(e$incremento)) &&
+        (!is.numeric(e$incremento) || e$incremento <= 0))
+      .erro("cfg$", ax, "$incremento deve ser um número > 0 (ou, em eixo de datas, um passo como \"1 mes\").")
     if (identical(e$ticks_modo, "quantidade") && is.null(e$quantidade))
       .erro("cfg$", ax, "$ticks_modo = \"quantidade\" exige cfg$", ax, "$quantidade (ex.: 5).")
     if (identical(e$ticks_modo, "manual") && is.null(e$ticks_manuais))

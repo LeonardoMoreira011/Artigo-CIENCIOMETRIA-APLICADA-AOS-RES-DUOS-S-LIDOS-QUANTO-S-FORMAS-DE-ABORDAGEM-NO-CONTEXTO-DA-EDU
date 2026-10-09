@@ -115,7 +115,8 @@
     escura <- vapply(itens, function(i) grDevices::colorRampPalette(c(est[[i]]$cor, "black"))(3)[2], "")
     rg <- data.frame(x = todos, cor = rep(escura, vapply(am, length, 0)))
     cam[[length(cam) + 1]] <- geom_rug(data = rg, aes(x = x), colour = rg$cor, sides = "b",
-                                       length = unit(5, "pt"), linewidth = .lw(0.6), inherit.aes = FALSE)
+                                       length = unit(D$rug_comprimento_pt, "pt"), linewidth = .lw(D$rug_espessura_pt),
+                                       inherit.aes = FALSE)
   }
   ax_x <- .calc_eixo(cfg$eixo_x, faixa_x, forcar = cfg$.interno$forcar_x)
   ax_y <- .calc_eixo(cfg$eixo_y, faixa_y, forcar = cfg$.interno$forcar_y)

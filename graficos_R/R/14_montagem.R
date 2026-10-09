@@ -61,7 +61,10 @@
   list(antes = antes, depois = cam)
 }
 
-.plotar_um <- function(dados, cfg) {
+# Monta UM gráfico. Entra: dados e cfg. Sai: objeto ggplot (com attr "info" = eixos calculados) ou,
+# com so_info = TRUE, só a lista 'info' (faixas de dados e eixos), sem montar nada: é o que a
+# passada prévia dos painéis precisa.
+.plotar_um <- function(dados, cfg, so_info = FALSE) {
   tipo <- cfg$grafico$tipo
   res <- switch(tipo,
     pontos = , linha = , linha_pontos = , area = , area_empilhada = .construir_xy(dados, cfg),
@@ -70,6 +73,7 @@
     histograma = , densidade = , ecdf = .construir_distribuicao(dados, cfg),
     boxplot = .construir_boxplot(dados, cfg))
   info <- res$info
+  if (isTRUE(so_info)) return(info)
   extra <- .camadas_extra(cfg, info)
   g <- ggplot() + extra$antes + res$camadas + extra$depois
   mostrar_leg <- if (identical(cfg$legenda$mostrar, "auto")) info$legenda_auto else isTRUE(cfg$legenda$mostrar)
@@ -98,7 +102,8 @@
     }
     ax2 <- .calc_eixo(e2, l2)
     cor2 <- if (is.null(cfg$eixo_y2$cor_eixo) || identical(cfg$eixo_y2$cor_eixo, "serie")) NULL else cfg$eixo_y2$cor_eixo
-    info$y2 <- list(ax = ax2, para2 = function(v) fa * v + de, titulo = cfg$eixo_y2$titulo %||% "",
+    info$y2 <- list(ax = ax2, para2 = function(v) fa * v + de, para1 = function(v) (v - de) / fa,
+                    titulo = cfg$eixo_y2$titulo %||% "",
                     cor = cor2 %||% cfg$texto$cor)
   }
   cx <- cfg$caixa; it <- cfg$.interno %||% list()
@@ -148,8 +153,12 @@
     g <- g + theme(axis.text.y.left = element_blank(), axis.title.y.left = element_blank(),
                    axis.text.y.right = .elem_rotulo(ev, cfg, "right"), axis.title.y.right = .elem_titulo(ev, cfg, "right"))
   }
-  ti <- .ticks_internos(axh, axv, lados)
+  ti <- .ticks_internos(axh, axv, lados, info$ax_x, info$ax_y)
   if (!is.null(ti)) g <- g + ti
+  if (!is.null(info$y2)) {
+    tm <- .ticks_y2_menores(info$y2, info$ax_y, ev, info$ax_x)
+    if (!is.null(tm)) g <- g + tm
+  }
   if (!mostrar_leg) g <- g + theme(legend.position = "none")
   attr(g, "info") <- info
   g

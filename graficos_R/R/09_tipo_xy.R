@@ -3,14 +3,40 @@
 # =============================================================================
 
 # ---- Pontos / linhas / áreas --------------------------------------------------
+# Avisa quantos pontos saem do gráfico por não existirem na escala do eixo (<= 0 em log, 0 em 1/x).
+.avisar_omitidos <- function(n, eixo, escala) {
+  if (n > 0)
+    .aviso("Eixo ", eixo, " em escala ", escala, ": ", n, " ponto(s) com valor ",
+           if (identical(escala, "reciproco")) "igual a 0" else "<= 0",
+           " não existe(m) nessa escala e foi(ram) omitido(s) do gráfico.")
+}
+
+# Decide se a coluna X de texto é um eixo de datas (cfg$eixo_x$tempo = "auto", TRUE ou FALSE).
+# Sai: NULL (eixo categórico) ou o resultado de .detectar_tempo().
+.tempo_do_eixo <- function(v, e) {
+  modo <- e$tempo %||% "auto"
+  if (identical(modo, FALSE)) return(NULL)
+  d <- .detectar_tempo(v, e$formato_data)
+  if (is.null(d) && isTRUE(modo))
+    .erro("cfg$eixo_x$tempo = TRUE, mas a coluna X não é reconhecida como data. ",
+          "Defina cfg$eixo_x$formato_data (ex.: \"%d/%m/%Y %H:%M\").")
+  d
+}
+
 .construir_xy <- function(dados, cfg) {
   tipo <- cfg$grafico$tipo; L <- cfg$linhas
   xcol <- .coluna(dados, cfg$grafico$coluna_x, "cfg$grafico$coluna_x")
   ycols <- .colunas_y(dados, cfg, excluir = xcol)
-  cats <- NULL
+  cats <- NULL; tempo <- NULL
   if (!is.numeric(dados[[xcol]])) {
-    cats <- unique(as.character(dados[[xcol]][!is.na(dados[[xcol]])]))
-    dados[[xcol]] <- match(as.character(dados[[xcol]]), cats)
+    d_tempo <- .tempo_do_eixo(dados[[xcol]], cfg$eixo_x)
+    if (!is.null(d_tempo)) {                     # coluna de datas/horas: eixo temporal
+      dados[[xcol]] <- d_tempo$num
+      tempo <- d_tempo[c("classe", "formato")]
+    } else {                                     # texto: eixo categórico
+      cats <- unique(as.character(dados[[xcol]][!is.na(dados[[xcol]])]))
+      dados[[xcol]] <- match(as.character(dados[[xcol]]), cats)
+    }
   }
   est <- .estilos(cfg, ycols)
   mc <- if (!is.null(cfg$cores$mapear_coluna)) .coluna(dados, cfg$cores$mapear_coluna, "cfg$cores$mapear_coluna") else NULL
@@ -18,10 +44,17 @@
   d <- .serie_longa(dados, xcol, ycols, est, mc)
   invalido <- function(v, esc) if (!is.na(.base_log(esc %||% "linear"))) !is.na(v) & v <= 0
                                else if (identical(esc, "reciproco")) !is.na(v) & v == 0 else rep(FALSE, length(v))
-  if (is.null(cats)) d$x[invalido(d$x, cfg$eixo_x$escala)] <- NA
-  d$y[invalido(d$y, cfg$eixo_y$escala)] <- NA
+  if (is.null(cats)) {
+    inv_x <- invalido(d$x, cfg$eixo_x$escala)
+    .avisar_omitidos(sum(inv_x), "X", cfg$eixo_x$escala)
+    d$x[inv_x] <- NA
+  }
+  inv_y <- invalido(d$y, cfg$eixo_y$escala)
+  .avisar_omitidos(sum(inv_y), "Y", cfg$eixo_y$escala)
+  d$y[inv_y] <- NA
   d <- d[!is.na(d$x), ]
   d$serie <- factor(d$serie, levels = ycols)
+  if (isTRUE(L$ordenar_x)) d <- d[order(d$serie, d$x), ]
 
   usa_y2 <- isTRUE(cfg$eixo_y2$ativo) && identical(cfg$eixo_y2$modo, "independente")
   ser_y2 <- if (usa_y2) ycols[vapply(est, function(e) identical(e$eixo, "y2"), logical(1))] else character(0)
@@ -56,7 +89,7 @@
                if (preench == "ate_zero") 0)
   faixa_x <- c(d$x, d$x - d$e_x, d$x + d$e_x)
   ax_y <- .calc_eixo(cfg$eixo_y, faixa_y, forcar = cfg$.interno$forcar_y)
-  ax_x <- .calc_eixo(cfg$eixo_x, faixa_x, categorias = cats, forcar = cfg$.interno$forcar_x)
+  ax_x <- .calc_eixo(cfg$eixo_x, faixa_x, categorias = cats, forcar = cfg$.interno$forcar_x, tempo = tempo)
 
   y2 <- NULL
   if (usa_y2) {
@@ -154,7 +187,9 @@
   if (L$rotulos_dados != "nenhum") {
     dd <- d
     if (usa_y2) { sel <- dd$serie %in% ser_y2; dd$yv <- dd$y; dd$yv[sel] <- y2$para2(dd$y[sel]) } else dd$yv <- dd$y
-    xv <- if (!is.null(cats)) cats[dd$x] else .fmt_num(dd$x, L$rotulos_casas)
+    xv <- if (!is.null(cats)) cats[dd$x]
+          else if (!is.null(tempo)) .formatador_tempo(cfg$eixo_x, tempo$classe, ax_x$limites, ax_x$maiores)(dd$x)
+          else .fmt_num(dd$x, L$rotulos_casas)
     dd$rot <- switch(L$rotulos_dados,
                      y = .fmt_num(dd$yv, L$rotulos_casas), x = xv,
                      xy = paste0("(", xv, ", ", .fmt_num(dd$yv, L$rotulos_casas), ")"),

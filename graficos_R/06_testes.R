@@ -25,6 +25,12 @@ da_aviso <- function(expr, padrao) {
                       warning = function(x) { w <<- c(w, conditionMessage(x)); invokeRestart("muffleWarning") })
   any(grepl(padrao, w, fixed = TRUE))
 }
+avisos_de <- function(expr) {
+  w <- character(0)
+  withCallingHandlers(tryCatch(force(expr), error = function(e) NULL),
+                      warning = function(x) { w <<- c(w, conditionMessage(x)); invokeRestart("muffleWarning") })
+  w
+}
 monta <- function(g) { if (inherits(g, "patchwork")) { f <- tempfile(fileext = ".png"); ragg::agg_png(f); print(g); dev.off(); TRUE } else { ggplot2::ggplot_build(g); TRUE } }
 camada <- function(g, col) { b <- ggplot2::ggplot_build(g); for (d in b$data) if (all(col %in% names(d))) return(d); NULL }
 
@@ -99,6 +105,128 @@ c1$grafico <- utils::modifyList(c1$grafico, list(tipo = "barras", colunas_y = "E
 teste("quebra de eixo monta", monta(plotar(mat, c1)))
 c1 <- c0; c1$eixo_y2 <- utils::modifyList(c1$eixo_y2, list(ativo = TRUE, modo = "transformado", fator = 1.8, deslocamento = 32))
 teste("eixo Y2 transformado monta", monta(plotar(d, c1)))
+
+cat("\n--- Revisão profissional: cada teste abaixo FALHAVA antes da correção ---\n")
+# ---- Leitura de CSV
+arq <- file.path(tmp, "campos.csv")
+writeLines(c("x;y", "1;2", "3;4", "5;6", "7;8", "9;10", "11;12;99", "13;14"), arq)
+r <- suppressWarnings(ler_csv(arq, op))
+teste("CSV: linha com campo a mais não cria linha fantasma nem embaralha dados",
+      nrow(r) == 7 && identical(r$x, c(1, 3, 5, 7, 9, 11, 13)))
+teste("CSV: campo a mais gera aviso com o nº da linha", da_aviso(ler_csv(arq, op), "linha 7"))
+arq <- file.path(tmp, "curta.csv"); writeLines(c("a;b;c", "1;2;3", "4;5", "7;8;9"), arq)
+teste("CSV: linha com campo a menos gera aviso", da_aviso(ler_csv(arq, op), "menos campos"))
+u16 <- file.path(tmp, "u16.csv")
+writeBin(c(as.raw(c(0xFF, 0xFE)), iconv("Concentração\tValor\r\n1\t2,5\r\n", "UTF-8", "UTF-16LE", toRaw = TRUE)[[1]]), u16)
+r <- ler_csv(u16, op)
+teste("CSV: UTF-16LE com BOM (Texto Unicode do Excel), com acento", identical(names(r), c("Concentração", "Valor")) && r$Valor == 2.5)
+u16 <- file.path(tmp, "u16be.csv")
+writeBin(iconv("Tempo;Valor\n1;3,5\n", "UTF-8", "UTF-16BE", toRaw = TRUE)[[1]], u16)
+r <- ler_csv(u16, op)
+teste("CSV: UTF-16BE sem BOM é detectado", identical(names(r), c("Tempo", "Valor")) && r$Valor == 3.5)
+teste("CSV: aviso de valor não numérico cita a linha real do arquivo",
+      { arq2 <- file.path(tmp, "n.csv"); writeLines(c("a;b", "1;2", "", "3;oi", "4;5", "6;7", "8;9"), arq2)
+        any(grepl("linha 4", attr(ler_csv(arq2, op), "avisos"), fixed = TRUE)) })
+
+# ---- Colunas por número
+c1 <- c0; c1$grafico$tipo <- "linha_pontos"; c1$grafico$coluna_x <- 1
+c1$series[["Amostra A"]] <- list(coluna_erro = 5)
+sers <- function(g) unique(unlist(lapply(g$layers, function(l) if (!is.null(l$data$serie)) as.character(unique(l$data$serie)))))
+teste("coluna_erro dada por NÚMERO não aparece como série extra", !"Desvio A" %in% sers(plotar(d, c1)))
+c1 <- c0; c1$grafico$tipo <- "pontos"; c1$grafico$coluna_x <- 1; c1$cores$mapear_coluna <- 5
+teste("mapear_coluna dada por NÚMERO não aparece como série", !"Desvio A" %in% sers(plotar(d, c1)))
+
+# ---- Caminho do projeto
+cod <- file.path(tmp, "outro_cwd.R"); proj <- normalizePath(getwd(), winslash = "/")
+writeLines(c(sprintf('source("%s/01_config.R", encoding = "UTF-8")', proj),
+             sprintf('suppressMessages(source("%s/02_motor.R", encoding = "UTF-8"))', proj),
+             sprintf('cat("RESULTADO:", exists("ajuda"), !is.null(.cfg_ref), identical(.motor_pasta, "%s"), length(listar_estilos()) > 0)', proj)), cod)
+owd <- setwd(tempdir())
+saida <- suppressWarnings(system2(file.path(R.home("bin"), "Rscript"), shQuote(cod), stdout = TRUE, stderr = FALSE))
+setwd(owd)
+teste("source() com caminho completo, de outra pasta de trabalho, acha config, ajuda e estilos",
+      any(grepl("RESULTADO: TRUE TRUE TRUE TRUE", saida, fixed = TRUE)))
+
+# ---- Exportação
+g <- plotar(d, c0) + ggplot2::labs(title = "TIT") + ggplot2::theme(plot.title = ggplot2::element_text(colour = "#FF0000", size = 30))
+cap <- ragg::agg_capture(width = 300, height = 220, res = 72, background = "transparent")
+print(.fundo_transparente(g)); px <- cap(); invisible(grDevices::dev.off())
+teste("fundo transparente: canto transparente E o + theme() do usuário preservado",
+      grDevices::col2rgb(px[1, 1], alpha = TRUE)[4] == 0 && any(grepl("^#FF0000", px)))
+c1 <- c0; c1$exportacao$fundo_transparente <- TRUE; c1$exportacao$nome_arquivo <- "transp"
+teste("salvar() com fundo transparente grava o arquivo", { f <- salvar(g, c1); file.exists(f) && file.size(f) > 500 })
+
+# ---- Boxplot
+dl <- data.frame(g = c("A", "A", "A", "B"), v = c(1, 2, 3, 5))
+c1 <- c0; c1$grafico <- utils::modifyList(c1$grafico, list(tipo = "boxplot", coluna_grupo = "g", colunas_y = "v"))
+c1$boxplot$variacao <- "violino"
+teste("violino com grupo de 1 valor não trava: avisa em português", da_aviso(plotar(dl, c1), "Violino"))
+set.seed(1); u1 <- runif(1); set.seed(1)
+invisible(plotar(rp, utils::modifyList(c0, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "box_pontos")))))
+u2 <- runif(1)
+teste("boxplot não altera a semente do gerador aleatório do usuário", u1 == u2)
+
+# ---- Eixos e linhas
+ax <- .calc_eixo(utils::modifyList(cfg$eixo_y, list(escala = "log10", ticks_modo = "incremento", incremento = 1,
+                                                    inicio = 1e-10, fim = 1)), c(1e-10, 1))
+teste("log10 com 11 décadas: ticks 1e-10 ... 1 sem duplicar nem perder o 1e-9",
+      length(ax$maiores) == 11 && !anyDuplicated(ax$maiores) && any(ax$maiores == 1e-9))
+dd <- data.frame(t = 1:5, a = c(0, 1, 2, 3, 4))
+c1 <- c0; c1$grafico <- utils::modifyList(c1$grafico, list(tipo = "pontos", coluna_x = "t", colunas_y = "a")); c1$eixo_y$escala <- "log10"
+teste("escala log: ponto com valor <= 0 gera aviso de omissão", da_aviso(plotar(dd, c1), "omitido"))
+c2 <- c1; c2$paineis$ativo <- TRUE
+c2$paineis$lista <- list(list(grafico = list(colunas_y = "a")), list(grafico = list(colunas_y = "a")))
+teste("painéis: o aviso de omissão sai uma vez por painel (sem repetir na passada prévia)",
+      sum(grepl("omitido", avisos_de(plotar(dd, c2)))) == 2)
+dd <- data.frame(x = c(1, 3, 2, 4), y = c(1, 3, 2, 4))
+c1 <- c0; c1$grafico <- utils::modifyList(c1$grafico, list(tipo = "linha", coluna_x = "x"))
+teste("linha segue a ordem do CSV por padrão", identical(camada(plotar(dd, c1), c("x", "y"))$x, c(1, 3, 2, 4)))
+c1$linhas$ordenar_x <- TRUE
+teste("linhas$ordenar_x = TRUE liga da esquerda para a direita", identical(camada(plotar(dd, c1), c("x", "y"))$x, c(1, 2, 3, 4)))
+ax <- .calc_eixo(utils::modifyList(cfg$eixo_y, list(ticks_modo = "manual", ticks_manuais = c(0, 5, 10),
+                                                    rotulos_manuais = c("a", "b", "c"), .ocultar_extremo = "max")), c(0, 10))
+teste("ocultar_rotulo_encostado também vale para rotulos_manuais", identical(ax$rotulos, c("a", "b", "")))
+c1 <- c0; c1$referencias <- list(list(eixo = "y", valor = 30, cor_linha = "red"))
+teste("referencias: chave digitada errado gera aviso", da_aviso(plotar(d, c1), "cor_linha"))
+c1 <- c0; c1$anotacoes$textos <- list(list(x = 1, y = 1, texto = "a", tamanho_ptt = 9))
+teste("anotacoes$textos: chave digitada errado gera aviso", da_aviso(plotar(d, c1), "tamanho_ptt"))
+
+# ---- Eixo Y2 (ticks menores) e pizza
+cA <- c0; cA$grafico$colunas_y <- c("Amostra A", "Amostra B")
+cA$eixo_y2 <- utils::modifyList(cA$eixo_y2, list(ativo = TRUE, n_menores = 1)); cA$series[["Amostra B"]] <- list(eixo = "y2")
+cB <- cA; cB$eixo_y2$n_menores <- 0
+teste("eixo Y2 independente desenha ticks menores no lado direito", length(plotar(d, cA)$layers) > length(plotar(d, cB)$layers))
+pz <- data.frame(Cat = c("Ferro", "Carbono", "Cromo", "Niquel", "Silicio", "Manganes", "Vanadio", "Molibdenio"),
+                 v = c(70, 12, 6, 5, 3, 2.2, 1.2, 0.6))
+c1 <- c0; c1$grafico <- utils::modifyList(c1$grafico, list(tipo = "pizza", coluna_x = 1, colunas_y = "v"))
+c1$pizza$rotulos_posicao <- "fora"; c1$pizza$rotulos <- c("categoria", "percentual"); c1$pizza$rotulos_separador <- "\n"
+folga <- function(cf) { rd <- camada(plotar(pz, cf), "label"); min(diff(sort(rd$y[rd$x < 0]))) }
+c2 <- c1; c2$pizza$rotulos_afastar <- FALSE
+teste("pizza: rótulos de fatias pequenas vizinhas não se sobrepõem (rotulos_afastar)", folga(c1) > 0.15 && folga(c2) < 0.1)
+
+# ---- Datas
+sd <- ler_csv("dados/serie_temporal.csv", op)
+teste("datas: ler_csv reconhece a coluna como data", colunas(sd)$tipo[1] == "data")
+teste("datas: dd/mm/aaaa e aaaa-mm-dd viram Date (1 dia = 1 unidade)",
+      { a <- .detectar_tempo(c("15/03/2024", "16/03/2024")); b <- .detectar_tempo(c("2024-03-15", "2024-03-16"))
+        a$classe == "Date" && diff(a$num) == 1 && identical(a$num, b$num) })
+teste("datas: texto que não é data continua categoria", is.null(.detectar_tempo(c("A", "B", "31/02/2024"))))
+c1 <- c0; c1$grafico <- utils::modifyList(c1$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = "Temperatura (°C)"))
+xs <- camada(plotar(sd, c1), c("x", "y"))$x
+teste("datas: posição no eixo proporcional ao tempo (7,5 dias = 648000 s)",
+      isTRUE(all.equal(xs[1], 1709251200)) && isTRUE(all.equal(diff(xs)[1], 648000)))
+c1$eixo_x$tempo <- FALSE
+teste("datas: eixo_x$tempo = FALSE mantém o comportamento antigo (categorias 1..n)", identical(camada(plotar(sd, c1), c("x", "y"))$x, as.numeric(1:12)))
+tp <- list(classe = "POSIXct", formato = "%d/%m/%Y %H:%M")
+tz <- .detectar_tempo(sd$`Data e hora`)$num
+ax <- .calc_eixo(utils::modifyList(cfg$eixo_x, list(ticks_modo = "incremento", incremento = "1 mes", inicio = "01/03/2024", fim = "01/06/2024")),
+                 tz, tempo = tp)
+teste("datas: ticks mensais com rótulo mm/aaaa", identical(ax$rotulos(ax$maiores), c("03/2024", "04/2024", "05/2024", "06/2024")))
+ax <- .calc_eixo(cfg$eixo_x, .detectar_tempo(c("15/03/2024 08:00", "15/03/2024 17:45"))$num, tempo = tp)
+teste("datas: intervalo de horas gera ticks de hora cheia e rótulo HH:MM", identical(ax$rotulos(ax$maiores[1:2]), c("08:00", "09:00")))
+teste("datas: inicio depois do fim dá erro claro",
+      da_erro(.calc_eixo(utils::modifyList(cfg$eixo_x, list(inicio = "01/06/2024", fim = "01/03/2024")), c(1, 2), tempo = tp), "anterior"))
+teste("datas: passo de tempo inválido dá erro claro", da_erro(plotar(sd, utils::modifyList(c1, list(eixo_x = list(tempo = "auto", ticks_modo = "incremento", incremento = "foo")))), "incremento"))
 
 cat("\n--- Exportação e estilos ---\n")
 c1 <- c0; c1$exportacao$formatos <- c("png", "pdf", "svg", "tiff"); c1$exportacao$nome_arquivo <- "t"

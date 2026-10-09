@@ -47,10 +47,20 @@
 }
 
 #' Exporta o gráfico nos formatos de cfg$exportacao
+# Deixa transparentes o fundo da página e o do painel SEM refazer o gráfico, para não perder o que
+# o usuário somou ao objeto (+ theme(), + labs(), + camadas). Serve para ggplot e para patchwork.
+.fundo_transparente <- function(g) {
+  t <- theme(plot.background = element_rect(fill = NA, colour = NA),
+             panel.background = element_rect(fill = NA, colour = NA))
+  if (inherits(g, "patchwork")) g & t else g + t
+}
+
 salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()), nome = NULL) {
+  cfg <- .completar_cfg(cfg)
   ex <- cfg$exportacao
   fator <- switch(ex$unidade, cm = 1 / 2.54, mm = 1 / 25.4, `in` = 1)
   larg <- ex$largura * fator; alt <- ex$altura * fator
+  ex$pasta <- .pasta_proj(ex$pasta)
   if (!dir.exists(ex$pasta)) dir.create(ex$pasta, recursive = TRUE)
   dados <- attr(g, "dados")
   base <- nome %||% ex$nome_arquivo %||% paste0(
@@ -58,10 +68,8 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
     "_", cfg$grafico$tipo)
   if (isTRUE(ex$carimbo_data)) base <- paste0(base, "_", format(Sys.time(), "%Y%m%d_%H%M%S"))
   fundo <- if (isTRUE(ex$fundo_transparente)) "transparent" else "white"
-  if (isTRUE(ex$fundo_transparente) && !is.null(dados)) {
-    cfg$caixa$fundo_pagina <- "transparente"; cfg$caixa$fundo_painel <- "transparente"
-    g <- plotar(dados, cfg)
-  }
+  transparente <- isTRUE(ex$fundo_transparente)
+  if (transparente) g <- .fundo_transparente(g)
   saidas <- character(0)
   for (f in tolower(ex$formatos)) {
     ext <- switch(f, jpeg = "jpg", f)
@@ -74,20 +82,26 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
       if (.usa_gradiente(cfg)) {
         cap <- tryCatch(unlist(grDevices::dev.capabilities()$patterns), error = function(e) character(0))
         if (!"LinearGradient" %in% cap) {
-          .aviso("O formato '", f, "' não suporta gradiente; usando cor sólida neste arquivo.")
-          if (!is.null(dados)) gg <- plotar(dados, .sem_gradiente(cfg))
+          .aviso("O formato '", f, "' não suporta gradiente; usando cor sólida neste arquivo ",
+                 "(o gráfico é refeito a partir do cfg: ajustes feitos depois com + theme() ou ",
+                 "+ camadas não entram nele).")
+          if (!is.null(dados)) {
+            gg <- plotar(dados, .sem_gradiente(cfg))
+            if (transparente) gg <- .fundo_transparente(gg)
+          }
         }
       }
       print(gg)
     }, finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
     saidas <- c(saidas, arq)
   }
-  message("Salvo: ", paste(saidas, collapse = "\n       "))
+  message("Salvo: ", paste(normalizePath(saidas, winslash = "/", mustWork = FALSE), collapse = "\n       "))
   invisible(saidas)
 }
 
 #' Prévia fiel (mesmo tamanho e fontes do arquivo final) no Viewer do RStudio
 visualizar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()), dpi = 150) {
+  cfg <- .completar_cfg(cfg)
   ex <- cfg$exportacao
   fator <- switch(ex$unidade, cm = 1 / 2.54, mm = 1 / 25.4, `in` = 1)
   arq <- tempfile("previa_", fileext = ".png")
@@ -109,6 +123,7 @@ visualizar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv
 
 #' Aplica o mesmo cfg a todos os CSVs de uma pasta
 exportar_lote <- function(pasta = "dados", cfg = get("cfg", envir = globalenv()), padrao = "\\.csv$") {
+  pasta <- .pasta_proj(pasta)
   arqs <- list.files(pasta, pattern = padrao, full.names = TRUE, ignore.case = TRUE)
   if (!length(arqs)) .erro("Nenhum CSV em '", pasta, "'.")
   res <- list()

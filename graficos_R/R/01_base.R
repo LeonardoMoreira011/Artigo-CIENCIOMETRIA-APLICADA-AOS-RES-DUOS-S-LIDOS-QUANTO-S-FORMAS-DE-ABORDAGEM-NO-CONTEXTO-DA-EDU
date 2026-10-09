@@ -45,5 +45,19 @@ suppressPackageStartupMessages({
 .tx <- function(pt) pt / ggplot2::.pt                    # texto e símbolos
 .st <- function(pt) pt * 96 / 72 * 2 / ggplot2::.stroke  # borda de símbolo
 
+# Pasta/arquivo relativo (ex.: "estilos", "dados/x.csv"): se não existe a partir da pasta de trabalho
+# mas existe dentro da pasta do projeto, usa o do projeto (funciona mesmo com setwd() em outro lugar).
+.eh_absoluto <- function(p) grepl("^([A-Za-z]:|/|\\\\|~)", p)
+.pasta_proj <- function(p) {
+  if (.eh_absoluto(p) || dir.exists(p)) return(p)
+  alt <- file.path(.motor_pasta, p)
+  if (dir.exists(alt)) alt else p
+}
+.arquivo_proj <- function(a) {
+  if (.eh_absoluto(a) || file.exists(a)) return(a)
+  alt <- file.path(.motor_pasta, a)
+  if (file.exists(alt)) alt else a
+}
+
 .aviso <- function(...) warning(paste0(...), call. = FALSE, immediate. = TRUE)
 .erro  <- function(...) stop(paste0(...), call. = FALSE)

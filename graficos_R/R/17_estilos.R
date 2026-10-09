@@ -9,6 +9,7 @@
                     "eixo_x", "eixo_y", "eixo_y2", "caixa", "grade", "legenda", "titulos", "texto", "exportacao")
 
 salvar_estilo <- function(cfg, nome, pasta = "estilos") {
+  pasta <- .pasta_proj(pasta)
   if (!dir.exists(pasta)) dir.create(pasta)
   est <- cfg[.BLOCOS_ESTILO]
   # não guarda o que é específico de um conjunto de dados
@@ -25,6 +26,7 @@ salvar_estilo <- function(cfg, nome, pasta = "estilos") {
 }
 
 carregar_estilo <- function(nome, cfg = get("cfg", envir = globalenv()), pasta = "estilos") {
+  pasta <- .pasta_proj(pasta)
   arq <- if (file.exists(nome)) nome else file.path(pasta, paste0(nome, ".R"))
   if (!file.exists(arq)) {
     disp <- sub("\\.R$", "", list.files(pasta, pattern = "\\.R$"))
@@ -34,7 +36,10 @@ carregar_estilo <- function(nome, cfg = get("cfg", envir = globalenv()), pasta =
   .mesclar(cfg, est)
 }
 
-listar_estilos <- function(pasta = "estilos") sub("\\.R$", "", list.files(pasta, pattern = "\\.R$"))
+listar_estilos <- function(pasta = "estilos") {
+  pasta <- .pasta_proj(pasta)
+  sub("\\.R$", "", list.files(pasta, pattern = "\\.R$"))
+}
 
 resetar_cfg <- function() {
   e <- new.env(); sys.source(file.path(.motor_pasta, "01_config.R"), envir = e)
