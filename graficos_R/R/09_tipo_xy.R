@@ -57,6 +57,8 @@
   d$y[inv_y] <- NA
   d <- d[!is.na(d$x), ]
   d$serie <- factor(d$serie, levels = ycols)
+  rec <- cfg$.interno$recortar_y        # quebra de eixo sem ligar através: só os valores desta parte
+  if (!is.null(rec)) d <- d[is.na(d$y) | (d$y >= rec[1] & d$y <= rec[2]), ]
   if (isTRUE(L$ordenar_x)) d <- d[order(d$serie, d$x), ]
 
   usa_y2 <- isTRUE(cfg$eixo_y2$ativo) && identical(cfg$eixo_y2$modo, "independente")

@@ -48,7 +48,9 @@
   for (t in an$textos) {
     pm <- .tem_formatacao(t$texto)
     cam[[length(cam) + 1]] <- annotate("text", x = t$x, y = t$y,
-      label = if (pm) .plotmath(t$texto) else t$texto, parse = pm,
+      label = if (pm) (if (isTRUE(t$negrito)) paste0("bold(", .plotmath(t$texto),
+                                                     ")") else .plotmath(t$texto)) else t$texto,
+      parse = pm,
       hjust = switch(t$alinhamento %||% "centro", esquerda = 0, centro = 0.5, direita = 1),
       colour = .cor(t$cor %||% cfg$texto$cor), size = .tx(t$tamanho_pt %||% cfg$texto$tamanho_base_pt),
       fontface = if (isTRUE(t$negrito)) "bold" else "plain", family = fonte)
@@ -83,7 +85,7 @@
   if (isTRUE(info$pizza)) {
     g <- g + coord_fixed(xlim = c(-info$lim, info$lim), ylim = c(-info$lim, info$lim), expand = FALSE, clip = "off") +
       .tema(cfg, cfg$eixo_x, cfg$eixo_y, list(hor = "bottom", ver = "left", lado_y2 = ""), sem_eixos = TRUE) +
-      labs(title = .texto(cfg$titulos$titulo), subtitle = .texto(cfg$titulos$subtitulo))
+      labs(title = .texto(cfg$titulos$titulo, cfg$titulos$negrito_titulo), subtitle = .texto(cfg$titulos$subtitulo))
     if (!mostrar_leg) g <- g + theme(legend.position = "none")
     attr(g, "info") <- info
     return(g)
@@ -122,7 +124,8 @@
   sec_x <- sec_dup(info$ax_x)
   sec_y <- if (!is.null(info$y2)) {
     a2 <- info$y2$ax
-    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo), breaks = a2$maiores, labels = a2$rotulos)
+    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo, cfg$eixo_y$negrito_titulo), breaks = a2$maiores,
+             labels = a2$rotulos)
   } else sec_dup(info$ax_y)
   g <- g + .escala_continua(info$ax_x, "x", sec_x, if (x_topo) "top") +
     .escala_continua(info$ax_y, "y", sec_y, if (y_dir) "right")
@@ -131,8 +134,10 @@
   if (!is.null(sec_x)) gm$x.sec <- guide_axis(minor.ticks = length(info$ax_x$menores) > 0)
   if (!is.null(sec_y)) gm$y.sec <- guide_axis(minor.ticks = is.null(info$y2) && length(info$ax_y$menores) > 0)
   g <- g + do.call(guides, gm)
-  g <- g + labs(x = .texto(info$titulo_x), y = .texto(info$titulo_y),
-                title = .texto(cfg$titulos$titulo), subtitle = .texto(cfg$titulos$subtitulo))
+  g <- g + labs(x = .texto(info$titulo_x, cfg$eixo_x$negrito_titulo),
+                y = .texto(info$titulo_y, cfg$eixo_y$negrito_titulo),
+                title = .texto(cfg$titulos$titulo, cfg$titulos$negrito_titulo),
+                subtitle = .texto(cfg$titulos$subtitulo))
   g <- g + if (isTRUE(info$flip)) coord_flip(clip = if (isTRUE(cx$recortar)) "on" else "off")
            else coord_cartesian(clip = if (isTRUE(cx$recortar)) "on" else "off")
 

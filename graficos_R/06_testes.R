@@ -288,6 +288,32 @@ teste("datas: inicio depois do fim dá erro claro",
 teste("datas: passo de tempo inválido dá erro claro", da_erro(plotar(sd,
                                                                      utils::modifyList(c1, list(eixo_x = list(tempo = "auto", ticks_modo = "incremento", incremento = "foo")))), "incremento"))
 
+cat("\n--- Pedidos do usuário: quebra de eixo, ÷1000, negrito ---\n")
+teste("título com expoente (10^{3}) respeita o negrito (plotmath ignora a face do tema)",
+      identical(as.character(.texto("Int. (×10^{3})", TRUE)[[1]]), "bold") && !is.call(.texto("Int.", TRUE)) &&
+      !identical(as.character(.texto("Int. (×10^{3})", FALSE)[[1]]), "bold"))
+gq <- data.frame(t = 1:10, A = c(120, 180, 250, 310, 95000, 98000, 99500, 100000, 97000, 99000),
+                 B = c(80, 140, 200, 260, 88000, 91000, 94000, 96000, 95000, 98000))
+cq <- c0; cq$grafico <- utils::modifyList(cq$grafico, list(tipo = "linha_pontos", coluna_x = 1,
+                                                           colunas_y = c("A", "B")))
+cq$eixo_y$titulo <- "I (×10^{3})"; cq$eixo_y$negrito_titulo <- TRUE; cq$eixo_y$fator_divisao <- 1000
+teste("eixo Y com expoente e negrito: o título sai em bold()",
+      identical(as.character(plotar(gq, cq)$labels$y[[1]]), "bold"))
+sug <- NULL; saida <- utils::capture.output(sug <- sugerir_quebra(gq, cq))
+teste("sugerir_quebra acha o maior vazio entre os dados e imprime as linhas prontas",
+      sug$de > 310 && sug$ate < 88000 && sug$de < sug$ate && any(grepl("cfg$quebra$de", saida, fixed = TRUE)))
+cq$quebra <- utils::modifyList(cq$quebra, list(ativo = TRUE, de = sug$de, ate = sug$ate, ligar_atraves = FALSE))
+cq$eixo_y$mostrar_titulo <- FALSE
+gb <- plotar(gq, cq)
+ys_parte <- function(p) range(unlist(lapply(p$layers, function(l) if (!is.null(l$data$y)) l$data$y)), na.rm = TRUE)
+lim_x <- function(p) ggplot2::ggplot_build(p)$layout$panel_scales_x[[1]]$get_limits()
+teste("quebra com ligar_atraves = FALSE: cada parte mostra só os seus pontos",
+      ys_parte(gb[[1]])[1] >= sug$ate && ys_parte(gb[[2]])[2] <= sug$de)
+teste("quebra: as duas partes compartilham o mesmo eixo X", identical(lim_x(gb[[1]]), lim_x(gb[[2]])))
+cq$quebra$ligar_atraves <- TRUE; gb <- plotar(gq, cq)
+teste("quebra com ligar_atraves = TRUE (padrão) mantém todos os pontos nas duas partes",
+      ys_parte(gb[[1]])[1] < sug$de && ys_parte(gb[[2]])[2] > sug$ate)
+
 cat("\n--- Exportação e estilos ---\n")
 c1 <- c0; c1$exportacao$formatos <- c("png", "pdf", "svg", "tiff"); c1$exportacao$nome_arquivo <- "t"
 arqs <- salvar(plotar(d, c1), c1)

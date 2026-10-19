@@ -107,9 +107,12 @@
   paste(partes, collapse = "*")
 }
 # Texto simples ou expressão plotmath (se tiver ^{ } ou _{ }), pronto para títulos e rótulos.
-.texto <- function(s) {
+# negrito = TRUE: o plotmath ignora a face "bold" do tema, então a expressão é envolvida em bold().
+.texto <- function(s, negrito = FALSE) {
   if (is.null(s)) return(NULL)
-  if (.tem_formatacao(s)) parse(text = .plotmath(s))[[1]] else s
+  if (!.tem_formatacao(s)) return(s)
+  expr <- parse(text = .plotmath(s))[[1]]
+  if (isTRUE(negrito)) call("bold", expr) else expr
 }
 # Rótulos de legenda: vetor de textos ou expressões, conforme tenham ^{ } / _{ }.
 .rotulos_legenda <- function(x) {

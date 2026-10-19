@@ -32,7 +32,7 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 .rotulo_lateral <- function(texto, cfg, vertical = TRUE) {
   e <- if (vertical) cfg$eixo_y else cfg$eixo_x
   face <- if (isTRUE(e$negrito_titulo)) "bold" else "plain"
-  patchwork::wrap_elements(full = textGrob(.texto(texto), rot = if (vertical) 90 else 0,
+  patchwork::wrap_elements(full = textGrob(.texto(texto, isTRUE(e$negrito_titulo)), rot = if (vertical) 90 else 0,
     gp = gpar(fontsize = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt, fontface = face,
               fontfamily = .fonte(cfg$texto$fonte), col = e$cor_titulo %||% cfg$texto$cor)))
 }
@@ -116,6 +116,29 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   pw
 }
 
+# Sugere cfg$quebra$de e cfg$quebra$ate: o MAIOR VAZIO entre os valores Y dos seus dados (quando um
+# grupo de valores está muito longe do outro). Entra: dados e cfg. Sai (invisível): list(de, ate).
+# Imprime as linhas prontas para colar. Só olha o maior vazio; para outro, escolha de/ate à mão.
+sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
+  cfg <- .completar_cfg(cfg)
+  ys <- .colunas_y(dados, cfg, excluir = .coluna(dados, cfg$grafico$coluna_x, "cfg$grafico$coluna_x"))
+  v <- sort(unique(unlist(lapply(ys, function(y) dados[[y]]))))
+  v <- v[is.finite(v)]
+  if (length(v) < 2) .erro("Preciso de pelo menos 2 valores Y diferentes para procurar um vazio.")
+  vazios <- diff(v); i <- which.max(vazios)
+  folga <- vazios[i] * 0.05                              # 5 % de folga de cada lado do vazio
+  de <- v[i] + folga; ate <- v[i + 1] - folga
+  passo <- 10^(floor(log10(vazios[i])) - 1)              # arredonda para um número "redondo" dentro do vazio
+  de2 <- ceiling(de / passo) * passo; ate2 <- floor(ate / passo) * passo
+  if (de2 < ate2) { de <- de2; ate <- ate2 }
+  cat(sprintf("Maior vazio entre os dados: de %s a %s (largura %s).\n",
+              format(v[i], big.mark = ""), format(v[i + 1], big.mark = ""), format(vazios[i], big.mark = "")))
+  cat("Cole estas linhas para quebrar o eixo Y nesse trecho:\n")
+  cat(sprintf("  cfg$quebra$ativo <- TRUE; cfg$quebra$de <- %s; cfg$quebra$ate <- %s\n",
+              format(de, scientific = FALSE), format(ate, scientific = FALSE)))
+  invisible(list(de = de, ate = ate))
+}
+
 # Eixo Y com trecho omitido: monta as duas partes e as junta. Entra: dados e cfg. Sai: patchwork.
 .plotar_quebra <- function(dados, cfg) {
   Q <- cfg$quebra
@@ -131,7 +154,10 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   superior$eixo_y$inicio <- Q$ate; superior$eixo_y$fim <- lim[2]
   m <- cfg$caixa$margens_cm; esp <- Q$espaco_pt / 2 / 72 * 2.54
   # a parte de cima fica sem números/título do X; a de baixo sem legenda, títulos e letra
-  ajustar_parte <- function(ck, parte) {
+  sem_ligar <- isFALSE(Q$ligar_atraves) && cfg$grafico$tipo %in% c("pontos", "linha", "linha_pontos")
+  ajustar_parte <- function(ck, parte, faixa) {
+    ck$.interno <- list(forcar_x = inf$ax_x$limites)      # as duas partes compartilham o mesmo eixo X
+    if (sem_ligar) ck$.interno$recortar_y <- faixa
     ck$eixo_y$mostrar_titulo <- FALSE
     if (parte == "superior") {
       ck$caixa$margens_cm <- c(m[1], m[2], esp, m[4])
@@ -143,8 +169,8 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
     }
     ck
   }
-  gs <- .plotar_um(dados, ajustar_parte(superior, "superior"))
-  gi <- .plotar_um(dados, ajustar_parte(inferior, "inferior"))
+  gs <- .plotar_um(dados, ajustar_parte(superior, "superior", c(Q$ate, lim[2])))
+  gi <- .plotar_um(dados, ajustar_parte(inferior, "inferior", c(lim[1], Q$de)))
   if (isTRUE(Q$marcas)) {
     marca <- function(y) {
       gp <- gpar(col = cfg$caixa$cor, lwd = .lw(cfg$caixa$espessura_pt) * ggplot2::.pt)

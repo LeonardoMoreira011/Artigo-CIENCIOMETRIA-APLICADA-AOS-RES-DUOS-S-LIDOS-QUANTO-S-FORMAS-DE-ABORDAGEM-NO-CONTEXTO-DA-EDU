@@ -70,6 +70,8 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | Espessura da moldura | `cfg$caixa$espessura_pt <- 1.5` |
 | Escala log / invertida | `cfg$eixo_x$escala <- "log10"`; `cfg$eixo_x$inverter <- TRUE` |
 | Formato dos números | `cfg$eixo_y$casas_decimais <- 2`; `notacao <- "cientifica"`, `"potencia10"`… |
+| Mostrar 100 em vez de 100000 (÷ 1000) | `cfg$eixo_y$fator_divisao <- 1000` e no título `cfg$eixo_y$titulo <- "Intensidade (×10^{3} u.a.)"` |
+| Título em negrito (eixos / título do gráfico) | `cfg$eixo_y$negrito_titulo <- TRUE`; `cfg$eixo_x$negrito_titulo <- TRUE`; `cfg$titulos$negrito_titulo <- TRUE` (funciona também com expoente) |
 | Texto no lugar dos números | `ticks_modo <- "manual"; ticks_manuais <- c(0,5,10); rotulos_manuais <- c("a","b","c")` |
 | Sobrescrito / subscrito | `cfg$eixo_x$titulo <- "Área (m^{2})"` ; `"CO_{2} (ppm)"` |
 | Cor de uma série | `cfg$series[["Amostra A"]] <- list(cor = "#D62728")` |
@@ -97,7 +99,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | Tamanho dos traços "//" da quebra de eixo | `cfg$quebra$marca_largura_pt`, `marca_altura_pt` |
 | Tamanho dos tracinhos do rug | `cfg$distribuicao$rug_comprimento_pt`, `rug_espessura_pt` |
 | Gráficos empilhados com X fixo | `cfg$paineis$ativo <- TRUE` + `cfg$paineis$lista` (ver exemplos 25 e 26) |
-| Quebra no eixo Y | `cfg$quebra$ativo <- TRUE; de <- 20; ate <- 80` |
+| Quebra no eixo Y | `cfg$quebra$ativo <- TRUE; de <- 20; ate <- 80` — não sabe qual trecho? `sugerir_quebra(dados)` acha o maior vazio e imprime as linhas prontas. Não ligar os pontos através da quebra: `cfg$quebra$ligar_atraves <- FALSE`; números das bordas se sobrepondo: `cfg$quebra$espaco_pt <- 14` |
 | Fonte | `cfg$texto$fonte <- "Arial"; cfg$texto$tamanho_base_pt <- 10` |
 | Tamanho e formato do arquivo | `cfg$exportacao$largura <- 8.5; altura <- 6; formatos <- c("tiff","pdf"); dpi <- 600` |
 | Reaproveitar o visual | `salvar_estilo(cfg, "meu")` e depois `cfg <- carregar_estilo("meu", cfg)` |
@@ -135,7 +137,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
 | `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 82 testes automáticos — rode depois de qualquer alteração no motor |
+| `06_testes.R` | 88 testes automáticos — rode depois de qualquer alteração no motor |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |
 | `dados/` | CSVs de exemplo (inclui um CSV de Excel em português com `;` e vírgula) |

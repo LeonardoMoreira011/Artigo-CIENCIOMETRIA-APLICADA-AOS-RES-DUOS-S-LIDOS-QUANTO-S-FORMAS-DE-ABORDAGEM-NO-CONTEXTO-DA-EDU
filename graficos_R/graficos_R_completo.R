@@ -1162,8 +1162,17 @@ cfg$quebra <- list(
   ate = NULL,
   # proporcao_superior: fração da altura para a parte de cima.
   proporcao_superior = 0.35,
-  # espaco_pt: espaço entre as duas partes.
+  # espaco_pt: espaço entre as duas partes. Aumente (ex.: 14) se os números das duas bordas da
+  #   quebra se sobrepuserem.
+  #   OPÇÕES: número >= 0      EX.: cfg$quebra$espaco_pt <- 14
   espaco_pt = 4,
+
+  # ligar_atraves: a linha que liga um ponto de baixo a um de cima atravessa a quebra?
+  #   TRUE (padrão): o traço aparece, cortado, nas duas partes. FALSE: não liga os pontos através
+  #   da quebra (cada parte mostra só a sua linha). Vale para pontos, linha e linha_pontos.
+  #   Use sugerir_quebra(dados) para descobrir de/ate a partir dos seus dados.
+  #   OPÇÕES: TRUE | FALSE      EX.: cfg$quebra$ligar_atraves <- FALSE
+  ligar_atraves = TRUE,
   # marcas: desenha os traços diagonais "//" da quebra.
   marcas = TRUE,
 
@@ -1537,9 +1546,12 @@ suppressPackageStartupMessages({
   paste(partes, collapse = "*")
 }
 # Texto simples ou expressão plotmath (se tiver ^{ } ou _{ }), pronto para títulos e rótulos.
-.texto <- function(s) {
+# negrito = TRUE: o plotmath ignora a face "bold" do tema, então a expressão é envolvida em bold().
+.texto <- function(s, negrito = FALSE) {
   if (is.null(s)) return(NULL)
-  if (.tem_formatacao(s)) parse(text = .plotmath(s))[[1]] else s
+  if (!.tem_formatacao(s)) return(s)
+  expr <- parse(text = .plotmath(s))[[1]]
+  if (isTRUE(negrito)) call("bold", expr) else expr
 }
 # Rótulos de legenda: vetor de textos ou expressões, conforme tenham ^{ } / _{ }.
 .rotulos_legenda <- function(x) {
@@ -2891,6 +2903,8 @@ colunas <- function(dados) {
   d$y[inv_y] <- NA
   d <- d[!is.na(d$x), ]
   d$serie <- factor(d$serie, levels = ycols)
+  rec <- cfg$.interno$recortar_y        # quebra de eixo sem ligar através: só os valores desta parte
+  if (!is.null(rec)) d <- d[is.na(d$y) | (d$y >= rec[1] & d$y <= rec[2]), ]
   if (isTRUE(L$ordenar_x)) d <- d[order(d$serie, d$x), ]
 
   usa_y2 <- isTRUE(cfg$eixo_y2$ativo) && identical(cfg$eixo_y2$modo, "independente")
@@ -3726,7 +3740,9 @@ colunas <- function(dados) {
   for (t in an$textos) {
     pm <- .tem_formatacao(t$texto)
     cam[[length(cam) + 1]] <- annotate("text", x = t$x, y = t$y,
-      label = if (pm) .plotmath(t$texto) else t$texto, parse = pm,
+      label = if (pm) (if (isTRUE(t$negrito)) paste0("bold(", .plotmath(t$texto),
+                                                     ")") else .plotmath(t$texto)) else t$texto,
+      parse = pm,
       hjust = switch(t$alinhamento %||% "centro", esquerda = 0, centro = 0.5, direita = 1),
       colour = .cor(t$cor %||% cfg$texto$cor), size = .tx(t$tamanho_pt %||% cfg$texto$tamanho_base_pt),
       fontface = if (isTRUE(t$negrito)) "bold" else "plain", family = fonte)
@@ -3761,7 +3777,7 @@ colunas <- function(dados) {
   if (isTRUE(info$pizza)) {
     g <- g + coord_fixed(xlim = c(-info$lim, info$lim), ylim = c(-info$lim, info$lim), expand = FALSE, clip = "off") +
       .tema(cfg, cfg$eixo_x, cfg$eixo_y, list(hor = "bottom", ver = "left", lado_y2 = ""), sem_eixos = TRUE) +
-      labs(title = .texto(cfg$titulos$titulo), subtitle = .texto(cfg$titulos$subtitulo))
+      labs(title = .texto(cfg$titulos$titulo, cfg$titulos$negrito_titulo), subtitle = .texto(cfg$titulos$subtitulo))
     if (!mostrar_leg) g <- g + theme(legend.position = "none")
     attr(g, "info") <- info
     return(g)
@@ -3800,7 +3816,8 @@ colunas <- function(dados) {
   sec_x <- sec_dup(info$ax_x)
   sec_y <- if (!is.null(info$y2)) {
     a2 <- info$y2$ax
-    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo), breaks = a2$maiores, labels = a2$rotulos)
+    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo, cfg$eixo_y$negrito_titulo), breaks = a2$maiores,
+             labels = a2$rotulos)
   } else sec_dup(info$ax_y)
   g <- g + .escala_continua(info$ax_x, "x", sec_x, if (x_topo) "top") +
     .escala_continua(info$ax_y, "y", sec_y, if (y_dir) "right")
@@ -3809,8 +3826,10 @@ colunas <- function(dados) {
   if (!is.null(sec_x)) gm$x.sec <- guide_axis(minor.ticks = length(info$ax_x$menores) > 0)
   if (!is.null(sec_y)) gm$y.sec <- guide_axis(minor.ticks = is.null(info$y2) && length(info$ax_y$menores) > 0)
   g <- g + do.call(guides, gm)
-  g <- g + labs(x = .texto(info$titulo_x), y = .texto(info$titulo_y),
-                title = .texto(cfg$titulos$titulo), subtitle = .texto(cfg$titulos$subtitulo))
+  g <- g + labs(x = .texto(info$titulo_x, cfg$eixo_x$negrito_titulo),
+                y = .texto(info$titulo_y, cfg$eixo_y$negrito_titulo),
+                title = .texto(cfg$titulos$titulo, cfg$titulos$negrito_titulo),
+                subtitle = .texto(cfg$titulos$subtitulo))
   g <- g + if (isTRUE(info$flip)) coord_flip(clip = if (isTRUE(cx$recortar)) "on" else "off")
            else coord_cartesian(clip = if (isTRUE(cx$recortar)) "on" else "off")
 
@@ -3889,7 +3908,7 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 .rotulo_lateral <- function(texto, cfg, vertical = TRUE) {
   e <- if (vertical) cfg$eixo_y else cfg$eixo_x
   face <- if (isTRUE(e$negrito_titulo)) "bold" else "plain"
-  patchwork::wrap_elements(full = textGrob(.texto(texto), rot = if (vertical) 90 else 0,
+  patchwork::wrap_elements(full = textGrob(.texto(texto, isTRUE(e$negrito_titulo)), rot = if (vertical) 90 else 0,
     gp = gpar(fontsize = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt, fontface = face,
               fontfamily = .fonte(cfg$texto$fonte), col = e$cor_titulo %||% cfg$texto$cor)))
 }
@@ -3973,6 +3992,29 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   pw
 }
 
+# Sugere cfg$quebra$de e cfg$quebra$ate: o MAIOR VAZIO entre os valores Y dos seus dados (quando um
+# grupo de valores está muito longe do outro). Entra: dados e cfg. Sai (invisível): list(de, ate).
+# Imprime as linhas prontas para colar. Só olha o maior vazio; para outro, escolha de/ate à mão.
+sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
+  cfg <- .completar_cfg(cfg)
+  ys <- .colunas_y(dados, cfg, excluir = .coluna(dados, cfg$grafico$coluna_x, "cfg$grafico$coluna_x"))
+  v <- sort(unique(unlist(lapply(ys, function(y) dados[[y]]))))
+  v <- v[is.finite(v)]
+  if (length(v) < 2) .erro("Preciso de pelo menos 2 valores Y diferentes para procurar um vazio.")
+  vazios <- diff(v); i <- which.max(vazios)
+  folga <- vazios[i] * 0.05                              # 5 % de folga de cada lado do vazio
+  de <- v[i] + folga; ate <- v[i + 1] - folga
+  passo <- 10^(floor(log10(vazios[i])) - 1)              # arredonda para um número "redondo" dentro do vazio
+  de2 <- ceiling(de / passo) * passo; ate2 <- floor(ate / passo) * passo
+  if (de2 < ate2) { de <- de2; ate <- ate2 }
+  cat(sprintf("Maior vazio entre os dados: de %s a %s (largura %s).\n",
+              format(v[i], big.mark = ""), format(v[i + 1], big.mark = ""), format(vazios[i], big.mark = "")))
+  cat("Cole estas linhas para quebrar o eixo Y nesse trecho:\n")
+  cat(sprintf("  cfg$quebra$ativo <- TRUE; cfg$quebra$de <- %s; cfg$quebra$ate <- %s\n",
+              format(de, scientific = FALSE), format(ate, scientific = FALSE)))
+  invisible(list(de = de, ate = ate))
+}
+
 # Eixo Y com trecho omitido: monta as duas partes e as junta. Entra: dados e cfg. Sai: patchwork.
 .plotar_quebra <- function(dados, cfg) {
   Q <- cfg$quebra
@@ -3988,7 +4030,10 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   superior$eixo_y$inicio <- Q$ate; superior$eixo_y$fim <- lim[2]
   m <- cfg$caixa$margens_cm; esp <- Q$espaco_pt / 2 / 72 * 2.54
   # a parte de cima fica sem números/título do X; a de baixo sem legenda, títulos e letra
-  ajustar_parte <- function(ck, parte) {
+  sem_ligar <- isFALSE(Q$ligar_atraves) && cfg$grafico$tipo %in% c("pontos", "linha", "linha_pontos")
+  ajustar_parte <- function(ck, parte, faixa) {
+    ck$.interno <- list(forcar_x = inf$ax_x$limites)      # as duas partes compartilham o mesmo eixo X
+    if (sem_ligar) ck$.interno$recortar_y <- faixa
     ck$eixo_y$mostrar_titulo <- FALSE
     if (parte == "superior") {
       ck$caixa$margens_cm <- c(m[1], m[2], esp, m[4])
@@ -4000,8 +4045,8 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
     }
     ck
   }
-  gs <- .plotar_um(dados, ajustar_parte(superior, "superior"))
-  gi <- .plotar_um(dados, ajustar_parte(inferior, "inferior"))
+  gs <- .plotar_um(dados, ajustar_parte(superior, "superior", c(Q$ate, lim[2])))
+  gi <- .plotar_um(dados, ajustar_parte(inferior, "inferior", c(lim[1], Q$de)))
   if (isTRUE(Q$marcas)) {
     marca <- function(y) {
       gp <- gpar(col = cfg$caixa$cor, lwd = .lw(cfg$caixa$espessura_pt) * ggplot2::.pt)

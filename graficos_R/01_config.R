@@ -1045,8 +1045,17 @@ cfg$quebra <- list(
   ate = NULL,
   # proporcao_superior: fração da altura para a parte de cima.
   proporcao_superior = 0.35,
-  # espaco_pt: espaço entre as duas partes.
+  # espaco_pt: espaço entre as duas partes. Aumente (ex.: 14) se os números das duas bordas da
+  #   quebra se sobrepuserem.
+  #   OPÇÕES: número >= 0      EX.: cfg$quebra$espaco_pt <- 14
   espaco_pt = 4,
+
+  # ligar_atraves: a linha que liga um ponto de baixo a um de cima atravessa a quebra?
+  #   TRUE (padrão): o traço aparece, cortado, nas duas partes. FALSE: não liga os pontos através
+  #   da quebra (cada parte mostra só a sua linha). Vale para pontos, linha e linha_pontos.
+  #   Use sugerir_quebra(dados) para descobrir de/ate a partir dos seus dados.
+  #   OPÇÕES: TRUE | FALSE      EX.: cfg$quebra$ligar_atraves <- FALSE
+  ligar_atraves = TRUE,
   # marcas: desenha os traços diagonais "//" da quebra.
   marcas = TRUE,
 
