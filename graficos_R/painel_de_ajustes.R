@@ -111,8 +111,17 @@ simbolo_tamanho_pt  <- NULL   # EX.: 7
 
 # ---- 8. FONTE -----------------------------------------------------------------------------------
 fonte            <- NULL   # EX.: "Arial" | "Times New Roman" | "Calibri"  (nomes instalados: listar_fontes())
-tamanho_texto_pt <- NULL   # tamanho base do texto. EX.: 12
+tamanho_texto_pt <- NULL   # tamanho BASE de todo o texto (os itens abaixo, se preenchidos, têm prioridade). EX.: 12
 cor_texto        <- NULL   # EX.: "black"
+#  Tamanhos separados, em pt (NULL = usa o tamanho base):
+titulo_grafico_tamanho_pt <- NULL   # título no topo da figura. EX.: 16
+x_titulo_tamanho_pt  <- NULL        # título do eixo X (ex.: "Years"). EX.: 14
+y_titulo_tamanho_pt  <- NULL        # título do eixo Y (ex.: "Dolar"). EX.: 14
+x_numeros_tamanho_pt <- NULL        # números do eixo X (os anos). EX.: 10
+y_numeros_tamanho_pt <- NULL        # números do eixo Y. EX.: 10
+legenda_texto_tamanho_pt  <- NULL   # nomes na legenda (WORLD, LATAM...). EX.: 10
+legenda_titulo_tamanho_pt <- NULL   # título da legenda. EX.: 11
+rotulos_dados_tamanho_pt  <- NULL   # texto escrito junto dos pontos/barras (rótulos de dados). EX.: 8
 
 # ---- 9. LEGENDA E MOLDURA ---------------------------------------------------------------------------
 legenda_mostrar  <- NULL   # FALSE = sem legenda

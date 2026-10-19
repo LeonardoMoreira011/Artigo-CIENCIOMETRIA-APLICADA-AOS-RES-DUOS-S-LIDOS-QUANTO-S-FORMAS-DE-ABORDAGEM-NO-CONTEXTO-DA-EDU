@@ -4373,6 +4373,11 @@ listar_fontes <- function() {
                          "linha_espessura_pt"), simbolo_tamanho_pt = c("serie_padrao", "tamanho_simbolo_pt"),
   # texto
   fonte = c("texto", "fonte"), tamanho_texto_pt = c("texto", "tamanho_base_pt"), cor_texto = c("texto", "cor"),
+  titulo_grafico_tamanho_pt = c("titulos", "tamanho_titulo_pt"),
+  x_titulo_tamanho_pt = c("eixo_x", "tamanho_titulo_pt"), y_titulo_tamanho_pt = c("eixo_y", "tamanho_titulo_pt"),
+  x_numeros_tamanho_pt = c("eixo_x", "tamanho_rotulos_pt"), y_numeros_tamanho_pt = c("eixo_y", "tamanho_rotulos_pt"),
+  legenda_texto_tamanho_pt = c("legenda",
+                               "tamanho_texto_pt"), legenda_titulo_tamanho_pt = c("legenda", "tamanho_titulo_pt"),
   # legenda e moldura
   legenda_mostrar = c("legenda", "mostrar"), legenda_posicao = c("legenda", "posicao"),
   legenda_x = c("legenda", "dentro_x"), legenda_y = c("legenda", "dentro_y"), legenda_titulo = c("legenda", "titulo"),
@@ -4406,6 +4411,8 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     if (!is.null(iv)) { cfg[[e]]$ticks_modo <- "incremento"; cfg[[e]]$incremento <- iv; marca(paste0(ax, "_intervalo")) }
     if (!is.null(tm)) { cfg[[e]]$ticks_modo <- "manual"; cfg[[e]]$ticks_manuais <- tm; marca(paste0(ax, "_ticks_manuais")) }
   }
+  rd <- pega("rotulos_dados_tamanho_pt")   # texto escrito junto dos pontos/barras (rótulos de dados)
+  if (!is.null(rd)) { cfg$linhas$rotulos_tamanho_pt <- rd; cfg$barras$rotulos_tamanho_pt <- rd; marca("rotulos_dados_tamanho_pt") }
   neg <- pega("eixos_titulo_negrito")
   if (!is.null(neg)) { cfg$eixo_x$negrito_titulo <- isTRUE(neg); cfg$eixo_y$negrito_titulo <- isTRUE(neg); marca("eixos_titulo_negrito") }
   # cores: gradiente, paleta personalizada (vence a paleta nomeada) e cor de séries específicas
@@ -4807,8 +4814,17 @@ simbolo_tamanho_pt  <- NULL   # EX.: 7
 
 # ---- 8. FONTE -----------------------------------------------------------------------------------
 fonte            <- NULL   # EX.: "Arial" | "Times New Roman" | "Calibri"  (nomes instalados: listar_fontes())
-tamanho_texto_pt <- NULL   # tamanho base do texto. EX.: 12
+tamanho_texto_pt <- NULL   # tamanho BASE de todo o texto (os itens abaixo, se preenchidos, têm prioridade). EX.: 12
 cor_texto        <- NULL   # EX.: "black"
+#  Tamanhos separados, em pt (NULL = usa o tamanho base):
+titulo_grafico_tamanho_pt <- NULL   # título no topo da figura. EX.: 16
+x_titulo_tamanho_pt  <- NULL        # título do eixo X (ex.: "Years"). EX.: 14
+y_titulo_tamanho_pt  <- NULL        # título do eixo Y (ex.: "Dolar"). EX.: 14
+x_numeros_tamanho_pt <- NULL        # números do eixo X (os anos). EX.: 10
+y_numeros_tamanho_pt <- NULL        # números do eixo Y. EX.: 10
+legenda_texto_tamanho_pt  <- NULL   # nomes na legenda (WORLD, LATAM...). EX.: 10
+legenda_titulo_tamanho_pt <- NULL   # título da legenda. EX.: 11
+rotulos_dados_tamanho_pt  <- NULL   # texto escrito junto dos pontos/barras (rótulos de dados). EX.: 8
 
 # ---- 9. LEGENDA E MOLDURA ---------------------------------------------------------------------------
 legenda_mostrar  <- NULL   # FALSE = sem legenda

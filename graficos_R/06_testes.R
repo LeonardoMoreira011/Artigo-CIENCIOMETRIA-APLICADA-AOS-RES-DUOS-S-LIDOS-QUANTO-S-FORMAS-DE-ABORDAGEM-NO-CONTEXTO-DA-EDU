@@ -368,6 +368,25 @@ teste("painel: intervalo de 2 em 2 a partir de 2016 dá 2016, 2018, ..., 2026",
       identical(attr(plotar(an, utils::modifyList(cpg, list(grafico = list(tipo = "linha_pontos", coluna_x = 1)))),
                      "info")$ax_x$maiores,
                 as.numeric(seq(2016, 2026, 2))))
+pf <- list2env(list(titulo_grafico_tamanho_pt = 18, x_titulo_tamanho_pt = 14, y_titulo_tamanho_pt = 13,
+                    x_numeros_tamanho_pt = 9,
+                    y_numeros_tamanho_pt = 8, legenda_texto_tamanho_pt = 7, tamanho_texto_pt = 11,
+                    titulo_grafico = "T", rotulos_dados_tamanho_pt = 6))
+cpf <- suppressMessages(aplicar_painel(c0, pf))
+thf <- plotar(an, utils::modifyList(cpf, list(grafico = list(tipo = "linha_pontos", coluna_x = 1))))$theme
+teste("painel: tamanhos separados (título do gráfico, títulos e números dos eixos, legenda) chegam ao gráfico",
+      thf$plot.title$size == 18 && thf$axis.title.x.bottom$size == 14 && thf$axis.title.y.left$size == 13 &&
+      thf$axis.text.x.bottom$size == 9 && thf$axis.text.y.left$size == 8 && thf$legend.text$size == 7 &&
+      cpf$linhas$rotulos_tamanho_pt == 6 && cpf$barras$rotulos_tamanho_pt == 6)
+teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variável do painel existe no mapa)",
+      { arq_painel <- if (file.exists("painel_de_ajustes.R")) "painel_de_ajustes.R" else "graficos_R_completo.R"
+        L <- readLines(arq_painel, encoding = "UTF-8")
+        L <- L[(grep("PAINEL DE AJUSTES DO GRÁFICO", L)[1]):(grep("EXECUÇÃO \\(não precisa editar\\)", L)[1])]
+        v <- sub(" *<- .*", "", grep("^[a-z_A-Z]+ +<- ", L, value = TRUE))
+        extras <- c("ARQUIVO_CSV", "cores_personalizadas", "cores_gradiente", "cores_por_serie", "quebra_ativar",
+                    "x_intervalo",
+                    "y_intervalo", "x_ticks_manuais", "y_ticks_manuais", "eixos_titulo_negrito", "rotulos_dados_tamanho_pt")
+        all(v %in% c(names(.PAINEL_MAPA), extras)) })
 teste("painel: cores_por_serie sem nomes dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))
 
