@@ -965,6 +965,11 @@ cfg$eixo_y2 <- list(
   prefixo = "",
   sufixo = "",
 
+  # fator_divisao: divide os números do eixo secundário (ex.: 1000 mostra 100 em vez de 100000).
+  #   NULL = usa o mesmo do eixo_y (como era antes). Avise a unidade no título.
+  #   OPÇÕES: NULL | número      EX.: cfg$eixo_y2$fator_divisao <- 1000
+  fator_divisao = NULL,
+
   # cor_eixo: pinta números, título e ticks do eixo secundário.
   #   OPÇÕES: NULL (preto) | "serie" (cor da 1ª série do y2) | qualquer cor
   cor_eixo = "serie"
@@ -2869,6 +2874,14 @@ colunas <- function(dados) {
 # =============================================================================
 
 # ---- Pontos / linhas / áreas --------------------------------------------------
+# Config do eixo Y2: a do eixo Y com o que o eixo_y2 define por cima (limites, ticks, formato). O divisor
+# dos números (fator_divisao) é o do eixo_y2 se existir; senão herda o do eixo_y, como sempre foi.
+.eixo_y2_efetivo <- function(cfg) {
+  e2 <- utils::modifyList(cfg$eixo_y, cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))])
+  e2$fator_divisao <- cfg$eixo_y2$fator_divisao %||% cfg$eixo_y$fator_divisao
+  e2$escala <- "linear"; e2$inverter <- FALSE
+  e2
+}
 # Avisa quantos pontos saem do gráfico por não existirem na escala do eixo (<= 0 em log, 0 em 1/x).
 .avisar_omitidos <- function(n, eixo, escala) {
   if (n > 0)
@@ -2966,8 +2979,7 @@ colunas <- function(dados) {
   if (usa_y2) {
     if (ax_y$escala != "linear") .erro("eixo_y2 \"independente\" exige eixo_y linear.")
     d2 <- d[d$serie %in% ser_y2, ]
-    e2 <- utils::modifyList(cfg$eixo_y, cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))])
-    e2$escala <- "linear"; e2$inverter <- FALSE
+    e2 <- .eixo_y2_efetivo(cfg)
     ax2 <- .calc_eixo(e2, c(d2$y, d2$y - d2$e_inf, d2$y + d2$e_sup))
     l1 <- ax_y$limites; l2 <- ax2$limites
     para1 <- function(v) l1[1] + (v - l2[1]) * diff(l1) / diff(l2)
@@ -3810,8 +3822,7 @@ colunas <- function(dados) {
     if (info$ax_y$escala != "linear") .erro("eixo_y2 \"transformado\" exige eixo_y linear.")
     fa <- cfg$eixo_y2$fator %||% 1; de <- cfg$eixo_y2$deslocamento %||% 0
     if (fa == 0) .erro("cfg$eixo_y2$fator não pode ser 0.")
-    e2 <- utils::modifyList(cfg$eixo_y, cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))])
-    e2$escala <- "linear"; e2$inverter <- FALSE
+    e2 <- .eixo_y2_efetivo(cfg)
     l2 <- sort(fa * info$ax_y$limites + de)
     e2$inicio <- e2$inicio %||% l2[1]; e2$fim <- e2$fim %||% l2[2]
     if (e2$inicio != l2[1] || e2$fim != l2[2]) {
@@ -4464,7 +4475,8 @@ listar_fontes <- function() {
   grade_menor_cor = c("grade", "cor_menor"), grade_menor_tipo = c("grade", "tipo_menor"),
   grade_menor_espessura_pt = c("grade", "espessura_menor_pt"), grade_menor_opacidade = c("grade", "opacidade_menor"),
   # quebra
-  quebra_estilo = c("quebra", "estilo"), quebra_de = c("quebra", "de"), quebra_ate = c("quebra", "ate"), quebra_espaco_pt = c("quebra", "espaco_pt"),
+  quebra_estilo = c("quebra", "estilo"), quebra_de = c("quebra",
+                                                       "de"), quebra_ate = c("quebra", "ate"), quebra_espaco_pt = c("quebra", "espaco_pt"),
   quebra_ligar_pontos = c("quebra", "ligar_atraves"), quebra_proporcao_superior = c("quebra", "proporcao_superior"),
   # cores, linhas e símbolos
   cores_paleta = c("cores", "paleta"), cores_gradiente_cor2 = c("cores", "gradiente_cor2"),
@@ -4512,6 +4524,36 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
   }
   rd <- pega("rotulos_dados_tamanho_pt")   # texto escrito junto dos pontos/barras (rótulos de dados)
   if (!is.null(rd)) { cfg$linhas$rotulos_tamanho_pt <- rd; cfg$barras$rotulos_tamanho_pt <- rd; marca("rotulos_dados_tamanho_pt") }
+  # eixo Y da direita (Y2): as séries listadas em y2_series passam para ele; o X continua o mesmo
+  y2s <- pega("y2_series")
+  y2f <- pega("y2_fator"); y2d <- pega("y2_deslocamento")
+  if (!is.null(y2s) || !is.null(y2f) || !is.null(y2d)) {
+    cfg$eixo_y2$ativo <- TRUE
+    if (!is.null(y2s)) {
+      for (nm in y2s) cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(eixo = "y2"))
+      marca("y2_series")
+    } else cfg$eixo_y2$modo <- "transformado"      # sem séries próprias: o mesmo dado em outra unidade
+    if (!is.null(y2f)) { cfg$eixo_y2$fator <- y2f; marca("y2_fator") }
+    if (!is.null(y2d)) { cfg$eixo_y2$deslocamento <- y2d; marca("y2_deslocamento") }
+    for (nome in c("y2_titulo", "y2_inicio", "y2_fim", "y2_ticks_menores", "y2_casas_decimais", "y2_notacao",
+                   "y2_prefixo", "y2_sufixo", "y2_dividir_por", "y2_cor_eixo", "y2_ticks_manuais")) {
+      v <- pega(nome); if (is.null(v)) next
+      alvo <- switch(nome, y2_titulo = "titulo", y2_inicio = "inicio", y2_fim = "fim", y2_ticks_menores = "n_menores",
+                     y2_casas_decimais = "casas_decimais", y2_notacao = "notacao", y2_prefixo = "prefixo",
+                     y2_sufixo = "sufixo", y2_dividir_por = "fator_divisao", y2_cor_eixo = "cor_eixo",
+                     y2_ticks_manuais = "ticks_manuais")
+      cfg$eixo_y2[[alvo]] <- v
+      if (nome == "y2_ticks_manuais") cfg$eixo_y2$ticks_modo <- "manual"
+      marca(nome)
+    }
+    iv2 <- pega("y2_intervalo")
+    if (!is.null(iv2)) { cfg$eixo_y2$ticks_modo <- "incremento"; cfg$eixo_y2$incremento <- iv2; marca("y2_intervalo") }
+    cor2 <- pega("y2_cor")    # uma cor para as séries do Y2 e para o eixo
+    if (!is.null(cor2)) {
+      for (nm in y2s) cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(cor = cor2))
+      cfg$eixo_y2$cor_eixo <- cor2; marca("y2_cor")
+    }
+  }
   neg <- pega("eixos_titulo_negrito")
   if (!is.null(neg)) { cfg$eixo_x$negrito_titulo <- isTRUE(neg); cfg$eixo_y$negrito_titulo <- isTRUE(neg); marca("eixos_titulo_negrito") }
   # cores: gradiente, paleta personalizada (vence a paleta nomeada) e cor de séries específicas
@@ -4807,7 +4849,7 @@ demonstracao <- function(tipo = c("linha", "barras", "pizza", "boxplot", "datas"
 #  NULL = "não mexer" (vale o padrão do template). Para voltar ao padrão, escreva NULL.
 #  Textos entre aspas; números sem aspas e com PONTO decimal; TRUE/FALSE em maiúsculas.
 #  Categorias:  1 ARQUIVO E TIPO | 2 INTERVALOS | 3 ESCALA | 4 NÚMEROS E TÍTULOS | 5 GRADE |
-#               6 QUEBRA DO EIXO Y | 7 CORES E LINHAS | 8 FONTE | 9 LEGENDA E MOLDURA | 10 EXPORTAÇÃO
+#               6 QUEBRA DO EIXO Y | 7 EIXO Y DA DIREITA | 8 CORES E LINHAS | 9 FONTE | 10 LEGENDA E MOLDURA | 11 EXPORTAÇÃO
 #  Quer um ajuste que não está aqui? Use o cfg direto (ajuda("eixo_x"), ajuda("grade")...).
 # =============================================================================
 
@@ -4901,7 +4943,27 @@ quebra_espaco_pt <- NULL   # espaço entre as duas partes (aumente se os número
 quebra_ligar_pontos      <- NULL   # FALSE = não liga os pontos através da quebra
 quebra_proporcao_superior <- NULL  # altura da parte de cima, de 0 a 1. EX.: 0.5
 
-# ---- 7. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
+# ---- 7. EIXO Y DA DIREITA (Y2): outras variáveis com escala, cor e intervalos próprios ---------------
+#  O eixo X continua o mesmo. As colunas listadas em y2_series saem do eixo esquerdo e vão para o direito.
+y2_series  <- NULL        # colunas no eixo direito. EX.: "Temperatura"  |  c("Temperatura", "Umidade")
+y2_titulo  <- NULL        # título do eixo direito. EX.: "Temperatura (°C)"
+y2_inicio  <- NULL        # começo do eixo direito. EX.: 0
+y2_fim     <- NULL        # fim do eixo direito.    EX.: 40
+y2_intervalo <- NULL      # distância entre os traços. EX.: 5 (de 5 em 5)
+y2_ticks_manuais <- NULL  # posições à mão (ignora y2_intervalo). EX.: c(0, 10, 25, 40)
+y2_ticks_menores <- NULL  # traços pequenos entre dois grandes. 0 = nenhum
+y2_cor       <- NULL      # UMA cor para as séries do Y2 E para o eixo (números, título, traços). EX.: "#C00000"
+y2_cor_eixo  <- NULL      # só a cor do eixo ("serie" = cor da 1ª série do Y2 | uma cor). Ignorado se y2_cor existir
+y2_dividir_por <- NULL    # divide os números do eixo direito. EX.: 1000 (NULL = igual ao do eixo esquerdo)
+y2_casas_decimais <- NULL # EX.: 1
+y2_notacao   <- NULL      # "normal" | "milhar" | "cientifica" | "potencia10" | "percentual"
+y2_prefixo   <- NULL      # EX.: "US$ "
+y2_sufixo    <- NULL      # EX.: " %"
+y2_fator     <- NULL      # SEM séries novas: mostra o MESMO dado em outra unidade (y2 = fator × y + deslocamento).
+y2_deslocamento <- NULL   #   EX. de °C para °F:  y2_fator <- 1.8;  y2_deslocamento <- 32
+#  As cores de cada série (esquerda ou direita) também podem vir de cores_por_serie (bloco 8).
+
+# ---- 8. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
 cores_paleta        <- NULL   # "classico" (padrão tipo Origin) | "okabe_ito" | "tableau" | "viridis" | "cinza" |
                               # "brewer_Set1"... (veja mostrar_paletas())
 cores_personalizadas <- NULL  # suas cores, na ordem das colunas Y. EX.: c("#000000", "#D62728", "#1F4E9E")
@@ -4912,7 +4974,7 @@ cores_gradiente_cor2 <- NULL  # cor final do degradê. EX.: "white"
 linha_espessura_pt  <- NULL   # EX.: 2
 simbolo_tamanho_pt  <- NULL   # EX.: 7
 
-# ---- 8. FONTE -----------------------------------------------------------------------------------
+# ---- 9. FONTE -----------------------------------------------------------------------------------
 fonte            <- NULL   # EX.: "Arial" | "Times New Roman" | "Calibri"  (nomes instalados: listar_fontes())
 tamanho_texto_pt <- NULL   # tamanho BASE de todo o texto (os itens abaixo, se preenchidos, têm prioridade). EX.: 12
 cor_texto        <- NULL   # EX.: "black"
@@ -4926,7 +4988,7 @@ legenda_texto_tamanho_pt  <- NULL   # nomes na legenda (WORLD, LATAM...). EX.: 1
 legenda_titulo_tamanho_pt <- NULL   # título da legenda. EX.: 11
 rotulos_dados_tamanho_pt  <- NULL   # texto escrito junto dos pontos/barras (rótulos de dados). EX.: 8
 
-# ---- 9. LEGENDA E MOLDURA ---------------------------------------------------------------------------
+# ---- 10. LEGENDA E MOLDURA ---------------------------------------------------------------------------
 legenda_mostrar  <- NULL   # FALSE = sem legenda
 legenda_posicao  <- NULL   # "dentro" | "direita" | "esquerda" | "topo" | "base"
 legenda_x        <- NULL   # com "dentro": posição de 0 a 1. EX.: 0.04
@@ -4934,7 +4996,7 @@ legenda_y        <- NULL   # EX.: 0.96
 legenda_titulo   <- NULL   # EX.: "Região"
 caixa_fechada    <- NULL   # TRUE = moldura nos 4 lados | FALSE = só eixos esquerdo e inferior
 
-# ---- 10. EXPORTAÇÃO ------------------------------------------------------------------------------------
+# ---- 11. EXPORTAÇÃO ------------------------------------------------------------------------------------
 largura_cm   <- NULL       # EX.: 14
 altura_cm    <- NULL       # EX.: 10
 dpi          <- NULL       # EX.: 600

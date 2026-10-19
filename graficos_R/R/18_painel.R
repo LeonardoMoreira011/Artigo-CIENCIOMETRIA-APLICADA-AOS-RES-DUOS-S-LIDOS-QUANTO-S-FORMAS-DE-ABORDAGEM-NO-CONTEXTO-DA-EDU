@@ -46,7 +46,8 @@
   grade_menor_cor = c("grade", "cor_menor"), grade_menor_tipo = c("grade", "tipo_menor"),
   grade_menor_espessura_pt = c("grade", "espessura_menor_pt"), grade_menor_opacidade = c("grade", "opacidade_menor"),
   # quebra
-  quebra_estilo = c("quebra", "estilo"), quebra_de = c("quebra", "de"), quebra_ate = c("quebra", "ate"), quebra_espaco_pt = c("quebra", "espaco_pt"),
+  quebra_estilo = c("quebra", "estilo"), quebra_de = c("quebra",
+                                                       "de"), quebra_ate = c("quebra", "ate"), quebra_espaco_pt = c("quebra", "espaco_pt"),
   quebra_ligar_pontos = c("quebra", "ligar_atraves"), quebra_proporcao_superior = c("quebra", "proporcao_superior"),
   # cores, linhas e símbolos
   cores_paleta = c("cores", "paleta"), cores_gradiente_cor2 = c("cores", "gradiente_cor2"),
@@ -94,6 +95,36 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
   }
   rd <- pega("rotulos_dados_tamanho_pt")   # texto escrito junto dos pontos/barras (rótulos de dados)
   if (!is.null(rd)) { cfg$linhas$rotulos_tamanho_pt <- rd; cfg$barras$rotulos_tamanho_pt <- rd; marca("rotulos_dados_tamanho_pt") }
+  # eixo Y da direita (Y2): as séries listadas em y2_series passam para ele; o X continua o mesmo
+  y2s <- pega("y2_series")
+  y2f <- pega("y2_fator"); y2d <- pega("y2_deslocamento")
+  if (!is.null(y2s) || !is.null(y2f) || !is.null(y2d)) {
+    cfg$eixo_y2$ativo <- TRUE
+    if (!is.null(y2s)) {
+      for (nm in y2s) cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(eixo = "y2"))
+      marca("y2_series")
+    } else cfg$eixo_y2$modo <- "transformado"      # sem séries próprias: o mesmo dado em outra unidade
+    if (!is.null(y2f)) { cfg$eixo_y2$fator <- y2f; marca("y2_fator") }
+    if (!is.null(y2d)) { cfg$eixo_y2$deslocamento <- y2d; marca("y2_deslocamento") }
+    for (nome in c("y2_titulo", "y2_inicio", "y2_fim", "y2_ticks_menores", "y2_casas_decimais", "y2_notacao",
+                   "y2_prefixo", "y2_sufixo", "y2_dividir_por", "y2_cor_eixo", "y2_ticks_manuais")) {
+      v <- pega(nome); if (is.null(v)) next
+      alvo <- switch(nome, y2_titulo = "titulo", y2_inicio = "inicio", y2_fim = "fim", y2_ticks_menores = "n_menores",
+                     y2_casas_decimais = "casas_decimais", y2_notacao = "notacao", y2_prefixo = "prefixo",
+                     y2_sufixo = "sufixo", y2_dividir_por = "fator_divisao", y2_cor_eixo = "cor_eixo",
+                     y2_ticks_manuais = "ticks_manuais")
+      cfg$eixo_y2[[alvo]] <- v
+      if (nome == "y2_ticks_manuais") cfg$eixo_y2$ticks_modo <- "manual"
+      marca(nome)
+    }
+    iv2 <- pega("y2_intervalo")
+    if (!is.null(iv2)) { cfg$eixo_y2$ticks_modo <- "incremento"; cfg$eixo_y2$incremento <- iv2; marca("y2_intervalo") }
+    cor2 <- pega("y2_cor")    # uma cor para as séries do Y2 e para o eixo
+    if (!is.null(cor2)) {
+      for (nm in y2s) cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(cor = cor2))
+      cfg$eixo_y2$cor_eixo <- cor2; marca("y2_cor")
+    }
+  }
   neg <- pega("eixos_titulo_negrito")
   if (!is.null(neg)) { cfg$eixo_x$negrito_titulo <- isTRUE(neg); cfg$eixo_y$negrito_titulo <- isTRUE(neg); marca("eixos_titulo_negrito") }
   # cores: gradiente, paleta personalizada (vence a paleta nomeada) e cor de séries específicas

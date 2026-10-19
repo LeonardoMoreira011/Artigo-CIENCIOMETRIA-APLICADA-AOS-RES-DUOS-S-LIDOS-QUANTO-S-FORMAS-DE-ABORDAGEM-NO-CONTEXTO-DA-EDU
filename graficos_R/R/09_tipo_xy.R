@@ -3,6 +3,14 @@
 # =============================================================================
 
 # ---- Pontos / linhas / áreas --------------------------------------------------
+# Config do eixo Y2: a do eixo Y com o que o eixo_y2 define por cima (limites, ticks, formato). O divisor
+# dos números (fator_divisao) é o do eixo_y2 se existir; senão herda o do eixo_y, como sempre foi.
+.eixo_y2_efetivo <- function(cfg) {
+  e2 <- utils::modifyList(cfg$eixo_y, cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))])
+  e2$fator_divisao <- cfg$eixo_y2$fator_divisao %||% cfg$eixo_y$fator_divisao
+  e2$escala <- "linear"; e2$inverter <- FALSE
+  e2
+}
 # Avisa quantos pontos saem do gráfico por não existirem na escala do eixo (<= 0 em log, 0 em 1/x).
 .avisar_omitidos <- function(n, eixo, escala) {
   if (n > 0)
@@ -100,8 +108,7 @@
   if (usa_y2) {
     if (ax_y$escala != "linear") .erro("eixo_y2 \"independente\" exige eixo_y linear.")
     d2 <- d[d$serie %in% ser_y2, ]
-    e2 <- utils::modifyList(cfg$eixo_y, cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))])
-    e2$escala <- "linear"; e2$inverter <- FALSE
+    e2 <- .eixo_y2_efetivo(cfg)
     ax2 <- .calc_eixo(e2, c(d2$y, d2$y - d2$e_inf, d2$y + d2$e_sup))
     l1 <- ax_y$limites; l2 <- ax2$limites
     para1 <- function(v) l1[1] + (v - l2[1]) * diff(l1) / diff(l2)

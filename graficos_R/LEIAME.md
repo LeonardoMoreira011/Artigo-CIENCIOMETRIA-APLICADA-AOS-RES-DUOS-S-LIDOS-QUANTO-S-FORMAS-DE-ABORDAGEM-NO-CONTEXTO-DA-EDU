@@ -105,6 +105,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | Grade com tipo, cor e transparência | `cfg$grade$maior_x <- TRUE; tipo_maior <- "dashed"; cor_maior <- "#1F4E9E"; opacidade_maior <- 0.4` |
 | Linha de referência | `cfg$referencias <- list(list(eixo = "y", valor = 0, tipo = "dashed"))` |
 | Texto / seta / faixa | `cfg$anotacoes$textos`, `$setas`, `$faixas` (ver `ajuda("anotacoes")`) |
+| Eixo Y à direita pelo painel (bloco 7) |  |
 | Eixo Y à direita | `cfg$eixo_y2$ativo <- TRUE` + `cfg$series[["B"]] <- list(eixo = "y2")` (com ticks menores: `cfg$eixo_y2$n_menores`) |
 | Eixo X como datas / horas | automático; `cfg$eixo_x$incremento <- "1 mes"`, `inicio <- "01/01/2024"`, `formato_rotulo_data <- "%d/%m/%Y"` (seção 3.1) |
 | Ligar os pontos da esquerda para a direita | `cfg$linhas$ordenar_x <- TRUE` (padrão: segue a ordem das linhas do CSV, como o Origin) |

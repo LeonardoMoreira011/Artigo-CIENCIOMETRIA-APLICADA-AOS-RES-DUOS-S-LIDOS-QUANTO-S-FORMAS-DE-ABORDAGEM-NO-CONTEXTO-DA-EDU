@@ -848,6 +848,11 @@ cfg$eixo_y2 <- list(
   prefixo = "",
   sufixo = "",
 
+  # fator_divisao: divide os números do eixo secundário (ex.: 1000 mostra 100 em vez de 100000).
+  #   NULL = usa o mesmo do eixo_y (como era antes). Avise a unidade no título.
+  #   OPÇÕES: NULL | número      EX.: cfg$eixo_y2$fator_divisao <- 1000
+  fator_divisao = NULL,
+
   # cor_eixo: pinta números, título e ticks do eixo secundário.
   #   OPÇÕES: NULL (preto) | "serie" (cor da 1ª série do y2) | qualquer cor
   cor_eixo = "serie"

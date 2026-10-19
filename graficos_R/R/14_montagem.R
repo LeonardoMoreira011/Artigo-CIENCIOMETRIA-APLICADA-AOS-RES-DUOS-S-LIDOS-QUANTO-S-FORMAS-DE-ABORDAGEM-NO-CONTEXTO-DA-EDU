@@ -96,8 +96,7 @@
     if (info$ax_y$escala != "linear") .erro("eixo_y2 \"transformado\" exige eixo_y linear.")
     fa <- cfg$eixo_y2$fator %||% 1; de <- cfg$eixo_y2$deslocamento %||% 0
     if (fa == 0) .erro("cfg$eixo_y2$fator não pode ser 0.")
-    e2 <- utils::modifyList(cfg$eixo_y, cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))])
-    e2$escala <- "linear"; e2$inverter <- FALSE
+    e2 <- .eixo_y2_efetivo(cfg)
     l2 <- sort(fa * info$ax_y$limites + de)
     e2$inicio <- e2$inicio %||% l2[1]; e2$fim <- e2$fim %||% l2[2]
     if (e2$inicio != l2[1] || e2$fim != l2[2]) {

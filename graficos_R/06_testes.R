@@ -385,7 +385,10 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
         v <- sub(" *<- .*", "", grep("^[a-z_A-Z]+ +<- ", L, value = TRUE))
         extras <- c("ARQUIVO_CSV", "cores_personalizadas", "cores_gradiente", "cores_por_serie", "quebra_ativar",
                     "x_intervalo",
-                    "y_intervalo", "x_ticks_manuais", "y_ticks_manuais", "eixos_titulo_negrito", "rotulos_dados_tamanho_pt")
+                    "y_intervalo", "x_ticks_manuais", "y_ticks_manuais", "eixos_titulo_negrito", "rotulos_dados_tamanho_pt",
+                    "y2_series", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo", "y2_ticks_manuais", "y2_ticks_menores",
+                    "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais", "y2_notacao", "y2_prefixo", "y2_sufixo",
+                    "y2_fator", "y2_deslocamento")
         all(v %in% c(names(.PAINEL_MAPA), extras)) })
 teste("painel: cores_por_serie sem nomes dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))
@@ -417,6 +420,33 @@ teste("quebra contínua respeita fundo transparente (canto da figura transparent
                            suppressWarnings(print(.fundo_transparente(plotar(qd, cqt)))); r <- cap()
                            invisible(grDevices::dev.off()); r[1, 1] },
                          alpha = TRUE)[4] == 0)
+
+cat("\n--- Eixo Y da direita (Y2) pelo painel ---\n")
+p2 <- list2env(list(y2_series = "LATAM", y2_titulo = "Pop (milhões)", y2_inicio = 0, y2_fim = 100000,
+                    y2_intervalo = 20000,
+                    y2_ticks_menores = 0, y2_cor = "#C00000", y2_dividir_por = 1, y_dividir_por = 1000))
+cy2 <- suppressMessages(aplicar_painel(c0, p2))
+cy2$grafico <- utils::modifyList(cy2$grafico, list(tipo = "linha_pontos", coluna_x = 1,
+                                                   colunas_y = c("WORLD", "LATAM")))
+teste("painel Y2: séries, título, limites, intervalo e cor chegam ao cfg e ligam o eixo direito",
+      isTRUE(cy2$eixo_y2$ativo) && cy2$series$LATAM$eixo == "y2" && cy2$eixo_y2$titulo == "Pop (milhões)" &&
+      cy2$eixo_y2$inicio == 0 && cy2$eixo_y2$fim == 100000 && cy2$eixo_y2$ticks_modo == "incremento" &&
+      cy2$eixo_y2$incremento == 20000 && cy2$eixo_y2$cor_eixo == "#C00000" && cy2$series$LATAM$cor == "#C00000")
+gy2 <- plotar(an, cy2); iy2 <- attr(gy2, "info")
+teste("painel Y2: o eixo direito tem os ticks pedidos (0, 20000, ..., 100000) e o X continua o mesmo",
+      identical(iy2$y2$ax$maiores, seq(0, 100000, 20000)) && length(iy2$y2$ax$menores) == 0 &&
+      identical(iy2$ax_x$limites, attr(plotar(an, utils::modifyList(cy2, list(eixo_y2 = list(ativo = FALSE),
+                                                                              series = list()))), "info")$ax_x$limites))
+teste("painel Y2: divisor próprio (Y esquerdo ÷1000 mostra 460; Y2 com y2_dividir_por = 1 mostra 20000)",
+      identical(iy2$ax_y$rotulos(460000), "460") && identical(iy2$y2$ax$rotulos(20000), "20000"))
+cy3 <- cy2; cy3$eixo_y2$fator_divisao <- NULL
+teste("Y2 sem divisor próprio herda o do eixo Y (comportamento anterior preservado)",
+      identical(attr(plotar(an, cy3), "info")$y2$ax$rotulos(20000), "20"))
+p3 <- list2env(list(y2_fator = 1.8, y2_deslocamento = 32, y2_titulo = "°F"))
+cy4 <- suppressMessages(aplicar_painel(c0,
+                                       p3)); cy4$grafico <- utils::modifyList(cy4$grafico, list(tipo = "linha", coluna_x = 1, colunas_y = "BRAZIL"))
+teste("painel Y2: só fator e deslocamento = mesmo dado em outra unidade (modo transformado: 0 -> 32)",
+      cy4$eixo_y2$modo == "transformado" && attr(plotar(an, cy4), "info")$y2$para2(0) == 32)
 
 cat("\n--- Exportação e estilos ---\n")
 c1 <- c0; c1$exportacao$formatos <- c("png", "pdf", "svg", "tiff"); c1$exportacao$nome_arquivo <- "t"

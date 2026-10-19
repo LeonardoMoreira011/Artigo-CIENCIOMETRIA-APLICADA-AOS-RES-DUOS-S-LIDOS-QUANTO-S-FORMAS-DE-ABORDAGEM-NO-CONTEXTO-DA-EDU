@@ -5,7 +5,7 @@
 #  NULL = "não mexer" (vale o padrão do template). Para voltar ao padrão, escreva NULL.
 #  Textos entre aspas; números sem aspas e com PONTO decimal; TRUE/FALSE em maiúsculas.
 #  Categorias:  1 ARQUIVO E TIPO | 2 INTERVALOS | 3 ESCALA | 4 NÚMEROS E TÍTULOS | 5 GRADE |
-#               6 QUEBRA DO EIXO Y | 7 CORES E LINHAS | 8 FONTE | 9 LEGENDA E MOLDURA | 10 EXPORTAÇÃO
+#               6 QUEBRA DO EIXO Y | 7 EIXO Y DA DIREITA | 8 CORES E LINHAS | 9 FONTE | 10 LEGENDA E MOLDURA | 11 EXPORTAÇÃO
 #  Quer um ajuste que não está aqui? Use o cfg direto (ajuda("eixo_x"), ajuda("grade")...).
 # =============================================================================
 
@@ -99,7 +99,27 @@ quebra_espaco_pt <- NULL   # espaço entre as duas partes (aumente se os número
 quebra_ligar_pontos      <- NULL   # FALSE = não liga os pontos através da quebra
 quebra_proporcao_superior <- NULL  # altura da parte de cima, de 0 a 1. EX.: 0.5
 
-# ---- 7. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
+# ---- 7. EIXO Y DA DIREITA (Y2): outras variáveis com escala, cor e intervalos próprios ---------------
+#  O eixo X continua o mesmo. As colunas listadas em y2_series saem do eixo esquerdo e vão para o direito.
+y2_series  <- NULL        # colunas no eixo direito. EX.: "Temperatura"  |  c("Temperatura", "Umidade")
+y2_titulo  <- NULL        # título do eixo direito. EX.: "Temperatura (°C)"
+y2_inicio  <- NULL        # começo do eixo direito. EX.: 0
+y2_fim     <- NULL        # fim do eixo direito.    EX.: 40
+y2_intervalo <- NULL      # distância entre os traços. EX.: 5 (de 5 em 5)
+y2_ticks_manuais <- NULL  # posições à mão (ignora y2_intervalo). EX.: c(0, 10, 25, 40)
+y2_ticks_menores <- NULL  # traços pequenos entre dois grandes. 0 = nenhum
+y2_cor       <- NULL      # UMA cor para as séries do Y2 E para o eixo (números, título, traços). EX.: "#C00000"
+y2_cor_eixo  <- NULL      # só a cor do eixo ("serie" = cor da 1ª série do Y2 | uma cor). Ignorado se y2_cor existir
+y2_dividir_por <- NULL    # divide os números do eixo direito. EX.: 1000 (NULL = igual ao do eixo esquerdo)
+y2_casas_decimais <- NULL # EX.: 1
+y2_notacao   <- NULL      # "normal" | "milhar" | "cientifica" | "potencia10" | "percentual"
+y2_prefixo   <- NULL      # EX.: "US$ "
+y2_sufixo    <- NULL      # EX.: " %"
+y2_fator     <- NULL      # SEM séries novas: mostra o MESMO dado em outra unidade (y2 = fator × y + deslocamento).
+y2_deslocamento <- NULL   #   EX. de °C para °F:  y2_fator <- 1.8;  y2_deslocamento <- 32
+#  As cores de cada série (esquerda ou direita) também podem vir de cores_por_serie (bloco 8).
+
+# ---- 8. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
 cores_paleta        <- NULL   # "classico" (padrão tipo Origin) | "okabe_ito" | "tableau" | "viridis" | "cinza" |
                               # "brewer_Set1"... (veja mostrar_paletas())
 cores_personalizadas <- NULL  # suas cores, na ordem das colunas Y. EX.: c("#000000", "#D62728", "#1F4E9E")
@@ -110,7 +130,7 @@ cores_gradiente_cor2 <- NULL  # cor final do degradê. EX.: "white"
 linha_espessura_pt  <- NULL   # EX.: 2
 simbolo_tamanho_pt  <- NULL   # EX.: 7
 
-# ---- 8. FONTE -----------------------------------------------------------------------------------
+# ---- 9. FONTE -----------------------------------------------------------------------------------
 fonte            <- NULL   # EX.: "Arial" | "Times New Roman" | "Calibri"  (nomes instalados: listar_fontes())
 tamanho_texto_pt <- NULL   # tamanho BASE de todo o texto (os itens abaixo, se preenchidos, têm prioridade). EX.: 12
 cor_texto        <- NULL   # EX.: "black"
@@ -124,7 +144,7 @@ legenda_texto_tamanho_pt  <- NULL   # nomes na legenda (WORLD, LATAM...). EX.: 1
 legenda_titulo_tamanho_pt <- NULL   # título da legenda. EX.: 11
 rotulos_dados_tamanho_pt  <- NULL   # texto escrito junto dos pontos/barras (rótulos de dados). EX.: 8
 
-# ---- 9. LEGENDA E MOLDURA ---------------------------------------------------------------------------
+# ---- 10. LEGENDA E MOLDURA ---------------------------------------------------------------------------
 legenda_mostrar  <- NULL   # FALSE = sem legenda
 legenda_posicao  <- NULL   # "dentro" | "direita" | "esquerda" | "topo" | "base"
 legenda_x        <- NULL   # com "dentro": posição de 0 a 1. EX.: 0.04
@@ -132,7 +152,7 @@ legenda_y        <- NULL   # EX.: 0.96
 legenda_titulo   <- NULL   # EX.: "Região"
 caixa_fechada    <- NULL   # TRUE = moldura nos 4 lados | FALSE = só eixos esquerdo e inferior
 
-# ---- 10. EXPORTAÇÃO ------------------------------------------------------------------------------------
+# ---- 11. EXPORTAÇÃO ------------------------------------------------------------------------------------
 largura_cm   <- NULL       # EX.: 14
 altura_cm    <- NULL       # EX.: 10
 dpi          <- NULL       # EX.: 600
