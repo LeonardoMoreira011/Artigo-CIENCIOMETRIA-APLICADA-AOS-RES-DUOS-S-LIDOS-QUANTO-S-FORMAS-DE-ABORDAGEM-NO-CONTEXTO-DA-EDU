@@ -189,12 +189,13 @@
   if (com_pontos) {
     if (mapa) {
       cam[[length(cam) + 1]] <- geom_point(data = d, aes(x = x, y = y, colour = mapa, fill = mapa,
-                                                         shape = serie, size = serie, stroke = serie))
+                                                         shape = serie, size = serie, stroke = serie),
+                                                  na.rm = TRUE)   # células vazias: sem aviso em inglês
       aes_leg <- unique(c(aes_leg, "shape", "size", "stroke"))
     } else {
       cam[[length(cam) + 1]] <- geom_point(data = d, aes(x = x, y = y, colour = serie, fill = serie,
                                                          shape = serie, size = serie, stroke = serie, alpha = serie),
-        show.legend = TRUE)
+        show.legend = TRUE, na.rm = TRUE)   # na.rm: células vazias do CSV não geram aviso em inglês
       aes_leg <- unique(c(aes_leg, "colour", "fill_simb", "shape", "size", "stroke", "alpha"))
     }
   }

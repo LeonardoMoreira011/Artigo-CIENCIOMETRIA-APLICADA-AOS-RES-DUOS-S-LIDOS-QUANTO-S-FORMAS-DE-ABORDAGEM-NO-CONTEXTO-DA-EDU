@@ -448,6 +448,14 @@ cy4 <- suppressMessages(aplicar_painel(c0,
 teste("painel Y2: só fator e deslocamento = mesmo dado em outra unidade (modo transformado: 0 -> 32)",
       cy4$eixo_y2$modo == "transformado" && attr(plotar(an, cy4), "info")$y2$para2(0) == 32)
 
+cat("\n--- Um CSV só com Y1 e Y2 (células vazias) ---\n")
+vz <- an; vz$LATAM[c(4, 5)] <- NA; vz$BRAZIL[c(2, 9)] <- NA
+cvz <- c0; cvz$grafico <- utils::modifyList(cvz$grafico, list(tipo = "linha_pontos", coluna_x = 1))
+cvz$series[["BRAZIL"]] <- list(eixo = "y2"); cvz$eixo_y2$ativo <- TRUE
+imprime2 <- function(g) { ragg::agg_capture(width = 400, height = 300, res = 72); print(g); invisible(grDevices::dev.off()) }
+teste("CSV único com células vazias (Y1 e Y2): imprime sem aviso do ggplot2 ('Removed rows...')",
+      !any(grepl("Removed", avisos_de(imprime2(plotar(vz, cvz))))))
+
 cat("\n--- Exportação e estilos ---\n")
 c1 <- c0; c1$exportacao$formatos <- c("png", "pdf", "svg", "tiff"); c1$exportacao$nome_arquivo <- "t"
 arqs <- salvar(plotar(d, c1), c1)
