@@ -4483,6 +4483,7 @@ listar_fontes <- function() {
   cores_paleta = c("cores", "paleta"), cores_gradiente_cor2 = c("cores", "gradiente_cor2"),
   linha_espessura_pt = c("serie_padrao",
                          "linha_espessura_pt"), simbolo_tamanho_pt = c("serie_padrao", "tamanho_simbolo_pt"),
+  simbolo_borda_pt = c("serie_padrao", "espessura_borda_pt"),
   # texto
   fonte = c("texto", "fonte"), tamanho_texto_pt = c("texto", "tamanho_base_pt"), cor_texto = c("texto", "cor"),
   titulo_grafico_tamanho_pt = c("titulos", "tamanho_titulo_pt"),
@@ -4568,6 +4569,20 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     for (nm in names(por_serie))
       cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(cor = por_serie[[nm]]))
     marca("cores_por_serie")
+  }
+  # grossura da linha / tamanho do ponto / contorno do ponto de séries específicas (vencem o valor geral)
+  for (nome in c("linha_espessura_por_serie", "simbolo_tamanho_por_serie", "simbolo_borda_por_serie")) {
+    v <- pega(nome)
+    if (is.null(v)) next
+    if (is.null(names(v)) || any(!nzchar(names(v))) || !is.numeric(v))
+      .erro(nome, " precisa de números com o nome da série: c(\"WORLD\" = 1, \"BRAZIL\" = 3).")
+    chave <- switch(nome, linha_espessura_por_serie = "linha_espessura_pt",
+                    simbolo_tamanho_por_serie = "tamanho_simbolo_pt", simbolo_borda_por_serie = "espessura_borda_pt")
+    for (nm in names(v)) {
+      novo <- list(v[[nm]]); names(novo) <- chave
+      cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), novo)
+    }
+    marca(nome)
   }
   # quebra: ligada por quebra_ativar; sem de/ate, procura o maior vazio entre os dados
   qa <- pega("quebra_ativar")
@@ -4972,8 +4987,15 @@ cores_por_serie     <- NULL   # a cor de séries específicas (nome exato da col
                               # EX.: c("WORLD" = "#000000", "LATAM" = "#C00000", "BRAZIL" = "#1F4E9E")
 cores_gradiente     <- NULL   # TRUE = barras/áreas com degradê
 cores_gradiente_cor2 <- NULL  # cor final do degradê. EX.: "white"
-linha_espessura_pt  <- NULL   # EX.: 2
-simbolo_tamanho_pt  <- NULL   # EX.: 7
+#  Grossuras SEPARADAS (todas em pt; valem para todas as séries):
+linha_espessura_pt  <- NULL   # grossura das LINHAS. EX.: 2.5
+simbolo_tamanho_pt  <- NULL   # tamanho dos PONTOS (símbolos). EX.: 8
+simbolo_borda_pt    <- NULL   # grossura do CONTORNO dos pontos. EX.: 1.2
+#  Só de algumas séries (nome exato da coluna; as demais seguem o valor geral acima):
+linha_espessura_por_serie <- NULL   # EX.: c("WORLD" = 1, "BRAZIL" = 3.5)
+simbolo_tamanho_por_serie <- NULL   # EX.: c("BRAZIL" = 10)
+simbolo_borda_por_serie   <- NULL   # EX.: c("BRAZIL" = 1.5)
+#  Só linhas, só pontos ou os dois: o "tipo" do bloco 1 ("linha" | "pontos" | "linha_pontos").
 
 # ---- 9. FONTE -----------------------------------------------------------------------------------
 fonte            <- NULL   # EX.: "Arial" | "Times New Roman" | "Calibri"  (nomes instalados: listar_fontes())

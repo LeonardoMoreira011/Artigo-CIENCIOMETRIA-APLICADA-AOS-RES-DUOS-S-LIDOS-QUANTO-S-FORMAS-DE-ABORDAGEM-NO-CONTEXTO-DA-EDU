@@ -127,8 +127,15 @@ cores_por_serie     <- NULL   # a cor de séries específicas (nome exato da col
                               # EX.: c("WORLD" = "#000000", "LATAM" = "#C00000", "BRAZIL" = "#1F4E9E")
 cores_gradiente     <- NULL   # TRUE = barras/áreas com degradê
 cores_gradiente_cor2 <- NULL  # cor final do degradê. EX.: "white"
-linha_espessura_pt  <- NULL   # EX.: 2
-simbolo_tamanho_pt  <- NULL   # EX.: 7
+#  Grossuras SEPARADAS (todas em pt; valem para todas as séries):
+linha_espessura_pt  <- NULL   # grossura das LINHAS. EX.: 2.5
+simbolo_tamanho_pt  <- NULL   # tamanho dos PONTOS (símbolos). EX.: 8
+simbolo_borda_pt    <- NULL   # grossura do CONTORNO dos pontos. EX.: 1.2
+#  Só de algumas séries (nome exato da coluna; as demais seguem o valor geral acima):
+linha_espessura_por_serie <- NULL   # EX.: c("WORLD" = 1, "BRAZIL" = 3.5)
+simbolo_tamanho_por_serie <- NULL   # EX.: c("BRAZIL" = 10)
+simbolo_borda_por_serie   <- NULL   # EX.: c("BRAZIL" = 1.5)
+#  Só linhas, só pontos ou os dois: o "tipo" do bloco 1 ("linha" | "pontos" | "linha_pontos").
 
 # ---- 9. FONTE -----------------------------------------------------------------------------------
 fonte            <- NULL   # EX.: "Arial" | "Times New Roman" | "Calibri"  (nomes instalados: listar_fontes())

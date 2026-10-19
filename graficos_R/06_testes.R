@@ -388,7 +388,8 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
                     "y_intervalo", "x_ticks_manuais", "y_ticks_manuais", "eixos_titulo_negrito", "rotulos_dados_tamanho_pt",
                     "y2_series", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo", "y2_ticks_manuais", "y2_ticks_menores",
                     "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais", "y2_notacao", "y2_prefixo", "y2_sufixo",
-                    "y2_fator", "y2_deslocamento")
+                    "y2_fator", "y2_deslocamento", "linha_espessura_por_serie", "simbolo_tamanho_por_serie",
+                    "simbolo_borda_por_serie")
         all(v %in% c(names(.PAINEL_MAPA), extras)) })
 teste("painel: cores_por_serie sem nomes dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))
@@ -420,6 +421,31 @@ teste("quebra contínua respeita fundo transparente (canto da figura transparent
                            suppressWarnings(print(.fundo_transparente(plotar(qd, cqt)))); r <- cap()
                            invisible(grDevices::dev.off()); r[1, 1] },
                          alpha = TRUE)[4] == 0)
+
+cat("\n--- Grossura separada de linhas e pontos pelo painel ---\n")
+pgr <- list2env(list(tipo_grafico = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL"),
+                     linha_espessura_pt = 1, simbolo_tamanho_pt = 4, simbolo_borda_pt = 0.5,
+                     linha_espessura_por_serie = c(BRAZIL = 3), simbolo_tamanho_por_serie = c(BRAZIL = 10),
+                     simbolo_borda_por_serie = c(BRAZIL = 2)))
+cgr <- suppressMessages(aplicar_painel(c0, pgr))
+teste("painel: linha, ponto e contorno do ponto são gerais e por série (a série vence o geral)",
+      cgr$serie_padrao$linha_espessura_pt == 1 && cgr$serie_padrao$tamanho_simbolo_pt == 4 &&
+      cgr$serie_padrao$espessura_borda_pt == 0.5 && cgr$series$BRAZIL$linha_espessura_pt == 3 &&
+      cgr$series$BRAZIL$tamanho_simbolo_pt == 10 && cgr$series$BRAZIL$espessura_borda_pt == 2 &&
+      is.null(cgr$series$WORLD))
+ggr <- suppressWarnings(plotar(an, cgr))
+dl <- camada(ggr, "linewidth"); dp <- camada(ggr, "stroke")
+teste("painel: no gráfico a linha e o ponto engrossam de forma independente (BRAZIL > WORLD nos dois)",
+      !is.null(dl) && !is.null(dp) && length(unique(dl$linewidth)) == 2 && length(unique(dp$size)) == 2 &&
+      length(unique(dp$stroke)) == 2 && max(dl$linewidth) / min(dl$linewidth) > 2.9 &&
+      max(dp$size) / min(dp$size) > 2.4)
+cgr2 <- cgr; cgr2$serie_padrao$linha_espessura_pt <- 4
+ggr2 <- suppressWarnings(plotar(an, cgr2)); dp2 <- camada(ggr2, "stroke")
+teste("painel: mudar só a linha não mexe no ponto",
+      identical(sort(unique(dp2$size)), sort(unique(dp$size))) && max(camada(ggr2, "linewidth")$linewidth) > max(dl$linewidth) * 0.99)
+teste("painel: *_por_serie sem nome ou não numérico dá erro claro",
+      da_erro(aplicar_painel(c0, list2env(list(linha_espessura_por_serie = c(1, 2)))), "nome da série") &&
+      da_erro(aplicar_painel(c0, list2env(list(simbolo_tamanho_por_serie = c(BRAZIL = "grande")))), "nome da série"))
 
 cat("\n--- Eixo Y da direita (Y2) pelo painel ---\n")
 p2 <- list2env(list(y2_series = "LATAM", y2_titulo = "Pop (milhões)", y2_inicio = 0, y2_fim = 100000,
