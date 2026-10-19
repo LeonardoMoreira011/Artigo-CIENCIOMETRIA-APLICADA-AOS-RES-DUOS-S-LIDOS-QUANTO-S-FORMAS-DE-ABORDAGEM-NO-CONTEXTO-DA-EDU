@@ -48,6 +48,11 @@
   # quebra
   quebra_estilo = c("quebra", "estilo"), quebra_de = c("quebra",
                                                        "de"), quebra_ate = c("quebra", "ate"), quebra_espaco_pt = c("quebra", "espaco_pt"),
+  quebra_y2_de = c("quebra", "y2_de"), quebra_y2_ate = c("quebra", "y2_ate"),
+  quebra_y_intervalo_inferior = c("quebra", "incremento_inferior"),
+  quebra_y_intervalo_superior = c("quebra", "incremento_superior"),
+  quebra_y2_intervalo_inferior = c("quebra", "y2_incremento_inferior"),
+  quebra_y2_intervalo_superior = c("quebra", "y2_incremento_superior"),
   quebra_ligar_pontos = c("quebra", "ligar_atraves"), quebra_proporcao_superior = c("quebra", "proporcao_superior"),
   # cores, linhas e símbolos
   cores_paleta = c("cores", "paleta"), cores_gradiente_cor2 = c("cores", "gradiente_cor2"),
@@ -124,6 +129,19 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     if (!is.null(cor2)) {
       for (nm in y2s) cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(cor = cor2))
       cfg$eixo_y2$cor_eixo <- cor2; marca("y2_cor")
+    }
+    suf <- pega("y2_legenda_sufixo")    # legenda única: avisa em qual eixo cada série do Y2 está lendo
+    if (!is.null(suf)) {
+      for (nm in y2s) {
+        s2 <- cfg$series[[nm]] %||% list()
+        cfg$series[[nm]] <- utils::modifyList(s2, list(nome_legenda = paste0(s2$nome_legenda %||% nm, suf)))
+      }
+      marca("y2_legenda_sufixo")
+    }
+    if (isTRUE(pega("y2_igual_y1"))) {   # números, título e ticks do Y2 no mesmo estilo do Y1 (cor e título)
+      cfg$eixo_y2$cor_eixo <- cfg$eixo_y$cor_rotulos %||% cfg$texto$cor
+      if (is.null(pega("y2_titulo")) && !is.null(cfg$eixo_y$titulo)) cfg$eixo_y2$titulo <- cfg$eixo_y$titulo
+      marca("y2_igual_y1")
     }
   }
   neg <- pega("eixos_titulo_negrito")

@@ -96,6 +96,12 @@ quebra_estilo    <- NULL   # "separado" (dois gráficos com espaço) | "continuo
 quebra_de        <- NULL   # início do trecho omitido. EX.: 5000
 quebra_ate       <- NULL   # fim do trecho omitido.    EX.: 80000
 quebra_espaco_pt <- NULL   # espaço entre as duas partes (aumente se os números se sobrepuserem). EX.: 14
+quebra_y2_de     <- NULL   # trecho omitido do eixo DIREITO (valores do Y2). NULL = acompanha o do esquerdo. EX.: 2000
+quebra_y2_ate    <- NULL   # EX.: 6000
+quebra_y_intervalo_inferior <- NULL   # intervalo entre os traços da parte de baixo do eixo esquerdo. EX.: 20
+quebra_y_intervalo_superior <- NULL   # ... e da parte de cima (começa no quebra_ate). EX.: 100
+quebra_y2_intervalo_inferior <- NULL  # o mesmo para o eixo direito (baixo)
+quebra_y2_intervalo_superior <- NULL  # ... (cima)
 quebra_ligar_pontos      <- NULL   # FALSE = não liga os pontos através da quebra
 quebra_proporcao_superior <- NULL  # altura da parte de cima, de 0 a 1. EX.: 0.5
 
@@ -111,6 +117,10 @@ y2_ticks_menores <- NULL  # traços pequenos entre dois grandes. 0 = nenhum
 y2_cor       <- NULL      # UMA cor para as séries do Y2 E para o eixo (números, título, traços). EX.: "#C00000"
 y2_cor_eixo  <- NULL      # só a cor do eixo ("serie" = cor da 1ª série do Y2 | uma cor). Ignorado se y2_cor existir
 y2_dividir_por <- NULL    # divide os números do eixo direito. EX.: 1000 (NULL = igual ao do eixo esquerdo)
+                          #   Avise a unidade no título. EX.: y2_titulo <- "Pop. (×10^{3})"
+y2_igual_y1   <- NULL     # TRUE = números, título e traços do Y2 iguais aos do Y1 (preto, mesmo título se y2_titulo
+                          #   estiver vazio). A legenda das séries já é uma só para os dois eixos.
+y2_legenda_sufixo <- NULL # texto somado ao nome das séries do Y2 na legenda única. EX.: " (eixo dir.)"
 y2_casas_decimais <- NULL # EX.: 1
 y2_notacao   <- NULL      # "normal" | "milhar" | "cientifica" | "potencia10" | "percentual"
 y2_prefixo   <- NULL      # EX.: "US$ "

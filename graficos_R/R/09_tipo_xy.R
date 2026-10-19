@@ -65,12 +65,17 @@
   d$y[inv_y] <- NA
   d <- d[!is.na(d$x), ]
   d$serie <- factor(d$serie, levels = ycols)
-  rec <- cfg$.interno$recortar_y        # quebra de eixo sem ligar através: só os valores desta parte
-  if (!is.null(rec)) d <- d[is.na(d$y) | (d$y >= rec[1] & d$y <= rec[2]), ]
   if (isTRUE(L$ordenar_x)) d <- d[order(d$serie, d$x), ]
 
   usa_y2 <- isTRUE(cfg$eixo_y2$ativo) && identical(cfg$eixo_y2$modo, "independente")
   ser_y2 <- if (usa_y2) ycols[vapply(est, function(e) identical(e$eixo, "y2"), logical(1))] else character(0)
+  # quebra de eixo sem ligar através: cada série só mostra os valores desta parte (Y1 e Y2 têm faixas próprias)
+  rec <- cfg$.interno$recortar_y; rec2 <- cfg$.interno$recortar_y2 %||% rec
+  if (!is.null(rec)) {
+    r <- if (length(ser_y2)) { e2 <- d$serie %in% ser_y2; list(lo = ifelse(e2, rec2[1], rec[1]), hi = ifelse(e2, rec2[2], rec[2])) }
+         else list(lo = rec[1], hi = rec[2])
+    d <- d[is.na(d$y) | (d$y >= r$lo & d$y <= r$hi), ]
+  }
   if (usa_y2 && !length(ser_y2))
     .erro("eixo_y2 ativo no modo \"independente\", mas nenhuma série tem eixo = \"y2\".\n",
           "  Ex.: cfg$series[[\"", ycols[length(ycols)], "\"]] <- list(eixo = \"y2\")")

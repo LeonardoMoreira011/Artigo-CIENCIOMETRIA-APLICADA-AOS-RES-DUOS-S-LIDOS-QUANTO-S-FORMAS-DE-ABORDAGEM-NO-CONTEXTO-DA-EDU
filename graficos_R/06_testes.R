@@ -389,7 +389,7 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
                     "y2_series", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo", "y2_ticks_manuais", "y2_ticks_menores",
                     "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais", "y2_notacao", "y2_prefixo", "y2_sufixo",
                     "y2_fator", "y2_deslocamento", "linha_espessura_por_serie", "simbolo_tamanho_por_serie",
-                    "simbolo_borda_por_serie")
+                    "simbolo_borda_por_serie", "y2_igual_y1", "y2_legenda_sufixo")
         all(v %in% c(names(.PAINEL_MAPA), extras)) })
 teste("painel: cores_por_serie sem nomes dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))
@@ -446,6 +446,52 @@ teste("painel: mudar só a linha não mexe no ponto",
 teste("painel: *_por_serie sem nome ou não numérico dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(linha_espessura_por_serie = c(1, 2)))), "nome da série") &&
       da_erro(aplicar_painel(c0, list2env(list(simbolo_tamanho_por_serie = c(BRAZIL = "grande")))), "nome da série"))
+
+cat("\n--- Quebra de eixo com eixo Y da direita (Y2) ---\n")
+aq <- data.frame(Years = 2015:2026, WORLD = c(460, 466, 492, 512, 520, 500, 545, 548, 590, 610, 645, 690) * 1000,
+                 BRAZIL = c(10, 11, 12, 13, 15, 16, 17, 18, 19, 21, 22, 23) * 1000,
+                 POP = c(1, 1.2, 1.5, 1.6, 2, 2.2, 6, 6.5, 7, 7.4, 7.9, 8.1) * 1000)
+pq <- list2env(list(tipo_grafico = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL", "POP"),
+                    y2_series = "POP", y2_titulo = "Pop (10^{3})", y2_dividir_por = 1000, y_dividir_por = 1000,
+                    quebra_ativar = TRUE, quebra_de = 80000, quebra_ate = 440000, quebra_y2_de = 2500,
+                    quebra_y2_ate = 5500, quebra_y_intervalo_inferior = 20000, quebra_y_intervalo_superior = 100000,
+                    quebra_y2_intervalo_inferior = 1000, quebra_y2_intervalo_superior = 1000))
+cq2 <- suppressMessages(aplicar_painel(c0, pq, dados = aq))
+teste("painel: quebra do Y2 e intervalos por parte chegam ao cfg$quebra",
+      cq2$quebra$y2_de == 2500 && cq2$quebra$y2_ate == 5500 && cq2$quebra$incremento_inferior == 20000 &&
+      cq2$quebra$incremento_superior == 1e5 && cq2$quebra$y2_incremento_inferior == 1000 &&
+      cq2$quebra$y2_incremento_superior == 1000)
+for (est in c("separado", "continuo")) {
+  ce <- cq2; ce$quebra$estilo <- est
+  teste(paste0("quebra + Y2 (", est, "): monta e desenha sem erro nem aviso"),
+        { g <- plotar(aq, ce); length(avisos_de(imprime(g))) == 0 })
+}
+teste("quebra + Y2: mudar y2_de muda o desenho (o eixo da direita tem quebra própria)",
+      { cb <- cq2; cb$quebra$y2_de <- 1500; !identical(renderiza(plotar(aq, cq2)), renderiza(plotar(aq, cb))) })
+teste("quebra + Y2: sem y2_de/y2_ate o Y2 acompanha a posição do trecho omitido do Y1",
+      { cs <- cq2; cs$quebra$y2_de <- NULL; cs$quebra$y2_ate <- NULL
+        inherits(suppressWarnings(plotar(aq, cs)), "patchwork") })
+teste("quebra + Y2: y2_de >= y2_ate e trecho fora do eixo dão erro claro",
+      { cb <- cq2; cb$quebra$y2_de <- 6000; cb$quebra$y2_ate <- 5000
+        cf <- cq2; cf$quebra$y2_de <- 100000; cf$quebra$y2_ate <- 200000
+        da_erro(plotar(aq, cb), "y2_de < y2_ate") && da_erro(plotar(aq, cf), "dentro do eixo") })
+cr <- cq2; cr$quebra$ativo <- FALSE
+cr$.interno <- list(recortar_y = c(0, 80000), recortar_y2 = c(500, 2500))
+gr <- suppressWarnings(plotar(aq, cr))
+dr <- camada(gr, "stroke")
+teste("quebra + Y2 sem ligar: cada série só mostra os pontos da faixa da sua parte (Y1 e Y2 com faixas próprias)",
+      { b <- ggplot2::ggplot_build(gr)$data
+        sum(vapply(b, function(d) if ("stroke" %in% names(d)) nrow(d) else 0L, 1L)) == 18 })   # BRAZIL 12 + POP 6
+cl <- suppressMessages(aplicar_painel(c0, list2env(list(y2_series = "POP", y2_legenda_sufixo = " (eixo dir.)",
+                                                        y2_igual_y1 = TRUE, y_titulo = "Valor (10^{3})"))))
+teste("painel Y2: y2_igual_y1 copia título e cor do Y1; sufixo na legenda única só nas séries do Y2",
+      cl$eixo_y2$titulo == "Valor (10^{3})" && cl$eixo_y2$cor_eixo == "black" &&
+      cl$series$POP$nome_legenda == "POP (eixo dir.)")
+cl$grafico <- utils::modifyList(cl$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "POP")))
+gl <- suppressWarnings(plotar(aq, cl))
+teste("painel Y2: a legenda é uma só, com as séries dos dois eixos",
+      identical(as.character(unlist(ggplot2::get_guide_data(ggplot2::ggplot_build(gl), "colour")$.label)),
+                c("WORLD", "POP (eixo dir.)")))
 
 cat("\n--- Eixo Y da direita (Y2) pelo painel ---\n")
 p2 <- list2env(list(y2_series = "LATAM", y2_titulo = "Pop (milhões)", y2_inicio = 0, y2_fim = 100000,

@@ -1182,6 +1182,19 @@ cfg$quebra <- list(
   #   EX.: cfg$quebra$de <- 20; cfg$quebra$ate <- 80
   de = NULL,
   ate = NULL,
+  # y2_de / y2_ate: trecho omitido do eixo Y da DIREITA (eixo_y2), com os valores desse eixo.
+  #   NULL = acompanha o trecho do eixo Y da esquerda (mesma posição na figura).
+  #   EX.: cfg$quebra$y2_de <- 2000; cfg$quebra$y2_ate <- 6000
+  y2_de = NULL,
+  y2_ate = NULL,
+  # incremento_inferior / incremento_superior: intervalo entre os ticks maiores de CADA parte do eixo Y
+  #   da esquerda (os ticks começam no início da parte: no "ate" para a de cima). NULL = automático.
+  #   y2_incremento_*: o mesmo para o eixo Y da direita.
+  #   EX.: cfg$quebra$incremento_inferior <- 20; cfg$quebra$incremento_superior <- 50
+  incremento_inferior = NULL,
+  incremento_superior = NULL,
+  y2_incremento_inferior = NULL,
+  y2_incremento_superior = NULL,
   # proporcao_superior: fração da altura para a parte de cima.
   proporcao_superior = 0.35,
   # espaco_pt: espaço entre as duas partes. Aumente (ex.: 14) se os números das duas bordas da
@@ -2936,12 +2949,17 @@ colunas <- function(dados) {
   d$y[inv_y] <- NA
   d <- d[!is.na(d$x), ]
   d$serie <- factor(d$serie, levels = ycols)
-  rec <- cfg$.interno$recortar_y        # quebra de eixo sem ligar através: só os valores desta parte
-  if (!is.null(rec)) d <- d[is.na(d$y) | (d$y >= rec[1] & d$y <= rec[2]), ]
   if (isTRUE(L$ordenar_x)) d <- d[order(d$serie, d$x), ]
 
   usa_y2 <- isTRUE(cfg$eixo_y2$ativo) && identical(cfg$eixo_y2$modo, "independente")
   ser_y2 <- if (usa_y2) ycols[vapply(est, function(e) identical(e$eixo, "y2"), logical(1))] else character(0)
+  # quebra de eixo sem ligar através: cada série só mostra os valores desta parte (Y1 e Y2 têm faixas próprias)
+  rec <- cfg$.interno$recortar_y; rec2 <- cfg$.interno$recortar_y2 %||% rec
+  if (!is.null(rec)) {
+    r <- if (length(ser_y2)) { e2 <- d$serie %in% ser_y2; list(lo = ifelse(e2, rec2[1], rec[1]), hi = ifelse(e2, rec2[2], rec[2])) }
+         else list(lo = rec[1], hi = rec[2])
+    d <- d[is.na(d$y) | (d$y >= r$lo & d$y <= r$hi), ]
+  }
   if (usa_y2 && !length(ser_y2))
     .erro("eixo_y2 ativo no modo \"independente\", mas nenhuma série tem eixo = \"y2\".\n",
           "  Ex.: cfg$series[[\"", ycols[length(ycols)], "\"]] <- list(eixo = \"y2\")")
@@ -3886,7 +3904,7 @@ colunas <- function(dados) {
     # estilo de rótulos do y2: casas/notação próprias já nos rótulos; mostra sempre
     g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, list(mostrar_rotulos = TRUE)), cfg, "right",
                                                     .cor(info$y2$cor)),
-                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, list(mostrar_titulo = TRUE)), cfg, "right",
+                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, list(mostrar_titulo = !isTRUE(cfg$.interno$sem_titulo_y2))), cfg, "right",
                                                      .cor(info$y2$cor)))
   }
   if (y_dir && espelhar) {
@@ -3939,12 +3957,13 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 }
 
 # Título único (vertical ou horizontal) ao lado de um conjunto de painéis.
-.rotulo_lateral <- function(texto, cfg, vertical = TRUE) {
+.rotulo_lateral <- function(texto, cfg, vertical = TRUE, direita = FALSE, cor = NULL) {
   e <- if (vertical) cfg$eixo_y else cfg$eixo_x
   face <- if (isTRUE(e$negrito_titulo)) "bold" else "plain"
-  patchwork::wrap_elements(full = textGrob(.texto(texto, isTRUE(e$negrito_titulo)), rot = if (vertical) 90 else 0,
+  patchwork::wrap_elements(full = textGrob(.texto(texto, isTRUE(e$negrito_titulo)),
+    rot = if (vertical) (if (direita) -90 else 90) else 0,
     gp = gpar(fontsize = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt, fontface = face,
-              fontfamily = .fonte(cfg$texto$fonte), col = e$cor_titulo %||% cfg$texto$cor)))
+              fontfamily = .fonte(cfg$texto$fonte), col = cor %||% e$cor_titulo %||% cfg$texto$cor)))
 }
 
 # Painéis com eixo comum: calcula os limites comuns e monta cada painel. Entra: dados e cfg. Sai: patchwork.
@@ -4062,14 +4081,34 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   inferior <- base; superior <- base
   inferior$eixo_y$inicio <- lim[1]; inferior$eixo_y$fim <- Q$de
   superior$eixo_y$inicio <- Q$ate; superior$eixo_y$fim <- lim[2]
+  # eixo Y da direita: tem o seu próprio trecho omitido (y2_de/y2_ate); sem eles, acompanha o do Y1
+  y2 <- inf$y2
+  if (!is.null(y2)) {
+    lim2 <- y2$ax$limites
+    de2 <- Q$y2_de %||% y2$para2(Q$de); ate2 <- Q$y2_ate %||% y2$para2(Q$ate)
+    if (de2 >= ate2) .erro("cfg$quebra: no eixo Y da direita defina y2_de < y2_ate (ex.: y2_de = 2000, y2_ate = 6000).")
+    if (de2 <= lim2[1] || ate2 >= lim2[2]) .erro("cfg$quebra: o trecho omitido do eixo Y da direita (", de2, " a ", ate2,
+                                                 ") precisa estar dentro do eixo (", lim2[1], " a ", lim2[2], ").")
+    inferior$eixo_y2$inicio <- lim2[1]; inferior$eixo_y2$fim <- de2
+    superior$eixo_y2$inicio <- ate2; superior$eixo_y2$fim <- lim2[2]
+  } else if (!is.null(Q$y2_de) || !is.null(Q$y2_ate))
+    .aviso("cfg$quebra$y2_de/y2_ate ignorados: não há eixo Y da direita com séries próprias (eixo_y2).")
   continuo <- identical(Q$estilo, "continuo")       # TRUE: uma moldura só, partes coladas (estilo Origin)
   m <- cfg$caixa$margens_cm; esp <- if (continuo) 0 else Q$espaco_pt / 2 / 72 * 2.54
   # a parte de cima fica sem números/título do X; a de baixo sem legenda, títulos e letra
   sem_ligar <- isFALSE(Q$ligar_atraves) && cfg$grafico$tipo %in% c("pontos", "linha", "linha_pontos")
   ajustar_parte <- function(ck, parte, faixa) {
     ck$.interno <- list(forcar_x = inf$ax_x$limites)      # as duas partes compartilham o mesmo eixo X
-    if (sem_ligar) ck$.interno$recortar_y <- faixa
+    if (sem_ligar) {
+      ck$.interno$recortar_y <- faixa
+      if (!is.null(y2)) ck$.interno$recortar_y2 <- c(ck$eixo_y2$inicio, ck$eixo_y2$fim)
+    }
     ck$eixo_y$mostrar_titulo <- FALSE
+    if (!is.null(y2)) ck$.interno$sem_titulo_y2 <- TRUE   # o título do Y2 vai uma vez só, ao lado das duas partes
+    # intervalo entre os ticks de cada parte (NULL = automático)
+    inc <- Q[[paste0("incremento_", parte)]]; inc2 <- Q[[paste0("y2_incremento_", parte)]]
+    if (!is.null(inc)) { ck$eixo_y$ticks_modo <- "incremento"; ck$eixo_y$incremento <- inc }
+    if (!is.null(inc2) && !is.null(y2)) { ck$eixo_y2$ticks_modo <- "incremento"; ck$eixo_y2$incremento <- inc2 }
     if (continuo) {
       ck$caixa$proporcao <- NULL                       # as alturas das partes seguem proporcao_superior
       if (isTRUE(cfg$exportacao$fundo_transparente)) { ck$caixa$fundo_pagina <- "transparente"; ck$caixa$fundo_painel <- "transparente" }
@@ -4108,6 +4147,9 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   if (isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(tit, ""))
     pw <- patchwork::wrap_plots(.rotulo_lateral(tit, cfg, TRUE), pw, nrow = 1,
                                 widths = grid::unit(c(1.6, 1), c("lines", "null")))
+  if (!is.null(y2) && isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(y2$titulo, ""))
+    pw <- patchwork::wrap_plots(pw, .rotulo_lateral(y2$titulo, cfg, TRUE, direita = TRUE, cor = .cor(y2$cor)), nrow = 1,
+                                widths = grid::unit(c(1, 1.6), c("null", "lines")))
   if (continuo) attr(pw, "quebra_continua") <- TRUE   # o salvar() refaz a figura se o fundo for transparente
   pw
 }
@@ -4478,6 +4520,11 @@ listar_fontes <- function() {
   # quebra
   quebra_estilo = c("quebra", "estilo"), quebra_de = c("quebra",
                                                        "de"), quebra_ate = c("quebra", "ate"), quebra_espaco_pt = c("quebra", "espaco_pt"),
+  quebra_y2_de = c("quebra", "y2_de"), quebra_y2_ate = c("quebra", "y2_ate"),
+  quebra_y_intervalo_inferior = c("quebra", "incremento_inferior"),
+  quebra_y_intervalo_superior = c("quebra", "incremento_superior"),
+  quebra_y2_intervalo_inferior = c("quebra", "y2_incremento_inferior"),
+  quebra_y2_intervalo_superior = c("quebra", "y2_incremento_superior"),
   quebra_ligar_pontos = c("quebra", "ligar_atraves"), quebra_proporcao_superior = c("quebra", "proporcao_superior"),
   # cores, linhas e símbolos
   cores_paleta = c("cores", "paleta"), cores_gradiente_cor2 = c("cores", "gradiente_cor2"),
@@ -4554,6 +4601,19 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     if (!is.null(cor2)) {
       for (nm in y2s) cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(cor = cor2))
       cfg$eixo_y2$cor_eixo <- cor2; marca("y2_cor")
+    }
+    suf <- pega("y2_legenda_sufixo")    # legenda única: avisa em qual eixo cada série do Y2 está lendo
+    if (!is.null(suf)) {
+      for (nm in y2s) {
+        s2 <- cfg$series[[nm]] %||% list()
+        cfg$series[[nm]] <- utils::modifyList(s2, list(nome_legenda = paste0(s2$nome_legenda %||% nm, suf)))
+      }
+      marca("y2_legenda_sufixo")
+    }
+    if (isTRUE(pega("y2_igual_y1"))) {   # números, título e ticks do Y2 no mesmo estilo do Y1 (cor e título)
+      cfg$eixo_y2$cor_eixo <- cfg$eixo_y$cor_rotulos %||% cfg$texto$cor
+      if (is.null(pega("y2_titulo")) && !is.null(cfg$eixo_y$titulo)) cfg$eixo_y2$titulo <- cfg$eixo_y$titulo
+      marca("y2_igual_y1")
     }
   }
   neg <- pega("eixos_titulo_negrito")
@@ -4956,6 +5016,12 @@ quebra_estilo    <- NULL   # "separado" (dois gráficos com espaço) | "continuo
 quebra_de        <- NULL   # início do trecho omitido. EX.: 5000
 quebra_ate       <- NULL   # fim do trecho omitido.    EX.: 80000
 quebra_espaco_pt <- NULL   # espaço entre as duas partes (aumente se os números se sobrepuserem). EX.: 14
+quebra_y2_de     <- NULL   # trecho omitido do eixo DIREITO (valores do Y2). NULL = acompanha o do esquerdo. EX.: 2000
+quebra_y2_ate    <- NULL   # EX.: 6000
+quebra_y_intervalo_inferior <- NULL   # intervalo entre os traços da parte de baixo do eixo esquerdo. EX.: 20
+quebra_y_intervalo_superior <- NULL   # ... e da parte de cima (começa no quebra_ate). EX.: 100
+quebra_y2_intervalo_inferior <- NULL  # o mesmo para o eixo direito (baixo)
+quebra_y2_intervalo_superior <- NULL  # ... (cima)
 quebra_ligar_pontos      <- NULL   # FALSE = não liga os pontos através da quebra
 quebra_proporcao_superior <- NULL  # altura da parte de cima, de 0 a 1. EX.: 0.5
 
@@ -4971,6 +5037,10 @@ y2_ticks_menores <- NULL  # traços pequenos entre dois grandes. 0 = nenhum
 y2_cor       <- NULL      # UMA cor para as séries do Y2 E para o eixo (números, título, traços). EX.: "#C00000"
 y2_cor_eixo  <- NULL      # só a cor do eixo ("serie" = cor da 1ª série do Y2 | uma cor). Ignorado se y2_cor existir
 y2_dividir_por <- NULL    # divide os números do eixo direito. EX.: 1000 (NULL = igual ao do eixo esquerdo)
+                          #   Avise a unidade no título. EX.: y2_titulo <- "Pop. (×10^{3})"
+y2_igual_y1   <- NULL     # TRUE = números, título e traços do Y2 iguais aos do Y1 (preto, mesmo título se y2_titulo
+                          #   estiver vazio). A legenda das séries já é uma só para os dois eixos.
+y2_legenda_sufixo <- NULL # texto somado ao nome das séries do Y2 na legenda única. EX.: " (eixo dir.)"
 y2_casas_decimais <- NULL # EX.: 1
 y2_notacao   <- NULL      # "normal" | "milhar" | "cientifica" | "potencia10" | "percentual"
 y2_prefixo   <- NULL      # EX.: "US$ "

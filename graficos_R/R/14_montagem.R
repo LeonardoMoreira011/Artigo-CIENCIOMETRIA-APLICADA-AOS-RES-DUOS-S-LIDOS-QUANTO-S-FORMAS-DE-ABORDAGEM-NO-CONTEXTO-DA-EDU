@@ -159,7 +159,7 @@
     # estilo de rótulos do y2: casas/notação próprias já nos rótulos; mostra sempre
     g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, list(mostrar_rotulos = TRUE)), cfg, "right",
                                                     .cor(info$y2$cor)),
-                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, list(mostrar_titulo = TRUE)), cfg, "right",
+                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, list(mostrar_titulo = !isTRUE(cfg$.interno$sem_titulo_y2))), cfg, "right",
                                                      .cor(info$y2$cor)))
   }
   if (y_dir && espelhar) {

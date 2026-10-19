@@ -29,12 +29,13 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 }
 
 # Título único (vertical ou horizontal) ao lado de um conjunto de painéis.
-.rotulo_lateral <- function(texto, cfg, vertical = TRUE) {
+.rotulo_lateral <- function(texto, cfg, vertical = TRUE, direita = FALSE, cor = NULL) {
   e <- if (vertical) cfg$eixo_y else cfg$eixo_x
   face <- if (isTRUE(e$negrito_titulo)) "bold" else "plain"
-  patchwork::wrap_elements(full = textGrob(.texto(texto, isTRUE(e$negrito_titulo)), rot = if (vertical) 90 else 0,
+  patchwork::wrap_elements(full = textGrob(.texto(texto, isTRUE(e$negrito_titulo)),
+    rot = if (vertical) (if (direita) -90 else 90) else 0,
     gp = gpar(fontsize = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt, fontface = face,
-              fontfamily = .fonte(cfg$texto$fonte), col = e$cor_titulo %||% cfg$texto$cor)))
+              fontfamily = .fonte(cfg$texto$fonte), col = cor %||% e$cor_titulo %||% cfg$texto$cor)))
 }
 
 # Painéis com eixo comum: calcula os limites comuns e monta cada painel. Entra: dados e cfg. Sai: patchwork.
@@ -152,14 +153,34 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   inferior <- base; superior <- base
   inferior$eixo_y$inicio <- lim[1]; inferior$eixo_y$fim <- Q$de
   superior$eixo_y$inicio <- Q$ate; superior$eixo_y$fim <- lim[2]
+  # eixo Y da direita: tem o seu próprio trecho omitido (y2_de/y2_ate); sem eles, acompanha o do Y1
+  y2 <- inf$y2
+  if (!is.null(y2)) {
+    lim2 <- y2$ax$limites
+    de2 <- Q$y2_de %||% y2$para2(Q$de); ate2 <- Q$y2_ate %||% y2$para2(Q$ate)
+    if (de2 >= ate2) .erro("cfg$quebra: no eixo Y da direita defina y2_de < y2_ate (ex.: y2_de = 2000, y2_ate = 6000).")
+    if (de2 <= lim2[1] || ate2 >= lim2[2]) .erro("cfg$quebra: o trecho omitido do eixo Y da direita (", de2, " a ", ate2,
+                                                 ") precisa estar dentro do eixo (", lim2[1], " a ", lim2[2], ").")
+    inferior$eixo_y2$inicio <- lim2[1]; inferior$eixo_y2$fim <- de2
+    superior$eixo_y2$inicio <- ate2; superior$eixo_y2$fim <- lim2[2]
+  } else if (!is.null(Q$y2_de) || !is.null(Q$y2_ate))
+    .aviso("cfg$quebra$y2_de/y2_ate ignorados: não há eixo Y da direita com séries próprias (eixo_y2).")
   continuo <- identical(Q$estilo, "continuo")       # TRUE: uma moldura só, partes coladas (estilo Origin)
   m <- cfg$caixa$margens_cm; esp <- if (continuo) 0 else Q$espaco_pt / 2 / 72 * 2.54
   # a parte de cima fica sem números/título do X; a de baixo sem legenda, títulos e letra
   sem_ligar <- isFALSE(Q$ligar_atraves) && cfg$grafico$tipo %in% c("pontos", "linha", "linha_pontos")
   ajustar_parte <- function(ck, parte, faixa) {
     ck$.interno <- list(forcar_x = inf$ax_x$limites)      # as duas partes compartilham o mesmo eixo X
-    if (sem_ligar) ck$.interno$recortar_y <- faixa
+    if (sem_ligar) {
+      ck$.interno$recortar_y <- faixa
+      if (!is.null(y2)) ck$.interno$recortar_y2 <- c(ck$eixo_y2$inicio, ck$eixo_y2$fim)
+    }
     ck$eixo_y$mostrar_titulo <- FALSE
+    if (!is.null(y2)) ck$.interno$sem_titulo_y2 <- TRUE   # o título do Y2 vai uma vez só, ao lado das duas partes
+    # intervalo entre os ticks de cada parte (NULL = automático)
+    inc <- Q[[paste0("incremento_", parte)]]; inc2 <- Q[[paste0("y2_incremento_", parte)]]
+    if (!is.null(inc)) { ck$eixo_y$ticks_modo <- "incremento"; ck$eixo_y$incremento <- inc }
+    if (!is.null(inc2) && !is.null(y2)) { ck$eixo_y2$ticks_modo <- "incremento"; ck$eixo_y2$incremento <- inc2 }
     if (continuo) {
       ck$caixa$proporcao <- NULL                       # as alturas das partes seguem proporcao_superior
       if (isTRUE(cfg$exportacao$fundo_transparente)) { ck$caixa$fundo_pagina <- "transparente"; ck$caixa$fundo_painel <- "transparente" }
@@ -198,6 +219,9 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   if (isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(tit, ""))
     pw <- patchwork::wrap_plots(.rotulo_lateral(tit, cfg, TRUE), pw, nrow = 1,
                                 widths = grid::unit(c(1.6, 1), c("lines", "null")))
+  if (!is.null(y2) && isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(y2$titulo, ""))
+    pw <- patchwork::wrap_plots(pw, .rotulo_lateral(y2$titulo, cfg, TRUE, direita = TRUE, cor = .cor(y2$cor)), nrow = 1,
+                                widths = grid::unit(c(1, 1.6), c("null", "lines")))
   if (continuo) attr(pw, "quebra_continua") <- TRUE   # o salvar() refaz a figura se o fundo for transparente
   pw
 }

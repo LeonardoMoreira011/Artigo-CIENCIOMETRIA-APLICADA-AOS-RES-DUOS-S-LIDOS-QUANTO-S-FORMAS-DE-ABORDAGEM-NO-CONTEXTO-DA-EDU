@@ -1065,6 +1065,19 @@ cfg$quebra <- list(
   #   EX.: cfg$quebra$de <- 20; cfg$quebra$ate <- 80
   de = NULL,
   ate = NULL,
+  # y2_de / y2_ate: trecho omitido do eixo Y da DIREITA (eixo_y2), com os valores desse eixo.
+  #   NULL = acompanha o trecho do eixo Y da esquerda (mesma posição na figura).
+  #   EX.: cfg$quebra$y2_de <- 2000; cfg$quebra$y2_ate <- 6000
+  y2_de = NULL,
+  y2_ate = NULL,
+  # incremento_inferior / incremento_superior: intervalo entre os ticks maiores de CADA parte do eixo Y
+  #   da esquerda (os ticks começam no início da parte: no "ate" para a de cima). NULL = automático.
+  #   y2_incremento_*: o mesmo para o eixo Y da direita.
+  #   EX.: cfg$quebra$incremento_inferior <- 20; cfg$quebra$incremento_superior <- 50
+  incremento_inferior = NULL,
+  incremento_superior = NULL,
+  y2_incremento_inferior = NULL,
+  y2_incremento_superior = NULL,
   # proporcao_superior: fração da altura para a parte de cima.
   proporcao_superior = 0.35,
   # espaco_pt: espaço entre as duas partes. Aumente (ex.: 14) se os números das duas bordas da
