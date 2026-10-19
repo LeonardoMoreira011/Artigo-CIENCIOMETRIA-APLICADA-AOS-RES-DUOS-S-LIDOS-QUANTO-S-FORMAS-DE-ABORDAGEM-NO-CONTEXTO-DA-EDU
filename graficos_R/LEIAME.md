@@ -101,6 +101,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | Apagar um item da legenda | `cfg$series[["B"]] <- list(mostrar_na_legenda = FALSE)` |
 | Renomear item da legenda | `cfg$series[["B"]] <- list(nome_legenda = "Amostra B (25 °C)")` |
 | Moldura na legenda | `cfg$legenda$moldura <- TRUE; cfg$legenda$fundo <- "white"` |
+| Fundo, borda e sombra da legenda | `cfg$legenda$fundo <- "white"; cfg$legenda$fundo_opacidade <- 0.8; cfg$legenda$sombra <- TRUE` (no painel: bloco 11, `legenda_canto`, `legenda_sombra_*`) |
 | Grade | `cfg$grade$maior_y <- TRUE` |
 | Grade com tipo, cor e transparência | `cfg$grade$maior_x <- TRUE; tipo_maior <- "dashed"; cor_maior <- "#1F4E9E"; opacidade_maior <- 0.4` |
 | Linha de referência | `cfg$referencias <- list(list(eixo = "y", valor = 0, tipo = "dashed"))` |
@@ -154,7 +155,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
 | `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 126 testes automáticos — rode depois de qualquer alteração no motor |
+| `06_testes.R` | 132 testes automáticos — rode depois de qualquer alteração no motor |
 | `painel_de_ajustes.R` | **o painel**: variáveis simples por categoria (escala, ticks, grade, quebra, cores...). Veja a seção 2.1 |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |

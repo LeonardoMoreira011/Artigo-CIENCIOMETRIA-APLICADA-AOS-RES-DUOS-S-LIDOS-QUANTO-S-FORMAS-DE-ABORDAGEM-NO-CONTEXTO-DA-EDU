@@ -5,7 +5,8 @@
 #  NULL = "não mexer" (vale o padrão do template). Para voltar ao padrão, escreva NULL.
 #  Textos entre aspas; números sem aspas e com PONTO decimal; TRUE/FALSE em maiúsculas.
 #  Categorias:  1 ARQUIVO E TIPO | 2 INTERVALOS | 3 ESCALA | 4 NÚMEROS E TÍTULOS | 5 GRADE |
-#               6 QUEBRA DO EIXO Y | 7 EIXO Y DA DIREITA | 8 CORES E LINHAS | 9 FONTE | 10 LEGENDA E MOLDURA | 11 EXPORTAÇÃO
+#               6 QUEBRA DO EIXO Y | 7 EIXO Y DA DIREITA | 8 CORES E LINHAS | 9 FONTE | 10 MOLDURA |
+#               11 LEGENDA (posição, fundo, borda, sombra) | 12 EXPORTAÇÃO
 #  Quer um ajuste que não está aqui? Use o cfg direto (ajuda("eixo_x"), ajuda("grade")...).
 # =============================================================================
 
@@ -161,15 +162,43 @@ legenda_texto_tamanho_pt  <- NULL   # nomes na legenda (WORLD, LATAM...). EX.: 1
 legenda_titulo_tamanho_pt <- NULL   # título da legenda. EX.: 11
 rotulos_dados_tamanho_pt  <- NULL   # texto escrito junto dos pontos/barras (rótulos de dados). EX.: 8
 
-# ---- 10. LEGENDA E MOLDURA ---------------------------------------------------------------------------
-legenda_mostrar  <- NULL   # FALSE = sem legenda
-legenda_posicao  <- NULL   # "dentro" | "direita" | "esquerda" | "topo" | "base"
-legenda_x        <- NULL   # com "dentro": posição de 0 a 1. EX.: 0.04
-legenda_y        <- NULL   # EX.: 0.96
-legenda_titulo   <- NULL   # EX.: "Região"
+# ---- 10. MOLDURA DO GRÁFICO ---------------------------------------------------------------------------
 caixa_fechada    <- NULL   # TRUE = moldura nos 4 lados | FALSE = só eixos esquerdo e inferior
 
-# ---- 11. EXPORTAÇÃO ------------------------------------------------------------------------------------
+# ---- 11. LEGENDA: POSIÇÃO, FUNDO, BORDA E SOMBRA -------------------------------------------------------
+legenda_mostrar  <- NULL   # FALSE = sem legenda
+legenda_titulo   <- NULL   # título da legenda. EX.: "Região"
+#  Posição
+legenda_posicao  <- NULL   # "dentro" (sobre o gráfico) | "direita" | "esquerda" | "topo" | "base" (fora do gráfico)
+legenda_canto    <- NULL   # atalho para "dentro": "sup_esq" | "sup_centro" | "sup_dir" | "centro_esq" | "centro" |
+                           #   "centro_dir" | "inf_esq" | "inf_centro" | "inf_dir". EX.: "sup_dir"
+legenda_x        <- NULL   # posição fina com "dentro", de 0 (esquerda) a 1 (direita). EX.: 0.04
+legenda_y        <- NULL   # de 0 (embaixo) a 1 (em cima). EX.: 0.96
+legenda_ancora   <- NULL   # qual ponto da caixa fica em (x, y): c(0, 1) = canto sup. esq. | c(1, 1) = sup. dir. ...
+legenda_alinhar  <- NULL   # com a legenda FORA: onde ela fica ao longo do lado.
+                           #   direita/esquerda: "topo" | "centro" | "base"; topo/base: "esquerda" | "centro" | "direita"
+#  Disposição dos itens
+legenda_direcao  <- NULL   # "vertical" (um embaixo do outro) | "horizontal" (lado a lado)
+legenda_n_colunas <- NULL  # número de colunas. EX.: 2
+legenda_inverter_ordem <- NULL  # TRUE = inverte a ordem dos itens
+legenda_tamanho_chave_pt <- NULL   # tamanho do quadradinho/linha de cada item. EX.: 18
+legenda_espacamento_pt   <- NULL   # espaço entre os itens. EX.: 4
+legenda_margem_interna_pt <- NULL  # folga dentro da caixa: c(cima, direita, baixo, esquerda). EX.: c(6, 8, 6, 8)
+#  Fundo
+legenda_fundo    <- NULL   # cor de fundo da caixa. EX.: "white" | "#F2F2F2" | "transparente"
+legenda_fundo_opacidade <- NULL    # 0 (invisível) a 1 (sólido). EX.: 0.8
+#  Borda (basta preencher cor, espessura ou tipo para a borda aparecer)
+legenda_borda    <- NULL   # TRUE = borda na caixa | FALSE = sem borda
+legenda_borda_cor <- NULL  # EX.: "black"
+legenda_borda_espessura_pt <- NULL  # EX.: 1
+legenda_borda_tipo <- NULL # "solid" | "dashed" | "dotted" | "dotdash" | "longdash" | "twodash"
+#  Sombra (basta preencher cor, opacidade ou deslocamento para a sombra aparecer)
+legenda_sombra   <- NULL   # TRUE = sombra atrás da caixa (com fundo "transparente" a caixa fica branca)
+legenda_sombra_cor <- NULL # EX.: "black" | "grey30"
+legenda_sombra_opacidade <- NULL    # 0 a 1. EX.: 0.35
+legenda_sombra_deslocamento_pt <- NULL  # c(para a direita, para baixo) em pt. EX.: c(3, 3)  |  c(5, 2)
+
+# ---- 12. EXPORTAÇÃO ------------------------------------------------------------------------------------
 largura_cm   <- NULL       # EX.: 14
 altura_cm    <- NULL       # EX.: 10
 dpi          <- NULL       # EX.: 600

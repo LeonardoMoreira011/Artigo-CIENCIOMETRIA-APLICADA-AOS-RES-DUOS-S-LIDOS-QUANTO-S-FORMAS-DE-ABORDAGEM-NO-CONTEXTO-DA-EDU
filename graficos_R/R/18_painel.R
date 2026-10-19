@@ -69,6 +69,16 @@
   # legenda e moldura
   legenda_mostrar = c("legenda", "mostrar"), legenda_posicao = c("legenda", "posicao"),
   legenda_x = c("legenda", "dentro_x"), legenda_y = c("legenda", "dentro_y"), legenda_titulo = c("legenda", "titulo"),
+  legenda_ancora = c("legenda", "ancora"), legenda_alinhar = c("legenda", "alinhar"),
+  legenda_direcao = c("legenda", "direcao"), legenda_n_colunas = c("legenda", "n_colunas"),
+  legenda_inverter_ordem = c("legenda", "inverter_ordem"), legenda_tamanho_chave_pt = c("legenda", "tamanho_chave_pt"),
+  legenda_espacamento_pt = c("legenda", "espacamento_pt"), legenda_margem_interna_pt = c("legenda", "margem_interna_pt"),
+  legenda_fundo = c("legenda", "fundo"), legenda_fundo_opacidade = c("legenda", "fundo_opacidade"),
+  legenda_borda = c("legenda", "moldura"), legenda_borda_cor = c("legenda", "cor_moldura"),
+  legenda_borda_espessura_pt = c("legenda", "espessura_moldura_pt"), legenda_borda_tipo = c("legenda", "tipo_moldura"),
+  legenda_sombra = c("legenda", "sombra"), legenda_sombra_cor = c("legenda", "sombra_cor"),
+  legenda_sombra_opacidade = c("legenda", "sombra_opacidade"),
+  legenda_sombra_deslocamento_pt = c("legenda", "sombra_deslocamento_pt"),
   caixa_fechada = c("caixa", "fechada"),
   # exportação
   largura_cm = c("exportacao", "largura"), altura_cm = c("exportacao", "altura"), dpi = c("exportacao", "dpi"),
@@ -99,6 +109,27 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     if (!is.null(iv)) { cfg[[e]]$ticks_modo <- "incremento"; cfg[[e]]$incremento <- iv; marca(paste0(ax, "_intervalo")) }
     if (!is.null(tm)) { cfg[[e]]$ticks_modo <- "manual"; cfg[[e]]$ticks_manuais <- tm; marca(paste0(ax, "_ticks_manuais")) }
   }
+  # legenda: canto pronto (posição + âncora) e ligação automática da borda / sombra quando só o detalhe é dado
+  canto <- pega("legenda_canto")
+  if (!is.null(canto)) {
+    cantos <- list(sup_esq = c(0, 1), sup_centro = c(0.5, 1), sup_dir = c(1, 1), centro_esq = c(0, 0.5), centro = c(0.5, 0.5),
+                   centro_dir = c(1, 0.5), inf_esq = c(0, 0), inf_centro = c(0.5, 0), inf_dir = c(1, 0))
+    if (length(canto) != 1 || !canto %in% names(cantos))
+      .erro("legenda_canto = '", paste(canto, collapse = ","), "' não é válido. OPÇÕES: ",
+            paste0('"', names(cantos), '"', collapse = " | "))
+    a <- cantos[[canto]]; folga <- 0.03
+    cfg$legenda$posicao <- "dentro"               # legenda_x / legenda_y / legenda_ancora, se dados, valem mais
+    if (is.null(pega("legenda_ancora"))) cfg$legenda$ancora <- a
+    if (is.null(pega("legenda_x"))) cfg$legenda$dentro_x <- if (a[1] == 0) folga else if (a[1] == 1) 1 - folga else 0.5
+    if (is.null(pega("legenda_y"))) cfg$legenda$dentro_y <- if (a[2] == 0) folga else if (a[2] == 1) 1 - folga else 0.5
+    marca("legenda_canto")
+  }
+  if (is.null(pega("legenda_borda")) && any(!vapply(list(pega("legenda_borda_cor"), pega("legenda_borda_espessura_pt"),
+                                                         pega("legenda_borda_tipo")), is.null, NA)))
+    cfg$legenda$moldura <- TRUE
+  if (is.null(pega("legenda_sombra")) && any(!vapply(list(pega("legenda_sombra_cor"), pega("legenda_sombra_opacidade"),
+                                                          pega("legenda_sombra_deslocamento_pt")), is.null, NA)))
+    cfg$legenda$sombra <- TRUE
   rd <- pega("rotulos_dados_tamanho_pt")   # texto escrito junto dos pontos/barras (rótulos de dados)
   if (!is.null(rd)) { cfg$linhas$rotulos_tamanho_pt <- rd; cfg$barras$rotulos_tamanho_pt <- rd; marca("rotulos_dados_tamanho_pt") }
   # eixo Y da direita (Y2): as séries listadas em y2_series passam para ele; o X continua o mesmo

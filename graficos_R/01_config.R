@@ -953,13 +953,34 @@ cfg$legenda <- list(
   # inverter_ordem: inverte a ordem dos itens.  OPÇÕES: TRUE | FALSE
   inverter_ordem = FALSE,
 
-  # moldura / cor_moldura / espessura_moldura_pt: borda da caixa da legenda.
+  # alinhar: com a legenda FORA do gráfico ("direita"/"esquerda"/"topo"/"base"), onde ela fica ao longo do lado.
+  #   Em direita/esquerda: "topo" | "centro" | "base".  Em topo/base: "esquerda" | "centro" | "direita".
+  #   OPÇÕES: NULL (centro) | os textos acima      EX.: cfg$legenda$alinhar <- "topo"
+  alinhar = NULL,
+
+  # direcao: itens um embaixo do outro ou lado a lado.  OPÇÕES: NULL (automático) | "vertical" | "horizontal"
+  direcao = NULL,
+
+  # moldura / cor_moldura / espessura_moldura_pt / tipo_moldura: borda da caixa da legenda.
+  #   tipo_moldura OPÇÕES: "solid" | "dashed" | "dotted" | "dotdash" | "longdash" | "twodash"
   moldura = FALSE,
   cor_moldura = "black",
   espessura_moldura_pt = 0.5,
+  tipo_moldura = "solid",
 
-  # fundo: OPÇÕES: cor | "transparente"
+  # fundo: OPÇÕES: cor | "transparente".   fundo_opacidade: 0 (invisível) a 1 (sólido) da cor de fundo.
+  #   EX.: cfg$legenda$fundo <- "white"; cfg$legenda$fundo_opacidade <- 0.8
   fundo = "transparente",
+  fundo_opacidade = 1,
+
+  # sombra: sombra projetada atrás da caixa da legenda (precisa de um fundo: com "transparente" o fundo vira branco).
+  #   sombra_cor: cor.  sombra_opacidade: 0 a 1.  sombra_deslocamento_pt: c(para a direita, para baixo) em pt
+  #   (um número só vale para os dois).
+  #   OPÇÕES: TRUE | FALSE      EX.: cfg$legenda$sombra <- TRUE; cfg$legenda$sombra_deslocamento_pt <- c(3, 3)
+  sombra = FALSE,
+  sombra_cor = "black",
+  sombra_opacidade = 0.35,
+  sombra_deslocamento_pt = c(3, 3),
 
   # tamanho_texto_pt / tamanho_titulo_pt: NULL = tamanho base.
   tamanho_texto_pt = NULL,

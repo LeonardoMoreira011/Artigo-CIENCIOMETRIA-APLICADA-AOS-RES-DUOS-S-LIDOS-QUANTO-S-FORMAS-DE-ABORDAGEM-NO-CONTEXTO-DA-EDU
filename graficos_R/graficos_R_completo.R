@@ -1070,13 +1070,34 @@ cfg$legenda <- list(
   # inverter_ordem: inverte a ordem dos itens.  OPÇÕES: TRUE | FALSE
   inverter_ordem = FALSE,
 
-  # moldura / cor_moldura / espessura_moldura_pt: borda da caixa da legenda.
+  # alinhar: com a legenda FORA do gráfico ("direita"/"esquerda"/"topo"/"base"), onde ela fica ao longo do lado.
+  #   Em direita/esquerda: "topo" | "centro" | "base".  Em topo/base: "esquerda" | "centro" | "direita".
+  #   OPÇÕES: NULL (centro) | os textos acima      EX.: cfg$legenda$alinhar <- "topo"
+  alinhar = NULL,
+
+  # direcao: itens um embaixo do outro ou lado a lado.  OPÇÕES: NULL (automático) | "vertical" | "horizontal"
+  direcao = NULL,
+
+  # moldura / cor_moldura / espessura_moldura_pt / tipo_moldura: borda da caixa da legenda.
+  #   tipo_moldura OPÇÕES: "solid" | "dashed" | "dotted" | "dotdash" | "longdash" | "twodash"
   moldura = FALSE,
   cor_moldura = "black",
   espessura_moldura_pt = 0.5,
+  tipo_moldura = "solid",
 
-  # fundo: OPÇÕES: cor | "transparente"
+  # fundo: OPÇÕES: cor | "transparente".   fundo_opacidade: 0 (invisível) a 1 (sólido) da cor de fundo.
+  #   EX.: cfg$legenda$fundo <- "white"; cfg$legenda$fundo_opacidade <- 0.8
   fundo = "transparente",
+  fundo_opacidade = 1,
+
+  # sombra: sombra projetada atrás da caixa da legenda (precisa de um fundo: com "transparente" o fundo vira branco).
+  #   sombra_cor: cor.  sombra_opacidade: 0 a 1.  sombra_deslocamento_pt: c(para a direita, para baixo) em pt
+  #   (um número só vale para os dois).
+  #   OPÇÕES: TRUE | FALSE      EX.: cfg$legenda$sombra <- TRUE; cfg$legenda$sombra_deslocamento_pt <- c(3, 3)
+  sombra = FALSE,
+  sombra_cor = "black",
+  sombra_opacidade = 0.35,
+  sombra_deslocamento_pt = c(3, 3),
 
   # tamanho_texto_pt / tamanho_titulo_pt: NULL = tamanho base.
   tamanho_texto_pt = NULL,
@@ -1913,6 +1934,9 @@ colunas <- function(dados) {
   "boxplot$media_erro_estilo" = c("barra", "ponto"),
   "eixo_y2$modo" = c("independente", "transformado"),
   "legenda$posicao" = c("dentro", "direita", "esquerda", "topo", "base"),
+  "legenda$alinhar" = c("topo", "centro", "base", "esquerda", "direita"),
+  "legenda$direcao" = c("vertical", "horizontal"),
+  "legenda$tipo_moldura" = c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash"),
   "titulos$alinhamento" = c("esquerda", "centro", "direita"),
   "quebra$estilo" = c("separado", "continuo"),
   "paineis$direcao" = c("vertical", "horizontal"),
@@ -2039,6 +2063,19 @@ colunas <- function(dados) {
     if (any(c(cfg$legenda$dentro_x, cfg$legenda$dentro_y) < 0 | c(cfg$legenda$dentro_x, cfg$legenda$dentro_y) > 1))
       .erro("cfg$legenda$dentro_x e dentro_y devem estar entre 0 e 1.")
   }
+  lg <- cfg$legenda
+  for (k in c("fundo_opacidade", "sombra_opacidade"))
+    if (!is.null(lg[[k]]) && (!is.numeric(lg[[k]]) || length(lg[[k]]) != 1 || lg[[k]] < 0 || lg[[k]] > 1))
+      .erro("cfg$legenda$", k, " deve ser um número entre 0 e 1.")
+  if (!is.null(lg$alinhar)) {
+    lado <- if (lg$posicao %in% c("direita", "esquerda")) c("topo", "centro", "base") else c("esquerda", "centro", "direita")
+    if (lg$posicao != "dentro" && !lg$alinhar %in% lado)
+      .erro("cfg$legenda$alinhar = \"", lg$alinhar, "\" não serve para a legenda em \"", lg$posicao,
+            "\". OPÇÕES: ", paste0('"', lado, '"', collapse = " | "))
+  }
+  if (!is.null(lg$sombra_deslocamento_pt) && (!is.numeric(lg$sombra_deslocamento_pt) ||
+                                              !length(lg$sombra_deslocamento_pt) %in% 1:2))
+    .erro("cfg$legenda$sombra_deslocamento_pt deve ser um número ou c(direita, baixo), em pt.")
   if (!is.null(cfg$pizza$raio_furo) && (cfg$pizza$raio_furo < 0 || cfg$pizza$raio_furo > 0.9))
     .erro("cfg$pizza$raio_furo deve estar entre 0 e 0.9.")
   if (!identical(cfg$legenda$mostrar, "auto") && !is.logical(cfg$legenda$mostrar))
@@ -2716,11 +2753,22 @@ colunas <- function(dados) {
   lg <- cfg$legenda; tx <- cfg$texto
   pos <- switch(lg$posicao, dentro = "inside", direita = "right", esquerda = "left",
                 topo = "top", base = "bottom")
-  fundo <- if (identical(lg$fundo, "transparente")) NA else .cor(lg$fundo)
+  sombra <- isTRUE(lg$sombra)
+  fundo <- if (identical(lg$fundo, "transparente")) { if (sombra) "white" else NA } else .cor(lg$fundo)
+  if (!is.na(fundo) && (lg$fundo_opacidade %||% 1) < 1) fundo <- .alfa(fundo, lg$fundo_opacidade)
+  caixa <- element_rect(fill = fundo, colour = if (isTRUE(lg$moldura)) .cor(lg$cor_moldura) else NA,
+                        linewidth = .lw(lg$espessura_moldura_pt))
+  if (!identical(lg$tipo_moldura %||% "solid", "solid")) caixa <- element_rect(fill = fundo, colour = caixa$colour,
+                                                                               linewidth = caixa$linewidth,
+                                                                               linetype = lg$tipo_moldura)
+  if (sombra) {
+    d <- rep_len(lg$sombra_deslocamento_pt, 2)
+    attr(caixa, "sombra") <- list(cor = .alfa(.cor(lg$sombra_cor), lg$sombra_opacidade), dx = d[1], dy = d[2])
+    class(caixa) <- c("element_sombra", class(caixa))
+  }
   t <- theme(
     legend.position = pos,
-    legend.background = element_rect(fill = fundo, colour = if (isTRUE(lg$moldura)) .cor(lg$cor_moldura) else NA,
-                                     linewidth = .lw(lg$espessura_moldura_pt)),
+    legend.background = caixa,
     legend.key = element_rect(fill = NA, colour = NA),
     legend.key.size = unit(lg$tamanho_chave_pt, "pt"),
     legend.key.spacing.y = unit(lg$espacamento_pt, "pt"),
@@ -2734,8 +2782,24 @@ colunas <- function(dados) {
                    legend.justification.inside = anc)
   }
   if (pos %in% c("top", "bottom")) t <- t + theme(legend.direction = "horizontal")
+  if (!is.null(lg$direcao)) t <- t + theme(legend.direction = lg$direcao)
+  if (!is.null(lg$alinhar) && pos != "inside") {
+    j <- c(esquerda = 0, base = 0, centro = 0.5, topo = 1, direita = 1)[[lg$alinhar]]
+    t <- t + theme(legend.justification = if (pos %in% c("top", "bottom")) c(j, 0.5) else c(0.5, j))
+  }
   t
 }
+
+# Retângulo da legenda com sombra projetada: o element_rect comum, precedido de um retângulo deslocado.
+# (Método S3 próprio, registrado no ggplot2 — funciona igual no 3.5 e no 4.0.)
+.element_grob_sombra <- function(element, ...) {
+  base <- NextMethod()
+  sh <- attr(element, "sombra")
+  sombra <- grid::rectGrob(x = unit(0.5, "npc") + unit(sh$dx, "pt"), y = unit(0.5, "npc") - unit(sh$dy, "pt"),
+                           width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill = sh$cor, col = NA))
+  grid::gTree(children = grid::gList(sombra, base))
+}
+registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir = asNamespace("ggplot2"))
 
 .fontes_cache <- new.env()
 # Nome de fonte utilizável: o pedido se existir no sistema; senão 'sans', com aviso.
@@ -4541,6 +4605,16 @@ listar_fontes <- function() {
   # legenda e moldura
   legenda_mostrar = c("legenda", "mostrar"), legenda_posicao = c("legenda", "posicao"),
   legenda_x = c("legenda", "dentro_x"), legenda_y = c("legenda", "dentro_y"), legenda_titulo = c("legenda", "titulo"),
+  legenda_ancora = c("legenda", "ancora"), legenda_alinhar = c("legenda", "alinhar"),
+  legenda_direcao = c("legenda", "direcao"), legenda_n_colunas = c("legenda", "n_colunas"),
+  legenda_inverter_ordem = c("legenda", "inverter_ordem"), legenda_tamanho_chave_pt = c("legenda", "tamanho_chave_pt"),
+  legenda_espacamento_pt = c("legenda", "espacamento_pt"), legenda_margem_interna_pt = c("legenda", "margem_interna_pt"),
+  legenda_fundo = c("legenda", "fundo"), legenda_fundo_opacidade = c("legenda", "fundo_opacidade"),
+  legenda_borda = c("legenda", "moldura"), legenda_borda_cor = c("legenda", "cor_moldura"),
+  legenda_borda_espessura_pt = c("legenda", "espessura_moldura_pt"), legenda_borda_tipo = c("legenda", "tipo_moldura"),
+  legenda_sombra = c("legenda", "sombra"), legenda_sombra_cor = c("legenda", "sombra_cor"),
+  legenda_sombra_opacidade = c("legenda", "sombra_opacidade"),
+  legenda_sombra_deslocamento_pt = c("legenda", "sombra_deslocamento_pt"),
   caixa_fechada = c("caixa", "fechada"),
   # exportação
   largura_cm = c("exportacao", "largura"), altura_cm = c("exportacao", "altura"), dpi = c("exportacao", "dpi"),
@@ -4571,6 +4645,27 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     if (!is.null(iv)) { cfg[[e]]$ticks_modo <- "incremento"; cfg[[e]]$incremento <- iv; marca(paste0(ax, "_intervalo")) }
     if (!is.null(tm)) { cfg[[e]]$ticks_modo <- "manual"; cfg[[e]]$ticks_manuais <- tm; marca(paste0(ax, "_ticks_manuais")) }
   }
+  # legenda: canto pronto (posição + âncora) e ligação automática da borda / sombra quando só o detalhe é dado
+  canto <- pega("legenda_canto")
+  if (!is.null(canto)) {
+    cantos <- list(sup_esq = c(0, 1), sup_centro = c(0.5, 1), sup_dir = c(1, 1), centro_esq = c(0, 0.5), centro = c(0.5, 0.5),
+                   centro_dir = c(1, 0.5), inf_esq = c(0, 0), inf_centro = c(0.5, 0), inf_dir = c(1, 0))
+    if (length(canto) != 1 || !canto %in% names(cantos))
+      .erro("legenda_canto = '", paste(canto, collapse = ","), "' não é válido. OPÇÕES: ",
+            paste0('"', names(cantos), '"', collapse = " | "))
+    a <- cantos[[canto]]; folga <- 0.03
+    cfg$legenda$posicao <- "dentro"               # legenda_x / legenda_y / legenda_ancora, se dados, valem mais
+    if (is.null(pega("legenda_ancora"))) cfg$legenda$ancora <- a
+    if (is.null(pega("legenda_x"))) cfg$legenda$dentro_x <- if (a[1] == 0) folga else if (a[1] == 1) 1 - folga else 0.5
+    if (is.null(pega("legenda_y"))) cfg$legenda$dentro_y <- if (a[2] == 0) folga else if (a[2] == 1) 1 - folga else 0.5
+    marca("legenda_canto")
+  }
+  if (is.null(pega("legenda_borda")) && any(!vapply(list(pega("legenda_borda_cor"), pega("legenda_borda_espessura_pt"),
+                                                         pega("legenda_borda_tipo")), is.null, NA)))
+    cfg$legenda$moldura <- TRUE
+  if (is.null(pega("legenda_sombra")) && any(!vapply(list(pega("legenda_sombra_cor"), pega("legenda_sombra_opacidade"),
+                                                          pega("legenda_sombra_deslocamento_pt")), is.null, NA)))
+    cfg$legenda$sombra <- TRUE
   rd <- pega("rotulos_dados_tamanho_pt")   # texto escrito junto dos pontos/barras (rótulos de dados)
   if (!is.null(rd)) { cfg$linhas$rotulos_tamanho_pt <- rd; cfg$barras$rotulos_tamanho_pt <- rd; marca("rotulos_dados_tamanho_pt") }
   # eixo Y da direita (Y2): as séries listadas em y2_series passam para ele; o X continua o mesmo
@@ -4925,7 +5020,8 @@ demonstracao <- function(tipo = c("linha", "barras", "pizza", "boxplot", "datas"
 #  NULL = "não mexer" (vale o padrão do template). Para voltar ao padrão, escreva NULL.
 #  Textos entre aspas; números sem aspas e com PONTO decimal; TRUE/FALSE em maiúsculas.
 #  Categorias:  1 ARQUIVO E TIPO | 2 INTERVALOS | 3 ESCALA | 4 NÚMEROS E TÍTULOS | 5 GRADE |
-#               6 QUEBRA DO EIXO Y | 7 EIXO Y DA DIREITA | 8 CORES E LINHAS | 9 FONTE | 10 LEGENDA E MOLDURA | 11 EXPORTAÇÃO
+#               6 QUEBRA DO EIXO Y | 7 EIXO Y DA DIREITA | 8 CORES E LINHAS | 9 FONTE | 10 MOLDURA |
+#               11 LEGENDA (posição, fundo, borda, sombra) | 12 EXPORTAÇÃO
 #  Quer um ajuste que não está aqui? Use o cfg direto (ajuda("eixo_x"), ajuda("grade")...).
 # =============================================================================
 
@@ -5081,15 +5177,43 @@ legenda_texto_tamanho_pt  <- NULL   # nomes na legenda (WORLD, LATAM...). EX.: 1
 legenda_titulo_tamanho_pt <- NULL   # título da legenda. EX.: 11
 rotulos_dados_tamanho_pt  <- NULL   # texto escrito junto dos pontos/barras (rótulos de dados). EX.: 8
 
-# ---- 10. LEGENDA E MOLDURA ---------------------------------------------------------------------------
-legenda_mostrar  <- NULL   # FALSE = sem legenda
-legenda_posicao  <- NULL   # "dentro" | "direita" | "esquerda" | "topo" | "base"
-legenda_x        <- NULL   # com "dentro": posição de 0 a 1. EX.: 0.04
-legenda_y        <- NULL   # EX.: 0.96
-legenda_titulo   <- NULL   # EX.: "Região"
+# ---- 10. MOLDURA DO GRÁFICO ---------------------------------------------------------------------------
 caixa_fechada    <- NULL   # TRUE = moldura nos 4 lados | FALSE = só eixos esquerdo e inferior
 
-# ---- 11. EXPORTAÇÃO ------------------------------------------------------------------------------------
+# ---- 11. LEGENDA: POSIÇÃO, FUNDO, BORDA E SOMBRA -------------------------------------------------------
+legenda_mostrar  <- NULL   # FALSE = sem legenda
+legenda_titulo   <- NULL   # título da legenda. EX.: "Região"
+#  Posição
+legenda_posicao  <- NULL   # "dentro" (sobre o gráfico) | "direita" | "esquerda" | "topo" | "base" (fora do gráfico)
+legenda_canto    <- NULL   # atalho para "dentro": "sup_esq" | "sup_centro" | "sup_dir" | "centro_esq" | "centro" |
+                           #   "centro_dir" | "inf_esq" | "inf_centro" | "inf_dir". EX.: "sup_dir"
+legenda_x        <- NULL   # posição fina com "dentro", de 0 (esquerda) a 1 (direita). EX.: 0.04
+legenda_y        <- NULL   # de 0 (embaixo) a 1 (em cima). EX.: 0.96
+legenda_ancora   <- NULL   # qual ponto da caixa fica em (x, y): c(0, 1) = canto sup. esq. | c(1, 1) = sup. dir. ...
+legenda_alinhar  <- NULL   # com a legenda FORA: onde ela fica ao longo do lado.
+                           #   direita/esquerda: "topo" | "centro" | "base"; topo/base: "esquerda" | "centro" | "direita"
+#  Disposição dos itens
+legenda_direcao  <- NULL   # "vertical" (um embaixo do outro) | "horizontal" (lado a lado)
+legenda_n_colunas <- NULL  # número de colunas. EX.: 2
+legenda_inverter_ordem <- NULL  # TRUE = inverte a ordem dos itens
+legenda_tamanho_chave_pt <- NULL   # tamanho do quadradinho/linha de cada item. EX.: 18
+legenda_espacamento_pt   <- NULL   # espaço entre os itens. EX.: 4
+legenda_margem_interna_pt <- NULL  # folga dentro da caixa: c(cima, direita, baixo, esquerda). EX.: c(6, 8, 6, 8)
+#  Fundo
+legenda_fundo    <- NULL   # cor de fundo da caixa. EX.: "white" | "#F2F2F2" | "transparente"
+legenda_fundo_opacidade <- NULL    # 0 (invisível) a 1 (sólido). EX.: 0.8
+#  Borda (basta preencher cor, espessura ou tipo para a borda aparecer)
+legenda_borda    <- NULL   # TRUE = borda na caixa | FALSE = sem borda
+legenda_borda_cor <- NULL  # EX.: "black"
+legenda_borda_espessura_pt <- NULL  # EX.: 1
+legenda_borda_tipo <- NULL # "solid" | "dashed" | "dotted" | "dotdash" | "longdash" | "twodash"
+#  Sombra (basta preencher cor, opacidade ou deslocamento para a sombra aparecer)
+legenda_sombra   <- NULL   # TRUE = sombra atrás da caixa (com fundo "transparente" a caixa fica branca)
+legenda_sombra_cor <- NULL # EX.: "black" | "grey30"
+legenda_sombra_opacidade <- NULL    # 0 a 1. EX.: 0.35
+legenda_sombra_deslocamento_pt <- NULL  # c(para a direita, para baixo) em pt. EX.: c(3, 3)  |  c(5, 2)
+
+# ---- 12. EXPORTAÇÃO ------------------------------------------------------------------------------------
 largura_cm   <- NULL       # EX.: 14
 altura_cm    <- NULL       # EX.: 10
 dpi          <- NULL       # EX.: 600

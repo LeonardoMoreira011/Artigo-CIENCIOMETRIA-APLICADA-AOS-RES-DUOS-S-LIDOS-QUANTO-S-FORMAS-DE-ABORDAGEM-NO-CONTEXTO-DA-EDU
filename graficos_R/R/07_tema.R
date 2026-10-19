@@ -121,11 +121,22 @@
   lg <- cfg$legenda; tx <- cfg$texto
   pos <- switch(lg$posicao, dentro = "inside", direita = "right", esquerda = "left",
                 topo = "top", base = "bottom")
-  fundo <- if (identical(lg$fundo, "transparente")) NA else .cor(lg$fundo)
+  sombra <- isTRUE(lg$sombra)
+  fundo <- if (identical(lg$fundo, "transparente")) { if (sombra) "white" else NA } else .cor(lg$fundo)
+  if (!is.na(fundo) && (lg$fundo_opacidade %||% 1) < 1) fundo <- .alfa(fundo, lg$fundo_opacidade)
+  caixa <- element_rect(fill = fundo, colour = if (isTRUE(lg$moldura)) .cor(lg$cor_moldura) else NA,
+                        linewidth = .lw(lg$espessura_moldura_pt))
+  if (!identical(lg$tipo_moldura %||% "solid", "solid")) caixa <- element_rect(fill = fundo, colour = caixa$colour,
+                                                                               linewidth = caixa$linewidth,
+                                                                               linetype = lg$tipo_moldura)
+  if (sombra) {
+    d <- rep_len(lg$sombra_deslocamento_pt, 2)
+    attr(caixa, "sombra") <- list(cor = .alfa(.cor(lg$sombra_cor), lg$sombra_opacidade), dx = d[1], dy = d[2])
+    class(caixa) <- c("element_sombra", class(caixa))
+  }
   t <- theme(
     legend.position = pos,
-    legend.background = element_rect(fill = fundo, colour = if (isTRUE(lg$moldura)) .cor(lg$cor_moldura) else NA,
-                                     linewidth = .lw(lg$espessura_moldura_pt)),
+    legend.background = caixa,
     legend.key = element_rect(fill = NA, colour = NA),
     legend.key.size = unit(lg$tamanho_chave_pt, "pt"),
     legend.key.spacing.y = unit(lg$espacamento_pt, "pt"),
@@ -139,8 +150,24 @@
                    legend.justification.inside = anc)
   }
   if (pos %in% c("top", "bottom")) t <- t + theme(legend.direction = "horizontal")
+  if (!is.null(lg$direcao)) t <- t + theme(legend.direction = lg$direcao)
+  if (!is.null(lg$alinhar) && pos != "inside") {
+    j <- c(esquerda = 0, base = 0, centro = 0.5, topo = 1, direita = 1)[[lg$alinhar]]
+    t <- t + theme(legend.justification = if (pos %in% c("top", "bottom")) c(j, 0.5) else c(0.5, j))
+  }
   t
 }
+
+# Retângulo da legenda com sombra projetada: o element_rect comum, precedido de um retângulo deslocado.
+# (Método S3 próprio, registrado no ggplot2 — funciona igual no 3.5 e no 4.0.)
+.element_grob_sombra <- function(element, ...) {
+  base <- NextMethod()
+  sh <- attr(element, "sombra")
+  sombra <- grid::rectGrob(x = unit(0.5, "npc") + unit(sh$dx, "pt"), y = unit(0.5, "npc") - unit(sh$dy, "pt"),
+                           width = unit(1, "npc"), height = unit(1, "npc"), gp = gpar(fill = sh$cor, col = NA))
+  grid::gTree(children = grid::gList(sombra, base))
+}
+registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir = asNamespace("ggplot2"))
 
 .fontes_cache <- new.env()
 # Nome de fonte utilizável: o pedido se existir no sistema; senão 'sans', com aviso.

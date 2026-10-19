@@ -37,6 +37,9 @@
   "boxplot$media_erro_estilo" = c("barra", "ponto"),
   "eixo_y2$modo" = c("independente", "transformado"),
   "legenda$posicao" = c("dentro", "direita", "esquerda", "topo", "base"),
+  "legenda$alinhar" = c("topo", "centro", "base", "esquerda", "direita"),
+  "legenda$direcao" = c("vertical", "horizontal"),
+  "legenda$tipo_moldura" = c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash"),
   "titulos$alinhamento" = c("esquerda", "centro", "direita"),
   "quebra$estilo" = c("separado", "continuo"),
   "paineis$direcao" = c("vertical", "horizontal"),
@@ -163,6 +166,19 @@
     if (any(c(cfg$legenda$dentro_x, cfg$legenda$dentro_y) < 0 | c(cfg$legenda$dentro_x, cfg$legenda$dentro_y) > 1))
       .erro("cfg$legenda$dentro_x e dentro_y devem estar entre 0 e 1.")
   }
+  lg <- cfg$legenda
+  for (k in c("fundo_opacidade", "sombra_opacidade"))
+    if (!is.null(lg[[k]]) && (!is.numeric(lg[[k]]) || length(lg[[k]]) != 1 || lg[[k]] < 0 || lg[[k]] > 1))
+      .erro("cfg$legenda$", k, " deve ser um número entre 0 e 1.")
+  if (!is.null(lg$alinhar)) {
+    lado <- if (lg$posicao %in% c("direita", "esquerda")) c("topo", "centro", "base") else c("esquerda", "centro", "direita")
+    if (lg$posicao != "dentro" && !lg$alinhar %in% lado)
+      .erro("cfg$legenda$alinhar = \"", lg$alinhar, "\" não serve para a legenda em \"", lg$posicao,
+            "\". OPÇÕES: ", paste0('"', lado, '"', collapse = " | "))
+  }
+  if (!is.null(lg$sombra_deslocamento_pt) && (!is.numeric(lg$sombra_deslocamento_pt) ||
+                                              !length(lg$sombra_deslocamento_pt) %in% 1:2))
+    .erro("cfg$legenda$sombra_deslocamento_pt deve ser um número ou c(direita, baixo), em pt.")
   if (!is.null(cfg$pizza$raio_furo) && (cfg$pizza$raio_furo < 0 || cfg$pizza$raio_furo > 0.9))
     .erro("cfg$pizza$raio_furo deve estar entre 0 e 0.9.")
   if (!identical(cfg$legenda$mostrar, "auto") && !is.logical(cfg$legenda$mostrar))

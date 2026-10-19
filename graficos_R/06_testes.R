@@ -389,7 +389,7 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
                     "y2_series", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo", "y2_ticks_manuais", "y2_ticks_menores",
                     "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais", "y2_notacao", "y2_prefixo", "y2_sufixo",
                     "y2_fator", "y2_deslocamento", "linha_espessura_por_serie", "simbolo_tamanho_por_serie",
-                    "simbolo_borda_por_serie", "y2_igual_y1", "y2_legenda_sufixo")
+                    "simbolo_borda_por_serie", "y2_igual_y1", "y2_legenda_sufixo", "legenda_canto")
         all(v %in% c(names(.PAINEL_MAPA), extras)) })
 teste("painel: cores_por_serie sem nomes dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))
@@ -492,6 +492,39 @@ gl <- suppressWarnings(plotar(aq, cl))
 teste("painel Y2: a legenda é uma só, com as séries dos dois eixos",
       identical(as.character(unlist(ggplot2::get_guide_data(ggplot2::ggplot_build(gl), "colour")$.label)),
                 c("WORLD", "POP (eixo dir.)")))
+
+cat("\n--- Legenda: posição, fundo, borda e sombra ---\n")
+pl <- list2env(list(tipo_grafico = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL"),
+                    legenda_canto = "inf_dir", legenda_fundo = "#EEEEEE", legenda_fundo_opacidade = 0.8,
+                    legenda_borda_cor = "#1F4E9E", legenda_borda_espessura_pt = 1.5, legenda_borda_tipo = "dashed",
+                    legenda_sombra_cor = "grey30", legenda_sombra_deslocamento_pt = c(4, 3)))
+cl2 <- suppressMessages(aplicar_painel(c0, pl))
+teste("painel legenda: canto vira posição + âncora; só dar cor/tipo liga a borda e a sombra",
+      cl2$legenda$posicao == "dentro" && identical(cl2$legenda$ancora, c(1, 0)) && cl2$legenda$dentro_x == 0.97 &&
+      cl2$legenda$dentro_y == 0.03 && isTRUE(cl2$legenda$moldura) && isTRUE(cl2$legenda$sombra) &&
+      cl2$legenda$fundo == "#EEEEEE" && cl2$legenda$fundo_opacidade == 0.8 && cl2$legenda$tipo_moldura == "dashed" &&
+      cl2$legenda$cor_moldura == "#1F4E9E" && identical(cl2$legenda$sombra_deslocamento_pt, c(4, 3)))
+teste("painel legenda: legenda_x/legenda_y explícitos vencem o canto; borda FALSE explícita é respeitada",
+      { c3 <- suppressMessages(aplicar_painel(c0, list2env(list(legenda_canto = "sup_esq", legenda_x = 0.5,
+                                                                  legenda_borda = FALSE, legenda_borda_cor = "red"))))
+        c3$legenda$dentro_x == 0.5 && c3$legenda$dentro_y == 0.97 && !c3$legenda$moldura })
+cl2$grafico <- utils::modifyList(cl2$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL")))
+tl <- .tema_legenda(cl2, "sans")
+teste("legenda com sombra: o retângulo da legenda é o element_sombra; sem sombra é o element_rect comum",
+      inherits(tl$legend.background, "element_sombra") &&
+      !inherits(.tema_legenda(utils::modifyList(cl2, list(legenda = list(sombra = FALSE))), "sans")$legend.background,
+                "element_sombra"))
+r0 <- renderiza(plotar(aq, utils::modifyList(cl2, list(legenda = list(sombra = FALSE, moldura = FALSE)))))
+r1 <- renderiza(plotar(aq, cl2))
+teste("legenda: sombra e borda mudam o desenho; a sombra não gera aviso",
+      !identical(r0, r1) && !any(grepl("rect|element|grob", avisos_de(imprime(plotar(aq, cl2))), ignore.case = TRUE)))
+teste("legenda: direção horizontal e posição fora (alinhar) mudam o desenho sem erro",
+      { ch <- utils::modifyList(cl2, list(legenda = list(direcao = "horizontal", posicao = "topo", alinhar = "esquerda")))
+        cv <- utils::modifyList(cl2, list(legenda = list(direcao = "vertical", posicao = "topo", alinhar = "direita")))
+        !identical(renderiza(plotar(aq, ch)), renderiza(plotar(aq, cv))) })
+teste("legenda: opacidade fora de 0-1 e alinhar incompatível com a posição dão erro claro",
+      da_erro(plotar(aq, utils::modifyList(cl2, list(legenda = list(fundo_opacidade = 2)))), "entre 0 e 1") &&
+      da_erro(plotar(aq, utils::modifyList(cl2, list(legenda = list(posicao = "direita", alinhar = "esquerda")))), "não serve"))
 
 cat("\n--- Eixo Y da direita (Y2) pelo painel ---\n")
 p2 <- list2env(list(y2_series = "LATAM", y2_titulo = "Pop (milhões)", y2_inicio = 0, y2_fim = 100000,
