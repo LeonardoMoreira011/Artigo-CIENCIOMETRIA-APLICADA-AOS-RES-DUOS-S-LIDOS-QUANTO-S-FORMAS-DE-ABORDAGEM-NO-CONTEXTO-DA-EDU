@@ -31,6 +31,21 @@ visualizar(g)        # prévia com o tamanho e as fontes reais do arquivo final
 salvar(g, cfg)       # grava em saida/ nos formatos de cfg$exportacao$formatos
 ```
 
+### 2.1 Painel de ajustes (jeito mais fácil)
+
+Em vez de escrever `cfg$eixo_x$...`, abra **`painel_de_ajustes.R`** (no script único, é a PARTE 3), preencha `ARQUIVO_CSV` e mude só o que quiser. `NULL` = padrão. Dê *Source* e o gráfico é gerado e salvo. Categorias: arquivo e tipo, **escala**, **ticks**, números e títulos, **grade**, **quebra do eixo Y**, **cores**, fonte, legenda e moldura, exportação. Exemplos:
+
+```r
+x_inicio <- 2015; x_fim <- 2026; x_folga_pct <- 4     # escala: limites e folga nas pontas
+recortar_nos_limites <- FALSE                         # pontos das pontas aparecem inteiros
+x_intervalo <- 1                                      # ticks: todos os anos
+x_ticks_menores <- 0; y_ticks_menores <- 0            # sem ticks menores
+grade_x <- TRUE; grade_y <- TRUE                      # grade nos ticks maiores
+grade_tipo <- "dashed"; grade_cor <- "#1F4E9E"; grade_opacidade <- 0.35
+quebra_ativar <- TRUE                                 # acha sozinho o maior vazio entre os dados
+cores_por_serie <- c("WORLD" = "#000000", "BRAZIL" = "#1F4E9E")
+```
+
 **Ajuda dentro do R:** `ajuda()` lista os blocos; `ajuda("eixo_x")` mostra cada parâmetro com as OPÇÕES e um exemplo de comando; `ajuda("tipos")` resume os tipos de gráfico. Apelidos funcionam: `ajuda("y2")`, `ajuda("violino")`, `ajuda("legenda")`.
 
 **Errou um nome?** O template avisa e sugere: *"Parâmetro cfg$eixo_x$incremeto não existe. Você quis dizer cfg$eixo_x$incremento?"*.
@@ -87,6 +102,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | Renomear item da legenda | `cfg$series[["B"]] <- list(nome_legenda = "Amostra B (25 °C)")` |
 | Moldura na legenda | `cfg$legenda$moldura <- TRUE; cfg$legenda$fundo <- "white"` |
 | Grade | `cfg$grade$maior_y <- TRUE` |
+| Grade com tipo, cor e transparência | `cfg$grade$maior_x <- TRUE; tipo_maior <- "dashed"; cor_maior <- "#1F4E9E"; opacidade_maior <- 0.4` |
 | Linha de referência | `cfg$referencias <- list(list(eixo = "y", valor = 0, tipo = "dashed"))` |
 | Texto / seta / faixa | `cfg$anotacoes$textos`, `$setas`, `$faixas` (ver `ajuda("anotacoes")`) |
 | Eixo Y à direita | `cfg$eixo_y2$ativo <- TRUE` + `cfg$series[["B"]] <- list(eixo = "y2")` (com ticks menores: `cfg$eixo_y2$n_menores`) |
@@ -137,7 +153,8 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
 | `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 88 testes automáticos — rode depois de qualquer alteração no motor |
+| `06_testes.R` | 97 testes automáticos — rode depois de qualquer alteração no motor |
+| `painel_de_ajustes.R` | **o painel**: variáveis simples por categoria (escala, ticks, grade, quebra, cores...). Veja a seção 2.1 |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |
 | `dados/` | CSVs de exemplo (inclui um CSV de Excel em português com `;` e vírgula) |

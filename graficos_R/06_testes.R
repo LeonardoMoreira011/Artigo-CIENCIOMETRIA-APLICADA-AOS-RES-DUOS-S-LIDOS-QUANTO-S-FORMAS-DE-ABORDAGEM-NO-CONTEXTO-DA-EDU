@@ -314,6 +314,49 @@ cq$quebra$ligar_atraves <- TRUE; gb <- plotar(gq, cq)
 teste("quebra com ligar_atraves = TRUE (padrão) mantém todos os pontos nas duas partes",
       ys_parte(gb[[1]])[1] < sug$de && ys_parte(gb[[2]])[2] > sug$ate)
 
+cat("\n--- Painel de ajustes e grade ---\n")
+pe <- list2env(list(x_intervalo = 1, x_ticks_menores = 0, y_ticks_menores = 0, x_inicio = 2015, x_fim = 2026,
+                    x_folga_pct = 4, grade_x = TRUE, grade_y = TRUE, grade_tipo = "dashed", grade_cor = "#1F4E9E",
+                    grade_opacidade = 0.35, recortar_nos_limites = FALSE, fonte = "serif", eixos_titulo_negrito = TRUE,
+                    cores_por_serie = c(WORLD = "#000000", BRAZIL = "#1F4E9E"), y_dividir_por = 1000,
+                    quebra_ativar = TRUE, quebra_ligar_pontos = FALSE, tipo_grafico = "linha_pontos", coluna_x = 1))
+an <- data.frame(Years = 2015:2026, WORLD = c(460, 466, 492, 512, 520, 500, 545, 548, 590, 610, 645, 690) * 1000,
+                 LATAM = c(65, 62, 70, 66, 64, 55, 57, 63, 72, 76, 80, 85) * 1000,
+                 BRAZIL = c(25, 23, 30, 26, 24, 14, 12, 17, 28, 31, 33, 35) * 1000)
+cp <- suppressMessages(aplicar_painel(c0, pe, dados = suppressMessages(an)))
+teste("painel: x_intervalo = 1 vira ticks_modo incremento; ticks menores 0; limites; folga",
+      cp$eixo_x$ticks_modo == "incremento" && cp$eixo_x$incremento == 1 && cp$eixo_x$n_menores == 0 &&
+      cp$eixo_x$inicio == 2015 && cp$eixo_x$fim == 2026 && cp$eixo_x$margem_percentual == 4)
+teste("painel: grade tracejada com cor e transparência; sem recorte; fonte; negrito nos dois eixos",
+      cp$grade$tipo_maior == "dashed" && cp$grade$opacidade_maior == 0.35 && cp$grade$maior_x && !cp$caixa$recortar &&
+      cp$texto$fonte == "serif" && cp$eixo_x$negrito_titulo && cp$eixo_y$negrito_titulo)
+teste("painel: cores_por_serie cria cfg$series e quebra_ativar acha de/ate sozinho",
+      cp$series$WORLD$cor == "#000000" && cp$series$BRAZIL$cor == "#1F4E9E" && isTRUE(cp$quebra$ativo) &&
+      cp$quebra$de > 85000 && cp$quebra$ate > cp$quebra$de && cp$quebra$ate < 460000 && !cp$quebra$ligar_atraves)
+teste("painel: tudo NULL não muda nada (o cfg sai igual ao padrão)",
+      identical(suppressMessages(aplicar_painel(c0, list2env(list()))), .completar_cfg(c0)))
+cg <- c0; cg$grafico <- utils::modifyList(cg$grafico, list(tipo = "linha_pontos", coluna_x = 1))
+cg$grade <- utils::modifyList(cg$grade, list(maior_x = TRUE, cor_maior = "#1F4E9E", opacidade_maior = 0.35,
+                                             tipo_maior = "dashed"))
+col <- plotar(an, cg)$theme$panel.grid.major.x$colour
+teste("grade: opacidade_maior vira transparência real na cor (#RRGGBBAA com AA < FF)",
+      grepl("^#[0-9A-Fa-f]{8}$", col) && toupper(substr(col, 8, 9)) != "FF")
+cg$grade$opacidade_maior <- 1
+teste("grade: opacidade 1 mantém a cor cheia (comportamento antigo)",
+      !grepl("^#[0-9A-Fa-f]{8}$", plotar(an, cg)$theme$panel.grid.major.x$colour) ||
+      toupper(substr(plotar(an, cg)$theme$panel.grid.major.x$colour, 8, 9)) == "FF")
+cx <- cp; cx$grafico$colunas_y <- c("WORLD", "BRAZIL"); cx$quebra$ativo <- FALSE; cx$eixo_y$fator_divisao <- 1000
+ax <- plotar(an, cx); inf <- attr(ax, "info")
+teste("anos: ticks em todos os anos de 2015 a 2026, sem ticks menores",
+      identical(inf$ax_x$maiores, as.numeric(2015:2026)) && length(inf$ax_x$menores) == 0)
+cq2 <- c0; cq2$grafico <- utils::modifyList(cq2$grafico, list(tipo = "linha_pontos", coluna_x = 1))
+cq2$quebra <- utils::modifyList(cq2$quebra, list(ativo = TRUE, de = 110000, ate = 440000, ligar_atraves = FALSE))
+cq2$eixo_y$mostrar_titulo <- FALSE; cq2$legenda$posicao <- "dentro"
+teste("quebra sem ligar pontos: a legenda da parte de cima mostra TODAS as séries (chave vermelha da LATAM)",
+      any(grepl("^#D62728", renderiza(plotar(an, cq2)[[1]]))))
+teste("painel: cores_por_serie sem nomes dá erro claro",
+      da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))
+
 cat("\n--- Exportação e estilos ---\n")
 c1 <- c0; c1$exportacao$formatos <- c("png", "pdf", "svg", "tiff"); c1$exportacao$nome_arquivo <- "t"
 arqs <- salvar(plotar(d, c1), c1)

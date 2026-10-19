@@ -76,6 +76,7 @@ instalador = ("# Instala/atualiza os pacotes necessários. Rode UMA vez:  instal
               "instalar_pacotes <- function() {\n" + "\n".join(("  " + l if l.strip() else l) for l in inst.split("\n")) + "\n}")
 
 config = ler("01_config.R")
+PAINEL = '# ' + '-' * 77 + '\n#  PAINEL DE AJUSTES (arquivo painel_de_ajustes.R do projeto)\n# ' + '-' * 77 + '\n' + ler("painel_de_ajustes.R") + '\n'
 config = trocar(config, "#  01_config.R  —  TODOS OS PARÂMETROS EDITÁVEIS DO GRÁFICO", "#  PARÂMETROS EDITÁVEIS DO GRÁFICO (o cfg)")
 
 # referências a arquivos do projeto, que neste script viram "PARTE 1"
@@ -106,16 +107,16 @@ CAB = '''# =====================================================================
 #   2) Abra este arquivo no RStudio e clique em  Source  (ou Ctrl+Shift+S).
 #   3) Teste:    demonstracao()          # gráfico de exemplo com dados fictícios
 #                demonstracao("datas")   # outras: "linha", "barras", "pizza", "boxplot", "datas"
-#      Seus dados:   dados <- ler_csv("C:/pasta/meu_arquivo.csv")
-#                    cfg$grafico$tipo <- "linha_pontos"
-#                    g <- plotar(dados, cfg);  visualizar(g);  salvar(g, cfg)
+#      Seus dados:   role até a PARTE 3 (PAINEL DE AJUSTES): preencha ARQUIVO_CSV, mude o que quiser
+#                    (escala, ticks, grade, quebra, cores, fonte...) e dê Source de novo.
+#                    Alternativa: dados <- ler_csv("C:/pasta/dados.csv"); g <- plotar(dados, cfg); salvar(g, cfg)
 #
 #  AJUDA:  ajuda()  |  ajuda("eixo_x")  |  ajuda("tipos")  |  galeria()
 #  (ajuda() lê a PARTE 1 deste arquivo: use Source, ou deixe o arquivo na pasta de trabalho
 #   com o nome graficos_R_completo.R)
 #
 #  Se os acentos aparecerem estranhos: File > Reopen with Encoding > UTF-8.
-#  Estrutura:  PARTE 0 instalador | PARTE 1 configuração (cfg) | PARTE 2 motor | PARTE 3 uso
+#  Estrutura:  PARTE 0 instalador | PARTE 1 configuração (cfg) | PARTE 2 motor | PARTE 3 painel de ajustes
 #  Requisitos: R >= 4.2, ggplot2 >= 3.5, scales, patchwork, ragg >= 1.5.
 # =============================================================================
 '''
@@ -229,22 +230,7 @@ demonstracao <- function(tipo = c("linha", "barras", "pizza", "boxplot", "datas"
   invisible(g)
 }
 
-# -----------------------------------------------------------------------------
-#  SEU TRABALHO (copie para um script seu, tire o "#" das linhas e adapte)
-# -----------------------------------------------------------------------------
-#  dados <- ler_csv("C:/pasta/meu_arquivo.csv")        # relatório de leitura no console
-#  colunas(dados)                                      # números e nomes das colunas
-#  cfg$grafico$tipo      <- "linha_pontos"             # ajuda("tipos")
-#  cfg$grafico$coluna_x  <- 1
-#  cfg$grafico$colunas_y <- c(2, 3)
-#  cfg$eixo_x$titulo <- "Tempo (min)";  cfg$eixo_y$titulo <- "Temperatura (°C)"
-#  cfg$eixo_x$inicio <- 0; cfg$eixo_x$fim <- 60
-#  cfg$exportacao$formatos <- c("png", "pdf"); cfg$exportacao$nome_arquivo <- "minha_figura"
-#  g <- plotar(dados, cfg)
-#  visualizar(g)             # prévia com o tamanho e as fontes reais do arquivo final
-#  salvar(g, cfg)            # grava na pasta saida/ (dentro da pasta de trabalho)
-#  resetar_cfg()             # volta tudo ao padrão
-
+''' + PAINEL + '''
 message("\\nTemplate de gráficos carregado. Para um teste rápido rode:  demonstracao()   (ou ajuda())")
 '''
 

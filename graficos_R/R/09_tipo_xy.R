@@ -186,7 +186,8 @@
       aes_leg <- unique(c(aes_leg, "shape", "size", "stroke"))
     } else {
       cam[[length(cam) + 1]] <- geom_point(data = d, aes(x = x, y = y, colour = serie, fill = serie,
-                                                         shape = serie, size = serie, stroke = serie, alpha = serie))
+                                                         shape = serie, size = serie, stroke = serie, alpha = serie),
+        show.legend = TRUE)
       aes_leg <- unique(c(aes_leg, "colour", "fill_simb", "shape", "size", "stroke", "alpha"))
     }
   }
@@ -240,7 +241,8 @@
                 degrau_meio = function(...) geom_step(..., direction = "mid"))
   if (mapeado) {
     geo(data = d, aes(x = x, y = y, colour = serie, linetype = serie, linewidth = serie,
-                      alpha = serie, group = serie), lineend = "round", linejoin = "round")
+                      alpha = serie, group = serie), lineend = "round", linejoin = "round",
+        show.legend = TRUE)   # TRUE: a legenda mostra a série mesmo sem dados nesta camada (quebra de eixo)
   } else {
     geo(data = d, aes(x = x, y = y), colour = .alfa(e$cor, e$op), linetype = e$lt,
         linewidth = .lw(e$lw), lineend = "round", linejoin = "round")

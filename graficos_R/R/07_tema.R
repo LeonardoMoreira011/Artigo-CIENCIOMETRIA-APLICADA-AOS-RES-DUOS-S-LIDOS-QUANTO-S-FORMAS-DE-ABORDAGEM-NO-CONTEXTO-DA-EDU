@@ -57,13 +57,15 @@
           aspect.ratio = cx$proporcao,
           strip.background = element_blank())
   # grade (respeita o que está na horizontal/vertical da TELA)
-  gl <- function(on, cor, esp, tipo) if (isTRUE(on)) element_line(colour = cor, linewidth = .lw(esp),
-                                                                  linetype = tipo) else element_blank()
+  gl <- function(on, cor, esp, tipo, opac = 1) {
+    if (!isTRUE(on)) return(element_blank())
+    element_line(colour = .alfa(.cor(cor, "grade"), opac), linewidth = .lw(esp), linetype = tipo)
+  }
   t <- t + theme(
-    panel.grid.major.x = gl(lados$grade_x_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior),
-    panel.grid.major.y = gl(lados$grade_y_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior),
-    panel.grid.minor.x = gl(lados$grade_x_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor),
-    panel.grid.minor.y = gl(lados$grade_y_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor))
+    panel.grid.major.x = gl(lados$grade_x_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior, gr$opacidade_maior),
+    panel.grid.major.y = gl(lados$grade_y_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior, gr$opacidade_maior),
+    panel.grid.minor.x = gl(lados$grade_x_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor, gr$opacidade_menor),
+    panel.grid.minor.y = gl(lados$grade_y_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor, gr$opacidade_menor))
   if (sem_eixos) {
     t <- t + theme(axis.text = element_blank(), axis.title = element_blank(),
                    axis.ticks = element_blank(), axis.line = element_blank(),

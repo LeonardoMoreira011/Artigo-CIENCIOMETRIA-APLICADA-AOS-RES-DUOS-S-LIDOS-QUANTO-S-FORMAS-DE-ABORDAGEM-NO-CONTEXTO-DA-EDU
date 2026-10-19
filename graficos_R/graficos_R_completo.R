@@ -13,16 +13,16 @@
 #   2) Abra este arquivo no RStudio e clique em  Source  (ou Ctrl+Shift+S).
 #   3) Teste:    demonstracao()          # gráfico de exemplo com dados fictícios
 #                demonstracao("datas")   # outras: "linha", "barras", "pizza", "boxplot", "datas"
-#      Seus dados:   dados <- ler_csv("C:/pasta/meu_arquivo.csv")
-#                    cfg$grafico$tipo <- "linha_pontos"
-#                    g <- plotar(dados, cfg);  visualizar(g);  salvar(g, cfg)
+#      Seus dados:   role até a PARTE 3 (PAINEL DE AJUSTES): preencha ARQUIVO_CSV, mude o que quiser
+#                    (escala, ticks, grade, quebra, cores, fonte...) e dê Source de novo.
+#                    Alternativa: dados <- ler_csv("C:/pasta/dados.csv"); g <- plotar(dados, cfg); salvar(g, cfg)
 #
 #  AJUDA:  ajuda()  |  ajuda("eixo_x")  |  ajuda("tipos")  |  galeria()
 #  (ajuda() lê a PARTE 1 deste arquivo: use Source, ou deixe o arquivo na pasta de trabalho
 #   com o nome graficos_R_completo.R)
 #
 #  Se os acentos aparecerem estranhos: File > Reopen with Encoding > UTF-8.
-#  Estrutura:  PARTE 0 instalador | PARTE 1 configuração (cfg) | PARTE 2 motor | PARTE 3 uso
+#  Estrutura:  PARTE 0 instalador | PARTE 1 configuração (cfg) | PARTE 2 motor | PARTE 3 painel de ajustes
 #  Requisitos: R >= 4.2, ggplot2 >= 3.5, scales, patchwork, ragg >= 1.5.
 # =============================================================================
 
@@ -1015,15 +1015,24 @@ cfg$grade <- list(
   menor_x = FALSE,
   menor_y = FALSE,
 
-  # cor_maior / espessura_maior_pt / tipo_maior: estilo da grade maior.
+  # cor_maior / espessura_maior_pt / tipo_maior / opacidade_maior: estilo da grade maior (as
+  #   linhas que saem dos ticks MAIORES). opacidade: 1 = cor cheia, 0 = invisível.
+  #   OPÇÕES cor: nome ("grey60") ou "#RRGGBB" | tipo: "solid" | "dashed" | "dotted" | "dotdash" |
+  #           "longdash" | "twodash" | opacidade: número de 0 a 1
+  #   EX.: cfg$grade$tipo_maior <- "dashed"; cfg$grade$cor_maior <- "#1F4E9E"
+  #        cfg$grade$opacidade_maior <- 0.4
   cor_maior = "grey80",
   espessura_maior_pt = 0.5,
   tipo_maior = "solid",
+  opacidade_maior = 1,
 
-  # cor_menor / espessura_menor_pt / tipo_menor: estilo da grade menor.
+  # cor_menor / espessura_menor_pt / tipo_menor / opacidade_menor: estilo da grade menor
+  #   (ticks menores). Mesmas OPÇÕES da grade maior.
+  #   EX.: cfg$grade$opacidade_menor <- 0.3
   cor_menor = "grey92",
   espessura_menor_pt = 0.4,
-  tipo_menor = "dashed"
+  tipo_menor = "dashed",
+  opacidade_menor = 1
 )
 
 # -----------------------------------------------------------------------------
@@ -2616,13 +2625,15 @@ colunas <- function(dados) {
           aspect.ratio = cx$proporcao,
           strip.background = element_blank())
   # grade (respeita o que está na horizontal/vertical da TELA)
-  gl <- function(on, cor, esp, tipo) if (isTRUE(on)) element_line(colour = cor, linewidth = .lw(esp),
-                                                                  linetype = tipo) else element_blank()
+  gl <- function(on, cor, esp, tipo, opac = 1) {
+    if (!isTRUE(on)) return(element_blank())
+    element_line(colour = .alfa(.cor(cor, "grade"), opac), linewidth = .lw(esp), linetype = tipo)
+  }
   t <- t + theme(
-    panel.grid.major.x = gl(lados$grade_x_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior),
-    panel.grid.major.y = gl(lados$grade_y_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior),
-    panel.grid.minor.x = gl(lados$grade_x_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor),
-    panel.grid.minor.y = gl(lados$grade_y_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor))
+    panel.grid.major.x = gl(lados$grade_x_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior, gr$opacidade_maior),
+    panel.grid.major.y = gl(lados$grade_y_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior, gr$opacidade_maior),
+    panel.grid.minor.x = gl(lados$grade_x_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor, gr$opacidade_menor),
+    panel.grid.minor.y = gl(lados$grade_y_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor, gr$opacidade_menor))
   if (sem_eixos) {
     t <- t + theme(axis.text = element_blank(), axis.title = element_blank(),
                    axis.ticks = element_blank(), axis.line = element_blank(),
@@ -3032,7 +3043,8 @@ colunas <- function(dados) {
       aes_leg <- unique(c(aes_leg, "shape", "size", "stroke"))
     } else {
       cam[[length(cam) + 1]] <- geom_point(data = d, aes(x = x, y = y, colour = serie, fill = serie,
-                                                         shape = serie, size = serie, stroke = serie, alpha = serie))
+                                                         shape = serie, size = serie, stroke = serie, alpha = serie),
+        show.legend = TRUE)
       aes_leg <- unique(c(aes_leg, "colour", "fill_simb", "shape", "size", "stroke", "alpha"))
     }
   }
@@ -3086,7 +3098,8 @@ colunas <- function(dados) {
                 degrau_meio = function(...) geom_step(..., direction = "mid"))
   if (mapeado) {
     geo(data = d, aes(x = x, y = y, colour = serie, linetype = serie, linewidth = serie,
-                      alpha = serie, group = serie), lineend = "round", linejoin = "round")
+                      alpha = serie, group = serie), lineend = "round", linejoin = "round",
+        show.legend = TRUE)   # TRUE: a legenda mostra a série mesmo sem dados nesta camada (quebra de eixo)
   } else {
     geo(data = d, aes(x = x, y = y), colour = .alfa(e$cor, e$op), linetype = e$lt,
         linewidth = .lw(e$lw), lineend = "round", linejoin = "round")
@@ -4302,6 +4315,122 @@ listar_fontes <- function() {
 }
 
 # -----------------------------------------------------------------------------
+#  18_painel.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/18_painel.R — PAINEL DE AJUSTES: variáveis simples (escala, ticks, grade, quebra, cores...)
+# =============================================================================
+#  O painel (arquivo painel_de_ajustes.R ou PARTE 3 do script único) define variáveis como
+#  x_intervalo <- 1 ou grade_tipo <- "dashed". aplicar_painel() copia as que não são NULL para o
+#  cfg. NULL = "não mexer" (vale o padrão do template).
+# =============================================================================
+
+# Variável do painel -> c(bloco do cfg, parâmetro). Valor copiado como está.
+.PAINEL_MAPA <- list(
+  # tipo e colunas
+  tipo_grafico = c("grafico", "tipo"), coluna_x = c("grafico", "coluna_x"), colunas_y = c("grafico", "colunas_y"),
+  # escala
+  x_inicio = c("eixo_x", "inicio"), x_fim = c("eixo_x", "fim"), x_folga_pct = c("eixo_x", "margem_percentual"),
+  x_escala = c("eixo_x", "escala"), x_inverter = c("eixo_x", "inverter"),
+  y_inicio = c("eixo_y", "inicio"), y_fim = c("eixo_y", "fim"), y_folga_pct = c("eixo_y", "margem_percentual"),
+  y_escala = c("eixo_y", "escala"), y_inverter = c("eixo_y", "inverter"),
+  recortar_nos_limites = c("caixa", "recortar"),
+  # ticks
+  x_primeiro_tick = c("eixo_x", "primeiro_tick"), x_ticks_menores = c("eixo_x", "n_menores"),
+  x_ticks_direcao = c("eixo_x", "direcao_maiores"), x_ticks_menores_direcao = c("eixo_x", "direcao_menores"),
+  x_ticks_comprimento_pt = c("eixo_x", "comprimento_maiores_pt"),
+  x_ticks_menores_comprimento_pt = c("eixo_x", "comprimento_menores_pt"),
+  y_primeiro_tick = c("eixo_y", "primeiro_tick"), y_ticks_menores = c("eixo_y", "n_menores"),
+  y_ticks_direcao = c("eixo_y", "direcao_maiores"), y_ticks_menores_direcao = c("eixo_y", "direcao_menores"),
+  y_ticks_comprimento_pt = c("eixo_y", "comprimento_maiores_pt"),
+  y_ticks_menores_comprimento_pt = c("eixo_y", "comprimento_menores_pt"),
+  ticks_espelhados = c("caixa", "ticks_espelhados"),
+  # números e títulos
+  x_titulo = c("eixo_x", "titulo"), y_titulo = c("eixo_y", "titulo"), titulo_grafico = c("titulos", "titulo"),
+  titulo_grafico_negrito = c("titulos", "negrito_titulo"),
+  x_dividir_por = c("eixo_x", "fator_divisao"), y_dividir_por = c("eixo_y", "fator_divisao"),
+  x_casas_decimais = c("eixo_x", "casas_decimais"), y_casas_decimais = c("eixo_y", "casas_decimais"),
+  x_notacao = c("eixo_x", "notacao"), y_notacao = c("eixo_y", "notacao"),
+  x_rotacao_numeros = c("eixo_x", "rotacao_rotulos"), y_rotacao_numeros = c("eixo_y", "rotacao_rotulos"),
+  x_mostrar_numeros = c("eixo_x", "mostrar_rotulos"), y_mostrar_numeros = c("eixo_y", "mostrar_rotulos"),
+  # grade
+  grade_x = c("grade", "maior_x"), grade_y = c("grade", "maior_y"), grade_cor = c("grade", "cor_maior"),
+  grade_tipo = c("grade", "tipo_maior"), grade_espessura_pt = c("grade", "espessura_maior_pt"),
+  grade_opacidade = c("grade", "opacidade_maior"),
+  grade_menor_x = c("grade", "menor_x"), grade_menor_y = c("grade", "menor_y"),
+  grade_menor_cor = c("grade", "cor_menor"), grade_menor_tipo = c("grade", "tipo_menor"),
+  grade_menor_espessura_pt = c("grade", "espessura_menor_pt"), grade_menor_opacidade = c("grade", "opacidade_menor"),
+  # quebra
+  quebra_de = c("quebra", "de"), quebra_ate = c("quebra", "ate"), quebra_espaco_pt = c("quebra", "espaco_pt"),
+  quebra_ligar_pontos = c("quebra", "ligar_atraves"), quebra_proporcao_superior = c("quebra", "proporcao_superior"),
+  # cores, linhas e símbolos
+  cores_paleta = c("cores", "paleta"), cores_gradiente_cor2 = c("cores", "gradiente_cor2"),
+  linha_espessura_pt = c("serie_padrao",
+                         "linha_espessura_pt"), simbolo_tamanho_pt = c("serie_padrao", "tamanho_simbolo_pt"),
+  # texto
+  fonte = c("texto", "fonte"), tamanho_texto_pt = c("texto", "tamanho_base_pt"), cor_texto = c("texto", "cor"),
+  # legenda e moldura
+  legenda_mostrar = c("legenda", "mostrar"), legenda_posicao = c("legenda", "posicao"),
+  legenda_x = c("legenda", "dentro_x"), legenda_y = c("legenda", "dentro_y"), legenda_titulo = c("legenda", "titulo"),
+  caixa_fechada = c("caixa", "fechada"),
+  # exportação
+  largura_cm = c("exportacao", "largura"), altura_cm = c("exportacao", "altura"), dpi = c("exportacao", "dpi"),
+  formatos = c("exportacao", "formatos"), nome_arquivo = c("exportacao", "nome_arquivo"),
+  pasta_saida = c("exportacao", "pasta")
+)
+
+# Entra: cfg, o ambiente onde estão as variáveis do painel (padrão: o console/global) e, opcional, os
+# dados (para a quebra automática). Sai: o cfg com os ajustes do painel; imprime o que foi aplicado.
+aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
+  cfg <- .completar_cfg(cfg)
+  pega <- function(nome) get0(nome, envir = painel, inherits = FALSE)
+  aplicados <- character(0)
+  marca <- function(nome) aplicados <<- c(aplicados, nome)
+
+  for (nome in names(.PAINEL_MAPA)) {
+    v <- pega(nome)
+    if (is.null(v)) next
+    alvo <- .PAINEL_MAPA[[nome]]
+    if (nome == "recortar_nos_limites") v <- isTRUE(v)
+    cfg[[alvo[1]]][[alvo[2]]] <- v
+    marca(nome)
+  }
+  # intervalo entre ticks maiores / ticks em posições escolhidas
+  for (ax in c("x", "y")) {
+    e <- paste0("eixo_", ax)
+    iv <- pega(paste0(ax, "_intervalo")); tm <- pega(paste0(ax, "_ticks_manuais"))
+    if (!is.null(iv)) { cfg[[e]]$ticks_modo <- "incremento"; cfg[[e]]$incremento <- iv; marca(paste0(ax, "_intervalo")) }
+    if (!is.null(tm)) { cfg[[e]]$ticks_modo <- "manual"; cfg[[e]]$ticks_manuais <- tm; marca(paste0(ax, "_ticks_manuais")) }
+  }
+  neg <- pega("eixos_titulo_negrito")
+  if (!is.null(neg)) { cfg$eixo_x$negrito_titulo <- isTRUE(neg); cfg$eixo_y$negrito_titulo <- isTRUE(neg); marca("eixos_titulo_negrito") }
+  # cores: gradiente, paleta personalizada (vence a paleta nomeada) e cor de séries específicas
+  if (isTRUE(pega("cores_gradiente"))) { cfg$cores$preenchimento <- "gradiente"; marca("cores_gradiente") }
+  pers <- pega("cores_personalizadas")
+  if (!is.null(pers)) { cfg$cores$paleta <- "personalizada"; cfg$cores$personalizada <- pers; marca("cores_personalizadas") }
+  por_serie <- pega("cores_por_serie")
+  if (!is.null(por_serie)) {
+    if (is.null(names(por_serie)) || any(!nzchar(names(por_serie))))
+      .erro("cores_por_serie precisa de nomes: c(\"WORLD\" = \"#000000\", \"BRAZIL\" = \"#1F4E9E\").")
+    for (nm in names(por_serie))
+      cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(cor = por_serie[[nm]]))
+    marca("cores_por_serie")
+  }
+  # quebra: ligada por quebra_ativar; sem de/ate, procura o maior vazio entre os dados
+  qa <- pega("quebra_ativar")
+  if (!is.null(qa)) {
+    cfg$quebra$ativo <- isTRUE(qa); marca("quebra_ativar")
+    if (isTRUE(qa) && (is.null(cfg$quebra$de) || is.null(cfg$quebra$ate)) && !is.null(dados)) {
+      s <- sugerir_quebra(dados, cfg)
+      cfg$quebra$de <- s$de; cfg$quebra$ate <- s$ate
+    }
+  }
+  if (length(aplicados)) message("Painel de ajustes aplicado: ", paste(aplicados, collapse = ", "))
+  else message("Painel de ajustes: nenhum ajuste ativo (tudo NULL = padrão do template).")
+  cfg
+}
+
+# -----------------------------------------------------------------------------
 #  04_catalogo.R — ajuda(), galeria(), mostrar_paletas()
 # -----------------------------------------------------------------------------
 # =============================================================================
@@ -4559,20 +4688,141 @@ demonstracao <- function(tipo = c("linha", "barras", "pizza", "boxplot", "datas"
 }
 
 # -----------------------------------------------------------------------------
-#  SEU TRABALHO (copie para um script seu, tire o "#" das linhas e adapte)
+#  PAINEL DE AJUSTES (arquivo painel_de_ajustes.R do projeto)
 # -----------------------------------------------------------------------------
-#  dados <- ler_csv("C:/pasta/meu_arquivo.csv")        # relatório de leitura no console
-#  colunas(dados)                                      # números e nomes das colunas
-#  cfg$grafico$tipo      <- "linha_pontos"             # ajuda("tipos")
-#  cfg$grafico$coluna_x  <- 1
-#  cfg$grafico$colunas_y <- c(2, 3)
-#  cfg$eixo_x$titulo <- "Tempo (min)";  cfg$eixo_y$titulo <- "Temperatura (°C)"
-#  cfg$eixo_x$inicio <- 0; cfg$eixo_x$fim <- 60
-#  cfg$exportacao$formatos <- c("png", "pdf"); cfg$exportacao$nome_arquivo <- "minha_figura"
-#  g <- plotar(dados, cfg)
-#  visualizar(g)             # prévia com o tamanho e as fontes reais do arquivo final
-#  salvar(g, cfg)            # grava na pasta saida/ (dentro da pasta de trabalho)
-#  resetar_cfg()             # volta tudo ao padrão
+# =============================================================================
+#  PAINEL DE AJUSTES DO GRÁFICO  (edite só este bloco)
+# =============================================================================
+#  Como usar: preencha ARQUIVO_CSV, mude o que quiser e clique em Source (Ctrl+Shift+S).
+#  NULL = "não mexer" (vale o padrão do template). Para voltar ao padrão, escreva NULL.
+#  Textos entre aspas; números sem aspas e com PONTO decimal; TRUE/FALSE em maiúsculas.
+#  Categorias:  1 ARQUIVO E TIPO | 2 ESCALA | 3 TICKS | 4 NÚMEROS E TÍTULOS | 5 GRADE |
+#               6 QUEBRA DO EIXO Y | 7 CORES E LINHAS | 8 FONTE | 9 LEGENDA E MOLDURA | 10 EXPORTAÇÃO
+#  Quer um ajuste que não está aqui? Use o cfg direto (ajuda("eixo_x"), ajuda("grade")...).
+# =============================================================================
+
+# ---- 1. ARQUIVO E TIPO DE GRÁFICO -----------------------------------------------------------
+ARQUIVO_CSV <- ""        # caminho do CSV. EX.: "C:/pasta/dados.csv". Vazio = só carrega o template.
+tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barras" | "pizza" | "boxplot"...
+coluna_x     <- NULL     # coluna do eixo X: número ou "nome". EX.: 1  |  "Years"
+colunas_y    <- NULL     # colunas Y. NULL = todas as outras numéricas. EX.: c(2, 3)  |  c("WORLD", "LATAM")
+
+# ---- 2. ESCALA (limites, tipo e folga) -------------------------------------------------------
+x_inicio    <- NULL      # início do eixo X. EX.: 2015   (em datas: "01/01/2024")
+x_fim       <- NULL      # fim do eixo X.    EX.: 2026
+x_folga_pct <- NULL      # espaço extra nas pontas, em % do eixo. Evita o 1º/último ponto cortado. EX.: 4
+x_escala    <- NULL      # "linear" | "log10" | "ln" | "log2" | "reciproco" | "raiz"
+x_inverter  <- NULL      # TRUE = maior valor à esquerda
+y_inicio    <- NULL      # EX.: 0
+y_fim       <- NULL      # EX.: 700000
+y_folga_pct <- NULL      # EX.: 3
+y_escala    <- NULL      # EX.: "log10"
+y_inverter  <- NULL
+recortar_nos_limites <- NULL   # FALSE = pontos nas pontas aparecem INTEIROS (não são cortados pela moldura)
+
+# ---- 3. TICKS (os traços do eixo e o intervalo entre eles) -------------------------------------
+x_intervalo      <- NULL   # distância entre ticks. EX.: 1 (todos os anos) | 5 | "1 mes" (datas) | "6 horas"
+x_primeiro_tick  <- NULL   # onde começa a contar o intervalo. EX.: 2015
+x_ticks_manuais  <- NULL   # posições escolhidas à mão (ignora x_intervalo). EX.: c(2015, 2020, 2026)
+x_ticks_menores  <- NULL   # nº de ticks menores entre dois maiores. 0 = SEM ticks menores. EX.: 0
+x_ticks_direcao  <- NULL   # "dentro" | "fora" | "ambos" | "nenhum"
+x_ticks_menores_direcao <- NULL
+x_ticks_comprimento_pt  <- NULL          # EX.: 6
+x_ticks_menores_comprimento_pt <- NULL   # EX.: 3
+y_intervalo      <- NULL   # EX.: 100000
+y_primeiro_tick  <- NULL
+y_ticks_manuais  <- NULL   # EX.: c(0, 1000, 5000, 10000)
+y_ticks_menores  <- NULL   # EX.: 0
+y_ticks_direcao  <- NULL
+y_ticks_menores_direcao <- NULL
+y_ticks_comprimento_pt  <- NULL
+y_ticks_menores_comprimento_pt <- NULL
+ticks_espelhados <- NULL   # TRUE = repete os ticks no topo e à direita (moldura fechada)
+
+# ---- 4. NÚMEROS E TÍTULOS ---------------------------------------------------------------------
+x_titulo         <- NULL   # EX.: "Anos"   (expoente: "Área (m^{2})"; índice: "CO_{2}")
+y_titulo         <- NULL   # EX.: "Receita (US$ ×10^{3})"
+titulo_grafico   <- NULL   # título no topo da figura. EX.: "Evolução 2015-2026"
+titulo_grafico_negrito <- NULL   # TRUE | FALSE
+eixos_titulo_negrito   <- NULL   # TRUE = títulos dos eixos X e Y em negrito
+x_dividir_por    <- NULL   # divide os números do eixo. EX.: 1000 (100000 vira 100; avise no título)
+y_dividir_por    <- NULL
+x_casas_decimais <- NULL   # EX.: 0   (NULL = automático)
+y_casas_decimais <- NULL
+x_notacao        <- NULL   # "normal" | "milhar" | "cientifica" | "potencia10" | "percentual"
+y_notacao        <- NULL
+x_rotacao_numeros <- NULL  # graus. EX.: 45
+y_rotacao_numeros <- NULL
+x_mostrar_numeros <- NULL  # FALSE = esconde os números do eixo
+y_mostrar_numeros <- NULL
+
+# ---- 5. GRADE (linhas de fundo) ---------------------------------------------------------------
+grade_x          <- NULL   # TRUE = linhas verticais nos ticks maiores do X
+grade_y          <- NULL   # TRUE = linhas horizontais nos ticks maiores do Y
+grade_cor        <- NULL   # EX.: "grey60" | "#1F4E9E"
+grade_tipo       <- NULL   # "solid" | "dashed" (tracejada) | "dotted" (pontilhada) | "dotdash" | "longdash"
+grade_espessura_pt <- NULL # EX.: 0.5
+grade_opacidade  <- NULL   # 0 (invisível) a 1 (cor cheia). EX.: 0.4
+grade_menor_x    <- NULL   # grade dos ticks MENORES (normalmente FALSE)
+grade_menor_y    <- NULL
+grade_menor_cor  <- NULL
+grade_menor_tipo <- NULL
+grade_menor_espessura_pt <- NULL
+grade_menor_opacidade    <- NULL
+
+# ---- 6. QUEBRA DO EIXO Y (intervalo grande entre os dados) -------------------------------------
+quebra_ativar    <- NULL   # TRUE liga. Sem quebra_de/quebra_ate, o script ACHA o maior vazio entre os dados
+quebra_de        <- NULL   # início do trecho omitido. EX.: 5000
+quebra_ate       <- NULL   # fim do trecho omitido.    EX.: 80000
+quebra_espaco_pt <- NULL   # espaço entre as duas partes (aumente se os números se sobrepuserem). EX.: 14
+quebra_ligar_pontos      <- NULL   # FALSE = não liga os pontos através da quebra
+quebra_proporcao_superior <- NULL  # altura da parte de cima, de 0 a 1. EX.: 0.5
+
+# ---- 7. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
+cores_paleta        <- NULL   # "classico" (padrão tipo Origin) | "okabe_ito" | "tableau" | "viridis" | "cinza" |
+                              # "brewer_Set1"... (veja mostrar_paletas())
+cores_personalizadas <- NULL  # suas cores, na ordem das colunas Y. EX.: c("#000000", "#D62728", "#1F4E9E")
+cores_por_serie     <- NULL   # a cor de séries específicas (nome exato da coluna).
+                              # EX.: c("WORLD" = "#000000", "LATAM" = "#C00000", "BRAZIL" = "#1F4E9E")
+cores_gradiente     <- NULL   # TRUE = barras/áreas com degradê
+cores_gradiente_cor2 <- NULL  # cor final do degradê. EX.: "white"
+linha_espessura_pt  <- NULL   # EX.: 2
+simbolo_tamanho_pt  <- NULL   # EX.: 7
+
+# ---- 8. FONTE -----------------------------------------------------------------------------------
+fonte            <- NULL   # EX.: "Arial" | "Times New Roman" | "Calibri"  (nomes instalados: listar_fontes())
+tamanho_texto_pt <- NULL   # tamanho base do texto. EX.: 12
+cor_texto        <- NULL   # EX.: "black"
+
+# ---- 9. LEGENDA E MOLDURA ---------------------------------------------------------------------------
+legenda_mostrar  <- NULL   # FALSE = sem legenda
+legenda_posicao  <- NULL   # "dentro" | "direita" | "esquerda" | "topo" | "base"
+legenda_x        <- NULL   # com "dentro": posição de 0 a 1. EX.: 0.04
+legenda_y        <- NULL   # EX.: 0.96
+legenda_titulo   <- NULL   # EX.: "Região"
+caixa_fechada    <- NULL   # TRUE = moldura nos 4 lados | FALSE = só eixos esquerdo e inferior
+
+# ---- 10. EXPORTAÇÃO ------------------------------------------------------------------------------------
+largura_cm   <- NULL       # EX.: 14
+altura_cm    <- NULL       # EX.: 10
+dpi          <- NULL       # EX.: 600
+formatos     <- NULL       # EX.: c("png", "pdf")   (também "tiff", "svg", "jpeg", "emf")
+nome_arquivo <- NULL       # EX.: "minha_figura"
+pasta_saida  <- NULL       # EX.: "C:/pasta/figuras"  (padrão: pasta saida/)
+
+# =============================================================================
+#  EXECUÇÃO (não precisa editar)
+# =============================================================================
+if (nzchar(ARQUIVO_CSV)) {
+  dados <- ler_csv(ARQUIVO_CSV)
+  cfg <- aplicar_painel(cfg, dados = dados)
+  g <- plotar(dados, cfg)
+  visualizar(g)
+  salvar(g, cfg)
+} else {
+  cfg <- aplicar_painel(cfg)
+  message("Preencha ARQUIVO_CSV no painel e rode de novo (Source) para gerar o gráfico.")
+}
 
 message("\nTemplate de gráficos carregado. Para um teste rápido rode:  demonstracao()   (ou ajuda())")
 

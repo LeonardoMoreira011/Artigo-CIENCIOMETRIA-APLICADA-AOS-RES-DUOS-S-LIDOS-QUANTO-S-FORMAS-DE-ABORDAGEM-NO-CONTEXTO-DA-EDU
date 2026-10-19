@@ -898,15 +898,24 @@ cfg$grade <- list(
   menor_x = FALSE,
   menor_y = FALSE,
 
-  # cor_maior / espessura_maior_pt / tipo_maior: estilo da grade maior.
+  # cor_maior / espessura_maior_pt / tipo_maior / opacidade_maior: estilo da grade maior (as
+  #   linhas que saem dos ticks MAIORES). opacidade: 1 = cor cheia, 0 = invisível.
+  #   OPÇÕES cor: nome ("grey60") ou "#RRGGBB" | tipo: "solid" | "dashed" | "dotted" | "dotdash" |
+  #           "longdash" | "twodash" | opacidade: número de 0 a 1
+  #   EX.: cfg$grade$tipo_maior <- "dashed"; cfg$grade$cor_maior <- "#1F4E9E"
+  #        cfg$grade$opacidade_maior <- 0.4
   cor_maior = "grey80",
   espessura_maior_pt = 0.5,
   tipo_maior = "solid",
+  opacidade_maior = 1,
 
-  # cor_menor / espessura_menor_pt / tipo_menor: estilo da grade menor.
+  # cor_menor / espessura_menor_pt / tipo_menor / opacidade_menor: estilo da grade menor
+  #   (ticks menores). Mesmas OPÇÕES da grade maior.
+  #   EX.: cfg$grade$opacidade_menor <- 0.3
   cor_menor = "grey92",
   espessura_menor_pt = 0.4,
-  tipo_menor = "dashed"
+  tipo_menor = "dashed",
+  opacidade_menor = 1
 )
 
 # -----------------------------------------------------------------------------
