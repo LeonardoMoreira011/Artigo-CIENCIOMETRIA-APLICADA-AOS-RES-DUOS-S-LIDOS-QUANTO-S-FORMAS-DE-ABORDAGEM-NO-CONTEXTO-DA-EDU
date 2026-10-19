@@ -4,7 +4,7 @@
 #  Como usar: preencha ARQUIVO_CSV, mude o que quiser e clique em Source (Ctrl+Shift+S).
 #  NULL = "não mexer" (vale o padrão do template). Para voltar ao padrão, escreva NULL.
 #  Textos entre aspas; números sem aspas e com PONTO decimal; TRUE/FALSE em maiúsculas.
-#  Categorias:  1 ARQUIVO E TIPO | 2 ESCALA | 3 TICKS | 4 NÚMEROS E TÍTULOS | 5 GRADE |
+#  Categorias:  1 ARQUIVO E TIPO | 2 INTERVALOS | 3 ESCALA | 4 NÚMEROS E TÍTULOS | 5 GRADE |
 #               6 QUEBRA DO EIXO Y | 7 CORES E LINHAS | 8 FONTE | 9 LEGENDA E MOLDURA | 10 EXPORTAÇÃO
 #  Quer um ajuste que não está aqui? Use o cfg direto (ajuda("eixo_x"), ajuda("grade")...).
 # =============================================================================
@@ -15,37 +15,49 @@ tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barra
 coluna_x     <- NULL     # coluna do eixo X: número ou "nome". EX.: 1  |  "Years"
 colunas_y    <- NULL     # colunas Y. NULL = todas as outras numéricas. EX.: c(2, 3)  |  c("WORLD", "LATAM")
 
-# ---- 2. ESCALA (limites, tipo e folga) -------------------------------------------------------
-x_inicio    <- NULL      # início do eixo X. EX.: 2015   (em datas: "01/01/2024")
-x_fim       <- NULL      # fim do eixo X.    EX.: 2026
+# ---- 2. INTERVALOS DOS EIXOS (início, fim, passo e grossura dos traços) -------------------------
+#  Eixo X
+x_inicio    <- NULL      # começo do eixo X.  EX.: 2015
+x_fim       <- NULL      # fim do eixo X.     EX.: 2026
+x_intervalo <- NULL      # distância entre os traços: 1 = de 1 em 1 | 2 = de 2 em 2 | 5 | "1 mes" (datas)
+x_primeiro_tick <- NULL  # de onde começa a contar. EX.: 2016 (com x_intervalo 2: 2016, 2018, 2020...)
+x_ticks_manuais <- NULL  # posições escolhidas à mão (ignora x_intervalo). EX.: c(2015, 2020, 2026)
+x_ticks_menores <- NULL  # traços pequenos entre dois grandes. 0 = SEM traços pequenos. EX.: 0
+x_ticks_espessura_pt <- NULL   # GROSSURA dos traços do eixo X, em pt. EX.: 1.5   (vale para grandes e pequenos)
+x_ticks_comprimento_pt <- NULL # comprimento dos traços grandes, em pt. EX.: 6
+x_ticks_menores_comprimento_pt <- NULL   # comprimento dos traços pequenos. EX.: 3
+x_ticks_direcao <- NULL  # "dentro" | "fora" | "ambos" (cruzando o eixo) | "nenhum"
+x_ticks_menores_direcao <- NULL
+x_ticks_cor     <- NULL  # EX.: "black"
+x_linha_espessura_pt <- NULL   # grossura da linha do eixo X (quando a moldura não é fechada). EX.: 1.5
+#  Eixo Y
+y_inicio    <- NULL      # EX.: 0
+y_fim       <- NULL      # EX.: 700000
+y_intervalo <- NULL      # EX.: 100000 (de 100000 em 100000)
+y_primeiro_tick <- NULL
+y_ticks_manuais <- NULL  # EX.: c(0, 1000, 5000, 10000)
+y_ticks_menores <- NULL  # EX.: 0
+y_ticks_espessura_pt <- NULL   # grossura dos traços do eixo Y. EX.: 1.5
+y_ticks_comprimento_pt <- NULL
+y_ticks_menores_comprimento_pt <- NULL
+y_ticks_direcao <- NULL
+y_ticks_menores_direcao <- NULL
+y_ticks_cor     <- NULL
+y_linha_espessura_pt <- NULL
+#  Moldura (a caixa em volta do gráfico)
+ticks_espelhados     <- NULL   # TRUE = repete os traços no topo e à direita (moldura fechada)
+moldura_espessura_pt <- NULL   # grossura da moldura, em pt. EX.: 1.5
+moldura_cor          <- NULL   # EX.: "black"
+#  (a grossura das linhas da GRADE está no bloco 5)
+
+# ---- 3. ESCALA (tipo, inversão e folga nas pontas) ------------------------------------------------
 x_folga_pct <- NULL      # espaço extra nas pontas, em % do eixo. Evita o 1º/último ponto cortado. EX.: 4
 x_escala    <- NULL      # "linear" | "log10" | "ln" | "log2" | "reciproco" | "raiz"
 x_inverter  <- NULL      # TRUE = maior valor à esquerda
-y_inicio    <- NULL      # EX.: 0
-y_fim       <- NULL      # EX.: 700000
 y_folga_pct <- NULL      # EX.: 3
 y_escala    <- NULL      # EX.: "log10"
 y_inverter  <- NULL
 recortar_nos_limites <- NULL   # FALSE = pontos nas pontas aparecem INTEIROS (não são cortados pela moldura)
-
-# ---- 3. TICKS (os traços do eixo e o intervalo entre eles) -------------------------------------
-x_intervalo      <- NULL   # distância entre ticks. EX.: 1 (todos os anos) | 5 | "1 mes" (datas) | "6 horas"
-x_primeiro_tick  <- NULL   # onde começa a contar o intervalo. EX.: 2015
-x_ticks_manuais  <- NULL   # posições escolhidas à mão (ignora x_intervalo). EX.: c(2015, 2020, 2026)
-x_ticks_menores  <- NULL   # nº de ticks menores entre dois maiores. 0 = SEM ticks menores. EX.: 0
-x_ticks_direcao  <- NULL   # "dentro" | "fora" | "ambos" | "nenhum"
-x_ticks_menores_direcao <- NULL
-x_ticks_comprimento_pt  <- NULL          # EX.: 6
-x_ticks_menores_comprimento_pt <- NULL   # EX.: 3
-y_intervalo      <- NULL   # EX.: 100000
-y_primeiro_tick  <- NULL
-y_ticks_manuais  <- NULL   # EX.: c(0, 1000, 5000, 10000)
-y_ticks_menores  <- NULL   # EX.: 0
-y_ticks_direcao  <- NULL
-y_ticks_menores_direcao <- NULL
-y_ticks_comprimento_pt  <- NULL
-y_ticks_menores_comprimento_pt <- NULL
-ticks_espelhados <- NULL   # TRUE = repete os ticks no topo e à direita (moldura fechada)
 
 # ---- 4. NÚMEROS E TÍTULOS ---------------------------------------------------------------------
 x_titulo         <- NULL   # EX.: "Anos"   (expoente: "Área (m^{2})"; índice: "CO_{2}")

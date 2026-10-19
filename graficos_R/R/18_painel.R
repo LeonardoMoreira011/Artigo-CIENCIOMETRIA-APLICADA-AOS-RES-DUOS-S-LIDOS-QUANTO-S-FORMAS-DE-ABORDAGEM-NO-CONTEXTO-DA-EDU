@@ -26,6 +26,10 @@
   y_ticks_comprimento_pt = c("eixo_y", "comprimento_maiores_pt"),
   y_ticks_menores_comprimento_pt = c("eixo_y", "comprimento_menores_pt"),
   ticks_espelhados = c("caixa", "ticks_espelhados"),
+  x_ticks_espessura_pt = c("eixo_x", "espessura_ticks_pt"), y_ticks_espessura_pt = c("eixo_y", "espessura_ticks_pt"),
+  x_ticks_cor = c("eixo_x", "cor_ticks"), y_ticks_cor = c("eixo_y", "cor_ticks"),
+  x_linha_espessura_pt = c("eixo_x", "espessura_linha_pt"), y_linha_espessura_pt = c("eixo_y", "espessura_linha_pt"),
+  moldura_espessura_pt = c("caixa", "espessura_pt"), moldura_cor = c("caixa", "cor"),
   # números e títulos
   x_titulo = c("eixo_x", "titulo"), y_titulo = c("eixo_y", "titulo"), titulo_grafico = c("titulos", "titulo"),
   titulo_grafico_negrito = c("titulos", "negrito_titulo"),

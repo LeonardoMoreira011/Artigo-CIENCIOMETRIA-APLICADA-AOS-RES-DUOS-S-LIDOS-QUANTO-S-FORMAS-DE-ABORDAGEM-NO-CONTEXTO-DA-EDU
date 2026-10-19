@@ -354,6 +354,20 @@ cq2$quebra <- utils::modifyList(cq2$quebra, list(ativo = TRUE, de = 110000, ate 
 cq2$eixo_y$mostrar_titulo <- FALSE; cq2$legenda$posicao <- "dentro"
 teste("quebra sem ligar pontos: a legenda da parte de cima mostra TODAS as séries (chave vermelha da LATAM)",
       any(grepl("^#D62728", renderiza(plotar(an, cq2)[[1]]))))
+pg <- list2env(list(x_ticks_espessura_pt = 2.5, y_ticks_espessura_pt = 0.5, x_linha_espessura_pt = 2,
+                    moldura_espessura_pt = 3,
+                    x_ticks_cor = "red", x_intervalo = 2, x_primeiro_tick = 2016, x_inicio = 2015, x_fim = 2026))
+cpg <- suppressMessages(aplicar_painel(c0, pg))
+teste("painel: grossura e cor dos traços (ticks), da linha do eixo e da moldura chegam ao cfg",
+      cpg$eixo_x$espessura_ticks_pt == 2.5 && cpg$eixo_y$espessura_ticks_pt == 0.5 && cpg$eixo_x$cor_ticks == "red" &&
+      cpg$eixo_x$espessura_linha_pt == 2 && cpg$caixa$espessura_pt == 3)
+th <- plotar(an, utils::modifyList(cpg, list(grafico = list(tipo = "linha_pontos", coluna_x = 1))))$theme
+teste("painel: a grossura dos traços muda de verdade o gráfico (X = 5x a do Y)",
+      isTRUE(all.equal(th$axis.ticks.x.bottom$linewidth / th$axis.ticks.y.left$linewidth, 5)))
+teste("painel: intervalo de 2 em 2 a partir de 2016 dá 2016, 2018, ..., 2026",
+      identical(attr(plotar(an, utils::modifyList(cpg, list(grafico = list(tipo = "linha_pontos", coluna_x = 1)))),
+                     "info")$ax_x$maiores,
+                as.numeric(seq(2016, 2026, 2))))
 teste("painel: cores_por_serie sem nomes dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))
 
