@@ -81,7 +81,11 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
   if (isTRUE(ex$carimbo_data)) base <- paste0(base, "_", format(Sys.time(), "%Y%m%d_%H%M%S"))
   fundo <- if (isTRUE(ex$fundo_transparente)) "transparent" else "white"
   transparente <- isTRUE(ex$fundo_transparente)
-  if (transparente) g <- .fundo_transparente(g)
+  if (transparente) {
+    # quebra contínua: as partes têm fundo próprio e só nascem transparentes ao montar o gráfico
+    if (isTRUE(attr(g, "quebra_continua")) && !is.null(dados)) g <- plotar(dados, cfg)
+    g <- .fundo_transparente(g)
+  }
   saidas <- character(0)
   for (f in tolower(ex$formatos)) {
     ext <- switch(f, jpeg = "jpg", f)

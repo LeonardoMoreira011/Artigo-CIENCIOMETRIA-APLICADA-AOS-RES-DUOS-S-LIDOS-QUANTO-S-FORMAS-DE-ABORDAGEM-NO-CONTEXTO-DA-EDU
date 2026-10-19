@@ -49,7 +49,7 @@
                      "05_series.R", "06_eixos.R", "06_eixos_tempo.R", "07_tema.R", "08_tipos_comum.R",
                      "09_tipo_xy.R", "10_tipo_barras.R", "11_tipo_pizza.R",
                      "12_tipo_distribuicao.R", "13_tipo_boxplot.R", "14_montagem.R",
-                     "15_entrada_paineis.R", "16_exportacao.R", "17_estilos.R", "18_painel.R")
+                     "15_entrada_paineis.R", "15_quebra_continua.R", "16_exportacao.R", "17_estilos.R", "18_painel.R")
 for (.a in .MOTOR_ARQUIVOS) source(file.path(.motor_pasta, "R", .a), encoding = "UTF-8")
 rm(.a)
 

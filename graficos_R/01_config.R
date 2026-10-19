@@ -1048,6 +1048,14 @@ cfg$anotacoes <- list(
 cfg$quebra <- list(
   # ativo: liga a quebra do eixo Y.  OPÇÕES: TRUE | FALSE
   ativo = FALSE,
+
+  # estilo: como as duas partes aparecem.
+  #   "separado" (padrão): dois gráficos, cada um com a sua moldura, com um espaço entre eles.
+  #   "continuo": estilo Origin: as partes coladas dentro de UMA moldura só, com duas barras "//"
+  #               nas bordas esquerda e direita no ponto da quebra (espaco_pt não é usado).
+  #   OPÇÕES: "separado" | "continuo"      EX.: cfg$quebra$estilo <- "continuo"
+  estilo = "separado",
+
   # de / ate: trecho do eixo Y que será omitido.
   #   EX.: cfg$quebra$de <- 20; cfg$quebra$ate <- 80
   de = NULL,

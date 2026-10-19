@@ -390,6 +390,34 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
 teste("painel: cores_por_serie sem nomes dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))
 
+cat("\n--- Quebra de eixo contínua (estilo Origin) ---\n")
+qd <- data.frame(x = 1:20, y = c(seq(10, 100, length.out = 10), seq(5000, 5900, length.out = 10)))
+cqc <- c0; cqc$grafico <- utils::modifyList(cqc$grafico, list(tipo = "linha", coluna_x = 1, colunas_y = "y"))
+cqc$legenda$mostrar <- FALSE; cqc$eixo_y$mostrar_titulo <- FALSE; cqc$caixa$ticks_espelhados <- FALSE
+cqc$eixo_x$n_menores <- 0; cqc$eixo_y$n_menores <- 0
+cqc$quebra <- utils::modifyList(cqc$quebra, list(ativo = TRUE, de = 1000, ate = 4800, proporcao_superior = 0.5))
+linhas_cheias <- function(g) {                       # quantas linhas horizontais atravessam a figura (grupos de linhas de pixels)
+  px <- renderiza(g); esc <- grDevices::col2rgb(px)[1, ] < 200
+  fr <- rowSums(matrix(esc, nrow = nrow(px)) ) / ncol(px)
+  cheias <- fr > 0.45
+  sum(cheias & !c(FALSE, head(cheias, -1)))
+}
+cqs <- cqc; cqs$quebra$estilo <- "separado"; cqn <- cqc; cqn$quebra$estilo <- "continuo"
+teste("quebra estilo 'continuo' monta o gráfico e imprime sem erro",
+      inherits(plotar(qd, cqn), "gg") && is.matrix(renderiza(plotar(qd, cqn))))
+teste("quebra contínua: NÃO há linha horizontal entre as duas partes (só topo e base); separada tem as linhas do meio",
+      linhas_cheias(plotar(qd, cqn)) == 2 && linhas_cheias(plotar(qd, cqs)) >= 3)
+teste("quebra estilo inválido dá erro claro com as opções",
+      da_erro(plotar(qd, utils::modifyList(cqn, list(quebra = list(estilo = "colado")))), "continuo"))
+cqd <- cqn; cqd$legenda <- utils::modifyList(cqd$legenda, list(mostrar = TRUE, posicao = "direita"))
+teste("quebra contínua com legenda fora (direita) também monta e imprime", is.matrix(renderiza(plotar(qd, cqd))))
+cqt <- cqn; cqt$exportacao$fundo_transparente <- TRUE
+teste("quebra contínua respeita fundo transparente (canto da figura transparente)",
+      grDevices::col2rgb({ cap <- ragg::agg_capture(width = 300, height = 220, res = 72, background = "transparent")
+                           suppressWarnings(print(.fundo_transparente(plotar(qd, cqt)))); r <- cap()
+                           invisible(grDevices::dev.off()); r[1, 1] },
+                         alpha = TRUE)[4] == 0)
+
 cat("\n--- Exportação e estilos ---\n")
 c1 <- c0; c1$exportacao$formatos <- c("png", "pdf", "svg", "tiff"); c1$exportacao$nome_arquivo <- "t"
 arqs <- salvar(plotar(d, c1), c1)

@@ -38,6 +38,7 @@
   "eixo_y2$modo" = c("independente", "transformado"),
   "legenda$posicao" = c("dentro", "direita", "esquerda", "topo", "base"),
   "titulos$alinhamento" = c("esquerda", "centro", "direita"),
+  "quebra$estilo" = c("separado", "continuo"),
   "paineis$direcao" = c("vertical", "horizontal"),
   "paineis$rotulos_eixo_comum" = c("ultimo", "todos"),
   "paineis$formato_letra" = c("(a)", "a)", "a", "(A)", "A", "(i)"),

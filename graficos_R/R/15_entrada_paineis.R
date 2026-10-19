@@ -152,13 +152,19 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   inferior <- base; superior <- base
   inferior$eixo_y$inicio <- lim[1]; inferior$eixo_y$fim <- Q$de
   superior$eixo_y$inicio <- Q$ate; superior$eixo_y$fim <- lim[2]
-  m <- cfg$caixa$margens_cm; esp <- Q$espaco_pt / 2 / 72 * 2.54
+  continuo <- identical(Q$estilo, "continuo")       # TRUE: uma moldura só, partes coladas (estilo Origin)
+  m <- cfg$caixa$margens_cm; esp <- if (continuo) 0 else Q$espaco_pt / 2 / 72 * 2.54
   # a parte de cima fica sem números/título do X; a de baixo sem legenda, títulos e letra
   sem_ligar <- isFALSE(Q$ligar_atraves) && cfg$grafico$tipo %in% c("pontos", "linha", "linha_pontos")
   ajustar_parte <- function(ck, parte, faixa) {
     ck$.interno <- list(forcar_x = inf$ax_x$limites)      # as duas partes compartilham o mesmo eixo X
     if (sem_ligar) ck$.interno$recortar_y <- faixa
     ck$eixo_y$mostrar_titulo <- FALSE
+    if (continuo) {
+      ck$caixa$proporcao <- NULL                       # as alturas das partes seguem proporcao_superior
+      if (isTRUE(cfg$exportacao$fundo_transparente)) { ck$caixa$fundo_pagina <- "transparente"; ck$caixa$fundo_painel <- "transparente" }
+      if (parte == "inferior") ck$eixo_y$.ocultar_extremo <- "max"   # o número da divisa aparece só uma vez
+    }
     if (parte == "superior") {
       ck$caixa$margens_cm <- c(m[1], m[2], esp, m[4])
       ck$eixo_x$mostrar_rotulos <- FALSE; ck$eixo_x$mostrar_titulo <- FALSE
@@ -171,6 +177,10 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   }
   gs <- .plotar_um(dados, ajustar_parte(superior, "superior", c(Q$ate, lim[2])))
   gi <- .plotar_um(dados, ajustar_parte(inferior, "inferior", c(lim[1], Q$de)))
+  pr <- Q$proporcao_superior
+  if (continuo) {
+    pw <- .quebra_continua(gs, gi, cfg, Q, pr)
+  } else {
   if (isTRUE(Q$marcas)) {
     marca <- function(y) {
       gp <- gpar(col = cfg$caixa$cor, lwd = .lw(cfg$caixa$espessura_pt) * ggplot2::.pt)
@@ -182,11 +192,12 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
     gs <- gs + annotation_custom(marca(0), -Inf, Inf, -Inf, Inf)
     gi <- gi + annotation_custom(marca(1), -Inf, Inf, -Inf, Inf)
   }
-  pr <- Q$proporcao_superior
   pw <- patchwork::wrap_plots(gs, gi, ncol = 1, heights = c(pr, 1 - pr))
+  }
   tit <- inf$titulo_y
   if (isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(tit, ""))
     pw <- patchwork::wrap_plots(.rotulo_lateral(tit, cfg, TRUE), pw, nrow = 1,
                                 widths = grid::unit(c(1.6, 1), c("lines", "null")))
+  if (continuo) attr(pw, "quebra_continua") <- TRUE   # o salvar() refaz a figura se o fundo for transparente
   pw
 }

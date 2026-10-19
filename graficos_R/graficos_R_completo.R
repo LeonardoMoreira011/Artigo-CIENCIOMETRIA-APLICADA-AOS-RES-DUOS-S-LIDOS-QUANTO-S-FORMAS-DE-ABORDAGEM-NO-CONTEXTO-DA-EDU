@@ -1165,6 +1165,14 @@ cfg$anotacoes <- list(
 cfg$quebra <- list(
   # ativo: liga a quebra do eixo Y.  OPÇÕES: TRUE | FALSE
   ativo = FALSE,
+
+  # estilo: como as duas partes aparecem.
+  #   "separado" (padrão): dois gráficos, cada um com a sua moldura, com um espaço entre eles.
+  #   "continuo": estilo Origin: as partes coladas dentro de UMA moldura só, com duas barras "//"
+  #               nas bordas esquerda e direita no ponto da quebra (espaco_pt não é usado).
+  #   OPÇÕES: "separado" | "continuo"      EX.: cfg$quebra$estilo <- "continuo"
+  estilo = "separado",
+
   # de / ate: trecho do eixo Y que será omitido.
   #   EX.: cfg$quebra$de <- 20; cfg$quebra$ate <- 80
   de = NULL,
@@ -1888,6 +1896,7 @@ colunas <- function(dados) {
   "eixo_y2$modo" = c("independente", "transformado"),
   "legenda$posicao" = c("dentro", "direita", "esquerda", "topo", "base"),
   "titulos$alinhamento" = c("esquerda", "centro", "direita"),
+  "quebra$estilo" = c("separado", "continuo"),
   "paineis$direcao" = c("vertical", "horizontal"),
   "paineis$rotulos_eixo_comum" = c("ultimo", "todos"),
   "paineis$formato_letra" = c("(a)", "a)", "a", "(A)", "A", "(i)"),
@@ -4041,13 +4050,19 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   inferior <- base; superior <- base
   inferior$eixo_y$inicio <- lim[1]; inferior$eixo_y$fim <- Q$de
   superior$eixo_y$inicio <- Q$ate; superior$eixo_y$fim <- lim[2]
-  m <- cfg$caixa$margens_cm; esp <- Q$espaco_pt / 2 / 72 * 2.54
+  continuo <- identical(Q$estilo, "continuo")       # TRUE: uma moldura só, partes coladas (estilo Origin)
+  m <- cfg$caixa$margens_cm; esp <- if (continuo) 0 else Q$espaco_pt / 2 / 72 * 2.54
   # a parte de cima fica sem números/título do X; a de baixo sem legenda, títulos e letra
   sem_ligar <- isFALSE(Q$ligar_atraves) && cfg$grafico$tipo %in% c("pontos", "linha", "linha_pontos")
   ajustar_parte <- function(ck, parte, faixa) {
     ck$.interno <- list(forcar_x = inf$ax_x$limites)      # as duas partes compartilham o mesmo eixo X
     if (sem_ligar) ck$.interno$recortar_y <- faixa
     ck$eixo_y$mostrar_titulo <- FALSE
+    if (continuo) {
+      ck$caixa$proporcao <- NULL                       # as alturas das partes seguem proporcao_superior
+      if (isTRUE(cfg$exportacao$fundo_transparente)) { ck$caixa$fundo_pagina <- "transparente"; ck$caixa$fundo_painel <- "transparente" }
+      if (parte == "inferior") ck$eixo_y$.ocultar_extremo <- "max"   # o número da divisa aparece só uma vez
+    }
     if (parte == "superior") {
       ck$caixa$margens_cm <- c(m[1], m[2], esp, m[4])
       ck$eixo_x$mostrar_rotulos <- FALSE; ck$eixo_x$mostrar_titulo <- FALSE
@@ -4060,6 +4075,10 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   }
   gs <- .plotar_um(dados, ajustar_parte(superior, "superior", c(Q$ate, lim[2])))
   gi <- .plotar_um(dados, ajustar_parte(inferior, "inferior", c(lim[1], Q$de)))
+  pr <- Q$proporcao_superior
+  if (continuo) {
+    pw <- .quebra_continua(gs, gi, cfg, Q, pr)
+  } else {
   if (isTRUE(Q$marcas)) {
     marca <- function(y) {
       gp <- gpar(col = cfg$caixa$cor, lwd = .lw(cfg$caixa$espessura_pt) * ggplot2::.pt)
@@ -4071,13 +4090,89 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
     gs <- gs + annotation_custom(marca(0), -Inf, Inf, -Inf, Inf)
     gi <- gi + annotation_custom(marca(1), -Inf, Inf, -Inf, Inf)
   }
-  pr <- Q$proporcao_superior
   pw <- patchwork::wrap_plots(gs, gi, ncol = 1, heights = c(pr, 1 - pr))
+  }
   tit <- inf$titulo_y
   if (isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(tit, ""))
     pw <- patchwork::wrap_plots(.rotulo_lateral(tit, cfg, TRUE), pw, nrow = 1,
                                 widths = grid::unit(c(1.6, 1), c("lines", "null")))
+  if (continuo) attr(pw, "quebra_continua") <- TRUE   # o salvar() refaz a figura se o fundo for transparente
   pw
+}
+
+# -----------------------------------------------------------------------------
+#  15_quebra_continua.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/15_quebra_continua.R — quebra de eixo CONTÍNUA (estilo Origin): uma moldura só
+# =============================================================================
+#  As duas partes ficam coladas dentro de UMA moldura. Nas bordas esquerda e direita, no ponto da
+#  quebra, a linha é interrompida e aparecem duas barras "//". É montada com o gtable (que já vem
+#  com o ggplot2), pois o patchwork não sabe desenhar uma moldura que atravessa dois gráficos.
+# =============================================================================
+
+# Entra: as duas partes (ggplot), cfg, cfg$quebra e a proporção da parte de cima (0 a 1).
+# Sai: um elemento do patchwork com as duas partes empilhadas, sem espaço entre elas, e a moldura contínua.
+.quebra_continua <- function(gs, gi, cfg, Q, pr) {
+  if (!requireNamespace("gtable", quietly = TRUE)) .erro("A quebra contínua precisa do pacote gtable (vem com o ggplot2).")
+  zero <- unit(0, "pt")
+  if (is.null(grDevices::dev.list())) {           # ggplotGrob() precisa de um dispositivo: usa um nulo, sem arquivo
+    grDevices::pdf(NULL); on.exit(grDevices::dev.off(), add = TRUE)
+  }
+  # a moldura e as linhas dos eixos são desenhadas por cima (um traço só); aqui somem as de cada parte
+  sem_linhas <- theme(panel.border = element_blank(), axis.line.x.bottom = element_blank(),
+                      axis.line.x.top = element_blank(), axis.line.y.left = element_blank(),
+                      axis.line.y.right = element_blank())
+  gs <- gs + sem_linhas + theme(axis.ticks.x.bottom = element_blank(), axis.ticks.length.x.bottom = zero,
+                                axis.minor.ticks.x.bottom = element_blank(), axis.minor.ticks.length.x.bottom = zero)
+  gi <- gi + sem_linhas + theme(axis.ticks.x.top = element_blank(), axis.ticks.length.x.top = zero,
+                                axis.minor.ticks.x.top = element_blank(), axis.minor.ticks.length.x.top = zero,
+                                axis.text.x.top = element_blank(), axis.title.x.top = element_blank())
+  ts <- ggplot2::ggplotGrob(gs); ti <- ggplot2::ggplotGrob(gi)
+  # legenda à direita/esquerda existe só na parte de cima: dá à de baixo as mesmas colunas, vazias
+  falta <- ncol(ts) - ncol(ti)
+  if (falta > 0) {
+    ti <- if (identical(cfg$legenda$posicao, "esquerda"))
+      gtable::gtable_add_cols(ti, ts$widths[seq_len(falta)], pos = 0)
+    else gtable::gtable_add_cols(ti, ts$widths[(ncol(ti) + 1):ncol(ts)], pos = -1)
+  }
+  if (ncol(ts) != ncol(ti)) .erro("Quebra contínua: as duas partes ficaram com colunas diferentes. ",
+                                  "Tente cfg$legenda$posicao <- \"dentro\" ou cfg$quebra$estilo <- \"separado\".")
+  gt <- rbind(ts, ti, size = "max")
+  pan <- gt$layout[gt$layout$name == "panel", ]
+  pan <- pan[order(pan$t), ]
+  gt$heights[pan$t[1]] <- unit(pr, "null"); gt$heights[pan$t[2]] <- unit(1 - pr, "null")
+  moldura <- .moldura_quebra(cfg, Q, pr)
+  gt <- gtable::gtable_add_grob(gt, moldura, t = pan$t[1], b = pan$b[2], l = pan$l[1], r = pan$r[1],
+                                clip = "off", z = Inf, name = "moldura-quebra")
+  patchwork::wrap_elements(full = gt)
+}
+
+# Moldura contínua com as barras "//" no ponto da quebra (coordenadas relativas às duas partes juntas).
+# Com marcas = FALSE a moldura fica sem interrupção. Moldura aberta: só eixo esquerdo e inferior.
+.moldura_quebra <- function(cfg, Q, pr) {
+  cx <- cfg$caixa; fechada <- isTRUE(cx$fechada)
+  ev <- cfg$eixo_y; eh <- cfg$eixo_x
+  cor <- if (fechada) .cor(cx$cor) else .cor(ev$cor_linha)
+  esp <- if (fechada) cx$espessura_pt else ev$espessura_linha_pt
+  gp <- gpar(col = cor, lwd = .lw(esp) * ggplot2::.pt, lineend = "square")
+  esquerda <- fechada || isTRUE(ev$mostrar_linha)
+  direita <- fechada
+  base <- fechada || isTRUE(eh$mostrar_linha)
+  yj <- unit(1 - pr, "npc")                      # a quebra fica na divisa entre as duas partes
+  dx <- unit(Q$marca_largura_pt, "pt"); dy <- unit(Q$marca_altura_pt, "pt"); g <- unit(Q$marca_altura_pt * 0.75, "pt")
+  yu <- yj + g; yl <- yj - g                     # centro das duas barras (a linha some entre elas)
+  seg <- function(x1, y1, x2, y2) segmentsGrob(x1, y1, x2, y2, gp = gp)
+  borda <- function(x) {
+    x <- unit(x, "npc")
+    if (!isTRUE(Q$marcas)) return(list(seg(x, unit(0, "npc"), x, unit(1, "npc"))))
+    list(seg(x, unit(1, "npc"), x, yu), seg(x, yl, x, unit(0, "npc")),
+         seg(x - dx, yu - dy, x + dx, yu + dy), seg(x - dx, yl - dy, x + dx, yl + dy))
+  }
+  filhos <- c(if (esquerda) borda(0), if (direita) borda(1),
+              if (fechada) list(seg(unit(0, "npc"), unit(1, "npc"), unit(1, "npc"), unit(1, "npc"))),
+              if (base) list(seg(unit(0, "npc"), unit(0, "npc"), unit(1, "npc"), unit(0, "npc"))))
+  gTree(children = do.call(gList, filhos))
 }
 
 # -----------------------------------------------------------------------------
@@ -4166,7 +4261,11 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
   if (isTRUE(ex$carimbo_data)) base <- paste0(base, "_", format(Sys.time(), "%Y%m%d_%H%M%S"))
   fundo <- if (isTRUE(ex$fundo_transparente)) "transparent" else "white"
   transparente <- isTRUE(ex$fundo_transparente)
-  if (transparente) g <- .fundo_transparente(g)
+  if (transparente) {
+    # quebra contínua: as partes têm fundo próprio e só nascem transparentes ao montar o gráfico
+    if (isTRUE(attr(g, "quebra_continua")) && !is.null(dados)) g <- plotar(dados, cfg)
+    g <- .fundo_transparente(g)
+  }
   saidas <- character(0)
   for (f in tolower(ex$formatos)) {
     ext <- switch(f, jpeg = "jpg", f)
@@ -4365,7 +4464,7 @@ listar_fontes <- function() {
   grade_menor_cor = c("grade", "cor_menor"), grade_menor_tipo = c("grade", "tipo_menor"),
   grade_menor_espessura_pt = c("grade", "espessura_menor_pt"), grade_menor_opacidade = c("grade", "opacidade_menor"),
   # quebra
-  quebra_de = c("quebra", "de"), quebra_ate = c("quebra", "ate"), quebra_espaco_pt = c("quebra", "espaco_pt"),
+  quebra_estilo = c("quebra", "estilo"), quebra_de = c("quebra", "de"), quebra_ate = c("quebra", "ate"), quebra_espaco_pt = c("quebra", "espaco_pt"),
   quebra_ligar_pontos = c("quebra", "ligar_atraves"), quebra_proporcao_superior = c("quebra", "proporcao_superior"),
   # cores, linhas e símbolos
   cores_paleta = c("cores", "paleta"), cores_gradiente_cor2 = c("cores", "gradiente_cor2"),
@@ -4795,6 +4894,7 @@ grade_menor_opacidade    <- NULL
 
 # ---- 6. QUEBRA DO EIXO Y (intervalo grande entre os dados) -------------------------------------
 quebra_ativar    <- NULL   # TRUE liga. Sem quebra_de/quebra_ate, o script ACHA o maior vazio entre os dados
+quebra_estilo    <- NULL   # "separado" (dois gráficos com espaço) | "continuo" (uma moldura só, estilo Origin)
 quebra_de        <- NULL   # início do trecho omitido. EX.: 5000
 quebra_ate       <- NULL   # fim do trecho omitido.    EX.: 80000
 quebra_espaco_pt <- NULL   # espaço entre as duas partes (aumente se os números se sobrepuserem). EX.: 14

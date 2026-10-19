@@ -92,6 +92,7 @@ grade_menor_opacidade    <- NULL
 
 # ---- 6. QUEBRA DO EIXO Y (intervalo grande entre os dados) -------------------------------------
 quebra_ativar    <- NULL   # TRUE liga. Sem quebra_de/quebra_ate, o script ACHA o maior vazio entre os dados
+quebra_estilo    <- NULL   # "separado" (dois gráficos com espaço) | "continuo" (uma moldura só, estilo Origin)
 quebra_de        <- NULL   # início do trecho omitido. EX.: 5000
 quebra_ate       <- NULL   # fim do trecho omitido.    EX.: 80000
 quebra_espaco_pt <- NULL   # espaço entre as duas partes (aumente se os números se sobrepuserem). EX.: 14

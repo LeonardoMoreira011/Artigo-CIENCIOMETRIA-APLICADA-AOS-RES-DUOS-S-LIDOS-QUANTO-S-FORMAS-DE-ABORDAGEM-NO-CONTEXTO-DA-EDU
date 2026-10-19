@@ -115,7 +115,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | Tamanho dos traços "//" da quebra de eixo | `cfg$quebra$marca_largura_pt`, `marca_altura_pt` |
 | Tamanho dos tracinhos do rug | `cfg$distribuicao$rug_comprimento_pt`, `rug_espessura_pt` |
 | Gráficos empilhados com X fixo | `cfg$paineis$ativo <- TRUE` + `cfg$paineis$lista` (ver exemplos 25 e 26) |
-| Quebra no eixo Y | `cfg$quebra$ativo <- TRUE; de <- 20; ate <- 80` — não sabe qual trecho? `sugerir_quebra(dados)` acha o maior vazio e imprime as linhas prontas. Não ligar os pontos através da quebra: `cfg$quebra$ligar_atraves <- FALSE`; números das bordas se sobrepondo: `cfg$quebra$espaco_pt <- 14` |
+| Quebra no eixo Y | `cfg$quebra$ativo <- TRUE; de <- 20; ate <- 80`; estilo Origin (uma moldura só, com `//` nas bordas): `cfg$quebra$estilo <- "continuo"` (padrão: `"separado"`) — não sabe qual trecho? `sugerir_quebra(dados)` acha o maior vazio e imprime as linhas prontas. Não ligar os pontos através da quebra: `cfg$quebra$ligar_atraves <- FALSE`; números das bordas se sobrepondo: `cfg$quebra$espaco_pt <- 14` |
 | Fonte | `cfg$texto$fonte <- "Arial"; cfg$texto$tamanho_base_pt <- 10` |
 | Tamanho e formato do arquivo | `cfg$exportacao$largura <- 8.5; altura <- 6; formatos <- c("tiff","pdf"); dpi <- 600` |
 | Reaproveitar o visual | `salvar_estilo(cfg, "meu")` e depois `cfg <- carregar_estilo("meu", cfg)` |
@@ -153,7 +153,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
 | `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 102 testes automáticos — rode depois de qualquer alteração no motor |
+| `06_testes.R` | 107 testes automáticos — rode depois de qualquer alteração no motor |
 | `painel_de_ajustes.R` | **o painel**: variáveis simples por categoria (escala, ticks, grade, quebra, cores...). Veja a seção 2.1 |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |
