@@ -74,7 +74,7 @@
       .aviso("caixa$painel_largura_cm/painel_altura_cm não valem para painéis empilhados; tamanho da página usado.")
       return(list(grob = NULL, larg = pg[1], alt = pg[2]))
     }
-    if (is.null(grDevices::dev.list())) { grDevices::pdf(NULL); on.exit(grDevices::dev.off(), add = TRUE) }
+    if (is.null(grDevices::dev.list())) { dtmp <- .abrir_dispositivo_tmp(); on.exit(grDevices::dev.off(dtmp), add = TRUE) }
     gt <- ggplot2::ggplotGrob(g)
   }
   pan <- gt$layout[gt$layout$name == "panel", ]
@@ -157,6 +157,7 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
         k <- k + 1
       }
     }
+    if (f %in% c("pdf", "emf")) .avisar_fonte_so_registrada(cfg$texto$fonte, f)
     .abrir_dispositivo(f, arq, larg, alt, ex$dpi, fundo, usar_ragg = .ragg_ok(cfg))
     disp <- grDevices::dev.cur()
     tryCatch({
@@ -223,4 +224,17 @@ exportar_lote <- function(pasta = "dados", cfg = get("cfg", envir = globalenv())
     res[[basename(a)]] <- r
   }
   invisible(res)
+}
+
+# PDF e EMF usam as fontes INSTALADAS no sistema: uma fonte só registrada (como a Barlow vinda de fontes/) vira outra.
+.avisar_fonte_so_registrada <- function(fonte, formato) {
+  if (is.null(fonte) || fonte %in% c("sans", "serif", "mono") || !.tem("systemfonts")) return(invisible())
+  instalada <- tolower(fonte) %in% tolower(systemfonts::system_fonts()$family)
+  reg <- tolower(fonte) %in% tolower(systemfonts::registry_fonts()$family)
+  if (reg && !instalada && !isTRUE(.fontes_cache$.avisou_pdf))
+    { .fontes_cache$.avisou_pdf <- TRUE
+      .aviso("O ", toupper(formato), " usa as fontes instaladas no Windows e a '", fonte, "' só está carregada pelo template: ",
+             "o texto sairá em outra fonte. Instale-a (abra os arquivos .ttf de fontes/Barlow e clique em Instalar) ",
+             "ou exporte em PNG, TIFF ou SVG, que usam a Barlow direto.") }
+  invisible()
 }

@@ -24,7 +24,8 @@ opcionais <- c(
   devEMF       = "4.0",    # EMF para colar no Word/PowerPoint
   viridisLite  = "0.4.0",  # paletas viridis/magma/plasma/cividis
   RColorBrewer = "1.1-3",  # paletas brewer_*
-  systemfonts  = "1.0.0"   # checagem das fontes instaladas
+  systemfonts  = "1.0.0",  # checagem das fontes instaladas (e a Barlow oficial, que vem em fontes/Barlow)
+  shiny        = "1.7.0"   # aplicativo no navegador (app_shiny/, abrir_app.bat)
 )
 
 # Pasta de instalação: a padrão, ou a pessoal se a padrão não for gravável

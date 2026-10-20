@@ -188,6 +188,7 @@ painel_altura_cm  <- NULL  #   EX.: 9 e 6.5. Números, títulos e legenda ficam 
 # ---- 11. LEGENDA: POSIÇÃO, FUNDO, BORDA E SOMBRA -------------------------------------------------------
 legenda_mostrar  <- NULL   # FALSE = sem legenda
 legenda_titulo   <- NULL   # título da legenda. EX.: "Região"
+legenda_nomes    <- NULL   # como cada série aparece escrita na legenda. EX.: c("WORLD RSP" = "Mundo (RSP)")
 #  Posição
 legenda_posicao  <- NULL   # "dentro" (sobre o gráfico) | "direita" | "esquerda" | "topo" | "base" (fora do gráfico)
 legenda_canto    <- NULL   # atalho para "dentro": "sup_esq" | "sup_centro" | "sup_dir" | "centro_esq" | "centro" |

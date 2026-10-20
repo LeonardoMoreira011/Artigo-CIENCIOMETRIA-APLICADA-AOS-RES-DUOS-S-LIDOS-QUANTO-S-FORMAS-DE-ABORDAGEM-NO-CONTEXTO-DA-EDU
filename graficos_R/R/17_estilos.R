@@ -59,6 +59,7 @@ listar_fontes <- function() {
     message("Instale 'systemfonts' (vem com ragg) para listar as fontes.")
     return(invisible())
   }
+  .registrar_fontes_oficiais()
   f <- sort(unique(.familias_fontes()))
   print(f)
   invisible(f)
@@ -74,7 +75,7 @@ listar_fontes <- function() {
 # Entra: nome (como vai em cfg$texto$fonte) e pasta (com os arquivos, ex.: "Barlow-Regular.ttf",
 #   "Barlow-Bold.ttf", "Barlow-Italic.ttf", "Barlow-BoldItalic.ttf") ou arquivos (vetor com nomes
 #   regular, bold, italic, bolditalic). Só o regular é obrigatório. Sai (invisível): o nome registrado.
-registrar_fonte <- function(nome, pasta = NULL, arquivos = NULL) {
+registrar_fonte <- function(nome, pasta = NULL, arquivos = NULL, silencioso = FALSE) {
   if (!.tem("systemfonts")) .erro("registrar_fonte() precisa do pacote systemfonts (vem com ragg).")
   if (!is.character(nome) || length(nome) != 1 || !nzchar(nome)) .erro("registrar_fonte(nome): informe o nome da fonte, ex.: \"Barlow\".")
   if (is.null(arquivos)) {
@@ -104,7 +105,41 @@ registrar_fonte <- function(nome, pasta = NULL, arquivos = NULL) {
   bi <- { v <- arquivos["bolditalic"]; if (length(v) && !is.na(v) && file.exists(v)) unname(v) else bo }
   systemfonts::register_font(name = nome, plain = reg, bold = bo, italic = it, bolditalic = bi)
   .fontes_cache[[nome]] <- NULL                       # esquece um "não encontrada" anterior
-  message("Fonte '", nome, "' registrada (", sum(!is.na(arquivos) & file.exists(arquivos)), " arquivo(s)). ",
-          "Use cfg$texto$fonte <- \"", nome, "\".")
+  if (!silencioso) message("Fonte '", nome, "' registrada (", sum(!is.na(arquivos) & file.exists(arquivos)),
+                           " arquivo(s)). Use cfg$texto$fonte <- \"", nome, "\".")
   invisible(nome)
+}
+
+# Fonte OFICIAL do template: Barlow (licença SIL OFL; os arquivos estão em fontes/Barlow/, ao lado dos scripts).
+# É registrada sozinha na primeira vez que for usada — não precisa instalar nada no Windows.
+# No script único (graficos_R_completo.R) há uma cópia embutida, usada se a pasta fontes/ não estiver junto.
+.FONTES_OFICIAIS <- c("Barlow", "Barlow Condensed", "Barlow Semi Condensed")
+.registrar_fontes_oficiais <- function() {
+  if (isTRUE(.fontes_cache$.oficiais_tentado)) return(invisible(isTRUE(.fontes_cache$.oficiais_ok)))
+  .fontes_cache$.oficiais_tentado <- TRUE
+  if (!.tem("systemfonts")) return(invisible(FALSE))
+  base <- get0(".motor_pasta", inherits = TRUE, ifnotfound = getwd())
+  cand <- unique(c(file.path(base, "fontes", "Barlow"), file.path(getwd(), "fontes", "Barlow"),
+                   file.path(getwd(), "graficos_R", "fontes", "Barlow")))
+  pasta <- cand[dir.exists(cand)][1]
+  if (is.na(pasta) && exists(".BARLOW_EMBUTIDA", inherits = TRUE)) {      # cópia embutida no script único
+    pasta <- file.path(tempdir(), "Barlow"); dir.create(pasta, showWarnings = FALSE)
+    emb <- get(".BARLOW_EMBUTIDA", inherits = TRUE)
+    for (nm in names(emb)) {
+      arq <- file.path(pasta, paste0("Barlow-", nm, ".ttf"))
+      if (!file.exists(arq)) writeBin(memDecompress(jsonlite_b64(emb[[nm]]), type = "gzip"), arq)
+    }
+  }
+  if (is.na(pasta)) return(invisible(FALSE))
+  ok <- vapply(.FONTES_OFICIAIS, function(n) tryCatch({ registrar_fonte(n, pasta, silencioso = TRUE); TRUE },
+                                                      error = function(e) FALSE), NA)
+  .fontes_cache$.oficiais_ok <- any(ok)
+  invisible(any(ok))
+}
+# Decodifica base64 (sem pacotes extras): usa o 'base64enc'/'jsonlite' se houver, senão o decodificador do utils.
+jsonlite_b64 <- function(txt) {
+  txt <- gsub("[\r\n ]", "", txt)
+  if (requireNamespace("jsonlite", quietly = TRUE)) return(jsonlite::base64_dec(txt))
+  if (requireNamespace("base64enc", quietly = TRUE)) return(base64enc::base64decode(txt))
+  stop("Para usar a fonte embutida é preciso o pacote jsonlite (vem com o shiny/ragg).", call. = FALSE)
 }

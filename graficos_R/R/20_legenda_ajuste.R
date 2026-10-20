@@ -59,3 +59,10 @@
             "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam).")
   g
 }
+
+# Dispositivo descartável para medir/montar gtables (ragg: as mesmas fontes do arquivo final; sem aviso de fonte do pdf).
+# Sai: o número do dispositivo aberto (feche com grDevices::dev.off(numero)).
+.abrir_dispositivo_tmp <- function(larg = 7, alt = 5) {
+  if (.tem("ragg")) ragg::agg_capture(width = larg, height = alt, units = "in", res = 72) else grDevices::pdf(NULL)
+  grDevices::dev.cur()
+}

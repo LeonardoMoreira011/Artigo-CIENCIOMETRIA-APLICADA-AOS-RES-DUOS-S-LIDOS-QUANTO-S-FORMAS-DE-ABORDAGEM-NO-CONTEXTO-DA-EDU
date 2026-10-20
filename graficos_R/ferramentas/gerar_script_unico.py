@@ -116,7 +116,7 @@ CAB = '''# =====================================================================
 #   com o nome graficos_R_completo.R)
 #
 #  Se os acentos aparecerem estranhos: File > Reopen with Encoding > UTF-8.
-#  Estrutura:  PARTE 0 instalador | PARTE 1 configuração (cfg) | PARTE 2 motor | PARTE 3 painel de ajustes
+#  Estrutura:  PARTE 0 instalador | PARTE 1 configuração (cfg) | PARTE 2 motor | PARTE 2B fonte Barlow | PARTE 3 painel
 #  Requisitos: R >= 4.2, ggplot2 >= 3.5, scales, patchwork, ragg >= 1.5.
 # =============================================================================
 '''
@@ -174,6 +174,17 @@ ARQ = '''
 
 MOD = "".join("\n# " + "-" * 77 + "\n#  " + a + "\n# " + "-" * 77 + "\n" + modulos[a] + "\n" for a in arquivos)
 CAT = "\n# " + "-" * 77 + "\n#  04_catalogo.R — ajuda(), galeria(), mostrar_paletas()\n# " + "-" * 77 + "\n" + catalogo + "\n"
+
+# fonte Barlow embutida (4 estilos do Barlow, comprimidos): usada se a pasta fontes/ não estiver junto do script
+import base64, zlib
+def _b64(nome):
+    dados = (raiz / "fontes" / "Barlow" / f"Barlow-{nome}.ttf").read_bytes()
+    txt = base64.b64encode(zlib.compress(dados, 9)).decode()
+    return "\n".join(txt[i:i + 100] for i in range(0, len(txt), 100))
+FONTE = ("\n# " + "#" * 77 + "\n#  PARTE 2B — FONTE OFICIAL BARLOW (embutida; não precisa editar)\n"
+         "#  Licença SIL Open Font License 1.1 (veja fontes/Barlow/OFL.txt no repositório). Se a pasta fontes/Barlow estiver\n"
+         "#  ao lado deste script, ela é usada no lugar desta cópia.\n# " + "#" * 77 + "\n.BARLOW_EMBUTIDA <- list(\n"
+         + ",\n".join(f'  {n} = "\n{_b64(n)}\n"' for n in ["Regular", "Bold", "Italic", "BoldItalic"]) + "\n)\n")
 
 P3 = '''
 # #############################################################################
@@ -234,6 +245,6 @@ demonstracao <- function(tipo = c("linha", "barras", "pizza", "boxplot", "datas"
 message("\\nTemplate de gráficos carregado. Para um teste rápido rode:  demonstracao()   (ou ajuda())")
 '''
 
-saida = CAB + P0 + P1 + ARQ + MOD + CAT + P3
+saida = CAB + P0 + P1 + ARQ + MOD + CAT + FONTE + P3
 (raiz / "graficos_R_completo.R").write_text(saida + "\n", encoding="utf-8")
 print("graficos_R_completo.R gerado:", saida.count("\n") + 1, "linhas")

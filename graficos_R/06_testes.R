@@ -390,7 +390,7 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
                     "y2_series", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo", "y2_ticks_manuais", "y2_ticks_menores",
                     "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais", "y2_notacao", "y2_prefixo", "y2_sufixo",
                     "y2_fator", "y2_deslocamento", "linha_espessura_por_serie", "simbolo_tamanho_por_serie",
-                    "simbolo_borda_por_serie", "y2_igual_y1", "y2_legenda_sufixo", "legenda_canto", "fonte_pasta", "simbolo_forma_por_serie")
+                    "simbolo_borda_por_serie", "y2_igual_y1", "y2_legenda_sufixo", "legenda_canto", "fonte_pasta", "simbolo_forma_por_serie", "legenda_nomes")
         all(v %in% c(names(.PAINEL_MAPA), extras)) })
 teste("painel: cores_por_serie sem nomes dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))

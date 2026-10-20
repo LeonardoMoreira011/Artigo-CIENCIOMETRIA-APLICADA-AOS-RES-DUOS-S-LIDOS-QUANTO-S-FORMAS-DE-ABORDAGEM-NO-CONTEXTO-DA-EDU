@@ -186,11 +186,13 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   if (!is.null(.fontes_cache[[f]])) return(.fontes_cache[[f]])
   ok <- TRUE
   if (.tem("systemfonts")) {
+    if (f %in% .FONTES_OFICIAIS) .registrar_fontes_oficiais()        # Barlow: vem junto com o template
     fams <- unique(.familias_fontes())
     ok <- tolower(f) %in% tolower(fams)
   }
   res <- if (ok) f else {
-    .aviso("Fonte '", f, "' não encontrada no sistema; usando 'sans'. Veja listar_fontes().")
+    .aviso("Fonte '", f, "' não encontrada", if (f %in% .FONTES_OFICIAIS) " (pasta fontes/Barlow ausente)" else " no sistema",
+           "; usando 'sans'. Veja listar_fontes().")
     "sans"
   }
   .fontes_cache[[f]] <- res

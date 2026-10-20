@@ -1055,10 +1055,11 @@ cfg$titulos <- list(
 # TEXTO — fonte global
 # -----------------------------------------------------------------------------
 cfg$texto <- list(
-  # fonte: família tipográfica. "sans" = Arial no Windows / Helvetica no Mac.
-  #   Veja as instaladas com listar_fontes().
-  #   OPÇÕES: "sans" | "serif" | "mono" | "Arial" | "Times New Roman" | ...
-  fonte = "sans",
+  # fonte: família tipográfica. Padrão: "Barlow", a fonte oficial (os arquivos vêm na pasta fontes/Barlow/ e
+  #   são carregados sozinhos; também "Barlow Condensed" e "Barlow Semi Condensed"). "sans" = Arial no Windows /
+  #   Helvetica no Mac. Veja as disponíveis com listar_fontes().
+  #   OPÇÕES: "Barlow" | "Barlow Condensed" | "Barlow Semi Condensed" | "sans" | "serif" | "mono" | "Arial" | ...
+  fonte = "Barlow",
 
   # tamanho_base_pt: tamanho padrão de todos os textos.
   tamanho_base_pt = 11,

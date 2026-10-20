@@ -226,6 +226,14 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
       cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(cor = por_serie[[nm]]))
     marca("cores_por_serie")
   }
+  nomes <- pega("legenda_nomes")                    # como cada série aparece escrita na legenda
+  if (!is.null(nomes)) {
+    if (is.null(names(nomes)) || any(!nzchar(names(nomes))))
+      .erro("legenda_nomes precisa de nomes: c(\"WORLD\" = \"Mundo\", \"BRAZIL\" = \"Brasil\").")
+    for (nm in names(nomes))
+      cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(nome_legenda = as.character(nomes[[nm]])))
+    marca("legenda_nomes")
+  }
   # uma forma só para todas as séries: basta dar simbolo_forma (a troca automática de formas é desligada)
   if (!is.null(pega("simbolo_forma")) && is.null(pega("simbolo_variar")) && is.null(pega("simbolos_ordem")))
     cfg$cores$incrementar_simbolo <- FALSE

@@ -15,8 +15,8 @@
   if (!requireNamespace("gtable",
                         quietly = TRUE)) .erro("A quebra de eixo precisa do pacote gtable (vem com o ggplot2).")
   zero <- unit(0, "pt")
-  if (is.null(grDevices::dev.list())) {           # ggplotGrob() precisa de um dispositivo: usa um nulo, sem arquivo
-    grDevices::pdf(NULL); on.exit(grDevices::dev.off(), add = TRUE)
+  if (is.null(grDevices::dev.list())) {           # ggplotGrob() precisa de um dispositivo: usa um descartável, sem arquivo
+    dtmp <- .abrir_dispositivo_tmp(); on.exit(grDevices::dev.off(dtmp), add = TRUE)
   }
   if (continuo) {
     # a moldura e as linhas dos eixos são desenhadas por cima (um traço só); aqui somem as de cada parte

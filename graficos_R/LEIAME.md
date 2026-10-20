@@ -5,6 +5,20 @@ Testado em R 4.3/4.4 com **ggplot2 4.0.3** e **ggplot2 3.5.2** (Linux). **Não f
 
 > **Prefere um arquivo só?** Use `graficos_R_completo.R` (tudo junto: instalador, configuração, motor, ajuda, estilos e exemplos). Abra-o no RStudio, clique em *Source* e rode `demonstracao()`. É gerado a partir desta pasta por `python3 ferramentas/gerar_script_unico.py`.
 
+## Aplicativo no navegador (sem editar script)
+
+Para quem não quer mexer em código: abra o **gerador de gráficos** no navegador, carregue o CSV e ajuste tudo com cliques.
+
+- **Como abrir:** dois cliques em **`abrir_app.bat`** (Windows), ou no RStudio abra `abrir_app.R` e rode (ou `shiny::runApp("app_shiny")`). Na primeira vez ele instala o pacote *shiny*.
+- **O que tem:** os mesmos 12 blocos do `painel_de_ajustes.R` (dados, intervalos, escala, números e títulos, grade, quebra do eixo, eixo Y direito, cores/linhas/símbolos série por série, fonte, moldura e tamanho fixo da caixa, legenda, exportação), cada um com explicação e dicas, prévia que se atualiza sozinha, avisos em português, e botões para baixar **PNG, TIFF, JPEG, SVG e PDF**.
+- **Repetir depois:** *Salvar configuração* (arquivo .json) e *Carregar configuração*; *Código equivalente* mostra as linhas do painel e baixa um script `.R` pronto — a ponte entre o app e o script.
+- **Para o time:** basta compartilhar a pasta `graficos_R` inteira (o app usa o motor da pasta de cima e a fonte de `fontes/`).
+- **Testes do app:** `Rscript app_shiny/testes_app.R`.
+
+## Fonte oficial: Barlow
+
+A **Barlow** (Barlow, Barlow Condensed e Barlow Semi Condensed; licença SIL OFL, `fontes/Barlow/OFL.txt`) é a fonte padrão. Os arquivos estão em **`fontes/Barlow/`** e são carregados sozinhos — não precisa instalar nada no Windows para PNG, TIFF, JPEG e SVG. O `graficos_R_completo.R` traz uma cópia embutida. **PDF e EMF** usam as fontes *instaladas* no Windows: para a Barlow sair no PDF, abra os `.ttf` de `fontes/Barlow` e clique em *Instalar*.
+
 ## 1. Primeira vez (5 minutos)
 
 1. Descompacte a pasta `graficos_R` onde quiser (ex.: `Documentos`).
