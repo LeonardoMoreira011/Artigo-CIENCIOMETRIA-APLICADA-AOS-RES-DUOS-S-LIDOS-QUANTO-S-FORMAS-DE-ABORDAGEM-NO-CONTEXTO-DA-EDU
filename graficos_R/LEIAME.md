@@ -9,7 +9,7 @@ Testado em R 4.3/4.4 com **ggplot2 4.0.3** e **ggplot2 3.5.2** (Linux). **Não f
 
 Para quem não quer mexer em código: abra o **gerador de gráficos** no navegador, carregue o CSV e ajuste tudo com cliques.
 
-- **Como abrir:** dois cliques em **`abrir_app.bat`** (Windows), ou no RStudio abra `abrir_app.R` e rode (ou `shiny::runApp("app_shiny")`). Na primeira vez ele instala o pacote *shiny*.
+- **Como abrir:** dois cliques em **`abrir_app.bat`** (Windows), ou no RStudio abra `abrir_app.R` e rode (ou `shiny::runApp("app_shiny")`). Na primeira vez ele instala o pacote *shiny*. O `.bat` procura o R sozinho (PATH, registro do Windows, `Program Files`, `AppData\Local\Programs\R`); se não achar, pergunta o caminho do `Rscript.exe` uma vez e guarda em `caminho_do_R.txt`.
 - **O que tem:** os mesmos 12 blocos do `painel_de_ajustes.R` (dados, intervalos, escala, números e títulos, grade, quebra do eixo, eixo Y direito, cores/linhas/símbolos série por série, fonte, moldura e tamanho fixo da caixa, legenda, exportação), cada um com explicação e dicas, prévia que se atualiza sozinha, avisos em português, e botões para baixar **PNG, TIFF, JPEG, SVG e PDF**.
 - **Repetir depois:** *Salvar configuração* (arquivo .json) e *Carregar configuração*; *Código equivalente* mostra as linhas do painel e baixa um script `.R` pronto — a ponte entre o app e o script.
 - **Para o time:** basta compartilhar a pasta `graficos_R` inteira (o app usa o motor da pasta de cima e a fonte de `fontes/`).
