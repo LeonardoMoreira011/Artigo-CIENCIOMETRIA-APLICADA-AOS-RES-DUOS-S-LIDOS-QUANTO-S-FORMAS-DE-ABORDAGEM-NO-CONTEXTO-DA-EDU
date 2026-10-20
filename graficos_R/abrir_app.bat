@@ -7,7 +7,14 @@ rem  Procura o R sozinho (PATH, registro do Windows e as pastas de instalacao ma
 rem  Se nao achar, pergunta o caminho do Rscript.exe uma vez e guarda em caminho_do_R.txt.
 rem  Na primeira vez instala os pacotes necessarios (precisa de internet).
 rem ============================================================================
-cd /d "%~dp0"
+pushd "%~dp0"
+if not exist "app_shiny\app.R" (
+  echo.
+  echo Nao achei a pasta app_shiny aqui. Extraia o ZIP INTEIRO ^(botao direito ^> Extrair tudo^) e rode este arquivo
+  echo de dentro da pasta extraida.
+  pause
+  exit /b 1
+)
 set "RS="
 
 rem 1) caminho que voce ja informou antes (caminho_do_R.txt)
@@ -58,10 +65,14 @@ exit /b 1
 echo.
 echo R encontrado: %RS%
 echo Abrindo o gerador de graficos no navegador (http://gerador.localhost:8421)...
-echo Esta janela fecha sozinha quando voce fechar a aba do navegador. Para evitar a janela, use Criar_atalho_na_area_de_trabalho.bat.
+echo Esta janela fecha sozinha uns segundos depois que voce fechar a aba do navegador. Para nao ver a janela, use Criar_atalho_na_area_de_trabalho.bat.
 "%RS%" -e "options(repos=c(CRAN='https://cloud.r-project.org')); for (p in c('shiny','ggplot2','scales','patchwork','ragg','systemfonts')) if (!requireNamespace(p, quietly=TRUE)) install.packages(p); file.create('app_shiny/.pronto'); source('app_shiny/iniciar.R', encoding='UTF-8'); iniciar_gerador(encerrar_ao_fechar = TRUE)"
-echo.
-pause
+if errorlevel 1 (
+  echo.
+  echo O R terminou com erro ^(veja as mensagens acima^). Se faltou internet na primeira vez, conecte e rode de novo.
+  pause
+  exit /b 1
+)
 exit /b 0
 
 :registro

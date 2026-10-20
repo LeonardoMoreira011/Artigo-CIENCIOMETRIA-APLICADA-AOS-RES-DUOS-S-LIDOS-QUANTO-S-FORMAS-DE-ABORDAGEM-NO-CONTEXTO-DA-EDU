@@ -13,7 +13,7 @@ Para quem não quer mexer em código: abra o **gerador de gráficos** no navegad
 - **O que tem:** os mesmos 12 blocos do `painel_de_ajustes.R` (dados, intervalos, escala, números e títulos, grade, quebra do eixo, eixo Y direito, cores/linhas/símbolos série por série, fonte, moldura e tamanho fixo da caixa, legenda, exportação), cada um com explicação e dicas, prévia que se atualiza sozinha, avisos em português, e botões para baixar **PNG, TIFF, JPEG, SVG e PDF**.
 - **Repetir depois:** *Salvar configuração* (arquivo .json) e *Carregar configuração*; *Código equivalente* mostra as linhas do painel e baixa um script `.R` pronto — a ponte entre o app e o script.
 - **Para o time:** basta compartilhar a pasta `graficos_R` inteira (o app usa o motor da pasta de cima e a fonte de `fontes/`).
-- **Testes do app:** `Rscript app_shiny/testes_app.R` (37 testes).
+- **Testes do app:** `Rscript app_shiny/testes_app.R` (39 testes).
 
 ## Refinos de aparência (atualização)
 
@@ -36,8 +36,8 @@ Para quem não quer mexer em código: abra o **gerador de gráficos** no navegad
 
 ## Atalho com ícone, sem janela de comando, e endereço bonito
 
-- **Atalho com ícone:** um `.bat` não pode ter ícone no Windows; o jeito é um **atalho**. Dê dois cliques em **`Criar_atalho_na_area_de_trabalho.bat`** (uma vez): ele cria "Gerador de gráficos" na área de trabalho e no menu Iniciar, com o ícone do projeto (`app_shiny/www/icone.ico`). Pode fixar na barra de tarefas pelo menu de contexto do atalho.
-- **Sem janela de comando:** o atalho abre o app por `iniciar_gerador_oculto.vbs` (R escondido). O R **fecha sozinho** poucos segundos depois que você fecha a aba do navegador; recarregar a página não encerra. A primeira vez (ou se o R não for achado) abre o `abrir_app.bat` com janela, que instala o que falta.
+- **Atalho com ícone:** um `.bat` não pode ter ícone no Windows; o jeito é um **atalho**. **Extraia o ZIP inteiro** (não rode de dentro do ZIP) e dê dois cliques em **`Criar_atalho_na_area_de_trabalho.bat`** (uma vez). Ele usa um VBScript (`criar_atalho.vbs`, sem PowerShell); se o computador bloquear, tenta o PowerShell e, por último, deixa um `Gerador de graficos.cmd` na área de trabalho (sem ícone): ele cria "Gerador de gráficos" na área de trabalho e no menu Iniciar, com o ícone do projeto (`app_shiny/www/icone.ico`). Pode fixar na barra de tarefas pelo menu de contexto do atalho.
+- **Sem janela de comando:** o atalho abre o app por `iniciar_gerador_oculto.vbs` (R escondido). O R **fecha sozinho** poucos segundos depois que você fecha a aba do navegador (e também se o navegador nunca chegar a conectar, após 3 minutos); recarregar a página não encerra. Com o `abrir_app.bat` a janela preta também fecha sozinha ao terminar (só pede uma tecla se o R terminar com erro). A primeira vez (ou se o R não for achado) abre o `abrir_app.bat` com janela, que instala o que falta.
 - **Endereço:** `http://gerador.localhost:8421` (porta fixa; se estiver ocupada o app escolhe outra e mostra o endereço). O navegador entende `*.localhost` sozinho, sem editar nada no Windows.
 - **No R:** `source("app_shiny/iniciar.R"); iniciar_gerador()` (com `encerrar_ao_fechar = TRUE` o R fecha junto com a aba). A prévia do `visualizar()` agora grava `previa_do_grafico.html` (nome fixo, não números aleatórios).
 
@@ -211,7 +211,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
 | `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 205 testes automáticos — rode depois de qualquer alteração no motor |
+| `06_testes.R` | 206 testes automáticos — rode depois de qualquer alteração no motor |
 | `painel_de_ajustes.R` | **o painel**: variáveis simples por categoria (escala, ticks, grade, quebra, cores...). Veja a seção 2.1 |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |

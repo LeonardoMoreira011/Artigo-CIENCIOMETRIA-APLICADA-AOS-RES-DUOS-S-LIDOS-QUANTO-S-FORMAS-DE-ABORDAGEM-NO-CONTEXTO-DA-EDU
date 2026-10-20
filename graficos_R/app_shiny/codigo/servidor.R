@@ -26,10 +26,13 @@ atualizar_campo <- function(session, campo, valor, cfg0, colunas = NULL) {
 }
 
 # Sessões abertas: com gerador_encerrar_ao_fechar (atalho sem janela), o R termina quando a última aba fecha.
-.sessoes <- new.env(); .sessoes$n <- 0
+.sessoes <- new.env(); .sessoes$n <- 0; .sessoes$visto <- FALSE
+# Se o R foi aberto pelo atalho (sem janela) e o navegador nunca chegou a conectar (ex.: foi bloqueado), não deixa o R escondido para sempre.
+if (isTRUE(getOption("gerador_encerrar_ao_fechar")) && requireNamespace("later", quietly = TRUE))
+  later::later(function() if (!.sessoes$visto && .sessoes$n <= 0) shiny::stopApp(), 180)
 
 servidor <- function(input, output, session) {
-  .sessoes$n <- .sessoes$n + 1
+  .sessoes$n <- .sessoes$n + 1; .sessoes$visto <- TRUE
   session$onSessionEnded(function() {
     .sessoes$n <- .sessoes$n - 1
     if (isTRUE(getOption("gerador_encerrar_ao_fechar")))          # espera 6 s: recarregar a página não encerra o app
