@@ -553,6 +553,19 @@ teste("legenda: opacidade fora de 0-1 e alinhar incompatível com a posição d�
       da_erro(plotar(aq, utils::modifyList(cl2, list(legenda = list(fundo_opacidade = 2)))), "entre 0 e 1") &&
       da_erro(plotar(aq, utils::modifyList(cl2, list(legenda = list(posicao = "direita", alinhar = "esquerda")))), "não serve"))
 
+cat("\n--- Y2 ligado fora do painel: y2_* não podem ser ignorados em silêncio ---\n")
+cm <- c0; cm$series$POP <- list(eixo = "y2"); cm$eixo_y2$ativo <- TRUE        # Y2 ligado "na mão", sem y2_series
+cm1 <- suppressMessages(aplicar_painel(cm, list2env(list(y2_intervalo = 2000, y2_ticks_menores = 0, y2_cor = "#C00000"))))
+teste("painel Y2: com o Y2 ligado fora do painel (sem y2_series), y2_intervalo e y2_cor valem para as séries do Y2",
+      cm1$eixo_y2$ticks_modo == "incremento" && cm1$eixo_y2$incremento == 2000 && cm1$eixo_y2$n_menores == 0 &&
+      cm1$series$POP$cor == "#C00000" && cm1$eixo_y2$cor_eixo == "#C00000")
+teste("painel Y2: y2_intervalo com o Y2 desligado avisa que foi ignorado (não some em silêncio)",
+      da_aviso(aplicar_painel(c0, list2env(list(y2_intervalo = 2000))), "Y2) não está ativo"))
+cm$grafico <- utils::modifyList(cm$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "POP")))
+teste("painel Y2: o intervalo do Y2 chega aos ticks do eixo direito",
+      identical(attr(plotar(aq, suppressMessages(aplicar_painel(cm, list2env(list(y2_intervalo = 2000,
+                y2_inicio = 0, y2_fim = 10000))))), "info")$y2$ax$maiores, seq(0, 10000, 2000)))
+
 cat("\n--- Eixo Y da direita (Y2) pelo painel ---\n")
 p2 <- list2env(list(y2_series = "LATAM", y2_titulo = "Pop (milhões)", y2_inicio = 0, y2_fim = 100000,
                     y2_intervalo = 20000,

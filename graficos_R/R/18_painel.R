@@ -88,6 +88,11 @@
 
 # Entra: cfg, o ambiente onde estão as variáveis do painel (padrão: o console/global) e, opcional, os
 # dados (para a quebra automática). Sai: o cfg com os ajustes do painel; imprime o que foi aplicado.
+# Variáveis do painel que mexem no eixo Y da direita (Y2).
+.Y2_VARIAVEIS <- c("y2_series", "y2_fator", "y2_deslocamento", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo",
+                   "y2_ticks_manuais", "y2_ticks_menores", "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais",
+                   "y2_notacao", "y2_prefixo", "y2_sufixo", "y2_igual_y1", "y2_legenda_sufixo")
+
 aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
   cfg <- .completar_cfg(cfg)
   pega <- function(nome) get0(nome, envir = painel, inherits = FALSE)
@@ -142,12 +147,16 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
   # eixo Y da direita (Y2): as séries listadas em y2_series passam para ele; o X continua o mesmo
   y2s <- pega("y2_series")
   y2f <- pega("y2_fator"); y2d <- pega("y2_deslocamento")
-  if (!is.null(y2s) || !is.null(y2f) || !is.null(y2d)) {
+  y2_dadas <- Filter(function(n) !is.null(pega(n)), .Y2_VARIAVEIS)
+  ja_ativo <- isTRUE(cfg$eixo_y2$ativo)            # Y2 ligado antes (cfg$eixo_y2$ativo <- TRUE ou aplicar_painel anterior)
+  if (!is.null(y2s) || !is.null(y2f) || !is.null(y2d) || (ja_ativo && length(y2_dadas))) {
     cfg$eixo_y2$ativo <- TRUE
     if (!is.null(y2s)) {
       for (nm in y2s) cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(eixo = "y2"))
       marca("y2_series")
-    } else cfg$eixo_y2$modo <- "transformado"      # sem séries próprias: o mesmo dado em outra unidade
+    } else if (!is.null(y2f) || !is.null(y2d)) cfg$eixo_y2$modo <- "transformado"   # o mesmo dado em outra unidade
+    # séries do Y2: as de y2_series ou, se o Y2 já estava ligado, as que já têm eixo = "y2" no cfg
+    y2s <- y2s %||% names(Filter(function(x) identical(x$eixo, "y2"), cfg$series))
     if (!is.null(y2f)) { cfg$eixo_y2$fator <- y2f; marca("y2_fator") }
     if (!is.null(y2d)) { cfg$eixo_y2$deslocamento <- y2d; marca("y2_deslocamento") }
     for (nome in c("y2_titulo", "y2_inicio", "y2_fim", "y2_ticks_menores", "y2_casas_decimais", "y2_notacao",
@@ -184,6 +193,9 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
       marca("y2_igual_y1")
     }
   }
+  else if (length(y2_dadas))
+    .aviso("O painel tem ", paste(y2_dadas, collapse = ", "), " preenchido(s), mas o eixo direito (Y2) não está ativo — ",
+           "ajuste ignorado. Preencha y2_series (ex.: y2_series <- \"Temperatura\") para ligar o Y2.")
   neg <- pega("eixos_titulo_negrito")
   if (!is.null(neg)) { cfg$eixo_x$negrito_titulo <- isTRUE(neg); cfg$eixo_y$negrito_titulo <- isTRUE(neg); marca("eixos_titulo_negrito") }
   # cores: gradiente, paleta personalizada (vence a paleta nomeada) e cor de séries específicas
