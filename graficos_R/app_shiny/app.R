@@ -15,7 +15,7 @@ suppressMessages(source(file.path(raiz, "02_motor.R"), encoding = "UTF-8"))
 CFG0 <- .completar_cfg(cfg)
 assign("raiz", raiz, envir = globalenv()); assign("CFG0", CFG0, envir = globalenv())   # usados pelos arquivos de R/
 addResourcePath("fontes", file.path(raiz, "fontes"))
-for (a in c("espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("R", a), encoding = "UTF-8", local = FALSE)
+for (a in c("espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8", local = FALSE)
 
 EXEMPLOS <- c("Dois eixos + quebra de eixo (Y esquerdo e direito)" = "exemplo_dois_eixos_e_quebra.csv",
               "Série temporal (eixo de datas)" = "serie_temporal.csv",
@@ -52,7 +52,12 @@ ui <- fluidPage(
         ui_bloco(b, i, CFG0, aberto = i == 1,
                  extra = if (b$id == "cores") div(class = "grupo", tags$h4("Série por série"),
                           tags$p(class = "ajuda", "Só preencha o que quiser diferente da paleta e dos valores gerais acima."), uiOutput("tabela_series"))
-                         else if (b$id == "legenda") div(class = "grupo", tags$h4("Nomes na legenda"), tags$p(class = "ajuda", "Os nomes das séries são editados no bloco 8, em cada série.")))
+                         else if (b$id == "legenda") div(class = "grupo", tags$h4("Nomes na legenda"), tags$p(class = "ajuda", "Os nomes das séries são editados no bloco 8, em cada série."))
+                         else if (b$id == "fonte") div(class = "grupo", tags$h4("Adicionar uma fonte de arquivo"),
+                          tags$p(class = "ajuda", "Tem uma fonte em .ttf ou .otf que não está instalada? Escolha o arquivo (e, se quiser negrito/itálico de verdade, os arquivos -Bold, -Italic e -BoldItalic juntos). Ela entra na lista acima. Vale enquanto o app estiver aberto."),
+                          textInput("fonte_nome", "Nome da fonte (opcional)", value = "", placeholder = "ex.: Minha Fonte"),
+                          fileInput("fonte_arquivo", NULL, multiple = TRUE, accept = c(".ttf", ".otf"), buttonLabel = "Escolher arquivo(s)...", placeholder = "Nenhum arquivo", width = "100%"))
+                         )
       }),
       div(class = "rodape", "Fonte oficial: Barlow (SIL Open Font License).")),
     tags$main(class = "dir",

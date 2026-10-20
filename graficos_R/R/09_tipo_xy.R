@@ -227,7 +227,7 @@
     k <- L$rotulos_deslocamento_pt / L$rotulos_tamanho_pt
     cam[[length(cam) + 1]] <- geom_text(data = dd, aes(x = x, y = y, label = rot, colour = serie),
       size = .tx(L$rotulos_tamanho_pt), vjust = if (k >= 0) -k else 1 - k, show.legend = FALSE,
-      family = .fonte(cfg$texto$fonte))
+      family = .fonte(cfg$texto$fonte), fontface = if (.neg(cfg)) "bold" else "plain")
   }
   usa_cor <- com_linha || nrow(de) || L$linhas_queda != "nenhuma" || L$rotulos_dados != "nenhum"
   if (!"colour" %in% aes_leg && !mapa && usa_cor) aes_leg <- c(aes_leg, "colour")

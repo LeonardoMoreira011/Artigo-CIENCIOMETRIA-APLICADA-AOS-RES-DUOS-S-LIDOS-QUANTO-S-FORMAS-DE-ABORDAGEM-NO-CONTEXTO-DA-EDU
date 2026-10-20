@@ -1,5 +1,5 @@
 # =============================================================================
-#  app_shiny/R/espec.R — ESPECIFICAÇÃO DOS CAMPOS DO APP (blocos, textos, tipos)
+#  app_shiny/codigo/espec.R — ESPECIFICAÇÃO DOS CAMPOS DO APP (blocos, textos, tipos)
 # =============================================================================
 #  Cada campo do app é uma variável do painel_de_ajustes.R (mesmo nome). O app monta as variáveis e chama
 #  aplicar_painel(), então tudo o que o painel faz o app faz, igual. Para acrescentar um ajuste novo: escreva
@@ -30,9 +30,17 @@ bloco <- function(id, titulo, resumo, dica = NULL, campos = list(), grupos = NUL
             "Área" = "area", "Área empilhada" = "area_empilhada", "Barras" = "barras", "Pizza / rosca" = "pizza",
             "Histograma" = "histograma", "Curva de densidade" = "densidade", "Distribuição acumulada" = "ecdf",
             "Boxplot (caixas)" = "boxplot")
-.FONTES <- c("Barlow (oficial)" = "Barlow", "Barlow Condensed" = "Barlow Condensed",
-             "Barlow Semi Condensed" = "Barlow Semi Condensed", "Sans (Arial/Helvetica)" = "sans", "Serifada" = "serif",
-             "Monoespaçada" = "mono")
+# Fontes: as oficiais (Barlow), as genéricas e TODAS as que o systemfonts enxerga neste computador (e as adicionadas pelo app).
+opcoes_fontes <- function() {
+  oficiais <- c("Barlow (oficial)" = "Barlow", "Barlow Condensed" = "Barlow Condensed", "Barlow Semi Condensed" = "Barlow Semi Condensed")
+  genericas <- c("Sans (Arial/Helvetica)" = "sans", "Serifada" = "serif", "Monoespaçada" = "mono")
+  inst <- tryCatch({ .registrar_fontes_oficiais(); sort(unique(.familias_fontes())) }, error = function(e) character(0))
+  inst <- setdiff(inst, c(unname(oficiais), unname(genericas)))
+  out <- list("Fonte oficial" = oficiais, "Genéricas" = genericas)
+  if (length(inst)) out[["Instaladas no computador (systemfonts)"]] <- stats::setNames(inst, inst)
+  out
+}
+.FONTES <- opcoes_fontes()
 .CANTOS <- c("(posição manual)" = "", "Em cima, à esquerda" = "sup_esq", "Em cima, no centro" = "sup_centro",
              "Em cima, à direita" = "sup_dir", "No meio, à esquerda" = "centro_esq", "No centro" = "centro",
              "No meio, à direita" = "centro_dir", "Embaixo, à esquerda" = "inf_esq", "Embaixo, no centro" = "inf_centro",
@@ -55,10 +63,10 @@ bloco <- function(id, titulo, resumo, dica = NULL, campos = list(), grupos = NUL
     campo(paste0(p, "_ticks_menores_direcao"), "sel", "Traços pequenos", NULL, opcoes = .DIRECAO, mais = TRUE),
     campo(paste0(p, "_ticks_comprimento_pt"), "num", "Comprimento do traço grande (pt)", NULL, min = 0, passo = 0.5, mais = TRUE),
     campo(paste0(p, "_ticks_menores_comprimento_pt"), "num", "Comprimento do traço pequeno (pt)", NULL, min = 0, passo = 0.5, mais = TRUE),
-    campo(paste0(p, "_ticks_espessura_pt"), "num", "Grossura dos traços (pt)", "Grossura dos traços do eixo.", min = 0, passo = 0.25, mais = TRUE),
+    campo(paste0(p, "_ticks_espessura_pt"), "num", "Grossura dos traços (pt)", "Vazio = igual à da moldura.", min = 0, passo = 0.25, mais = TRUE),
     campo(paste0(p, "_ticks_cor"), "cor", "Cor dos traços", NULL, mais = TRUE),
     campo(paste0(p, "_linha_espessura_pt"), "num", "Grossura da linha do eixo (pt)",
-          "Só aparece quando a moldura NÃO é fechada.", min = 0, passo = 0.25, mais = TRUE)
+          "Vazio = igual à da moldura. Só aparece quando a moldura NÃO é fechada.", min = 0, passo = 0.25, mais = TRUE)
   )
 }
 .campos_numeros <- function(p) {
@@ -71,6 +79,10 @@ bloco <- function(id, titulo, resumo, dica = NULL, campos = list(), grupos = NUL
     campo(paste0(p, "_notacao"), "sel", "Formato dos números", NULL, opcoes = .NOTACAO),
     campo(paste0(p, "_rotacao_numeros"), "num", "Girar os números (graus)", "45 deixa os anos inclinados.", min = -90, max = 90),
     campo(paste0(p, "_mostrar_numeros"), "chk", "Mostrar os números do eixo"),
+    campo(paste0(p, "_numeros_negrito"), "chk", "Números do eixo em negrito"),
+    campo(paste0(p, "_rotacao_titulo"), "num", "Girar o título do eixo (graus)",
+          if (p == "y") "Vazio = 90 (lendo de baixo para cima). 0 deixa o título na horizontal." else "Vazio = 0 (horizontal).",
+          min = -180, max = 180, passo = 15),
     campo(paste0(p, "_distancia_titulo_pt"), "num", "Distância título ↔ números (pt)", "Afasta ou aproxima o título.", min = 0, passo = 1, mais = TRUE),
     campo(paste0(p, "_distancia_numeros_pt"), "num", "Distância números ↔ eixo (pt)", NULL, min = 0, passo = 1, mais = TRUE)
   )
@@ -96,10 +108,12 @@ ESPEC <- list(
   bloco("intervalos", "Intervalos dos eixos",
         "Onde cada eixo começa e termina, de quanto em quanto aparecem os traços e como eles são.",
         "Para mostrar todos os anos, coloque 1 em \"Distância entre os traços\" do eixo X. Para tirar os traços pequenos, coloque 0.",
-        c(list(campo("ticks_espelhados", "chk", "Repetir os traços nos lados de cima e da direita",
-                     "Só vale com a moldura fechada (bloco 10).", mais = TRUE),
-               campo("moldura_espessura_pt", "num", "Grossura da moldura (pt)", NULL, min = 0, passo = 0.25, mais = TRUE),
-               campo("moldura_cor", "cor", "Cor da moldura", NULL, mais = TRUE))),
+        c(list(campo("moldura_espessura_pt", "num", "Grossura da moldura (pt)",
+                     "Os traços e as linhas dos eixos seguem esta grossura (tudo igual). Para um traço diferente, use \"Mais opções\" de cada eixo.",
+                     min = 0, passo = 0.25),
+               campo("moldura_cor", "cor", "Cor da moldura"),
+               campo("ticks_espelhados", "chk", "Repetir os traços nos lados de cima e da direita",
+                     "Só vale com a moldura fechada (bloco 10).", largura = 12))),
         grupos = list(list(titulo = "Eixo X (horizontal)", campos = .campos_intervalo("x")),
                       list(titulo = "Eixo Y (vertical)", campos = .campos_intervalo("y")))),
   bloco("escala", "Escala",
@@ -118,19 +132,22 @@ ESPEC <- list(
         grupos = list(list(titulo = "Eixo X", campos = .campos_numeros("x")),
                       list(titulo = "Eixo Y", campos = .campos_numeros("y")))),
   bloco("grade", "Grade (linhas de fundo)",
-        "Linhas de fundo nos traços grandes e, se quiser, nos pequenos: tracejadas, coloridas e transparentes.",
-        "Grade discreta: tracejada, cinza e opacidade 0.3.",
-        list(campo("grade_x", "chk", "Grade vertical (nos traços do X)"), campo("grade_y", "chk", "Grade horizontal (nos traços do Y)"),
-             campo("grade_tipo", "sel", "Tipo de linha", NULL, opcoes = .LINHAS),
-             campo("grade_cor", "cor", "Cor"),
-             campo("grade_espessura_pt", "num", "Grossura (pt)", NULL, min = 0, passo = 0.1),
-             campo("grade_opacidade", "num", "Opacidade (0 a 1)", "1 = sólida; 0.3 = bem transparente.", min = 0, max = 1, passo = 0.05),
-             campo("grade_menor_x", "chk", "Grade também nos traços pequenos do X", mais = TRUE),
-             campo("grade_menor_y", "chk", "Grade também nos traços pequenos do Y", mais = TRUE),
-             campo("grade_menor_tipo", "sel", "Tipo da grade menor", NULL, opcoes = .LINHAS, mais = TRUE),
-             campo("grade_menor_cor", "cor", "Cor da grade menor", NULL, mais = TRUE),
-             campo("grade_menor_espessura_pt", "num", "Grossura da grade menor (pt)", NULL, min = 0, passo = 0.1, mais = TRUE),
-             campo("grade_menor_opacidade", "num", "Opacidade da grade menor", NULL, min = 0, max = 1, passo = 0.05, mais = TRUE))),
+        "Linhas de fundo nos traços grandes e/ou nos pequenos: tracejadas, coloridas e transparentes, cada grupo com o seu estilo.",
+        "A grade dos traços pequenos precisa de traços pequenos: no bloco 2, \"Traços pequenos entre dois grandes\" deve ser 1 ou mais.",
+        list(),
+        grupos = list(
+          list(titulo = "Grade nos traços grandes", campos = list(
+            campo("grade_x", "chk", "Grade vertical (nos traços do X)"), campo("grade_y", "chk", "Grade horizontal (nos traços do Y)"),
+            campo("grade_tipo", "sel", "Tipo de linha", NULL, opcoes = .LINHAS),
+            campo("grade_cor", "cor", "Cor"),
+            campo("grade_espessura_pt", "num", "Grossura (pt)", NULL, min = 0, passo = 0.1),
+            campo("grade_opacidade", "num", "Opacidade (0 a 1)", "1 = sólida; 0.3 = bem transparente.", min = 0, max = 1, passo = 0.05))),
+          list(titulo = "Grade nos traços pequenos", campos = list(
+            campo("grade_menor_x", "chk", "Grade vertical (nos traços pequenos do X)"), campo("grade_menor_y", "chk", "Grade horizontal (nos traços pequenos do Y)"),
+            campo("grade_menor_tipo", "sel", "Tipo de linha", NULL, opcoes = .LINHAS),
+            campo("grade_menor_cor", "cor", "Cor"),
+            campo("grade_menor_espessura_pt", "num", "Grossura (pt)", NULL, min = 0, passo = 0.1),
+            campo("grade_menor_opacidade", "num", "Opacidade (0 a 1)", NULL, min = 0, max = 1, passo = 0.05))))),
   bloco("quebra", "Quebra do eixo Y",
         "Corta o trecho vazio entre grupos de dados muito distantes, como no Origin.",
         "Ligue e o app procura sozinho o maior vazio entre os seus dados. Depois você pode ajustar o trecho omitido.",
@@ -146,6 +163,9 @@ ESPEC <- list(
              campo("quebra_y2_ate", "num", "Eixo direito: omitido até", NULL, se = "input.quebra_ativar", mais = TRUE),
              campo("quebra_y2_intervalo_inferior", "num", "Eixo direito: intervalo embaixo", NULL, se = "input.quebra_ativar", mais = TRUE),
              campo("quebra_y2_intervalo_superior", "num", "Eixo direito: intervalo em cima", NULL, se = "input.quebra_ativar", mais = TRUE),
+             campo("quebra_marcas", "chk", "Desenhar as barras \"//\" da quebra", NULL, se = "input.quebra_ativar", mais = TRUE),
+             campo("quebra_marca_largura_pt", "num", "Barra: largura (pt)", "Menor = não encosta nos números. Padrão 2.5.", min = 0.5, passo = 0.5, se = "input.quebra_ativar", mais = TRUE),
+             campo("quebra_marca_altura_pt", "num", "Barra: altura (pt)", "Padrão 3.", min = 0.5, passo = 0.5, se = "input.quebra_ativar", mais = TRUE),
              campo("quebra_espaco_pt", "num", "Espaço entre as partes (pt)", "Só no estilo separado.", min = 0, se = "input.quebra_ativar", mais = TRUE),
              campo("quebra_ligar_pontos", "chk", "Ligar os pontos através da quebra", "Desligue para cada parte mostrar só os seus pontos.", se = "input.quebra_ativar", mais = TRUE))),
   bloco("y2", "Eixo Y da direita (Y2)",
@@ -168,6 +188,7 @@ ESPEC <- list(
              campo("y2_prefixo", "txt", "Texto antes do número", "Ex.: US$ ", se = "input.y2_series && input.y2_series.length", mais = TRUE),
              campo("y2_sufixo", "txt", "Texto depois do número", "Ex.: %", se = "input.y2_series && input.y2_series.length", mais = TRUE),
              campo("y2_distancia_titulo_pt", "num", "Distância título ↔ números (pt)", NULL, min = 0, se = "input.y2_series && input.y2_series.length", mais = TRUE),
+             campo("y2_rotacao_titulo", "num", "Girar o título (graus)", "Vazio = -90.", min = -180, max = 180, passo = 15, se = "input.y2_series && input.y2_series.length", mais = TRUE),
              campo("y2_distancia_numeros_pt", "num", "Distância números ↔ eixo (pt)", NULL, min = 0, se = "input.y2_series && input.y2_series.length", mais = TRUE),
              campo("y2_fator", "num", "SEM séries novas: multiplicar por", "Mostra o MESMO dado em outra unidade no eixo direito (y2 = fator × y + deslocamento). Ex.: °C para °F: fator 1.8 e deslocamento 32.", mais = TRUE),
              campo("y2_deslocamento", "num", "SEM séries novas: somar", NULL, mais = TRUE))),
@@ -195,7 +216,9 @@ ESPEC <- list(
   bloco("fonte", "Fonte e tamanhos de texto",
         "A fonte de tudo e o tamanho de cada texto.",
         "A Barlow é a fonte oficial e já vem no template. O tamanho base vale para tudo; os tamanhos separados têm prioridade.",
-        list(campo("fonte", "sel", "Fonte", NULL, opcoes = .FONTES, padrao = "Barlow"),
+        list(campo("fonte", "selbusca", "Fonte", "Digite para procurar: a lista traz todas as fontes que o systemfonts enxerga neste computador. Dá para adicionar uma fonte de arquivo logo abaixo.",
+                   opcoes = .FONTES, padrao = "Barlow", largura = 12),
+             campo("negrito_geral", "chk", "Tudo em negrito", "TODOS os nomes e números: títulos, eixos, legenda, textos dos dados.", largura = 12),
              campo("tamanho_texto_pt", "num", "Tamanho base (pt)", "Vale para todo o texto.", min = 4, max = 60, passo = 1),
              campo("cor_texto", "cor", "Cor do texto"),
              campo("titulo_grafico_tamanho_pt", "num", "Título do gráfico (pt)", NULL, min = 4, passo = 1, mais = TRUE),
@@ -207,16 +230,19 @@ ESPEC <- list(
              campo("legenda_titulo_tamanho_pt", "num", "Título da legenda (pt)", NULL, min = 4, passo = 1, mais = TRUE),
              campo("rotulos_dados_tamanho_pt", "num", "Texto junto dos pontos/barras (pt)", NULL, min = 4, passo = 1, mais = TRUE))),
   bloco("moldura", "Moldura e tamanho do gráfico",
-        "A moldura e o tamanho da caixa do gráfico. Com tamanho fixo, todos os gráficos saem com a caixa do mesmo tamanho.",
-        "Como o layer do Origin: defina a largura e a altura da caixa; números, títulos e legenda ficam por fora e a página se ajusta.",
+        "A moldura e o tamanho da caixa do gráfico. Com a caixa fixa, todos os gráficos saem com a caixa do mesmo tamanho.",
+        "Como o layer do Origin: mexer em números, títulos ou legenda move esses textos, não o gráfico; a página se ajusta.",
         list(campo("caixa_fechada", "chk", "Moldura nos 4 lados", "Desmarcado: só os eixos esquerdo e inferior.", largura = 12),
-             campo("painel_largura_cm", "num", "Largura da caixa (cm)", "Vazio = a caixa ocupa o que sobra da página.", min = 1, passo = 0.5),
-             campo("painel_altura_cm", "num", "Altura da caixa (cm)", NULL, min = 1, passo = 0.5))),
+             campo("painel_fixo", "chk", "Caixa do gráfico de tamanho fixo", "Desmarque para a caixa ocupar o que sobra da página (bloco 12).", largura = 12),
+             campo("painel_largura_cm", "num", "Largura da caixa (cm)", "Vazio = 10 cm.", min = 1, passo = 0.5, se = "input.painel_fixo"),
+             campo("painel_altura_cm", "num", "Altura da caixa (cm)", "Vazio = 7.5 cm.", min = 1, passo = 0.5, se = "input.painel_fixo"))),
   bloco("legenda", "Legenda: posição, fundo, borda e sombra",
         "Onde a legenda fica, como ela é e o quanto ela pode crescer sem sair da caixa.",
         "A legenda \"dentro\" que passar da caixa é reduzida sozinha. Use a escala para aumentar ou diminuir.",
         list(campo("legenda_mostrar", "tri", "Mostrar a legenda", NULL, opcoes = c("Automático" = "auto", "Sim" = "sim", "Não" = "nao"), padrao = "auto"),
              campo("legenda_titulo", "txt", "Título da legenda", NULL),
+             campo("legenda_negrito", "chk", "Nomes da legenda em negrito"),
+             campo("legenda_titulo_negrito", "chk", "Título da legenda em negrito"),
              campo("legenda_posicao", "sel", "Posição", "Dentro do gráfico ou fora, em um dos lados.",
                    opcoes = c("Dentro do gráfico" = "dentro", "Fora, à direita" = "direita", "Fora, à esquerda" = "esquerda",
                               "Fora, em cima" = "topo", "Fora, embaixo" = "base"), padrao = "dentro"),
@@ -250,10 +276,12 @@ ESPEC <- list(
   bloco("exportacao", "Exportação",
         "O tamanho do arquivo e a qualidade. Os botões de baixar ficam ao lado do gráfico.",
         "Para jornais e artigos use 600 dpi. PNG/TIFF/SVG usam a Barlow direto; PDF precisa da fonte instalada no computador.",
-        list(campo("largura_cm", "num", "Largura da página (cm)", "Não vale se a caixa tiver tamanho fixo (bloco 10) e \"ajustar a página\" estiver ligado.", min = 2, passo = 0.5),
-             campo("altura_cm", "num", "Altura da página (cm)", NULL, min = 2, passo = 0.5),
-             campo("dpi", "int", "Resolução (dpi)", "300 = bom para relatório; 600 = publicação.", min = 72, max = 1200),
-             campo("ajustar_pagina", "chk", "Ajustar a página ao conteúdo (com caixa de tamanho fixo)", NULL, largura = 12),
+        list(campo("dpi", "int", "Resolução (dpi)", "300 = bom para relatório; 600 = publicação.", min = 72, max = 1200, largura = 12),
+             campo("ajustar_pagina", "chk", "Ajustar a página ao conteúdo", "Com a caixa de tamanho fixo (bloco 10): a página cresce ou encolhe para caber números, títulos e legenda, sem cortar.",
+                   se = "input.painel_fixo", largura = 12),
+             campo("largura_cm", "num", "Largura da página (cm)", "Vale quando a caixa NÃO é fixa ou \"Ajustar a página\" está desmarcado.", min = 2, passo = 0.5,
+                   se = "!input.painel_fixo || !input.ajustar_pagina"),
+             campo("altura_cm", "num", "Altura da página (cm)", NULL, min = 2, passo = 0.5, se = "!input.painel_fixo || !input.ajustar_pagina"),
              campo("nome_arquivo", "txt", "Nome do arquivo", "Sem extensão. Ex.: figura_1", largura = 12)))
 )
 

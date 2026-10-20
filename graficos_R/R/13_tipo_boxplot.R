@@ -170,9 +170,10 @@
     tn <- do.call(rbind, txt_n); faixa <- range(c(faixa, tn$y + 0.06 * diff(faixa)))
     tam_n <- X$n_tamanho_pt %||% cfg$texto$tamanho_base_pt * 0.8
     cam[[length(cam) + 1]] <- if (flip) geom_text(data = tn, aes(x = x, y = y, label = rot), hjust = -0.2,
-                                                   size = .tx(tam_n), family = .fonte(cfg$texto$fonte))
+                                                   size = .tx(tam_n), family = .fonte(cfg$texto$fonte),
+                                                   fontface = if (.neg(cfg)) "bold" else "plain")
       else geom_text(data = tn, aes(x = x, y = y, label = rot), vjust = -0.6,
-                     size = .tx(tam_n), family = .fonte(cfg$texto$fonte))
+                     size = .tx(tam_n), family = .fonte(cfg$texto$fonte), fontface = if (.neg(cfg)) "bold" else "plain")
   }
   ax_x <- .calc_eixo(cfg$eixo_x, c(0.5, k + 0.5), categorias = itens, forcar = cfg$.interno$forcar_x)
   ax_y <- .calc_eixo(cfg$eixo_y, faixa, forcar = cfg$.interno$forcar_y)

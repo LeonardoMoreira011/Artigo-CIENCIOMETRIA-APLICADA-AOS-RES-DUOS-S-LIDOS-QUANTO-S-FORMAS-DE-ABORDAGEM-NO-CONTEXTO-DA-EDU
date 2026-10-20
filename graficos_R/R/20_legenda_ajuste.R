@@ -9,6 +9,24 @@
   c(ex$largura * f, ex$altura * f)
 }
 
+# Tamanho (cm) da caixa do gráfico, ou NULL se não for fixa. Entra: cfg. Sai: NULL | list(w, h) (um deles pode ser NULL).
+# Fixa por padrão (cfg$caixa$painel_fixo); pizza e painéis empilhados só têm caixa fixa se o tamanho for pedido.
+.painel_cm <- function(cfg) {
+  cx <- cfg$caixa
+  if (!isTRUE(cx$painel_fixo %||% TRUE)) return(NULL)
+  w <- cx$painel_largura_cm; h <- cx$painel_altura_cm
+  if (is.null(w) && is.null(h)) {
+    if (identical(cfg$grafico$tipo, "pizza") || isTRUE(cfg$paineis$ativo)) return(NULL)
+    p <- cx$painel_padrao_cm %||% c(10, 7.5)
+    w <- p[1]; h <- p[2]
+    if (!is.null(cx$proporcao)) h <- w * cx$proporcao
+    return(list(w = w, h = h))
+  }
+  if (is.null(h) && !is.null(w) && !is.null(cx$proporcao)) h <- w * cx$proporcao
+  if (is.null(w) && !is.null(h) && !is.null(cx$proporcao)) w <- h / cx$proporcao
+  list(w = w, h = h)
+}
+
 # Mede o gráfico como será desenhado (mesmo dispositivo e fontes do arquivo final).
 # Entra: g (ggplot), tamanho da página em polegadas. Sai: list(painel = c(larg, alt) em pt, legenda = c(larg, alt) em pt)
 # ou NULL se não houver legenda "dentro" medível.
@@ -41,7 +59,8 @@
   if (!identical(lg$posicao, "dentro") || !isTRUE(lg$ajustar_caixa %||% TRUE)) return(g)
   esc0 <- lg$escala %||% 1; esc <- esc0
   fr <- cfg$.interno$fracao_altura %||% 1       # quebra de eixo: a legenda mora só na parte de cima
-  fixo <- c(cfg$caixa$painel_largura_cm, cfg$caixa$painel_altura_cm)
+  pf <- .painel_cm(cfg)
+  fixo <- if (!is.null(pf) && !is.null(pf$w) && !is.null(pf$h)) c(pf$w, pf$h) else NULL
   for (it in 1:3) {
     m <- tryCatch(.medir_legenda(g, .tamanho_pagina_in(cfg)), error = function(e) NULL)
     if (is.null(m)) break

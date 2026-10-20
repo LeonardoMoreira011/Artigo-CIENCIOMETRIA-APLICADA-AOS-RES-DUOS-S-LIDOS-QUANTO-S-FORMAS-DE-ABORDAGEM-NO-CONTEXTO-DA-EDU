@@ -24,7 +24,7 @@ x_intervalo <- NULL      # distância entre os traços: 1 = de 1 em 1 | 2 = de 2
 x_primeiro_tick <- NULL  # de onde começa a contar. EX.: 2016 (com x_intervalo 2: 2016, 2018, 2020...)
 x_ticks_manuais <- NULL  # posições escolhidas à mão (ignora x_intervalo). EX.: c(2015, 2020, 2026)
 x_ticks_menores <- NULL  # traços pequenos entre dois grandes. 0 = SEM traços pequenos. EX.: 0
-x_ticks_espessura_pt <- NULL   # GROSSURA dos traços do eixo X, em pt. EX.: 1.5   (vale para grandes e pequenos)
+x_ticks_espessura_pt <- NULL   # GROSSURA dos traços do eixo X, em pt (vale para grandes e pequenos). Vazio = igual à da moldura. EX.: 1.5
 x_ticks_comprimento_pt <- NULL # comprimento dos traços grandes, em pt. EX.: 6
 x_ticks_menores_comprimento_pt <- NULL   # comprimento dos traços pequenos. EX.: 3
 x_ticks_direcao <- NULL  # "dentro" | "fora" | "ambos" (cruzando o eixo) | "nenhum"
@@ -47,7 +47,7 @@ y_ticks_cor     <- NULL
 y_linha_espessura_pt <- NULL
 #  Moldura (a caixa em volta do gráfico)
 ticks_espelhados     <- NULL   # TRUE = repete os traços no topo e à direita (moldura fechada)
-moldura_espessura_pt <- NULL   # grossura da moldura, em pt. EX.: 1.5
+moldura_espessura_pt <- NULL   # grossura da moldura, em pt. EX.: 1.5   — os traços e as linhas dos eixos seguem esta grossura (a menos que você dê x_/y_ticks_espessura_pt)
 moldura_cor          <- NULL   # EX.: "black"
 #  (a grossura das linhas da GRADE está no bloco 5)
 
@@ -81,6 +81,11 @@ x_distancia_titulo_pt  <- NULL   # título do X até os números. EX.: 6
 y_distancia_titulo_pt  <- NULL   # título do Y até os números (com quebra de eixo vale também). EX.: 6
 x_distancia_numeros_pt <- NULL   # números do X até o eixo. EX.: 3
 y_distancia_numeros_pt <- NULL
+x_rotacao_titulo <- NULL   # ângulo do título do eixo X, em graus (padrão 0). EX.: 0
+y_rotacao_titulo <- NULL   # ângulo do título do eixo Y (padrão 90, lendo de baixo para cima). EX.: 0 (na horizontal)
+x_numeros_negrito <- NULL  # TRUE = números do eixo X em negrito
+y_numeros_negrito <- NULL  # TRUE = números do eixo Y em negrito
+negrito_geral    <- NULL   # TRUE = TODOS os nomes e números em negrito (títulos, eixos, legenda, rótulos de dados...)
 
 # ---- 5. GRADE (linhas de fundo) ---------------------------------------------------------------
 grade_x          <- NULL   # TRUE = linhas verticais nos ticks maiores do X
@@ -109,6 +114,9 @@ quebra_y_intervalo_superior <- NULL   # ... e da parte de cima (começa no quebr
 quebra_y2_intervalo_inferior <- NULL  # o mesmo para o eixo direito (baixo)
 quebra_y2_intervalo_superior <- NULL  # ... (cima)
 quebra_ligar_pontos      <- NULL   # FALSE = não liga os pontos através da quebra
+quebra_marcas    <- NULL   # FALSE = sem as barras "//" na quebra
+quebra_marca_largura_pt <- NULL    # largura de cada barra "//", em pt (padrão 2.5: curta, não encosta nos números). EX.: 4
+quebra_marca_altura_pt  <- NULL    # altura de cada barra, em pt (padrão 3)
 quebra_proporcao_superior <- NULL  # altura da parte de cima, de 0 a 1. EX.: 0.5
 
 # ---- 7. EIXO Y DA DIREITA (Y2): outras variáveis com escala, cor e intervalos próprios ---------------
@@ -135,6 +143,7 @@ y2_fator     <- NULL      # SEM séries novas: mostra o MESMO dado em outra unid
 y2_deslocamento <- NULL   #   EX. de °C para °F:  y2_fator <- 1.8;  y2_deslocamento <- 32
 y2_distancia_titulo_pt  <- NULL   # título do Y2 até os números. EX.: 6
 y2_distancia_numeros_pt <- NULL   # números do Y2 até o eixo. EX.: 3
+y2_rotacao_titulo <- NULL         # ângulo do título do eixo direito (padrão -90). EX.: 90
 #  As cores de cada série (esquerda ou direita) também podem vir de cores_por_serie (bloco 8).
 
 # ---- 8. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
@@ -182,12 +191,16 @@ rotulos_dados_tamanho_pt  <- NULL   # texto escrito junto dos pontos/barras (ró
 
 # ---- 10. MOLDURA DO GRÁFICO ---------------------------------------------------------------------------
 caixa_fechada    <- NULL   # TRUE = moldura nos 4 lados | FALSE = só eixos esquerdo e inferior
-painel_largura_cm <- NULL  # TAMANHO FIXO da caixa do gráfico (dentro dos eixos), em cm, igual em todos os gráficos.
+painel_fixo      <- NULL   # TRUE (padrão) = a caixa do gráfico tem sempre o mesmo tamanho (mexer em números/títulos/legenda não
+                           #   muda o gráfico, a página se ajusta) | FALSE = a caixa ocupa o que sobra da página (largura_cm x altura_cm)
+painel_largura_cm <- NULL  # TAMANHO da caixa do gráfico (dentro dos eixos), em cm. Padrão 10 x 7.5.
 painel_altura_cm  <- NULL  #   EX.: 9 e 6.5. Números, títulos e legenda ficam fora; a página se ajusta para caber tudo.
 
 # ---- 11. LEGENDA: POSIÇÃO, FUNDO, BORDA E SOMBRA -------------------------------------------------------
 legenda_mostrar  <- NULL   # FALSE = sem legenda
 legenda_titulo   <- NULL   # título da legenda. EX.: "Região"
+legenda_negrito  <- NULL   # TRUE = nomes das séries na legenda em negrito
+legenda_titulo_negrito <- NULL  # TRUE = título da legenda em negrito
 legenda_nomes    <- NULL   # como cada série aparece escrita na legenda. EX.: c("WORLD RSP" = "Mundo (RSP)")
 #  Posição
 legenda_posicao  <- NULL   # "dentro" (sobre o gráfico) | "direita" | "esquerda" | "topo" | "base" (fora do gráfico)
@@ -223,7 +236,7 @@ legenda_sombra_opacidade <- NULL    # 0 a 1. EX.: 0.35
 legenda_sombra_deslocamento_pt <- NULL  # c(para a direita, para baixo) em pt. EX.: c(3, 3)  |  c(5, 2)
 
 # ---- 12. EXPORTAÇÃO ------------------------------------------------------------------------------------
-largura_cm   <- NULL       # EX.: 14   (com painel_largura_cm preenchido a página se ajusta sozinha e estes valores não valem)
+largura_cm   <- NULL       # EX.: 14   (só vale com painel_fixo <- FALSE ou ajustar_pagina <- FALSE; senão a página se ajusta sozinha)
 altura_cm    <- NULL       # EX.: 10
 ajustar_pagina <- NULL     # com caixa de tamanho fixo: TRUE (padrão) = a página cresce/encolhe para caber tudo |
                            #   FALSE = página sempre largura_cm x altura_cm (a caixa fica centralizada)

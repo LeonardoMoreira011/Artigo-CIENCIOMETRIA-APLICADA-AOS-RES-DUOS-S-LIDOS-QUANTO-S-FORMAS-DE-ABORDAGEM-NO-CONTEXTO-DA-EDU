@@ -57,23 +57,19 @@
   cfg
 }
 
-# Tamanho de saída. Sem painel de tamanho fixo: o da página (cfg$exportacao). Com cfg$caixa$painel_largura_cm /
-# painel_altura_cm: a caixa do gráfico fica EXATAMENTE nesse tamanho, e a página cresce (ou encolhe) para caber
-# números, títulos e legenda sem cortar nada (exportacao$ajustar_pagina = TRUE) — o gráfico tem o mesmo tamanho
-# em todos os arquivos. Entra: g e cfg. Sai: list(grob = NULL | gtable pronto para desenhar, larg, alt em polegadas).
+# Tamanho de saída. Com a caixa de tamanho fixo (cfg$caixa$painel_fixo, o padrão; tamanho em painel_largura_cm /
+# painel_altura_cm ou painel_padrao_cm) a caixa do gráfico fica EXATAMENTE nesse tamanho, e a página cresce (ou
+# encolhe) para caber números, títulos e legenda sem cortar nada (exportacao$ajustar_pagina = TRUE) — o gráfico tem o
+# mesmo tamanho em todos os arquivos. Sem caixa fixa: o da página (cfg$exportacao).
+# Entra: g e cfg. Sai: list(grob = NULL | gtable pronto para desenhar, larg, alt em polegadas).
 .preparar_saida <- function(g, cfg) {
   pg <- .tamanho_pagina_in(cfg)
-  cx <- cfg$caixa
-  pw <- cx$painel_largura_cm; ph <- cx$painel_altura_cm
-  if (is.null(pw) && is.null(ph)) return(list(grob = NULL, larg = pg[1], alt = pg[2]))
-  if (is.null(ph) && !is.null(pw) && !is.null(cx$proporcao)) ph <- pw * cx$proporcao
-  if (is.null(pw) && !is.null(ph) && !is.null(cx$proporcao)) pw <- ph / cx$proporcao
+  fixo <- .painel_cm(cfg)
+  if (is.null(fixo)) return(list(grob = NULL, larg = pg[1], alt = pg[2]))
+  pw <- fixo$w; ph <- fixo$h
   gt <- attr(g, "gt")
   if (is.null(gt)) {
-    if (inherits(g, "patchwork")) {
-      .aviso("caixa$painel_largura_cm/painel_altura_cm não valem para painéis empilhados; tamanho da página usado.")
-      return(list(grob = NULL, larg = pg[1], alt = pg[2]))
-    }
+    if (inherits(g, "patchwork")) return(list(grob = NULL, larg = pg[1], alt = pg[2]))   # painéis empilhados: página
     if (is.null(grDevices::dev.list())) { dtmp <- .abrir_dispositivo_tmp(); on.exit(grDevices::dev.off(dtmp), add = TRUE) }
     gt <- ggplot2::ggplotGrob(g)
   }

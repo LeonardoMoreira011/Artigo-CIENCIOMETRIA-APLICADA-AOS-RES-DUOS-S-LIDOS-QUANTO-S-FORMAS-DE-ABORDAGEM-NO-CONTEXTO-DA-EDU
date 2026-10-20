@@ -52,10 +52,10 @@
   titulo_lateral <- function(gt, texto, e, lado, cor) {
     d <- e$distancia_titulo_pt %||% 4
     gp <- gpar(fontsize = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt,
-               fontface = if (isTRUE(e$negrito_titulo)) "bold" else "plain",
+               fontface = if (.neg(cfg, e$negrito_titulo)) "bold" else "plain",
                fontfamily = .fonte(cfg$texto$fonte), col = cor %||% e$cor_titulo %||% cfg$texto$cor)
-    rot <- if (lado == "esq") 90 else -90
-    lab <- .texto(texto, isTRUE(e$negrito_titulo))
+    rot <- .angulo_titulo(e, if (lado == "esq") "left" else "right")
+    lab <- .texto(texto, .neg(cfg, e$negrito_titulo))
     largura <- grid::grobWidth(textGrob(lab, rot = rot, gp = gp)) + unit(d, "pt")
     desl <- unit(if (lado == "esq") -d / 2 else d / 2, "pt")
     tg <- textGrob(lab, rot = rot, x = unit(0.5, "npc") + desl, gp = gp)
@@ -67,8 +67,8 @@
   if (isTRUE(cfg$eixo_y$mostrar_titulo) && !is.null(tit_y1) && !identical(tit_y1, ""))
     gt <- titulo_lateral(gt, tit_y1, cfg$eixo_y, "esq", NULL)
   if (!is.null(y2) && isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(y2$titulo, ""))
-    gt <- titulo_lateral(gt, y2$titulo, utils::modifyList(cfg$eixo_y, cfg$eixo_y2[c("distancia_titulo_pt")[
-      !is.null(cfg$eixo_y2$distancia_titulo_pt)]]), "dir", .cor(y2$cor))
+    gt <- titulo_lateral(gt, y2$titulo, utils::modifyList(cfg$eixo_y, Filter(Negate(is.null),
+                         cfg$eixo_y2[c("distancia_titulo_pt", "rotacao_titulo")])), "dir", .cor(y2$cor))
   m <- cfg$caixa$margens_cm                          # margem externa esquerda/direita (as partes ficam sem ela)
   gt <- gtable::gtable_add_cols(gt, unit(m[4], "cm"), pos = 0)
   gt <- gtable::gtable_add_cols(gt, unit(m[2], "cm"), pos = -1)
@@ -83,7 +83,7 @@
   cx <- cfg$caixa; fechada <- isTRUE(cx$fechada)
   ev <- cfg$eixo_y; eh <- cfg$eixo_x
   cor <- if (fechada) .cor(cx$cor) else .cor(ev$cor_linha)
-  esp <- if (fechada) cx$espessura_pt else ev$espessura_linha_pt
+  esp <- if (fechada) cx$espessura_pt else (ev$espessura_linha_pt %||% cx$espessura_pt)
   gp <- gpar(col = cor, lwd = .lw(esp) * ggplot2::.pt, lineend = "square")
   esquerda <- fechada || isTRUE(ev$mostrar_linha)
   direita <- fechada

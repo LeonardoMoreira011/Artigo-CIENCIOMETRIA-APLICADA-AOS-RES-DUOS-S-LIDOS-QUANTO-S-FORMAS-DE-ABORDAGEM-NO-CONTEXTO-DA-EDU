@@ -23,21 +23,29 @@
     left = list(h = 1, v = 0.5), right = list(h = 0, v = 0.5))
   element_text(size = e$tamanho_rotulos_pt %||% cfg$texto$tamanho_base_pt,
                colour = cor_forcada %||% e$cor_rotulos %||% cfg$texto$cor,
-               face = if (isTRUE(e$negrito_rotulos)) "bold" else "plain",
+               face = if (.neg(cfg, e$negrito_rotulos)) "bold" else "plain",
                angle = ang, hjust = just$h, vjust = just$v, margin = m)
 }
 
-# Elemento de tema para o título de um eixo (tamanho, cor, estilo, distância).
+# Negrito ligado neste texto OU em "todos os nomes" (cfg$texto$negrito_tudo).
+.neg <- function(cfg, valor = FALSE) isTRUE(valor) || isTRUE(cfg$texto$negrito_tudo)
+
+# Ângulo padrão do título de cada lado do gráfico (esquerda sobe, direita desce, em cima/embaixo na horizontal).
+.angulo_titulo <- function(e, lado) e$rotacao_titulo %||% switch(lado, left = 90, right = -90, 0)
+
+# Elemento de tema para o título de um eixo (tamanho, cor, estilo, distância, rotação).
 .elem_titulo <- function(e, cfg, lado, cor_forcada = NULL) {
   if (!isTRUE(e$mostrar_titulo %||% TRUE)) return(element_blank())
   d <- e$distancia_titulo_pt %||% 4
   m <- switch(lado, bottom = margin(t = d), top = margin(b = d),
               left = margin(r = d), right = margin(l = d))
-  face <- if (isTRUE(e$negrito_titulo) && isTRUE(e$italico_titulo)) "bold.italic"
-          else if (isTRUE(e$negrito_titulo)) "bold" else if (isTRUE(e$italico_titulo)) "italic" else "plain"
+  neg <- .neg(cfg, e$negrito_titulo)
+  face <- if (neg && isTRUE(e$italico_titulo)) "bold.italic"
+          else if (neg) "bold" else if (isTRUE(e$italico_titulo)) "italic" else "plain"
+  centro <- if (!is.null(e$rotacao_titulo)) 0.5 else NULL                    # rotação escolhida: centraliza no seu espaço
   element_text(size = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt,
                colour = cor_forcada %||% e$cor_titulo %||% cfg$texto$cor, face = face,
-               angle = switch(lado, left = 90, right = -90, 0), margin = m)
+               angle = .angulo_titulo(e, lado), hjust = centro, vjust = centro, margin = m)
 }
 
 # Entra: cfg, config do eixo horizontal e do vertical (como aparecem na tela) e os lados com eixo.
@@ -83,7 +91,8 @@
       # linha de cada eixo (só se mostrar_linha e, nos lados opostos, só se o lado existe)
       linha <- function(e, ativo, cor = NULL, ponta = NULL) {
         if (!(isTRUE(e$mostrar_linha) && ativo)) return(element_blank())
-        element_line(colour = cor %||% e$cor_linha, linewidth = .lw(e$espessura_linha_pt), lineend = ponta)
+        element_line(colour = cor %||% e$cor_linha, linewidth = .lw(e$espessura_linha_pt %||% cx$espessura_pt),
+                     lineend = ponta)
       }
       t <- t + theme(panel.border = element_blank(),
         axis.line.x.bottom = linha(eh, TRUE, ponta = "square"),
@@ -92,7 +101,9 @@
         axis.line.x.top    = linha(eh, "top" %in% lados$hor))
     }
     # ticks
-    tk <- function(e, cor = NULL) element_line(colour = cor %||% e$cor_ticks, linewidth = .lw(e$espessura_ticks_pt))
+    # espessura dos traços: a do eixo, ou (se vazia) a da moldura — mudar a grossura da caixa padroniza tudo
+    tk <- function(e, cor = NULL) element_line(colour = cor %||% e$cor_ticks,
+                                               linewidth = .lw(e$espessura_ticks_pt %||% cx$espessura_pt))
     for (lado in c("bottom", "top", "left", "right")) {
       e <- if (lado %in% c("bottom", "top")) eh else ev
       xy <- if (lado %in% c("bottom", "top")) "x" else "y"
@@ -115,8 +126,9 @@
   ti <- cfg$titulos
   hj <- switch(ti$alinhamento, esquerda = 0, centro = 0.5, direita = 1)
   t + theme(plot.title = element_text(hjust = hj, size = ti$tamanho_titulo_pt %||% (tx$tamanho_base_pt * 1.2),
-                                      face = if (isTRUE(ti$negrito_titulo)) "bold" else "plain"),
-            plot.subtitle = element_text(hjust = hj, size = ti$tamanho_subtitulo_pt %||% tx$tamanho_base_pt),
+                                      face = if (.neg(cfg, ti$negrito_titulo)) "bold" else "plain"),
+            plot.subtitle = element_text(hjust = hj, size = ti$tamanho_subtitulo_pt %||% tx$tamanho_base_pt,
+                                         face = if (.neg(cfg)) "bold" else "plain"),
             plot.title.position = "panel")
 }
 
@@ -145,9 +157,11 @@
     legend.key = element_rect(fill = NA, colour = NA),
     legend.key.size = unit(lg$tamanho_chave_pt * esc, "pt"),
     legend.key.spacing.y = unit(lg$espacamento_pt * esc, "pt"),
-    legend.text = element_text(size = (lg$tamanho_texto_pt %||% tx$tamanho_base_pt) * esc),
+    legend.text = element_text(size = (lg$tamanho_texto_pt %||% tx$tamanho_base_pt) * esc,
+                               face = if (.neg(cfg, lg$negrito_texto)) "bold" else "plain"),
     legend.title = if (is.null(lg$titulo)) element_blank() else
-      element_text(size = (lg$tamanho_titulo_pt %||% tx$tamanho_base_pt) * esc),
+      element_text(size = (lg$tamanho_titulo_pt %||% tx$tamanho_base_pt) * esc,
+                   face = if (.neg(cfg, lg$negrito_titulo)) "bold" else "plain"),
     legend.margin = do.call(margin, as.list(lg$margem_interna_pt * esc)))
   if (pos == "inside") {
     anc <- if (identical(lg$ancora, "auto")) c(lg$dentro_x, lg$dentro_y) else lg$ancora
@@ -220,7 +234,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   p <- p[p >= -1e-6 & p <= 1 + 1e-6]
   if (!length(p)) return(NULL)
   L <- unit(ev$comprimento_menores_pt, "pt")
-  gp <- gpar(col = .cor(y2$cor), lwd = .lw(ev$espessura_ticks_pt) * ggplot2::.pt, lineend = "butt")
+  gp <- gpar(col = .cor(y2$cor), lwd = .lw(ev$espessura_ticks_pt %||% 1) * ggplot2::.pt, lineend = "butt")
   x0 <- unit(1, "npc"); y <- unit(p, "npc")
   filhos <- switch(dir,
     dentro = list(segmentsGrob(x0, y, x0 - L, y, gp = gp)),
@@ -242,7 +256,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
       if (!length(v)) next
       p <- .npc(v, ax); p <- p[p >= -1e-6 & p <= 1 + 1e-6]
       L <- unit(if (tipo == "maiores") e$comprimento_maiores_pt else e$comprimento_menores_pt, "pt")
-      gp <- gpar(col = e$cor_ticks, lwd = .lw(e$espessura_ticks_pt) * ggplot2::.pt, lineend = "butt")
+      gp <- gpar(col = e$cor_ticks, lwd = .lw(e$espessura_ticks_pt %||% 1) * ggplot2::.pt, lineend = "butt")
       g <- switch(lado,
         bottom = segmentsGrob(unit(p, "npc"), unit(0, "npc"), unit(p, "npc"), L, gp = gp),
         top    = segmentsGrob(unit(p, "npc"), unit(1, "npc"), unit(p, "npc"), unit(1, "npc") - L, gp = gp),

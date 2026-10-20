@@ -53,7 +53,7 @@
       parse = pm,
       hjust = switch(t$alinhamento %||% "centro", esquerda = 0, centro = 0.5, direita = 1),
       colour = .cor(t$cor %||% cfg$texto$cor), size = .tx(t$tamanho_pt %||% cfg$texto$tamanho_base_pt),
-      fontface = if (isTRUE(t$negrito)) "bold" else "plain", family = fonte)
+      fontface = if (.neg(cfg, t$negrito)) "bold" else "plain", family = fonte)
   }
   if (!is.null(an$letra)) {
     cam[[length(cam) + 1]] <- annotation_custom(textGrob(an$letra, x = an$letra_posicao[1], y = an$letra_posicao[2],
@@ -123,7 +123,7 @@
   sec_x <- sec_dup(info$ax_x)
   sec_y <- if (!is.null(info$y2)) {
     a2 <- info$y2$ax
-    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo, cfg$eixo_y$negrito_titulo), breaks = a2$maiores,
+    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo, .neg(cfg, cfg$eixo_y$negrito_titulo)), breaks = a2$maiores,
              labels = a2$rotulos)
   } else sec_dup(info$ax_y)
   g <- g + .escala_continua(info$ax_x, "x", sec_x, if (x_topo) "top") +
@@ -133,10 +133,10 @@
   if (!is.null(sec_x)) gm$x.sec <- guide_axis(minor.ticks = length(info$ax_x$menores) > 0)
   if (!is.null(sec_y)) gm$y.sec <- guide_axis(minor.ticks = is.null(info$y2) && length(info$ax_y$menores) > 0)
   g <- g + do.call(guides, gm)
-  g <- g + labs(x = .texto(info$titulo_x, cfg$eixo_x$negrito_titulo),
-                y = .texto(info$titulo_y, cfg$eixo_y$negrito_titulo),
-                title = .texto(cfg$titulos$titulo, cfg$titulos$negrito_titulo),
-                subtitle = .texto(cfg$titulos$subtitulo))
+  g <- g + labs(x = .texto(info$titulo_x, .neg(cfg, cfg$eixo_x$negrito_titulo)),
+                y = .texto(info$titulo_y, .neg(cfg, cfg$eixo_y$negrito_titulo)),
+                title = .texto(cfg$titulos$titulo, .neg(cfg, cfg$titulos$negrito_titulo)),
+                subtitle = .texto(cfg$titulos$subtitulo, .neg(cfg)))
   g <- g + if (isTRUE(info$flip)) coord_flip(clip = if (isTRUE(cx$recortar)) "on" else "off")
            else coord_cartesian(clip = if (isTRUE(cx$recortar)) "on" else "off")
 
@@ -157,7 +157,7 @@
   g <- g + .tema(cfg, eh, ev, lados, cor_y2 = if (!is.null(info$y2)) .cor(info$y2$cor) else NULL)
   if (!is.null(info$y2)) {
     # estilo de rótulos do y2: casas/notação próprias já nos rótulos; mostra sempre
-    d2 <- Filter(Negate(is.null), cfg$eixo_y2[c("distancia_titulo_pt", "distancia_rotulos_pt")])   # distâncias do Y2
+    d2 <- Filter(Negate(is.null), cfg$eixo_y2[c("distancia_titulo_pt", "distancia_rotulos_pt", "rotacao_titulo")])   # só do Y2
     g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, c(list(mostrar_rotulos = TRUE), d2)), cfg,
                                                     "right",
                                                     .cor(info$y2$cor)),

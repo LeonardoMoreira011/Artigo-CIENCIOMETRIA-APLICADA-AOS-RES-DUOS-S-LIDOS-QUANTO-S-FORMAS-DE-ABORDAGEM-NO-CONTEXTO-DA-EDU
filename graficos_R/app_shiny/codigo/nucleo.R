@@ -1,5 +1,5 @@
 # =============================================================================
-#  app_shiny/R/nucleo.R — da tela para o gráfico (sem Shiny: dá para testar à parte)
+#  app_shiny/codigo/nucleo.R — da tela para o gráfico (sem Shiny: dá para testar à parte)
 # =============================================================================
 #  valores da tela  ->  variáveis do painel_de_ajustes.R  ->  aplicar_painel()  ->  plotar()
 # =============================================================================
@@ -25,7 +25,7 @@ valor_inicial <- function(campo, cfg0) {
     num = , int = if (is.numeric(d) && length(d) == 1) d else NA_real_,
     txt = if (is.character(d) && length(d) == 1) d else "",
     chk = isTRUE(d),
-    sel = , tri = { o <- unname(campo$opcoes); if (!is.null(d) && length(d) == 1 && as.character(d) %in% o) as.character(d) else o[1] },
+    sel = , tri = , selbusca = { o <- unname(unlist(campo$opcoes)); if (!is.null(d) && length(d) == 1 && as.character(d) %in% o) as.character(d) else o[1] },
     cor = "",
     vec = "", selmulti = character(0), colx = "", colsy = character(0), colsy2 = character(0), NULL)
 }
@@ -38,7 +38,7 @@ ler_valor <- function(campo, v, cfg0) {
     num = , int = { if (is.null(v) || length(v) != 1 || is.na(v)) NULL else if (campo$tipo == "int") as.integer(round(v)) else as.numeric(v) },
     txt = { v <- trimws(v %||% ""); if (!nzchar(v)) NULL else if (grepl("^-?[0-9.]+$", v)) as.numeric(v) else v },
     chk = if (is.null(v)) NULL else isTRUE(v),
-    sel = { v <- as.character(v %||% ""); ini <- valor_inicial(campo, cfg0)    # igual ao que a tela mostrava no começo = padrão
+    sel = , selbusca = { v <- as.character(v %||% ""); ini <- valor_inicial(campo, cfg0)    # igual ao que a tela mostrava no começo = padrão
             if (!nzchar(v) || iguais(v, as.character(ini))) NULL else v },
     tri = switch(as.character(v %||% "auto"), sim = TRUE, nao = FALSE, NULL),
     cor = { v <- as.character(v %||% ""); if (!nzchar(v)) NULL else v },

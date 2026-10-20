@@ -1,5 +1,5 @@
 # =============================================================================
-#  app_shiny/R/ui_blocos.R — peças da tela (campos, blocos, cartões)
+#  app_shiny/codigo/ui_blocos.R — peças da tela (campos, blocos, cartões)
 # =============================================================================
 library(shiny)
 
@@ -33,6 +33,7 @@ ui_campo <- function(campo, cfg0) {
     txt = textInput(id, rot, value = ini),
     vec = textInput(id, rot, value = ""),
     sel = , tri = selectInput(id, rot, choices = campo$opcoes, selected = ini, selectize = FALSE),
+    selbusca = selectInput(id, rot, choices = campo$opcoes, selected = ini, selectize = TRUE),
     chk = checkboxInput(id, rot, value = ini),
     cor = cor_input(id, rot, hex_de(padrao_do_campo(campo, cfg0))),
     selmulti = selectInput(id, rot, choices = campo$opcoes, selected = NULL, multiple = TRUE, selectize = TRUE),

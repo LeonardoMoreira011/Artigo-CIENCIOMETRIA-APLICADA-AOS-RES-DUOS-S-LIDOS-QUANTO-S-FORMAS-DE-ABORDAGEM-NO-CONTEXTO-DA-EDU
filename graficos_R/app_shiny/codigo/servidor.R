@@ -1,5 +1,5 @@
 # =============================================================================
-#  app_shiny/R/servidor.R — o que acontece quando você mexe na tela
+#  app_shiny/codigo/servidor.R — o que acontece quando você mexe na tela
 # =============================================================================
 
 PRESETS <- list(
@@ -181,6 +181,29 @@ servidor <- function(input, output, session) {
       }
       rv$pend_series <- NULL
     })
+  })
+
+  # ---- adicionar fonte de arquivo (systemfonts) ----------------------------------------------------------------------------
+  observeEvent(input$fonte_arquivo, {
+    f <- input$fonte_arquivo; req(nrow(f) > 0)
+    base <- tools::file_path_sans_ext(f$name)
+    familia <- trimws(input$fonte_nome %||% "")
+    if (!nzchar(familia)) {
+      familia <- sub("[-_ ]?(Regular|Bold|Italic|BoldItalic|Oblique|Light|Medium|SemiBold|Black|Thin|ExtraBold).*$", "", base[1], ignore.case = TRUE)
+      familia <- trimws(gsub("([a-z])([A-Z])", "\\1 \\2", familia))
+    }
+    pasta <- file.path(tempdir(), "fontes_app"); dir.create(pasta, showWarnings = FALSE)
+    destino <- file.path(pasta, f$name); file.copy(f$datapath, destino, overwrite = TRUE)
+    n <- tolower(base); neg <- grepl("bold|black|heavy", n); ita <- grepl("italic|oblique", n)
+    pega <- function(i) if (any(i)) destino[which(i)[1]] else NA_character_
+    arq <- c(regular = pega(!neg & !ita), bold = pega(neg & !ita), italic = pega(!neg & ita), bolditalic = pega(neg & ita))
+    if (is.na(arq[["regular"]])) arq[["regular"]] <- destino[1]
+    ok <- tryCatch({ registrar_fonte(familia, arquivos = arq, silencioso = TRUE); TRUE },
+                   error = function(e) { showNotification(paste("Não consegui adicionar a fonte:", conditionMessage(e)), type = "error"); FALSE })
+    if (ok) {
+      updateSelectizeInput(session, "fonte", choices = opcoes_fontes(), selected = familia, server = FALSE)
+      showNotification(paste0("Fonte \"", familia, "\" adicionada e selecionada."), type = "message")
+    }
   })
 
   # ---- estilos prontos, restaurar, guia ------------------------------------------------------------------------------------

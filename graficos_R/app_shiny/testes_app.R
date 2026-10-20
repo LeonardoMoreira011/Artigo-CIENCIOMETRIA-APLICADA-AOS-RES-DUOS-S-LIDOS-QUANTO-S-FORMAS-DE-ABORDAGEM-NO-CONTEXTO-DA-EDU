@@ -13,7 +13,7 @@ suppressPackageStartupMessages(library(shiny))
 raiz <- normalizePath("..", winslash = "/")
 source(file.path(raiz, "01_config.R"), encoding = "UTF-8"); suppressMessages(source(file.path(raiz, "02_motor.R"), encoding = "UTF-8"))
 CFG0 <- .completar_cfg(cfg)
-for (a in c("espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("R", a), encoding = "UTF-8")
+for (a in c("espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8")
 
 # ---- cobertura: tudo o que o painel tem, o app tem -------------------------------------------------------------------
 L <- readLines(file.path(raiz, "painel_de_ajustes.R"), encoding = "UTF-8")
@@ -81,8 +81,21 @@ arqs <- suppressMessages(suppressWarnings(salvar(r$g, cfgx)))
 teste("salvar grava PNG, SVG, TIFF e JPEG a partir do que o app monta", length(arqs) == 4 && all(file.size(arqs) > 800))
 
 # ---- fonte oficial ---------------------------------------------------------------------------------------------------
+teste("a lista de fontes do app traz a Barlow, as genéricas e as instaladas (systemfonts)",
+      { o <- unlist(.FONTES); all(c("Barlow", "sans", "serif") %in% o) && length(o) > 6 &&
+        "Instaladas no computador (systemfonts)" %in% names(.FONTES) })
 teste("a Barlow é a fonte padrão e está registrada", identical(CFG0$texto$fonte, "Barlow") && "Barlow" %in% .familias_fontes() &&
       all(file.exists(file.path(raiz, "fontes", "Barlow", c("Barlow-Regular.ttf", "Barlow-Bold.ttf", "Barlow-Italic.ttf", "Barlow-BoldItalic.ttf", "OFL.txt")))))
+
+# ---- negrito, rotação, grossura, break pelo app --------------------------------------------------------------------
+vn <- v0; vn$negrito_geral <- TRUE; vn$y_rotacao_titulo <- 0; vn$quebra_marca_largura_pt <- 4; vn$painel_fixo <- FALSE; vn$moldura_espessura_pt <- 2
+vn$grade_menor_x <- TRUE; vn$legenda_negrito <- TRUE
+vnn <- montar_variaveis(vn, CFG0)
+teste("negrito geral, rotação do título, marca da quebra, caixa fixa desligada, moldura e grade menor viram as variáveis do painel",
+      isTRUE(vnn$negrito_geral) && vnn$y_rotacao_titulo == 0 && vnn$quebra_marca_largura_pt == 4 && identical(vnn$painel_fixo, FALSE) &&
+      vnn$moldura_espessura_pt == 2 && isTRUE(vnn$grade_menor_x) && isTRUE(vnn$legenda_negrito))
+rn <- construir_grafico(d, vnn, CFG0)
+teste("o gráfico com esses ajustes monta sem erro", is.null(rn$erro) && !is.null(rn$g))
 
 # ---- servidor (testServer) -------------------------------------------------------------------------------------------
 options(gerador_sem_guia = TRUE)

@@ -50,14 +50,14 @@ instalar_pacotes <- function() {
     ggplot2   = "3.5.0",   # gradientes, ticks menores, legenda "inside"  (testado 3.5.2 e 4.0.3)
     scales    = "1.3.0",   # transformações de eixo (testado 1.4.0)
     patchwork = "1.2.0",   # painéis empilhados (testado 1.3.2)
-    ragg      = "1.5.0"    # PNG/TIFF/JPEG de qualidade; < 1.5 tem bug no gradiente radial
+    ragg      = "1.5.0",   # PNG/TIFF/JPEG de qualidade; < 1.5 tem bug no gradiente radial
+    systemfonts = "1.0.0"  # fontes: Barlow oficial (fontes/Barlow) e todas as instaladas no computador
   )
   opcionais <- c(
     svglite      = "2.1.0",  # SVG editável (Inkscape/Illustrator)
     devEMF       = "4.0",    # EMF para colar no Word/PowerPoint
     viridisLite  = "0.4.0",  # paletas viridis/magma/plasma/cividis
     RColorBrewer = "1.1-3",  # paletas brewer_*
-    systemfonts  = "1.0.0",  # checagem das fontes instaladas (e a Barlow oficial, que vem em fontes/Barlow)
     shiny        = "1.7.0"   # aplicativo no navegador (app_shiny/, abrir_app.bat)
   )
 
@@ -833,14 +833,16 @@ cfg$eixo_x <- list(
   comprimento_menores_pt = 3,
 
   # espessura_ticks_pt / cor_ticks: espessura (pt) e cor dos ticks.
-  espessura_ticks_pt = 1,
+  #   espessura NULL = igual à da moldura (cfg$caixa$espessura_pt): mudar a moldura padroniza tudo.
+  #   EX.: cfg$eixo_x$espessura_ticks_pt <- 0.75
+  espessura_ticks_pt = NULL,
   cor_ticks = "black",
 
   # mostrar_linha / cor_linha / espessura_linha_pt: linha do eixo
-  #   (com caixa fechada, a linha é a da caixa: veja cfg$caixa).
+  #   (com caixa fechada, a linha é a da caixa: veja cfg$caixa). espessura NULL = a da moldura.
   mostrar_linha = TRUE,
   cor_linha = "black",
-  espessura_linha_pt = 1,
+  espessura_linha_pt = NULL,
 
   # mostrar_rotulos: mostra os números dos ticks.  OPÇÕES: TRUE | FALSE
   mostrar_rotulos = TRUE,
@@ -872,7 +874,8 @@ cfg$eixo_x <- list(
   negrito_rotulos = FALSE,
   rotacao_rotulos = 0,
 
-  # distancia_rotulos_pt: distância entre números e eixo, em pt.
+  # distancia_rotulos_pt: distância entre números e eixo, em pt. Com a caixa de tamanho fixo (cfg$caixa) só os
+  #   números se movem; o gráfico não muda de tamanho.
   distancia_rotulos_pt = 3,
 
   # mostrar_titulo / tamanho_titulo_pt / cor_titulo / negrito_titulo /
@@ -882,7 +885,11 @@ cfg$eixo_x <- list(
   cor_titulo = "black",
   negrito_titulo = FALSE,
   italico_titulo = FALSE,
-  distancia_titulo_pt = 4
+  distancia_titulo_pt = 4,
+
+  # rotacao_titulo: ângulo do título do eixo, em graus. NULL = o padrão (X: 0; Y: 90, lendo de baixo para cima;
+  #   Y da direita: -90). OPÇÕES: NULL | número      EX.: cfg$eixo_y$rotacao_titulo <- 0   (Y na horizontal)
+  rotacao_titulo = NULL
 )
 
 # -----------------------------------------------------------------------------
@@ -915,11 +922,11 @@ cfg$eixo_y <- list(
   direcao_menores = "dentro",
   comprimento_maiores_pt = 5,
   comprimento_menores_pt = 3,
-  espessura_ticks_pt = 1,
+  espessura_ticks_pt = NULL,     # NULL = igual à da moldura (cfg$caixa$espessura_pt)
   cor_ticks = "black",
   mostrar_linha = TRUE,
   cor_linha = "black",
-  espessura_linha_pt = 1,
+  espessura_linha_pt = NULL,     # NULL = igual à da moldura
   mostrar_rotulos = TRUE,
   # casas_decimais: NULL | inteiro
   casas_decimais = NULL,
@@ -938,7 +945,9 @@ cfg$eixo_y <- list(
   cor_titulo = "black",
   negrito_titulo = FALSE,
   italico_titulo = FALSE,
-  distancia_titulo_pt = 4
+  distancia_titulo_pt = 4,
+  # rotacao_titulo: graus. NULL = padrão (Y: 90, lendo de baixo para cima).  EX.: cfg$eixo_y$rotacao_titulo <- 0
+  rotacao_titulo = NULL
 )
 
 # -----------------------------------------------------------------------------
@@ -987,6 +996,8 @@ cfg$eixo_y2 <- list(
   #   os números e o eixo. NULL = o mesmo do eixo_y.      EX.: cfg$eixo_y2$distancia_titulo_pt <- 10
   distancia_titulo_pt = NULL,
   distancia_rotulos_pt = NULL,
+  # rotacao_titulo: ângulo do título do eixo direito, em graus. NULL = o do eixo_y (padrão: -90).
+  rotacao_titulo = NULL,
 
   # cor_eixo: pinta números, título e ticks do eixo secundário.
   #   OPÇÕES: NULL (preto) | "serie" (cor da 1ª série do y2) | qualquer cor
@@ -1020,12 +1031,19 @@ cfg$caixa <- list(
   #   OPÇÕES: NULL | número (1 = quadrado; 0.75 = 4:3)
   proporcao = NULL,
 
-  # painel_largura_cm / painel_altura_cm: tamanho FIXO da caixa do gráfico (a área dentro dos eixos), em cm,
-  #   igual em todos os gráficos (como o layer do Origin). Números, títulos e legenda ficam fora dela e a
-  #   página é ajustada para caber tudo (veja exportacao$ajustar_pagina). NULL = a caixa ocupa o que sobra da página.
+  # painel_fixo: a caixa do gráfico (a área dentro dos eixos) tem SEMPRE o mesmo tamanho, como o layer do Origin:
+  #   mexer em números, títulos, distâncias ou legenda move esses textos, não o gráfico, e a página do arquivo se
+  #   ajusta para caber tudo (veja exportacao$ajustar_pagina). Vale para linha, pontos, barras, boxplot, histograma...
+  #   (não para pizza nem painéis empilhados). FALSE = a caixa ocupa o que sobra da página (largura x altura).
+  #   OPÇÕES: TRUE | FALSE
+  painel_fixo = TRUE,
+
+  # painel_largura_cm / painel_altura_cm: tamanho da caixa, em cm. NULL = o tamanho padrão (painel_padrao_cm).
   #   EX.: cfg$caixa$painel_largura_cm <- 9; cfg$caixa$painel_altura_cm <- 6.5
   painel_largura_cm = NULL,
   painel_altura_cm = NULL,
+  # painel_padrao_cm: tamanho padrão c(largura, altura) da caixa, quando as duas acima estão vazias.
+  painel_padrao_cm = c(10, 7.5),
 
   # margens_cm: margens externas c(topo, direita, baixo, esquerda) em cm.
   margens_cm = c(0.3, 0.5, 0.3, 0.3),
@@ -1128,6 +1146,11 @@ cfg$legenda <- list(
   tamanho_texto_pt = NULL,
   tamanho_titulo_pt = NULL,
 
+  # negrito_texto / negrito_titulo: nomes das séries e título da legenda em negrito (ou cfg$texto$negrito_tudo).
+  #   OPÇÕES: TRUE | FALSE
+  negrito_texto = FALSE,
+  negrito_titulo = FALSE,
+
   # tamanho_chave_pt: tamanho do quadradinho/linha de cada item.
   tamanho_chave_pt = 14,
 
@@ -1183,7 +1206,12 @@ cfg$texto <- list(
   tamanho_base_pt = 11,
 
   # cor: cor padrão dos textos.
-  cor = "black"
+  cor = "black",
+
+  # negrito_tudo: TODOS os nomes e números em negrito (títulos, eixos, legenda, rótulos de dados...).
+  #   Cada texto também tem o seu negrito (eixo$negrito_titulo, eixo$negrito_rotulos, legenda$negrito_texto...).
+  #   OPÇÕES: TRUE | FALSE      EX.: cfg$texto$negrito_tudo <- TRUE
+  negrito_tudo = FALSE
 )
 
 # -----------------------------------------------------------------------------
@@ -1274,9 +1302,10 @@ cfg$quebra <- list(
 
   # marca_largura_pt / marca_altura_pt: tamanho de cada traço diagonal da quebra, em pt
   #   (largura = quanto avança para os lados; altura = quanto sobe/desce).
-  #   OPÇÕES: números > 0 (padrões 5 e 4)      EX.: cfg$quebra$marca_largura_pt <- 8
-  marca_largura_pt = 5,
-  marca_altura_pt = 4
+  #   OPÇÕES: números > 0 (padrões 2.5 e 3: traço curto, que não encosta nos números do eixo)
+  #   EX.: cfg$quebra$marca_largura_pt <- 4
+  marca_largura_pt = 2.5,
+  marca_altura_pt = 3
 )
 
 # -----------------------------------------------------------------------------
@@ -1354,7 +1383,9 @@ cfg$exportacao <- list(
   #   EX.: cfg$exportacao$formatos <- c("png", "pdf", "tiff")
   formatos = c("png", "pdf"),
 
-  # largura / altura / unidade: tamanho final da figura.
+  # largura / altura / unidade: tamanho final da figura. ATENÇÃO: com a caixa de tamanho fixo (cfg$caixa$painel_fixo,
+  #   o padrão) e ajustar_pagina = TRUE, a página se ajusta ao conteúdo e estes valores NÃO são usados. Para uma
+  #   página de tamanho exato: cfg$caixa$painel_fixo <- FALSE (a caixa ocupa o que sobra) ou ajustar_pagina <- FALSE.
   #   OPÇÕES unidade: "cm" | "mm" | "in"
   largura = 12,
   altura = 9,
@@ -1366,8 +1397,8 @@ cfg$exportacao <- list(
   # fundo_transparente: OPÇÕES: TRUE | FALSE
   fundo_transparente = FALSE,
 
-  # ajustar_pagina: com caixa$painel_largura_cm/painel_altura_cm, a página do arquivo se ajusta ao conteúdo (caixa
-  #   do tamanho pedido + números, títulos e legenda), sem cortar nada; largura/altura acima não são usadas.
+  # ajustar_pagina: com a caixa de tamanho fixo (cfg$caixa$painel_fixo), a página do arquivo se ajusta ao conteúdo
+  #   (caixa do tamanho pedido + números, títulos e legenda), sem cortar nada; largura/altura acima não são usadas.
   #   FALSE = página sempre de largura x altura (a caixa fica centralizada; avisa se não couber).
   #   OPÇÕES: TRUE | FALSE
   ajustar_pagina = TRUE,
@@ -2724,21 +2755,29 @@ colunas <- function(dados) {
     left = list(h = 1, v = 0.5), right = list(h = 0, v = 0.5))
   element_text(size = e$tamanho_rotulos_pt %||% cfg$texto$tamanho_base_pt,
                colour = cor_forcada %||% e$cor_rotulos %||% cfg$texto$cor,
-               face = if (isTRUE(e$negrito_rotulos)) "bold" else "plain",
+               face = if (.neg(cfg, e$negrito_rotulos)) "bold" else "plain",
                angle = ang, hjust = just$h, vjust = just$v, margin = m)
 }
 
-# Elemento de tema para o título de um eixo (tamanho, cor, estilo, distância).
+# Negrito ligado neste texto OU em "todos os nomes" (cfg$texto$negrito_tudo).
+.neg <- function(cfg, valor = FALSE) isTRUE(valor) || isTRUE(cfg$texto$negrito_tudo)
+
+# Ângulo padrão do título de cada lado do gráfico (esquerda sobe, direita desce, em cima/embaixo na horizontal).
+.angulo_titulo <- function(e, lado) e$rotacao_titulo %||% switch(lado, left = 90, right = -90, 0)
+
+# Elemento de tema para o título de um eixo (tamanho, cor, estilo, distância, rotação).
 .elem_titulo <- function(e, cfg, lado, cor_forcada = NULL) {
   if (!isTRUE(e$mostrar_titulo %||% TRUE)) return(element_blank())
   d <- e$distancia_titulo_pt %||% 4
   m <- switch(lado, bottom = margin(t = d), top = margin(b = d),
               left = margin(r = d), right = margin(l = d))
-  face <- if (isTRUE(e$negrito_titulo) && isTRUE(e$italico_titulo)) "bold.italic"
-          else if (isTRUE(e$negrito_titulo)) "bold" else if (isTRUE(e$italico_titulo)) "italic" else "plain"
+  neg <- .neg(cfg, e$negrito_titulo)
+  face <- if (neg && isTRUE(e$italico_titulo)) "bold.italic"
+          else if (neg) "bold" else if (isTRUE(e$italico_titulo)) "italic" else "plain"
+  centro <- if (!is.null(e$rotacao_titulo)) 0.5 else NULL                    # rotação escolhida: centraliza no seu espaço
   element_text(size = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt,
                colour = cor_forcada %||% e$cor_titulo %||% cfg$texto$cor, face = face,
-               angle = switch(lado, left = 90, right = -90, 0), margin = m)
+               angle = .angulo_titulo(e, lado), hjust = centro, vjust = centro, margin = m)
 }
 
 # Entra: cfg, config do eixo horizontal e do vertical (como aparecem na tela) e os lados com eixo.
@@ -2784,7 +2823,8 @@ colunas <- function(dados) {
       # linha de cada eixo (só se mostrar_linha e, nos lados opostos, só se o lado existe)
       linha <- function(e, ativo, cor = NULL, ponta = NULL) {
         if (!(isTRUE(e$mostrar_linha) && ativo)) return(element_blank())
-        element_line(colour = cor %||% e$cor_linha, linewidth = .lw(e$espessura_linha_pt), lineend = ponta)
+        element_line(colour = cor %||% e$cor_linha, linewidth = .lw(e$espessura_linha_pt %||% cx$espessura_pt),
+                     lineend = ponta)
       }
       t <- t + theme(panel.border = element_blank(),
         axis.line.x.bottom = linha(eh, TRUE, ponta = "square"),
@@ -2793,7 +2833,9 @@ colunas <- function(dados) {
         axis.line.x.top    = linha(eh, "top" %in% lados$hor))
     }
     # ticks
-    tk <- function(e, cor = NULL) element_line(colour = cor %||% e$cor_ticks, linewidth = .lw(e$espessura_ticks_pt))
+    # espessura dos traços: a do eixo, ou (se vazia) a da moldura — mudar a grossura da caixa padroniza tudo
+    tk <- function(e, cor = NULL) element_line(colour = cor %||% e$cor_ticks,
+                                               linewidth = .lw(e$espessura_ticks_pt %||% cx$espessura_pt))
     for (lado in c("bottom", "top", "left", "right")) {
       e <- if (lado %in% c("bottom", "top")) eh else ev
       xy <- if (lado %in% c("bottom", "top")) "x" else "y"
@@ -2816,8 +2858,9 @@ colunas <- function(dados) {
   ti <- cfg$titulos
   hj <- switch(ti$alinhamento, esquerda = 0, centro = 0.5, direita = 1)
   t + theme(plot.title = element_text(hjust = hj, size = ti$tamanho_titulo_pt %||% (tx$tamanho_base_pt * 1.2),
-                                      face = if (isTRUE(ti$negrito_titulo)) "bold" else "plain"),
-            plot.subtitle = element_text(hjust = hj, size = ti$tamanho_subtitulo_pt %||% tx$tamanho_base_pt),
+                                      face = if (.neg(cfg, ti$negrito_titulo)) "bold" else "plain"),
+            plot.subtitle = element_text(hjust = hj, size = ti$tamanho_subtitulo_pt %||% tx$tamanho_base_pt,
+                                         face = if (.neg(cfg)) "bold" else "plain"),
             plot.title.position = "panel")
 }
 
@@ -2846,9 +2889,11 @@ colunas <- function(dados) {
     legend.key = element_rect(fill = NA, colour = NA),
     legend.key.size = unit(lg$tamanho_chave_pt * esc, "pt"),
     legend.key.spacing.y = unit(lg$espacamento_pt * esc, "pt"),
-    legend.text = element_text(size = (lg$tamanho_texto_pt %||% tx$tamanho_base_pt) * esc),
+    legend.text = element_text(size = (lg$tamanho_texto_pt %||% tx$tamanho_base_pt) * esc,
+                               face = if (.neg(cfg, lg$negrito_texto)) "bold" else "plain"),
     legend.title = if (is.null(lg$titulo)) element_blank() else
-      element_text(size = (lg$tamanho_titulo_pt %||% tx$tamanho_base_pt) * esc),
+      element_text(size = (lg$tamanho_titulo_pt %||% tx$tamanho_base_pt) * esc,
+                   face = if (.neg(cfg, lg$negrito_titulo)) "bold" else "plain"),
     legend.margin = do.call(margin, as.list(lg$margem_interna_pt * esc)))
   if (pos == "inside") {
     anc <- if (identical(lg$ancora, "auto")) c(lg$dentro_x, lg$dentro_y) else lg$ancora
@@ -2921,7 +2966,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   p <- p[p >= -1e-6 & p <= 1 + 1e-6]
   if (!length(p)) return(NULL)
   L <- unit(ev$comprimento_menores_pt, "pt")
-  gp <- gpar(col = .cor(y2$cor), lwd = .lw(ev$espessura_ticks_pt) * ggplot2::.pt, lineend = "butt")
+  gp <- gpar(col = .cor(y2$cor), lwd = .lw(ev$espessura_ticks_pt %||% 1) * ggplot2::.pt, lineend = "butt")
   x0 <- unit(1, "npc"); y <- unit(p, "npc")
   filhos <- switch(dir,
     dentro = list(segmentsGrob(x0, y, x0 - L, y, gp = gp)),
@@ -2943,7 +2988,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
       if (!length(v)) next
       p <- .npc(v, ax); p <- p[p >= -1e-6 & p <= 1 + 1e-6]
       L <- unit(if (tipo == "maiores") e$comprimento_maiores_pt else e$comprimento_menores_pt, "pt")
-      gp <- gpar(col = e$cor_ticks, lwd = .lw(e$espessura_ticks_pt) * ggplot2::.pt, lineend = "butt")
+      gp <- gpar(col = e$cor_ticks, lwd = .lw(e$espessura_ticks_pt %||% 1) * ggplot2::.pt, lineend = "butt")
       g <- switch(lado,
         bottom = segmentsGrob(unit(p, "npc"), unit(0, "npc"), unit(p, "npc"), L, gp = gp),
         top    = segmentsGrob(unit(p, "npc"), unit(1, "npc"), unit(p, "npc"), unit(1, "npc") - L, gp = gp),
@@ -3256,7 +3301,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
     k <- L$rotulos_deslocamento_pt / L$rotulos_tamanho_pt
     cam[[length(cam) + 1]] <- geom_text(data = dd, aes(x = x, y = y, label = rot, colour = serie),
       size = .tx(L$rotulos_tamanho_pt), vjust = if (k >= 0) -k else 1 - k, show.legend = FALSE,
-      family = .fonte(cfg$texto$fonte))
+      family = .fonte(cfg$texto$fonte), fontface = if (.neg(cfg)) "bold" else "plain")
   }
   usa_cor <- com_linha || nrow(de) || L$linhas_queda != "nenhuma" || L$rotulos_dados != "nenhum"
   if (!"colour" %in% aes_leg && !mapa && usa_cor) aes_leg <- c(aes_leg, "colour")
@@ -3423,9 +3468,9 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
     j <- switch(pos, fora = ifelse(neg, 1.3, -0.3), dentro = ifelse(neg, -0.3, 1.3), centro = 0.5)
     cam[[length(cam) + 1]] <- if (flip)
       geom_text(data = rr, aes(x = xc, y = yl, label = rot), hjust = j, size = .tx(B$rotulos_tamanho_pt),
-                colour = .cor(B$rotulos_cor), family = .fonte(cfg$texto$fonte))
+                colour = .cor(B$rotulos_cor), family = .fonte(cfg$texto$fonte), fontface = if (.neg(cfg)) "bold" else "plain")
     else geom_text(data = rr, aes(x = xc, y = yl, label = rot), vjust = j, size = .tx(B$rotulos_tamanho_pt),
-                   colour = .cor(B$rotulos_cor), family = .fonte(cfg$texto$fonte))
+                   colour = .cor(B$rotulos_cor), family = .fonte(cfg$texto$fonte), fontface = if (.neg(cfg)) "bold" else "plain")
   }
   aes_leg <- c("fill", if (contorno_serie) "colour")
   faixa_y <- c(r$ymin, r$ymax, base, faixa_err)
@@ -3558,7 +3603,8 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
       cam[[length(cam) + 1]] <- geom_segment(data = rd, aes(x = gx0, y = gy0, xend = gx1, yend = gy1),
                                              colour = cfg$texto$cor, linewidth = .lw(P$linha_guia_espessura_pt))
     cam[[length(cam) + 1]] <- geom_text(data = rd, aes(x = x, y = y, label = rot), hjust = rd$hj,
-      colour = rd$cor, size = .tx(P$rotulos_tamanho_pt), lineheight = 0.95, family = .fonte(cfg$texto$fonte))
+      colour = rd$cor, size = .tx(P$rotulos_tamanho_pt), lineheight = 0.95, family = .fonte(cfg$texto$fonte),
+      fontface = if (.neg(cfg)) "bold" else "plain")
     if (P$rotulos_posicao != "dentro") lim <- max(lim, max(abs(c(rd$x, rd$y))) + P$rotulos_margem)
   }
   leg <- !("categoria" %in% P$rotulos)
@@ -3881,9 +3927,10 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
     tn <- do.call(rbind, txt_n); faixa <- range(c(faixa, tn$y + 0.06 * diff(faixa)))
     tam_n <- X$n_tamanho_pt %||% cfg$texto$tamanho_base_pt * 0.8
     cam[[length(cam) + 1]] <- if (flip) geom_text(data = tn, aes(x = x, y = y, label = rot), hjust = -0.2,
-                                                   size = .tx(tam_n), family = .fonte(cfg$texto$fonte))
+                                                   size = .tx(tam_n), family = .fonte(cfg$texto$fonte),
+                                                   fontface = if (.neg(cfg)) "bold" else "plain")
       else geom_text(data = tn, aes(x = x, y = y, label = rot), vjust = -0.6,
-                     size = .tx(tam_n), family = .fonte(cfg$texto$fonte))
+                     size = .tx(tam_n), family = .fonte(cfg$texto$fonte), fontface = if (.neg(cfg)) "bold" else "plain")
   }
   ax_x <- .calc_eixo(cfg$eixo_x, c(0.5, k + 0.5), categorias = itens, forcar = cfg$.interno$forcar_x)
   ax_y <- .calc_eixo(cfg$eixo_y, faixa, forcar = cfg$.interno$forcar_y)
@@ -3952,7 +3999,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
       parse = pm,
       hjust = switch(t$alinhamento %||% "centro", esquerda = 0, centro = 0.5, direita = 1),
       colour = .cor(t$cor %||% cfg$texto$cor), size = .tx(t$tamanho_pt %||% cfg$texto$tamanho_base_pt),
-      fontface = if (isTRUE(t$negrito)) "bold" else "plain", family = fonte)
+      fontface = if (.neg(cfg, t$negrito)) "bold" else "plain", family = fonte)
   }
   if (!is.null(an$letra)) {
     cam[[length(cam) + 1]] <- annotation_custom(textGrob(an$letra, x = an$letra_posicao[1], y = an$letra_posicao[2],
@@ -4022,7 +4069,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   sec_x <- sec_dup(info$ax_x)
   sec_y <- if (!is.null(info$y2)) {
     a2 <- info$y2$ax
-    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo, cfg$eixo_y$negrito_titulo), breaks = a2$maiores,
+    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo, .neg(cfg, cfg$eixo_y$negrito_titulo)), breaks = a2$maiores,
              labels = a2$rotulos)
   } else sec_dup(info$ax_y)
   g <- g + .escala_continua(info$ax_x, "x", sec_x, if (x_topo) "top") +
@@ -4032,10 +4079,10 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   if (!is.null(sec_x)) gm$x.sec <- guide_axis(minor.ticks = length(info$ax_x$menores) > 0)
   if (!is.null(sec_y)) gm$y.sec <- guide_axis(minor.ticks = is.null(info$y2) && length(info$ax_y$menores) > 0)
   g <- g + do.call(guides, gm)
-  g <- g + labs(x = .texto(info$titulo_x, cfg$eixo_x$negrito_titulo),
-                y = .texto(info$titulo_y, cfg$eixo_y$negrito_titulo),
-                title = .texto(cfg$titulos$titulo, cfg$titulos$negrito_titulo),
-                subtitle = .texto(cfg$titulos$subtitulo))
+  g <- g + labs(x = .texto(info$titulo_x, .neg(cfg, cfg$eixo_x$negrito_titulo)),
+                y = .texto(info$titulo_y, .neg(cfg, cfg$eixo_y$negrito_titulo)),
+                title = .texto(cfg$titulos$titulo, .neg(cfg, cfg$titulos$negrito_titulo)),
+                subtitle = .texto(cfg$titulos$subtitulo, .neg(cfg)))
   g <- g + if (isTRUE(info$flip)) coord_flip(clip = if (isTRUE(cx$recortar)) "on" else "off")
            else coord_cartesian(clip = if (isTRUE(cx$recortar)) "on" else "off")
 
@@ -4056,7 +4103,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   g <- g + .tema(cfg, eh, ev, lados, cor_y2 = if (!is.null(info$y2)) .cor(info$y2$cor) else NULL)
   if (!is.null(info$y2)) {
     # estilo de rótulos do y2: casas/notação próprias já nos rótulos; mostra sempre
-    d2 <- Filter(Negate(is.null), cfg$eixo_y2[c("distancia_titulo_pt", "distancia_rotulos_pt")])   # distâncias do Y2
+    d2 <- Filter(Negate(is.null), cfg$eixo_y2[c("distancia_titulo_pt", "distancia_rotulos_pt", "rotacao_titulo")])   # só do Y2
     g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, c(list(mostrar_rotulos = TRUE), d2)), cfg,
                                                     "right",
                                                     .cor(info$y2$cor)),
@@ -4097,12 +4144,23 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   .checar_nomes(cfg); .checar_itens(cfg)   # avisa nomes digitados errado ANTES de completar com os padrões
   cfg <- .completar_cfg(cfg)
   .validar(cfg, checar_nomes = FALSE)
+  cfg <- .resolver_herancas(cfg)
   g <- if (isTRUE(cfg$paineis$ativo)) .plotar_paineis(dados, cfg)
        else if (isTRUE(cfg$quebra$ativo)) .plotar_quebra(dados, cfg)
        else .plotar_um(dados, cfg)
   attr(g, "dados") <- dados
   attr(g, "cfg") <- cfg
   g
+}
+
+# Valores que, se vazios, seguem outro ajuste: a grossura dos traços e da linha dos eixos segue a da moldura
+# (cfg$caixa$espessura_pt) — mudar a moldura padroniza tudo; escrever o valor no eixo vale mais.
+.resolver_herancas <- function(cfg) {
+  for (ax in c("eixo_x", "eixo_y")) {
+    cfg[[ax]]$espessura_ticks_pt <- cfg[[ax]]$espessura_ticks_pt %||% cfg$caixa$espessura_pt
+    cfg[[ax]]$espessura_linha_pt <- cfg[[ax]]$espessura_linha_pt %||% cfg$caixa$espessura_pt
+  }
+  cfg
 }
 
 # Letra do painel (a), (A), (i)... conforme o formato escolhido.
@@ -4116,9 +4174,9 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 # Título único (vertical ou horizontal) ao lado de um conjunto de painéis.
 .rotulo_lateral <- function(texto, cfg, vertical = TRUE, direita = FALSE, cor = NULL) {
   e <- if (vertical) cfg$eixo_y else cfg$eixo_x
-  face <- if (isTRUE(e$negrito_titulo)) "bold" else "plain"
-  patchwork::wrap_elements(full = textGrob(.texto(texto, isTRUE(e$negrito_titulo)),
-    rot = if (vertical) (if (direita) -90 else 90) else 0,
+  face <- if (.neg(cfg, e$negrito_titulo)) "bold" else "plain"
+  patchwork::wrap_elements(full = textGrob(.texto(texto, .neg(cfg, e$negrito_titulo)),
+    rot = e$rotacao_titulo %||% if (vertical) (if (direita) -90 else 90) else 0,
     gp = gpar(fontsize = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt, fontface = face,
               fontfamily = .fonte(cfg$texto$fonte), col = cor %||% e$cor_titulo %||% cfg$texto$cor)))
 }
@@ -4363,10 +4421,10 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   titulo_lateral <- function(gt, texto, e, lado, cor) {
     d <- e$distancia_titulo_pt %||% 4
     gp <- gpar(fontsize = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt,
-               fontface = if (isTRUE(e$negrito_titulo)) "bold" else "plain",
+               fontface = if (.neg(cfg, e$negrito_titulo)) "bold" else "plain",
                fontfamily = .fonte(cfg$texto$fonte), col = cor %||% e$cor_titulo %||% cfg$texto$cor)
-    rot <- if (lado == "esq") 90 else -90
-    lab <- .texto(texto, isTRUE(e$negrito_titulo))
+    rot <- .angulo_titulo(e, if (lado == "esq") "left" else "right")
+    lab <- .texto(texto, .neg(cfg, e$negrito_titulo))
     largura <- grid::grobWidth(textGrob(lab, rot = rot, gp = gp)) + unit(d, "pt")
     desl <- unit(if (lado == "esq") -d / 2 else d / 2, "pt")
     tg <- textGrob(lab, rot = rot, x = unit(0.5, "npc") + desl, gp = gp)
@@ -4378,8 +4436,8 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   if (isTRUE(cfg$eixo_y$mostrar_titulo) && !is.null(tit_y1) && !identical(tit_y1, ""))
     gt <- titulo_lateral(gt, tit_y1, cfg$eixo_y, "esq", NULL)
   if (!is.null(y2) && isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(y2$titulo, ""))
-    gt <- titulo_lateral(gt, y2$titulo, utils::modifyList(cfg$eixo_y, cfg$eixo_y2[c("distancia_titulo_pt")[
-      !is.null(cfg$eixo_y2$distancia_titulo_pt)]]), "dir", .cor(y2$cor))
+    gt <- titulo_lateral(gt, y2$titulo, utils::modifyList(cfg$eixo_y, Filter(Negate(is.null),
+                         cfg$eixo_y2[c("distancia_titulo_pt", "rotacao_titulo")])), "dir", .cor(y2$cor))
   m <- cfg$caixa$margens_cm                          # margem externa esquerda/direita (as partes ficam sem ela)
   gt <- gtable::gtable_add_cols(gt, unit(m[4], "cm"), pos = 0)
   gt <- gtable::gtable_add_cols(gt, unit(m[2], "cm"), pos = -1)
@@ -4394,7 +4452,7 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   cx <- cfg$caixa; fechada <- isTRUE(cx$fechada)
   ev <- cfg$eixo_y; eh <- cfg$eixo_x
   cor <- if (fechada) .cor(cx$cor) else .cor(ev$cor_linha)
-  esp <- if (fechada) cx$espessura_pt else ev$espessura_linha_pt
+  esp <- if (fechada) cx$espessura_pt else (ev$espessura_linha_pt %||% cx$espessura_pt)
   gp <- gpar(col = cor, lwd = .lw(esp) * ggplot2::.pt, lineend = "square")
   esquerda <- fechada || isTRUE(ev$mostrar_linha)
   direita <- fechada
@@ -4477,23 +4535,19 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   cfg
 }
 
-# Tamanho de saída. Sem painel de tamanho fixo: o da página (cfg$exportacao). Com cfg$caixa$painel_largura_cm /
-# painel_altura_cm: a caixa do gráfico fica EXATAMENTE nesse tamanho, e a página cresce (ou encolhe) para caber
-# números, títulos e legenda sem cortar nada (exportacao$ajustar_pagina = TRUE) — o gráfico tem o mesmo tamanho
-# em todos os arquivos. Entra: g e cfg. Sai: list(grob = NULL | gtable pronto para desenhar, larg, alt em polegadas).
+# Tamanho de saída. Com a caixa de tamanho fixo (cfg$caixa$painel_fixo, o padrão; tamanho em painel_largura_cm /
+# painel_altura_cm ou painel_padrao_cm) a caixa do gráfico fica EXATAMENTE nesse tamanho, e a página cresce (ou
+# encolhe) para caber números, títulos e legenda sem cortar nada (exportacao$ajustar_pagina = TRUE) — o gráfico tem o
+# mesmo tamanho em todos os arquivos. Sem caixa fixa: o da página (cfg$exportacao).
+# Entra: g e cfg. Sai: list(grob = NULL | gtable pronto para desenhar, larg, alt em polegadas).
 .preparar_saida <- function(g, cfg) {
   pg <- .tamanho_pagina_in(cfg)
-  cx <- cfg$caixa
-  pw <- cx$painel_largura_cm; ph <- cx$painel_altura_cm
-  if (is.null(pw) && is.null(ph)) return(list(grob = NULL, larg = pg[1], alt = pg[2]))
-  if (is.null(ph) && !is.null(pw) && !is.null(cx$proporcao)) ph <- pw * cx$proporcao
-  if (is.null(pw) && !is.null(ph) && !is.null(cx$proporcao)) pw <- ph / cx$proporcao
+  fixo <- .painel_cm(cfg)
+  if (is.null(fixo)) return(list(grob = NULL, larg = pg[1], alt = pg[2]))
+  pw <- fixo$w; ph <- fixo$h
   gt <- attr(g, "gt")
   if (is.null(gt)) {
-    if (inherits(g, "patchwork")) {
-      .aviso("caixa$painel_largura_cm/painel_altura_cm não valem para painéis empilhados; tamanho da página usado.")
-      return(list(grob = NULL, larg = pg[1], alt = pg[2]))
-    }
+    if (inherits(g, "patchwork")) return(list(grob = NULL, larg = pg[1], alt = pg[2]))   # painéis empilhados: página
     if (is.null(grDevices::dev.list())) { dtmp <- .abrir_dispositivo_tmp(); on.exit(grDevices::dev.off(dtmp), add = TRUE) }
     gt <- ggplot2::ggplotGrob(g)
   }
@@ -4886,6 +4940,14 @@ jsonlite_b64 <- function(txt) {
   # legenda e moldura
   legenda_mostrar = c("legenda", "mostrar"), legenda_posicao = c("legenda", "posicao"),
   legenda_x = c("legenda", "dentro_x"), legenda_y = c("legenda", "dentro_y"), legenda_titulo = c("legenda", "titulo"),
+  negrito_geral = c("texto", "negrito_tudo"),
+  x_numeros_negrito = c("eixo_x", "negrito_rotulos"), y_numeros_negrito = c("eixo_y", "negrito_rotulos"),
+  legenda_negrito = c("legenda", "negrito_texto"), legenda_titulo_negrito = c("legenda", "negrito_titulo"),
+  x_rotacao_titulo = c("eixo_x", "rotacao_titulo"), y_rotacao_titulo = c("eixo_y", "rotacao_titulo"),
+  y2_rotacao_titulo = c("eixo_y2", "rotacao_titulo"),
+  quebra_marcas = c("quebra", "marcas"), quebra_marca_largura_pt = c("quebra", "marca_largura_pt"),
+  quebra_marca_altura_pt = c("quebra", "marca_altura_pt"),
+  painel_fixo = c("caixa", "painel_fixo"),
   legenda_escala = c("legenda", "escala"), legenda_distancia_pt = c("legenda", "distancia_pt"),
   legenda_ajustar_caixa = c("legenda", "ajustar_caixa"),
   painel_largura_cm = c("caixa", "painel_largura_cm"), painel_altura_cm = c("caixa", "painel_altura_cm"),
@@ -5192,6 +5254,24 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
   c(ex$largura * f, ex$altura * f)
 }
 
+# Tamanho (cm) da caixa do gráfico, ou NULL se não for fixa. Entra: cfg. Sai: NULL | list(w, h) (um deles pode ser NULL).
+# Fixa por padrão (cfg$caixa$painel_fixo); pizza e painéis empilhados só têm caixa fixa se o tamanho for pedido.
+.painel_cm <- function(cfg) {
+  cx <- cfg$caixa
+  if (!isTRUE(cx$painel_fixo %||% TRUE)) return(NULL)
+  w <- cx$painel_largura_cm; h <- cx$painel_altura_cm
+  if (is.null(w) && is.null(h)) {
+    if (identical(cfg$grafico$tipo, "pizza") || isTRUE(cfg$paineis$ativo)) return(NULL)
+    p <- cx$painel_padrao_cm %||% c(10, 7.5)
+    w <- p[1]; h <- p[2]
+    if (!is.null(cx$proporcao)) h <- w * cx$proporcao
+    return(list(w = w, h = h))
+  }
+  if (is.null(h) && !is.null(w) && !is.null(cx$proporcao)) h <- w * cx$proporcao
+  if (is.null(w) && !is.null(h) && !is.null(cx$proporcao)) w <- h / cx$proporcao
+  list(w = w, h = h)
+}
+
 # Mede o gráfico como será desenhado (mesmo dispositivo e fontes do arquivo final).
 # Entra: g (ggplot), tamanho da página em polegadas. Sai: list(painel = c(larg, alt) em pt, legenda = c(larg, alt) em pt)
 # ou NULL se não houver legenda "dentro" medível.
@@ -5224,7 +5304,8 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
   if (!identical(lg$posicao, "dentro") || !isTRUE(lg$ajustar_caixa %||% TRUE)) return(g)
   esc0 <- lg$escala %||% 1; esc <- esc0
   fr <- cfg$.interno$fracao_altura %||% 1       # quebra de eixo: a legenda mora só na parte de cima
-  fixo <- c(cfg$caixa$painel_largura_cm, cfg$caixa$painel_altura_cm)
+  pf <- .painel_cm(cfg)
+  fixo <- if (!is.null(pf) && !is.null(pf$w) && !is.null(pf$h)) c(pf$w, pf$h) else NULL
   for (it in 1:3) {
     m <- tryCatch(.medir_legenda(g, .tamanho_pagina_in(cfg)), error = function(e) NULL)
     if (is.null(m)) break
@@ -8412,7 +8493,7 @@ x_intervalo <- NULL      # distância entre os traços: 1 = de 1 em 1 | 2 = de 2
 x_primeiro_tick <- NULL  # de onde começa a contar. EX.: 2016 (com x_intervalo 2: 2016, 2018, 2020...)
 x_ticks_manuais <- NULL  # posições escolhidas à mão (ignora x_intervalo). EX.: c(2015, 2020, 2026)
 x_ticks_menores <- NULL  # traços pequenos entre dois grandes. 0 = SEM traços pequenos. EX.: 0
-x_ticks_espessura_pt <- NULL   # GROSSURA dos traços do eixo X, em pt. EX.: 1.5   (vale para grandes e pequenos)
+x_ticks_espessura_pt <- NULL   # GROSSURA dos traços do eixo X, em pt (vale para grandes e pequenos). Vazio = igual à da moldura. EX.: 1.5
 x_ticks_comprimento_pt <- NULL # comprimento dos traços grandes, em pt. EX.: 6
 x_ticks_menores_comprimento_pt <- NULL   # comprimento dos traços pequenos. EX.: 3
 x_ticks_direcao <- NULL  # "dentro" | "fora" | "ambos" (cruzando o eixo) | "nenhum"
@@ -8435,7 +8516,7 @@ y_ticks_cor     <- NULL
 y_linha_espessura_pt <- NULL
 #  Moldura (a caixa em volta do gráfico)
 ticks_espelhados     <- NULL   # TRUE = repete os traços no topo e à direita (moldura fechada)
-moldura_espessura_pt <- NULL   # grossura da moldura, em pt. EX.: 1.5
+moldura_espessura_pt <- NULL   # grossura da moldura, em pt. EX.: 1.5   — os traços e as linhas dos eixos seguem esta grossura (a menos que você dê x_/y_ticks_espessura_pt)
 moldura_cor          <- NULL   # EX.: "black"
 #  (a grossura das linhas da GRADE está no bloco 5)
 
@@ -8469,6 +8550,11 @@ x_distancia_titulo_pt  <- NULL   # título do X até os números. EX.: 6
 y_distancia_titulo_pt  <- NULL   # título do Y até os números (com quebra de eixo vale também). EX.: 6
 x_distancia_numeros_pt <- NULL   # números do X até o eixo. EX.: 3
 y_distancia_numeros_pt <- NULL
+x_rotacao_titulo <- NULL   # ângulo do título do eixo X, em graus (padrão 0). EX.: 0
+y_rotacao_titulo <- NULL   # ângulo do título do eixo Y (padrão 90, lendo de baixo para cima). EX.: 0 (na horizontal)
+x_numeros_negrito <- NULL  # TRUE = números do eixo X em negrito
+y_numeros_negrito <- NULL  # TRUE = números do eixo Y em negrito
+negrito_geral    <- NULL   # TRUE = TODOS os nomes e números em negrito (títulos, eixos, legenda, rótulos de dados...)
 
 # ---- 5. GRADE (linhas de fundo) ---------------------------------------------------------------
 grade_x          <- NULL   # TRUE = linhas verticais nos ticks maiores do X
@@ -8497,6 +8583,9 @@ quebra_y_intervalo_superior <- NULL   # ... e da parte de cima (começa no quebr
 quebra_y2_intervalo_inferior <- NULL  # o mesmo para o eixo direito (baixo)
 quebra_y2_intervalo_superior <- NULL  # ... (cima)
 quebra_ligar_pontos      <- NULL   # FALSE = não liga os pontos através da quebra
+quebra_marcas    <- NULL   # FALSE = sem as barras "//" na quebra
+quebra_marca_largura_pt <- NULL    # largura de cada barra "//", em pt (padrão 2.5: curta, não encosta nos números). EX.: 4
+quebra_marca_altura_pt  <- NULL    # altura de cada barra, em pt (padrão 3)
 quebra_proporcao_superior <- NULL  # altura da parte de cima, de 0 a 1. EX.: 0.5
 
 # ---- 7. EIXO Y DA DIREITA (Y2): outras variáveis com escala, cor e intervalos próprios ---------------
@@ -8523,6 +8612,7 @@ y2_fator     <- NULL      # SEM séries novas: mostra o MESMO dado em outra unid
 y2_deslocamento <- NULL   #   EX. de °C para °F:  y2_fator <- 1.8;  y2_deslocamento <- 32
 y2_distancia_titulo_pt  <- NULL   # título do Y2 até os números. EX.: 6
 y2_distancia_numeros_pt <- NULL   # números do Y2 até o eixo. EX.: 3
+y2_rotacao_titulo <- NULL         # ângulo do título do eixo direito (padrão -90). EX.: 90
 #  As cores de cada série (esquerda ou direita) também podem vir de cores_por_serie (bloco 8).
 
 # ---- 8. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
@@ -8570,12 +8660,16 @@ rotulos_dados_tamanho_pt  <- NULL   # texto escrito junto dos pontos/barras (ró
 
 # ---- 10. MOLDURA DO GRÁFICO ---------------------------------------------------------------------------
 caixa_fechada    <- NULL   # TRUE = moldura nos 4 lados | FALSE = só eixos esquerdo e inferior
-painel_largura_cm <- NULL  # TAMANHO FIXO da caixa do gráfico (dentro dos eixos), em cm, igual em todos os gráficos.
+painel_fixo      <- NULL   # TRUE (padrão) = a caixa do gráfico tem sempre o mesmo tamanho (mexer em números/títulos/legenda não
+                           #   muda o gráfico, a página se ajusta) | FALSE = a caixa ocupa o que sobra da página (largura_cm x altura_cm)
+painel_largura_cm <- NULL  # TAMANHO da caixa do gráfico (dentro dos eixos), em cm. Padrão 10 x 7.5.
 painel_altura_cm  <- NULL  #   EX.: 9 e 6.5. Números, títulos e legenda ficam fora; a página se ajusta para caber tudo.
 
 # ---- 11. LEGENDA: POSIÇÃO, FUNDO, BORDA E SOMBRA -------------------------------------------------------
 legenda_mostrar  <- NULL   # FALSE = sem legenda
 legenda_titulo   <- NULL   # título da legenda. EX.: "Região"
+legenda_negrito  <- NULL   # TRUE = nomes das séries na legenda em negrito
+legenda_titulo_negrito <- NULL  # TRUE = título da legenda em negrito
 legenda_nomes    <- NULL   # como cada série aparece escrita na legenda. EX.: c("WORLD RSP" = "Mundo (RSP)")
 #  Posição
 legenda_posicao  <- NULL   # "dentro" (sobre o gráfico) | "direita" | "esquerda" | "topo" | "base" (fora do gráfico)
@@ -8611,7 +8705,7 @@ legenda_sombra_opacidade <- NULL    # 0 a 1. EX.: 0.35
 legenda_sombra_deslocamento_pt <- NULL  # c(para a direita, para baixo) em pt. EX.: c(3, 3)  |  c(5, 2)
 
 # ---- 12. EXPORTAÇÃO ------------------------------------------------------------------------------------
-largura_cm   <- NULL       # EX.: 14   (com painel_largura_cm preenchido a página se ajusta sozinha e estes valores não valem)
+largura_cm   <- NULL       # EX.: 14   (só vale com painel_fixo <- FALSE ou ajustar_pagina <- FALSE; senão a página se ajusta sozinha)
 altura_cm    <- NULL       # EX.: 10
 ajustar_pagina <- NULL     # com caixa de tamanho fixo: TRUE (padrão) = a página cresce/encolhe para caber tudo |
                            #   FALSE = página sempre largura_cm x altura_cm (a caixa fica centralizada)

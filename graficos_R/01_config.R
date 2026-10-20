@@ -715,14 +715,16 @@ cfg$eixo_x <- list(
   comprimento_menores_pt = 3,
 
   # espessura_ticks_pt / cor_ticks: espessura (pt) e cor dos ticks.
-  espessura_ticks_pt = 1,
+  #   espessura NULL = igual à da moldura (cfg$caixa$espessura_pt): mudar a moldura padroniza tudo.
+  #   EX.: cfg$eixo_x$espessura_ticks_pt <- 0.75
+  espessura_ticks_pt = NULL,
   cor_ticks = "black",
 
   # mostrar_linha / cor_linha / espessura_linha_pt: linha do eixo
-  #   (com caixa fechada, a linha é a da caixa: veja cfg$caixa).
+  #   (com caixa fechada, a linha é a da caixa: veja cfg$caixa). espessura NULL = a da moldura.
   mostrar_linha = TRUE,
   cor_linha = "black",
-  espessura_linha_pt = 1,
+  espessura_linha_pt = NULL,
 
   # mostrar_rotulos: mostra os números dos ticks.  OPÇÕES: TRUE | FALSE
   mostrar_rotulos = TRUE,
@@ -754,7 +756,8 @@ cfg$eixo_x <- list(
   negrito_rotulos = FALSE,
   rotacao_rotulos = 0,
 
-  # distancia_rotulos_pt: distância entre números e eixo, em pt.
+  # distancia_rotulos_pt: distância entre números e eixo, em pt. Com a caixa de tamanho fixo (cfg$caixa) só os
+  #   números se movem; o gráfico não muda de tamanho.
   distancia_rotulos_pt = 3,
 
   # mostrar_titulo / tamanho_titulo_pt / cor_titulo / negrito_titulo /
@@ -764,7 +767,11 @@ cfg$eixo_x <- list(
   cor_titulo = "black",
   negrito_titulo = FALSE,
   italico_titulo = FALSE,
-  distancia_titulo_pt = 4
+  distancia_titulo_pt = 4,
+
+  # rotacao_titulo: ângulo do título do eixo, em graus. NULL = o padrão (X: 0; Y: 90, lendo de baixo para cima;
+  #   Y da direita: -90). OPÇÕES: NULL | número      EX.: cfg$eixo_y$rotacao_titulo <- 0   (Y na horizontal)
+  rotacao_titulo = NULL
 )
 
 # -----------------------------------------------------------------------------
@@ -797,11 +804,11 @@ cfg$eixo_y <- list(
   direcao_menores = "dentro",
   comprimento_maiores_pt = 5,
   comprimento_menores_pt = 3,
-  espessura_ticks_pt = 1,
+  espessura_ticks_pt = NULL,     # NULL = igual à da moldura (cfg$caixa$espessura_pt)
   cor_ticks = "black",
   mostrar_linha = TRUE,
   cor_linha = "black",
-  espessura_linha_pt = 1,
+  espessura_linha_pt = NULL,     # NULL = igual à da moldura
   mostrar_rotulos = TRUE,
   # casas_decimais: NULL | inteiro
   casas_decimais = NULL,
@@ -820,7 +827,9 @@ cfg$eixo_y <- list(
   cor_titulo = "black",
   negrito_titulo = FALSE,
   italico_titulo = FALSE,
-  distancia_titulo_pt = 4
+  distancia_titulo_pt = 4,
+  # rotacao_titulo: graus. NULL = padrão (Y: 90, lendo de baixo para cima).  EX.: cfg$eixo_y$rotacao_titulo <- 0
+  rotacao_titulo = NULL
 )
 
 # -----------------------------------------------------------------------------
@@ -869,6 +878,8 @@ cfg$eixo_y2 <- list(
   #   os números e o eixo. NULL = o mesmo do eixo_y.      EX.: cfg$eixo_y2$distancia_titulo_pt <- 10
   distancia_titulo_pt = NULL,
   distancia_rotulos_pt = NULL,
+  # rotacao_titulo: ângulo do título do eixo direito, em graus. NULL = o do eixo_y (padrão: -90).
+  rotacao_titulo = NULL,
 
   # cor_eixo: pinta números, título e ticks do eixo secundário.
   #   OPÇÕES: NULL (preto) | "serie" (cor da 1ª série do y2) | qualquer cor
@@ -902,12 +913,19 @@ cfg$caixa <- list(
   #   OPÇÕES: NULL | número (1 = quadrado; 0.75 = 4:3)
   proporcao = NULL,
 
-  # painel_largura_cm / painel_altura_cm: tamanho FIXO da caixa do gráfico (a área dentro dos eixos), em cm,
-  #   igual em todos os gráficos (como o layer do Origin). Números, títulos e legenda ficam fora dela e a
-  #   página é ajustada para caber tudo (veja exportacao$ajustar_pagina). NULL = a caixa ocupa o que sobra da página.
+  # painel_fixo: a caixa do gráfico (a área dentro dos eixos) tem SEMPRE o mesmo tamanho, como o layer do Origin:
+  #   mexer em números, títulos, distâncias ou legenda move esses textos, não o gráfico, e a página do arquivo se
+  #   ajusta para caber tudo (veja exportacao$ajustar_pagina). Vale para linha, pontos, barras, boxplot, histograma...
+  #   (não para pizza nem painéis empilhados). FALSE = a caixa ocupa o que sobra da página (largura x altura).
+  #   OPÇÕES: TRUE | FALSE
+  painel_fixo = TRUE,
+
+  # painel_largura_cm / painel_altura_cm: tamanho da caixa, em cm. NULL = o tamanho padrão (painel_padrao_cm).
   #   EX.: cfg$caixa$painel_largura_cm <- 9; cfg$caixa$painel_altura_cm <- 6.5
   painel_largura_cm = NULL,
   painel_altura_cm = NULL,
+  # painel_padrao_cm: tamanho padrão c(largura, altura) da caixa, quando as duas acima estão vazias.
+  painel_padrao_cm = c(10, 7.5),
 
   # margens_cm: margens externas c(topo, direita, baixo, esquerda) em cm.
   margens_cm = c(0.3, 0.5, 0.3, 0.3),
@@ -1010,6 +1028,11 @@ cfg$legenda <- list(
   tamanho_texto_pt = NULL,
   tamanho_titulo_pt = NULL,
 
+  # negrito_texto / negrito_titulo: nomes das séries e título da legenda em negrito (ou cfg$texto$negrito_tudo).
+  #   OPÇÕES: TRUE | FALSE
+  negrito_texto = FALSE,
+  negrito_titulo = FALSE,
+
   # tamanho_chave_pt: tamanho do quadradinho/linha de cada item.
   tamanho_chave_pt = 14,
 
@@ -1065,7 +1088,12 @@ cfg$texto <- list(
   tamanho_base_pt = 11,
 
   # cor: cor padrão dos textos.
-  cor = "black"
+  cor = "black",
+
+  # negrito_tudo: TODOS os nomes e números em negrito (títulos, eixos, legenda, rótulos de dados...).
+  #   Cada texto também tem o seu negrito (eixo$negrito_titulo, eixo$negrito_rotulos, legenda$negrito_texto...).
+  #   OPÇÕES: TRUE | FALSE      EX.: cfg$texto$negrito_tudo <- TRUE
+  negrito_tudo = FALSE
 )
 
 # -----------------------------------------------------------------------------
@@ -1156,9 +1184,10 @@ cfg$quebra <- list(
 
   # marca_largura_pt / marca_altura_pt: tamanho de cada traço diagonal da quebra, em pt
   #   (largura = quanto avança para os lados; altura = quanto sobe/desce).
-  #   OPÇÕES: números > 0 (padrões 5 e 4)      EX.: cfg$quebra$marca_largura_pt <- 8
-  marca_largura_pt = 5,
-  marca_altura_pt = 4
+  #   OPÇÕES: números > 0 (padrões 2.5 e 3: traço curto, que não encosta nos números do eixo)
+  #   EX.: cfg$quebra$marca_largura_pt <- 4
+  marca_largura_pt = 2.5,
+  marca_altura_pt = 3
 )
 
 # -----------------------------------------------------------------------------
@@ -1236,7 +1265,9 @@ cfg$exportacao <- list(
   #   EX.: cfg$exportacao$formatos <- c("png", "pdf", "tiff")
   formatos = c("png", "pdf"),
 
-  # largura / altura / unidade: tamanho final da figura.
+  # largura / altura / unidade: tamanho final da figura. ATENÇÃO: com a caixa de tamanho fixo (cfg$caixa$painel_fixo,
+  #   o padrão) e ajustar_pagina = TRUE, a página se ajusta ao conteúdo e estes valores NÃO são usados. Para uma
+  #   página de tamanho exato: cfg$caixa$painel_fixo <- FALSE (a caixa ocupa o que sobra) ou ajustar_pagina <- FALSE.
   #   OPÇÕES unidade: "cm" | "mm" | "in"
   largura = 12,
   altura = 9,
@@ -1248,8 +1279,8 @@ cfg$exportacao <- list(
   # fundo_transparente: OPÇÕES: TRUE | FALSE
   fundo_transparente = FALSE,
 
-  # ajustar_pagina: com caixa$painel_largura_cm/painel_altura_cm, a página do arquivo se ajusta ao conteúdo (caixa
-  #   do tamanho pedido + números, títulos e legenda), sem cortar nada; largura/altura acima não são usadas.
+  # ajustar_pagina: com a caixa de tamanho fixo (cfg$caixa$painel_fixo), a página do arquivo se ajusta ao conteúdo
+  #   (caixa do tamanho pedido + números, títulos e legenda), sem cortar nada; largura/altura acima não são usadas.
   #   FALSE = página sempre de largura x altura (a caixa fica centralizada; avisa se não couber).
   #   OPÇÕES: TRUE | FALSE
   ajustar_pagina = TRUE,

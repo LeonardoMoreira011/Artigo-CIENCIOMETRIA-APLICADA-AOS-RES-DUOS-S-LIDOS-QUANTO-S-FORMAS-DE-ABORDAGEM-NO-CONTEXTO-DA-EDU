@@ -564,7 +564,7 @@ teste("esfera: o brilho muda de lado com esfera_luz",
 # legenda: escala, distância e caber na caixa
 cle <- ss; cle$grafico$colunas_y <- c("WORLD",
                                       "BRAZIL"); cle$legenda <- utils::modifyList(cle$legenda, list(n_colunas = 2, tamanho_texto_pt = 40))
-cle$exportacao$largura <- 9; cle$exportacao$altura <- 7
+cle$exportacao$largura <- 9; cle$exportacao$altura <- 7; cle$caixa$painel_fixo <- FALSE   # página fixa: a medida vem da página
 m_leg <- function(c1) { r <- suppressMessages(.medir_legenda(plotar(aq, c1), .tamanho_pagina_in(c1))); r }
 cle_n <- cle; cle_n$legenda$ajustar_caixa <- FALSE
 msgs_de <- function(expr) {                       # mensagens (message()) emitidas ao avaliar expr
@@ -647,6 +647,75 @@ ci <- c0; ci$grafico <- utils::modifyList(ci$grafico, list(tipo = "linha_pontos"
 ci$eixo_y$ticks_modo <- "incremento"; ci$eixo_y$incremento <- 5000
 teste("intervalo que geraria centenas de traços avisa e usa um intervalo razoável (números não se amontoam)",
       da_aviso(plotar(aq, ci), "gera") && length(attr(suppressWarnings(plotar(aq, ci)), "info")$ax_y$maiores) <= 12)
+
+cat("\n--- Refinos: negrito geral, grossura única, rotação dos títulos, quebra menor, caixa fixa padrão, grade menor ---\n")
+dn <- c0; dn$grafico <- utils::modifyList(dn$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL")))
+dn$legenda$mostrar <- TRUE; dn$legenda$titulo <- "Séries"
+tx_face <- function(g) { t <- ggplot2::ggplot_build(g)$plot$theme; t }
+pn1 <- suppressMessages(aplicar_painel(dn, list2env(list(negrito_geral = TRUE))))
+gn1 <- suppressWarnings(plotar(aq, pn1)); gn0 <- suppressWarnings(plotar(aq, dn))
+teste("negrito_geral: títulos, números, legenda e título da legenda ficam em negrito (e mudam o desenho)",
+      { th <- gn1$theme; faces <- c(th$axis.text.x.bottom$face, th$axis.title.x.bottom$face, th$axis.text.y.left$face,
+                                    th$legend.text$face, th$legend.title$face)
+        all(faces == "bold") && !identical(renderiza(gn1), renderiza(gn0)) })
+pn2 <- suppressMessages(aplicar_painel(dn, list2env(list(legenda_negrito = TRUE, y_numeros_negrito = TRUE))))
+gn2 <- suppressWarnings(plotar(aq, pn2))
+teste("negrito por texto: só a legenda e os números do Y ficam em negrito; o resto não",
+      gn2$theme$legend.text$face == "bold" && gn2$theme$axis.text.y.left$face == "bold" &&
+      gn2$theme$axis.text.x.bottom$face == "plain" && gn2$theme$legend.title$face == "plain")
+# grossura única
+pm <- suppressMessages(aplicar_painel(dn, list2env(list(moldura_espessura_pt = 2.5))))
+gm <- suppressWarnings(plotar(aq, pm))
+teste("moldura mais grossa padroniza traços e linha dos eixos (mesma grossura, sem precisar repetir)",
+      all(abs(c(gm$theme$axis.ticks.x.bottom$linewidth, gm$theme$axis.ticks.y.left$linewidth,
+                gm$theme$axis.minor.ticks.x.bottom$linewidth, gm$theme$panel.border$linewidth) - .lw(2.5)) < 1e-9))
+pm2 <- suppressMessages(aplicar_painel(dn, list2env(list(moldura_espessura_pt = 2.5, x_ticks_espessura_pt = 0.5))))
+gm2 <- suppressWarnings(plotar(aq, pm2))
+teste("a grossura dada ao eixo vale mais que a da moldura",
+      abs(gm2$theme$axis.ticks.x.bottom$linewidth - .lw(0.5)) < 1e-9 && abs(gm2$theme$axis.ticks.y.left$linewidth - .lw(2.5)) < 1e-9)
+# rotação dos títulos
+pr9 <- suppressMessages(aplicar_painel(dn, list2env(list(y_rotacao_titulo = 0, x_rotacao_titulo = 20))))
+gr9 <- suppressWarnings(plotar(aq, pr9))
+teste("rotação dos títulos dos eixos: Y na horizontal (0) e X inclinado (20); sem pedir, Y = 90",
+      gr9$theme$axis.title.y.left$angle == 0 && gr9$theme$axis.title.x.bottom$angle == 20 &&
+      suppressWarnings(plotar(aq, dn))$theme$axis.title.y.left$angle == 90)
+teste("rotação do título do Y também na quebra de eixo e no Y2 (largura da figura muda)",
+      { cq <- c0; cq$grafico <- utils::modifyList(cq$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "POP")))
+        cq$series$POP <- list(eixo = "y2"); cq$eixo_y2$ativo <- TRUE; cq$eixo_y2$titulo <- "Populacao"; cq$eixo_y$titulo <- "Intensidade do sinal"
+        cq$quebra <- list(ativo = TRUE, de = 80, ate = 280, estilo = "continuo", y2_de = 2.5, y2_ate = 5.5, proporcao_superior = 0.4)
+        cq2 <- cq; cq2$eixo_y$rotacao_titulo <- 0; cq2$eixo_y2$rotacao_titulo <- 0
+        medidas(cq, aqq)$larg < medidas(cq2, aqq)$larg - 0.5 })
+# marcas da quebra menores por padrão
+teste("a barra // da quebra é curta por padrão (2.5 x 3 pt) e configurável pelo painel",
+      c0$quebra$marca_largura_pt == 2.5 && c0$quebra$marca_altura_pt == 3 &&
+      suppressMessages(aplicar_painel(c0, list2env(list(quebra_marca_largura_pt = 4, quebra_marcas = FALSE))))$quebra$marca_largura_pt == 4)
+# caixa fixa por padrão
+mp1 <- medidas(c0 |> (function(x) { x$grafico <- utils::modifyList(x$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = "WORLD")); x })(), aq)
+teste("caixa fixa por padrão: 10 x 7.5 cm sem pedir nada",
+      abs(mp1$pw - 10) < 1e-6 && abs(mp1$ph - 7.5) < 1e-6)
+cdist <- c0; cdist$grafico <- utils::modifyList(cdist$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = "WORLD"))
+cdist2 <- cdist; cdist2$eixo_y$distancia_rotulos_pt <- 20; cdist2$eixo_x$distancia_rotulos_pt <- 20
+m_a <- medidas(cdist, aq); m_b <- medidas(cdist2, aq)
+teste("mudar a distância dos números ao eixo move os números; a caixa continua 10 x 7.5 e a página cresce",
+      abs(m_b$pw - 10) < 1e-6 && abs(m_b$ph - 7.5) < 1e-6 && m_b$larg > m_a$larg + 0.4 && m_b$alt > m_a$alt + 0.4)
+cdist3 <- cdist; cdist3$caixa$painel_fixo <- FALSE
+teste("painel_fixo = FALSE volta à página de largura x altura (a caixa ocupa o que sobra)",
+      { pr <- .preparar_saida(suppressWarnings(plotar(aq, cdist3)), cdist3); is.null(pr$grob) && abs(pr$larg * 2.54 - 12) < 1e-6 })
+teste("pizza e painéis empilhados não ganham caixa fixa por padrão",
+      is.null(.painel_cm(utils::modifyList(c0, list(grafico = list(tipo = "pizza"))))) &&
+      is.null(.painel_cm(utils::modifyList(c0, list(paineis = list(ativo = TRUE))))))
+# grade nos traços grandes e nos pequenos
+cg <- cdist; cg$eixo_x$n_menores <- 1; cg$eixo_y$n_menores <- 1
+cg$grade <- utils::modifyList(cg$grade, list(maior_x = FALSE, maior_y = FALSE, menor_x = FALSE, menor_y = FALSE))
+gg0 <- renderiza(suppressWarnings(plotar(aq, cg)))
+cgM <- cg; cgM$grade$maior_x <- TRUE; cgm <- cg; cgm$grade$menor_x <- TRUE
+cgM$grade$cor_maior <- "#FF0000"; cgm$grade$cor_menor <- "#0000FF"; cgM$grade$opacidade_maior <- 1; cgm$grade$opacidade_menor <- 1
+cgM$grade$espessura_maior_pt <- 3; cgm$grade$espessura_menor_pt <- 3
+ggM <- renderiza(suppressWarnings(plotar(aq, cgM))); ggm <- renderiza(suppressWarnings(plotar(aq, cgm)))
+tem_cor <- function(img, canal) { m <- grDevices::col2rgb(unique(as.vector(img))); o <- setdiff(1:3, canal)
+                                  any(m[canal, ] > 200 & m[o[1], ] < 90 & m[o[2], ] < 90) }
+teste("grade pode ser ligada nos traços grandes e nos pequenos, cada uma com a sua cor",
+      tem_cor(ggM, 1) && !tem_cor(ggM, 3) && tem_cor(ggm, 3) && !tem_cor(ggm, 1) && !tem_cor(gg0, 1) && !tem_cor(gg0, 3))
 
 cat("\n--- Legenda: posição, fundo, borda e sombra ---\n")
 pl <- list2env(list(tipo_grafico = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL"),

@@ -12,12 +12,23 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
   .checar_nomes(cfg); .checar_itens(cfg)   # avisa nomes digitados errado ANTES de completar com os padrões
   cfg <- .completar_cfg(cfg)
   .validar(cfg, checar_nomes = FALSE)
+  cfg <- .resolver_herancas(cfg)
   g <- if (isTRUE(cfg$paineis$ativo)) .plotar_paineis(dados, cfg)
        else if (isTRUE(cfg$quebra$ativo)) .plotar_quebra(dados, cfg)
        else .plotar_um(dados, cfg)
   attr(g, "dados") <- dados
   attr(g, "cfg") <- cfg
   g
+}
+
+# Valores que, se vazios, seguem outro ajuste: a grossura dos traços e da linha dos eixos segue a da moldura
+# (cfg$caixa$espessura_pt) — mudar a moldura padroniza tudo; escrever o valor no eixo vale mais.
+.resolver_herancas <- function(cfg) {
+  for (ax in c("eixo_x", "eixo_y")) {
+    cfg[[ax]]$espessura_ticks_pt <- cfg[[ax]]$espessura_ticks_pt %||% cfg$caixa$espessura_pt
+    cfg[[ax]]$espessura_linha_pt <- cfg[[ax]]$espessura_linha_pt %||% cfg$caixa$espessura_pt
+  }
+  cfg
 }
 
 # Letra do painel (a), (A), (i)... conforme o formato escolhido.
@@ -31,9 +42,9 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 # Título único (vertical ou horizontal) ao lado de um conjunto de painéis.
 .rotulo_lateral <- function(texto, cfg, vertical = TRUE, direita = FALSE, cor = NULL) {
   e <- if (vertical) cfg$eixo_y else cfg$eixo_x
-  face <- if (isTRUE(e$negrito_titulo)) "bold" else "plain"
-  patchwork::wrap_elements(full = textGrob(.texto(texto, isTRUE(e$negrito_titulo)),
-    rot = if (vertical) (if (direita) -90 else 90) else 0,
+  face <- if (.neg(cfg, e$negrito_titulo)) "bold" else "plain"
+  patchwork::wrap_elements(full = textGrob(.texto(texto, .neg(cfg, e$negrito_titulo)),
+    rot = e$rotacao_titulo %||% if (vertical) (if (direita) -90 else 90) else 0,
     gp = gpar(fontsize = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt, fontface = face,
               fontfamily = .fonte(cfg$texto$fonte), col = cor %||% e$cor_titulo %||% cfg$texto$cor)))
 }

@@ -98,9 +98,9 @@
     j <- switch(pos, fora = ifelse(neg, 1.3, -0.3), dentro = ifelse(neg, -0.3, 1.3), centro = 0.5)
     cam[[length(cam) + 1]] <- if (flip)
       geom_text(data = rr, aes(x = xc, y = yl, label = rot), hjust = j, size = .tx(B$rotulos_tamanho_pt),
-                colour = .cor(B$rotulos_cor), family = .fonte(cfg$texto$fonte))
+                colour = .cor(B$rotulos_cor), family = .fonte(cfg$texto$fonte), fontface = if (.neg(cfg)) "bold" else "plain")
     else geom_text(data = rr, aes(x = xc, y = yl, label = rot), vjust = j, size = .tx(B$rotulos_tamanho_pt),
-                   colour = .cor(B$rotulos_cor), family = .fonte(cfg$texto$fonte))
+                   colour = .cor(B$rotulos_cor), family = .fonte(cfg$texto$fonte), fontface = if (.neg(cfg)) "bold" else "plain")
   }
   aes_leg <- c("fill", if (contorno_serie) "colour")
   faixa_y <- c(r$ymin, r$ymax, base, faixa_err)

@@ -15,6 +15,16 @@ Para quem não quer mexer em código: abra o **gerador de gráficos** no navegad
 - **Para o time:** basta compartilhar a pasta `graficos_R` inteira (o app usa o motor da pasta de cima e a fonte de `fontes/`).
 - **Testes do app:** `Rscript app_shiny/testes_app.R`.
 
+## Refinos de aparência (atualização)
+
+- **Negrito:** `negrito_geral <- TRUE` deixa TUDO em negrito (títulos, números, legenda, rótulos de dados); também por texto: `x_numeros_negrito`, `y_numeros_negrito`, `legenda_negrito`, `legenda_titulo_negrito`, `eixos_titulo_negrito`, `titulo_grafico_negrito`.
+- **Caixa do gráfico fixa por padrão (10 × 7,5 cm):** mudar a distância dos números, os títulos ou a legenda move esses textos, não o gráfico; a página do arquivo se ajusta. `painel_fixo <- FALSE` volta à página de `largura_cm × altura_cm`; tamanho próprio: `painel_largura_cm` / `painel_altura_cm`.
+- **Grossura única:** `moldura_espessura_pt` agora vale também para os traços e as linhas dos eixos (cada eixo ainda pode ter a sua com `x_/y_ticks_espessura_pt`).
+- **Rotação dos títulos dos eixos:** `x_rotacao_titulo`, `y_rotacao_titulo` (0 = horizontal; padrão do Y = 90) e `y2_rotacao_titulo`.
+- **Quebra de eixo:** as barras `//` ficaram curtas (2,5 × 3 pt) para não encostar nos números; `quebra_marca_largura_pt`, `quebra_marca_altura_pt`, `quebra_marcas`.
+- **Grade:** nos traços grandes (`grade_x`, `grade_y`) e nos pequenos (`grade_menor_x`, `grade_menor_y`), cada grupo com tipo, cor, grossura e opacidade; a menor precisa de traços pequenos (`x_ticks_menores` ≥ 1).
+- **Fontes:** o app lista **todas as fontes do computador (systemfonts)**, com busca, e aceita uma fonte de arquivo `.ttf`/`.otf`. No script: `listar_fontes()` e `fonte <- "Nome da fonte"`.
+
 ## Fonte oficial: Barlow
 
 A **Barlow** (Barlow, Barlow Condensed e Barlow Semi Condensed; licença SIL OFL, `fontes/Barlow/OFL.txt`) é a fonte padrão. Os arquivos estão em **`fontes/Barlow/`** e são carregados sozinhos — não precisa instalar nada no Windows para PNG, TIFF, JPEG e SVG. O `graficos_R_completo.R` traz uma cópia embutida. **PDF e EMF** usam as fontes *instaladas* no Windows: para a Barlow sair no PDF, abra os `.ttf` de `fontes/Barlow` e clique em *Instalar*.
@@ -174,7 +184,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
 | `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 160 testes automáticos — rode depois de qualquer alteração no motor |
+| `06_testes.R` | 172 testes automáticos — rode depois de qualquer alteração no motor |
 | `painel_de_ajustes.R` | **o painel**: variáveis simples por categoria (escala, ticks, grade, quebra, cores...). Veja a seção 2.1 |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |

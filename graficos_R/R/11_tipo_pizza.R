@@ -108,7 +108,8 @@
       cam[[length(cam) + 1]] <- geom_segment(data = rd, aes(x = gx0, y = gy0, xend = gx1, yend = gy1),
                                              colour = cfg$texto$cor, linewidth = .lw(P$linha_guia_espessura_pt))
     cam[[length(cam) + 1]] <- geom_text(data = rd, aes(x = x, y = y, label = rot), hjust = rd$hj,
-      colour = rd$cor, size = .tx(P$rotulos_tamanho_pt), lineheight = 0.95, family = .fonte(cfg$texto$fonte))
+      colour = rd$cor, size = .tx(P$rotulos_tamanho_pt), lineheight = 0.95, family = .fonte(cfg$texto$fonte),
+      fontface = if (.neg(cfg)) "bold" else "plain")
     if (P$rotulos_posicao != "dentro") lim <- max(lim, max(abs(c(rd$x, rd$y))) + P$rotulos_margem)
   }
   leg <- !("categoria" %in% P$rotulos)

@@ -17,14 +17,14 @@ minimos <- c(
   ggplot2   = "3.5.0",   # gradientes, ticks menores, legenda "inside"  (testado 3.5.2 e 4.0.3)
   scales    = "1.3.0",   # transformações de eixo (testado 1.4.0)
   patchwork = "1.2.0",   # painéis empilhados (testado 1.3.2)
-  ragg      = "1.5.0"    # PNG/TIFF/JPEG de qualidade; < 1.5 tem bug no gradiente radial
+  ragg      = "1.5.0",   # PNG/TIFF/JPEG de qualidade; < 1.5 tem bug no gradiente radial
+  systemfonts = "1.0.0"  # fontes: Barlow oficial (fontes/Barlow) e todas as instaladas no computador
 )
 opcionais <- c(
   svglite      = "2.1.0",  # SVG editável (Inkscape/Illustrator)
   devEMF       = "4.0",    # EMF para colar no Word/PowerPoint
   viridisLite  = "0.4.0",  # paletas viridis/magma/plasma/cividis
   RColorBrewer = "1.1-3",  # paletas brewer_*
-  systemfonts  = "1.0.0",  # checagem das fontes instaladas (e a Barlow oficial, que vem em fontes/Barlow)
   shiny        = "1.7.0"   # aplicativo no navegador (app_shiny/, abrir_app.bat)
 )
 
