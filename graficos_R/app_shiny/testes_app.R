@@ -116,6 +116,10 @@ testServer(servidor, {
   teste("servidor: escolher um exemplo carrega os dados", !is.null(rv$dados) && nrow(rv$dados) == 12)
   session$setInputs(auto = FALSE, atualizar = 1)
   teste("servidor: 'Atualizar agora' monta a prévia", !is.null(rv$previa) && is.null(rv$erro))
+  teste("servidor: a prévia calcula onde está a legenda (caixa que se arrasta) dentro do painel",
+        !is.null(rv$geo) && all(rv$geo$legenda[1:2] >= rv$geo$painel[1:2] - 1e-6) && rv$geo$legenda[3] < rv$geo$painel[3])
+  session$setInputs(legenda_arrastada = list(esq = 0.25, base = 0.5, t = 1), legenda_redimensionada = list(largura = 0.3, t = 1))
+  teste("servidor: arrastar e redimensionar a legenda na prévia roda sem erro", is.null(rv$erro))
   session$setInputs(quebra_ativar = TRUE, quebra_de = 100000, quebra_ate = 450000, quebra_estilo = "continuo", atualizar = 2)
   teste("servidor: ligar a quebra muda o gráfico e aparece em 'o que você mudou'", "quebra_ativar" %in% rv$res$aplicado && is.null(rv$erro))
   session$setInputs(quebra_de = 450000, quebra_ate = 100000, atualizar = 3)

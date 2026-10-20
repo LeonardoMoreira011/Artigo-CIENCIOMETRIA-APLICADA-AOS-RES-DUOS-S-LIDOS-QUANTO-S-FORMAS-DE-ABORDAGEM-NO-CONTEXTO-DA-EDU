@@ -746,6 +746,40 @@ pw <- suppressMessages(aplicar_painel(c0, list2env(list(legenda_largura_pt = 120
 teste("painel: largura da legenda, espaço símbolo-texto e largura do símbolo chegam ao cfg",
       pw$legenda$largura_pt == 120 && pw$legenda$espaco_chave_texto_pt == 2 && pw$legenda$largura_chave_pt == 12)
 
+cat("\n--- Legenda: posição por coordenadas e geometria para arrastar ---\n")
+cco <- clw; cco$grafico <- utils::modifyList(cco$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL")))
+cco$eixo_x$inicio <- 2015; cco$eixo_x$fim <- 2026; cco$eixo_x$margem_percentual <- 0; cco$eixo_y$inicio <- 0; cco$eixo_y$fim <- 800000
+cco$eixo_y$margem_percentual <- 0; cco$legenda <- utils::modifyList(cco$legenda, list(x_dados = 2020, y_dados = 400000, titulo = NULL))
+icoo <- attr(suppressWarnings(plotar(aq, cco)), "info")
+cc2 <- .legenda_por_coordenadas(cco, icoo)$legenda
+teste("legenda por coordenadas: (x=2020, y=400000) vira fração do painel e o canto superior esquerdo é a âncora",
+      abs(cc2$dentro_x - (2020 - 2015) / 11) < 1e-9 && abs(cc2$dentro_y - 0.5) < 1e-9 && identical(cc2$ancora, c(0, 1)))
+teste("legenda por coordenadas fora do eixo avisa e vai para a borda; eixo de categorias dá erro claro",
+      da_aviso(plotar(aq, utils::modifyList(cco, list(legenda = list(x_dados = 2100)))), "fora do eixo") &&
+      da_erro(plotar(data.frame(Cat = c("a", "b"), V = 1:2), { cb <- c0; cb$grafico <- utils::modifyList(cb$grafico, list(tipo = "barras", coluna_x = 1,
+              colunas_y = "V")); cb$legenda <- utils::modifyList(cb$legenda, list(mostrar = TRUE, x_dados = 1)); cb }), "categorias"))
+# geometria prevista x desenho real (legenda com moldura vermelha)
+cgeo <- cco; cgeo$legenda <- utils::modifyList(cgeo$legenda, list(x_dados = NULL, y_dados = NULL, dentro_x = 0.3, dentro_y = 0.6, ancora = "auto",
+                      fundo = "white", moldura = TRUE, cor_moldura = "#FF0000", espessura_moldura_pt = 2, mostrar = TRUE))
+cgeo$caixa$painel_fixo <- TRUE; cgeo$exportacao$dpi <- 72
+ggeo <- suppressWarnings(plotar(aq, cgeo)); geo <- .geometria_legenda(ggeo, cgeo)
+teste("geometria da legenda: devolve página, painel e legenda dentro do painel",
+      !is.null(geo) && all(geo$legenda[1:2] >= geo$painel[1:2] - 1e-6) &&
+      geo$legenda[1] + geo$legenda[3] <= geo$painel[1] + geo$painel[3] + 1e-6 && geo$legenda[2] + geo$legenda[4] <= geo$painel[2] + geo$painel[4] + 1e-6)
+teste("geometria da legenda confere com o desenho real (moldura vermelha dentro de 4 px)",
+      { pr <- .preparar_saida(ggeo, cgeo); W <- round(pr$larg * 72); H <- round(pr$alt * 72)
+        cap <- ragg::agg_capture(width = pr$larg, height = pr$alt, units = "in", res = 72); .desenhar(pr, ggeo); img <- cap(); invisible(grDevices::dev.off())
+        m <- grDevices::col2rgb(as.vector(img)); verm <- matrix(m[1, ] > 245 & m[2, ] < 25 & m[3, ] < 25, nrow = nrow(img))
+        ys <- which(rowSums(verm) > 0); xs <- which(colSums(verm) > 0)
+        esperado <- geo$legenda * c(W, H, W, H)
+        abs(min(xs) - esperado[1]) < 4 && abs(max(xs) - (esperado[1] + esperado[3])) < 4 &&
+        abs(min(ys) - esperado[2]) < 4 && abs(max(ys) - (esperado[2] + esperado[4])) < 4 })
+teste("sem legenda dentro (legenda fora ou oculta) não há geometria",
+      is.null(.geometria_legenda(ggeo, utils::modifyList(cgeo, list(legenda = list(posicao = "direita"))))) &&
+      is.null(.geometria_legenda(ggeo, utils::modifyList(cgeo, list(legenda = list(mostrar = FALSE))))))
+pcd <- suppressMessages(aplicar_painel(c0, list2env(list(legenda_x_dados = 2020, legenda_y_dados = 5e5))))
+teste("painel: legenda_x_dados e legenda_y_dados chegam ao cfg", pcd$legenda$x_dados == 2020 && pcd$legenda$y_dados == 5e5)
+
 cat("\n--- Legenda: posição, fundo, borda e sombra ---\n")
 pl <- list2env(list(tipo_grafico = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL"),
                     legenda_canto = "inf_dir", legenda_fundo = "#EEEEEE", legenda_fundo_opacidade = 0.8,

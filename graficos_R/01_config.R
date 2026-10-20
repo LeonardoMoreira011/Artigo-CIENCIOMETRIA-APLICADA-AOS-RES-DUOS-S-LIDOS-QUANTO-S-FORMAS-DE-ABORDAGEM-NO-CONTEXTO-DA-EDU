@@ -982,6 +982,13 @@ cfg$legenda <- list(
   dentro_x = 0.04,
   dentro_y = 0.96,
 
+  # x_dados / y_dados: posição da legenda por COORDENADAS DOS EIXOS (valores do eixo X e do eixo Y esquerdo, ex.:
+  #   x_dados = 2016, y_dados = 600000). O canto superior esquerdo da legenda fica nesse ponto. Vale no lugar de
+  #   dentro_x / dentro_y; um dos dois pode ficar vazio. Não serve para eixos de categorias.
+  #   OPÇÕES: NULL | número (ou data, em eixo de datas)      EX.: cfg$legenda$x_dados <- 2016; cfg$legenda$y_dados <- 600000
+  x_dados = NULL,
+  y_dados = NULL,
+
   # ancora: qual ponto da legenda fica em (dentro_x, dentro_y).
   #   OPÇÕES: "auto" (= mesmo canto da posição) | c(x, y) entre 0 e 1
   ancora = "auto",

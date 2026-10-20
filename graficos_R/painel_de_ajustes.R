@@ -208,6 +208,8 @@ legenda_canto    <- NULL   # atalho para "dentro": "sup_esq" | "sup_centro" | "s
                            #   "centro_dir" | "inf_esq" | "inf_centro" | "inf_dir". EX.: "sup_dir"
 legenda_x        <- NULL   # posição fina com "dentro", de 0 (esquerda) a 1 (direita). EX.: 0.04
 legenda_y        <- NULL   # de 0 (embaixo) a 1 (em cima). EX.: 0.96
+legenda_x_dados  <- NULL   # posição por COORDENADA do eixo: valor de X onde fica o canto superior esquerdo da legenda. EX.: 2016
+legenda_y_dados  <- NULL   # valor de Y (eixo esquerdo) do mesmo canto. EX.: 600000  (vale no lugar de legenda_x / legenda_y)
 legenda_ancora   <- NULL   # qual ponto da caixa fica em (x, y): c(0, 1) = canto sup. esq. | c(1, 1) = sup. dir. ...
 legenda_alinhar  <- NULL   # com a legenda FORA: onde ela fica ao longo do lado.
 legenda_escala   <- NULL   # aumenta (> 1) ou diminui (< 1) a legenda toda. EX.: 0.8

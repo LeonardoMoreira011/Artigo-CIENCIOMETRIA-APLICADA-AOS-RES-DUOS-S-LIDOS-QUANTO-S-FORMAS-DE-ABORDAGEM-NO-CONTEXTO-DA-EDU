@@ -96,3 +96,67 @@
   if (.tem("ragg")) ragg::agg_capture(width = larg, height = alt, units = "in", res = 72) else grDevices::pdf(NULL)
   grDevices::dev.cur()
 }
+
+# Posição da legenda por COORDENADAS DOS EIXOS: cfg$legenda$x_dados / y_dados (valores do eixo X e do eixo Y esquerdo,
+# ex.: x = 2016, y = 600000). O canto SUPERIOR ESQUERDO da legenda fica nesse ponto. Um dos dois pode ficar vazio
+# (aí vale o dentro_x / dentro_y). Entra: cfg e info (eixos calculados). Sai: cfg com dentro_x/dentro_y/ancora acertados.
+.legenda_por_coordenadas <- function(cfg, info) {
+  lg <- cfg$legenda
+  if (is.null(lg$x_dados) && is.null(lg$y_dados)) return(cfg)
+  if (!identical(lg$posicao, "dentro")) return(cfg)
+  ax_h <- if (isTRUE(info$flip)) info$ax_y else info$ax_x          # eixo horizontal na TELA
+  ax_v <- if (isTRUE(info$flip)) info$ax_x else info$ax_y
+  conv <- function(v, ax, quem) {
+    if (is.null(v)) return(NULL)
+    if (is.null(ax) || !is.null(ax$categorias))
+      .erro("cfg$legenda$", quem, ": este eixo é de categorias; use dentro_x / dentro_y (de 0 a 1).")
+    if (!is.null(ax$tempo)) v <- .tempo_num(v, ax$tempo, paste0("cfg$legenda$", quem))
+    f <- .npc(v, ax)
+    if (!is.finite(f)) .erro("cfg$legenda$", quem, " = ", v, " não existe neste eixo.")
+    if (f < -0.001 || f > 1.001)
+      .aviso("cfg$legenda$", quem, " = ", v, " fica fora do eixo (", signif(ax$limites[1], 6), " a ", signif(ax$limites[2], 6),
+             "); a legenda foi colocada na borda.")
+    min(max(f, 0), 1)
+  }
+  fx <- conv(lg$x_dados, ax_h, "x_dados"); fy <- conv(lg$y_dados, ax_v, "y_dados")
+  if (!is.null(fx)) cfg$legenda$dentro_x <- fx
+  if (!is.null(fy)) cfg$legenda$dentro_y <- fy
+  cfg$legenda$ancora <- c(if (!is.null(fx)) 0 else cfg$legenda$dentro_x, if (!is.null(fy)) 1 else cfg$legenda$dentro_y)
+  if (!is.null(fx) && !is.null(fy)) cfg$legenda$ancora <- c(0, 1)
+  cfg
+}
+
+# Onde a legenda "dentro" fica na figura, para o app desenhar uma caixa que se arrasta sobre a prévia.
+# Entra: g (de plotar) e cfg. Sai: NULL (sem legenda dentro) ou list(pagina = c(larg, alt) em polegadas,
+#   painel = c(esq, topo, larg, alt) e legenda = c(esq, topo, larg, alt), todos em FRAÇÃO da página (topo = a partir de cima)).
+.geometria_legenda <- function(g, cfg) {
+  lg <- cfg$legenda
+  if (!identical(lg$posicao, "dentro") || isFALSE(lg$mostrar)) return(NULL)
+  prep <- .preparar_saida(g, cfg)
+  dtmp <- .abrir_dispositivo_tmp(prep$larg, prep$alt); on.exit(grDevices::dev.off(dtmp), add = TRUE)
+  gt <- prep$grob %||% attr(g, "gt") %||% ggplot2::ggplotGrob(g)
+  k <- which(gt$layout$name == "guide-box-inside")
+  k <- k[!vapply(gt$grobs[k], function(x) inherits(x, "zeroGrob"), NA)]
+  if (!length(k)) return(NULL)
+  k <- k[1]; lay <- gt$layout[k, ]
+  tam <- function(u, total_in, conv) {                 # tamanho de cada coluna/linha, em polegadas (null = parte do que sobra)
+    nulo <- grid::unitType(u) == "null"
+    r <- numeric(length(u))
+    if (any(!nulo)) r[!nulo] <- conv(u[!nulo], "in", valueOnly = TRUE)
+    if (any(nulo)) { v <- as.numeric(u[nulo]); r[nulo] <- max(total_in - sum(r[!nulo]), 0) * v / sum(v) }
+    r
+  }
+  w <- tam(gt$widths, prep$larg, grid::convertWidth); h <- tam(gt$heights, prep$alt, grid::convertHeight)
+  pw <- sum(w[lay$l:lay$r]); ph <- sum(h[lay$t:lay$b])
+  pl <- sum(w[seq_len(lay$l - 1)]); pt <- sum(h[seq_len(lay$t - 1)])
+  lw <- grid::convertWidth(grid::grobWidth(gt$grobs[[k]]), "in", valueOnly = TRUE)
+  lh <- grid::convertHeight(grid::grobHeight(gt$grobs[[k]]), "in", valueOnly = TRUE)
+  info <- attr(g, "info") %||% attr(attr(g, "partes")[[1]], "info")
+  if (!is.null(info)) lg <- tryCatch(.legenda_por_coordenadas(cfg, info)$legenda, error = function(e) lg)
+  anc <- if (identical(lg$ancora, "auto")) c(lg$dentro_x, lg$dentro_y) else lg$ancora
+  esq <- lg$dentro_x * pw - anc[1] * lw                 # a legenda fica com o ponto 'anc' dela em (dentro_x, dentro_y) do painel
+  base <- lg$dentro_y * ph - anc[2] * lh                # distância da base do painel
+  list(pagina = c(prep$larg, prep$alt),
+       painel = c(pl, pt, pw, ph) / c(prep$larg, prep$alt, prep$larg, prep$alt),
+       legenda = c(pl + esq, pt + ph - base - lh, lw, lh) / c(prep$larg, prep$alt, prep$larg, prep$alt))
+}

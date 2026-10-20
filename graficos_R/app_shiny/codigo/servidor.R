@@ -34,7 +34,7 @@ servidor <- function(input, output, session) {
     if (isTRUE(getOption("gerador_encerrar_ao_fechar")))          # espera 6 s: recarregar a página não encerra o app
       later::later(function() if (.sessoes$n <= 0) shiny::stopApp(), 6)
   })
-  rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL)
+  rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL, geo = NULL)
   dir_dados <- file.path(raiz, "dados")
 
   # ---- dados -------------------------------------------------------------------------------------------------
@@ -109,7 +109,13 @@ servidor <- function(input, output, session) {
       if (!is.null(r$erro)) { rv$erro <- r$erro; rv$res <- r; return(invisible()) }
       incProgress(0.3)
       p <- tryCatch(desenhar_previa(r$g, r$cfg, dpi = 130), error = function(e) { rv$erro <- conditionMessage(e); NULL })
-      if (!is.null(p)) { rv$res <- r; rv$previa <- p; rv$erro <- NULL }
+      if (!is.null(p)) {
+        rv$res <- r; rv$previa <- p; rv$erro <- NULL
+        geo <- tryCatch(.geometria_legenda(r$g, r$cfg), error = function(e) NULL)   # onde está a legenda (caixa que se arrasta)
+        rv$geo <- geo
+        session$sendCustomMessage("legenda_geom", if (is.null(geo)) list(ok = FALSE)
+                                  else list(ok = TRUE, painel = geo$painel, legenda = geo$legenda, pagina = geo$pagina))
+      }
     })
   }
   observeEvent(vars_deb(), { if (isTRUE(input$auto) && !is.null(rv$dados)) calcular() }, ignoreInit = TRUE)
@@ -190,6 +196,21 @@ servidor <- function(input, output, session) {
       }
       rv$pend_series <- NULL
     })
+  })
+
+  # ---- legenda arrastada / redimensionada na prévia --------------------------------------------------------------------------
+  observeEvent(input$legenda_arrastada, {
+    d <- input$legenda_arrastada; geo <- rv$geo; req(geo, d)
+    lwf <- geo$legenda[3] / geo$painel[3]; lhf <- geo$legenda[4] / geo$painel[4]
+    x <- min(max(d$esq / max(1 - lwf, 1e-6), 0), 1); y <- min(max(d$base / max(1 - lhf, 1e-6), 0), 1)
+    updateSelectInput(session, "legenda_posicao", selected = "dentro")
+    updateSelectInput(session, "legenda_canto", selected = "")                 # posição manual: a âncora volta ao automático
+    updateNumericInput(session, "legenda_x", value = round(x, 3)); updateNumericInput(session, "legenda_y", value = round(y, 3))
+    updateNumericInput(session, "legenda_x_dados", value = NA); updateNumericInput(session, "legenda_y_dados", value = NA)
+  })
+  observeEvent(input$legenda_redimensionada, {
+    d <- input$legenda_redimensionada; geo <- rv$geo; req(geo, d)
+    updateNumericInput(session, "legenda_largura_pt", value = max(round(d$largura * geo$pagina[1] * 72), 10))
   })
 
   # ---- adicionar fonte de arquivo (systemfonts) ----------------------------------------------------------------------------

@@ -1100,6 +1100,13 @@ cfg$legenda <- list(
   dentro_x = 0.04,
   dentro_y = 0.96,
 
+  # x_dados / y_dados: posição da legenda por COORDENADAS DOS EIXOS (valores do eixo X e do eixo Y esquerdo, ex.:
+  #   x_dados = 2016, y_dados = 600000). O canto superior esquerdo da legenda fica nesse ponto. Vale no lugar de
+  #   dentro_x / dentro_y; um dos dois pode ficar vazio. Não serve para eixos de categorias.
+  #   OPÇÕES: NULL | número (ou data, em eixo de datas)      EX.: cfg$legenda$x_dados <- 2016; cfg$legenda$y_dados <- 600000
+  x_dados = NULL,
+  y_dados = NULL,
+
   # ancora: qual ponto da legenda fica em (dentro_x, dentro_y).
   #   OPÇÕES: "auto" (= mesmo canto da posição) | c(x, y) entre 0 e 1
   ancora = "auto",
@@ -4125,6 +4132,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
                 grade_x_menor = if (isTRUE(info$flip)) cfg$grade$menor_y else cfg$grade$menor_x,
                 grade_y_menor = if (isTRUE(info$flip)) cfg$grade$menor_x else cfg$grade$menor_y)
   ev_y2 <- ev
+  cfg <- .legenda_por_coordenadas(cfg, info)             # posição da legenda dada em unidades dos eixos (x_dados / y_dados)
   g <- g + .tema(cfg, eh, ev, lados, cor_y2 = if (!is.null(info$y2)) .cor(info$y2$cor) else NULL)
   if (!is.null(info$y2)) {
     # estilo de rótulos do y2: casas/notação próprias já nos rótulos; mostra sempre
@@ -4975,6 +4983,7 @@ jsonlite_b64 <- function(txt) {
   painel_fixo = c("caixa", "painel_fixo"),
   legenda_largura_pt = c("legenda", "largura_pt"), legenda_espaco_texto_pt = c("legenda", "espaco_chave_texto_pt"),
   legenda_largura_chave_pt = c("legenda", "largura_chave_pt"),
+  legenda_x_dados = c("legenda", "x_dados"), legenda_y_dados = c("legenda", "y_dados"),
   legenda_escala = c("legenda", "escala"), legenda_distancia_pt = c("legenda", "distancia_pt"),
   legenda_ajustar_caixa = c("legenda", "ajustar_caixa"),
   painel_largura_cm = c("caixa", "painel_largura_cm"), painel_altura_cm = c("caixa", "painel_altura_cm"),
@@ -5381,6 +5390,70 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
 .abrir_dispositivo_tmp <- function(larg = 7, alt = 5) {
   if (.tem("ragg")) ragg::agg_capture(width = larg, height = alt, units = "in", res = 72) else grDevices::pdf(NULL)
   grDevices::dev.cur()
+}
+
+# Posição da legenda por COORDENADAS DOS EIXOS: cfg$legenda$x_dados / y_dados (valores do eixo X e do eixo Y esquerdo,
+# ex.: x = 2016, y = 600000). O canto SUPERIOR ESQUERDO da legenda fica nesse ponto. Um dos dois pode ficar vazio
+# (aí vale o dentro_x / dentro_y). Entra: cfg e info (eixos calculados). Sai: cfg com dentro_x/dentro_y/ancora acertados.
+.legenda_por_coordenadas <- function(cfg, info) {
+  lg <- cfg$legenda
+  if (is.null(lg$x_dados) && is.null(lg$y_dados)) return(cfg)
+  if (!identical(lg$posicao, "dentro")) return(cfg)
+  ax_h <- if (isTRUE(info$flip)) info$ax_y else info$ax_x          # eixo horizontal na TELA
+  ax_v <- if (isTRUE(info$flip)) info$ax_x else info$ax_y
+  conv <- function(v, ax, quem) {
+    if (is.null(v)) return(NULL)
+    if (is.null(ax) || !is.null(ax$categorias))
+      .erro("cfg$legenda$", quem, ": este eixo é de categorias; use dentro_x / dentro_y (de 0 a 1).")
+    if (!is.null(ax$tempo)) v <- .tempo_num(v, ax$tempo, paste0("cfg$legenda$", quem))
+    f <- .npc(v, ax)
+    if (!is.finite(f)) .erro("cfg$legenda$", quem, " = ", v, " não existe neste eixo.")
+    if (f < -0.001 || f > 1.001)
+      .aviso("cfg$legenda$", quem, " = ", v, " fica fora do eixo (", signif(ax$limites[1], 6), " a ", signif(ax$limites[2], 6),
+             "); a legenda foi colocada na borda.")
+    min(max(f, 0), 1)
+  }
+  fx <- conv(lg$x_dados, ax_h, "x_dados"); fy <- conv(lg$y_dados, ax_v, "y_dados")
+  if (!is.null(fx)) cfg$legenda$dentro_x <- fx
+  if (!is.null(fy)) cfg$legenda$dentro_y <- fy
+  cfg$legenda$ancora <- c(if (!is.null(fx)) 0 else cfg$legenda$dentro_x, if (!is.null(fy)) 1 else cfg$legenda$dentro_y)
+  if (!is.null(fx) && !is.null(fy)) cfg$legenda$ancora <- c(0, 1)
+  cfg
+}
+
+# Onde a legenda "dentro" fica na figura, para o app desenhar uma caixa que se arrasta sobre a prévia.
+# Entra: g (de plotar) e cfg. Sai: NULL (sem legenda dentro) ou list(pagina = c(larg, alt) em polegadas,
+#   painel = c(esq, topo, larg, alt) e legenda = c(esq, topo, larg, alt), todos em FRAÇÃO da página (topo = a partir de cima)).
+.geometria_legenda <- function(g, cfg) {
+  lg <- cfg$legenda
+  if (!identical(lg$posicao, "dentro") || isFALSE(lg$mostrar)) return(NULL)
+  prep <- .preparar_saida(g, cfg)
+  dtmp <- .abrir_dispositivo_tmp(prep$larg, prep$alt); on.exit(grDevices::dev.off(dtmp), add = TRUE)
+  gt <- prep$grob %||% attr(g, "gt") %||% ggplot2::ggplotGrob(g)
+  k <- which(gt$layout$name == "guide-box-inside")
+  k <- k[!vapply(gt$grobs[k], function(x) inherits(x, "zeroGrob"), NA)]
+  if (!length(k)) return(NULL)
+  k <- k[1]; lay <- gt$layout[k, ]
+  tam <- function(u, total_in, conv) {                 # tamanho de cada coluna/linha, em polegadas (null = parte do que sobra)
+    nulo <- grid::unitType(u) == "null"
+    r <- numeric(length(u))
+    if (any(!nulo)) r[!nulo] <- conv(u[!nulo], "in", valueOnly = TRUE)
+    if (any(nulo)) { v <- as.numeric(u[nulo]); r[nulo] <- max(total_in - sum(r[!nulo]), 0) * v / sum(v) }
+    r
+  }
+  w <- tam(gt$widths, prep$larg, grid::convertWidth); h <- tam(gt$heights, prep$alt, grid::convertHeight)
+  pw <- sum(w[lay$l:lay$r]); ph <- sum(h[lay$t:lay$b])
+  pl <- sum(w[seq_len(lay$l - 1)]); pt <- sum(h[seq_len(lay$t - 1)])
+  lw <- grid::convertWidth(grid::grobWidth(gt$grobs[[k]]), "in", valueOnly = TRUE)
+  lh <- grid::convertHeight(grid::grobHeight(gt$grobs[[k]]), "in", valueOnly = TRUE)
+  info <- attr(g, "info") %||% attr(attr(g, "partes")[[1]], "info")
+  if (!is.null(info)) lg <- tryCatch(.legenda_por_coordenadas(cfg, info)$legenda, error = function(e) lg)
+  anc <- if (identical(lg$ancora, "auto")) c(lg$dentro_x, lg$dentro_y) else lg$ancora
+  esq <- lg$dentro_x * pw - anc[1] * lw                 # a legenda fica com o ponto 'anc' dela em (dentro_x, dentro_y) do painel
+  base <- lg$dentro_y * ph - anc[2] * lh                # distância da base do painel
+  list(pagina = c(prep$larg, prep$alt),
+       painel = c(pl, pt, pw, ph) / c(prep$larg, prep$alt, prep$larg, prep$alt),
+       legenda = c(pl + esq, pt + ph - base - lh, lw, lh) / c(prep$larg, prep$alt, prep$larg, prep$alt))
 }
 
 # -----------------------------------------------------------------------------
@@ -8729,6 +8802,8 @@ legenda_canto    <- NULL   # atalho para "dentro": "sup_esq" | "sup_centro" | "s
                            #   "centro_dir" | "inf_esq" | "inf_centro" | "inf_dir". EX.: "sup_dir"
 legenda_x        <- NULL   # posição fina com "dentro", de 0 (esquerda) a 1 (direita). EX.: 0.04
 legenda_y        <- NULL   # de 0 (embaixo) a 1 (em cima). EX.: 0.96
+legenda_x_dados  <- NULL   # posição por COORDENADA do eixo: valor de X onde fica o canto superior esquerdo da legenda. EX.: 2016
+legenda_y_dados  <- NULL   # valor de Y (eixo esquerdo) do mesmo canto. EX.: 600000  (vale no lugar de legenda_x / legenda_y)
 legenda_ancora   <- NULL   # qual ponto da caixa fica em (x, y): c(0, 1) = canto sup. esq. | c(1, 1) = sup. dir. ...
 legenda_alinhar  <- NULL   # com a legenda FORA: onde ela fica ao longo do lado.
 legenda_escala   <- NULL   # aumenta (> 1) ou diminui (< 1) a legenda toda. EX.: 0.8

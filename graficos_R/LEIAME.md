@@ -37,6 +37,12 @@ Para quem não quer mexer em código: abra o **gerador de gráficos** no navegad
 - `legenda_largura_pt` — largura da caixa da legenda, em pt (como esticar uma caixa solta): o conteúdo escala até a caixa ter essa largura e os **símbolos, esferas e linhas acompanham a escala**.
 - `legenda_espaco_texto_pt` — espaço entre o símbolo e o nome (menor = mais compacta); `legenda_largura_chave_pt` — largura do espaço do símbolo; `legenda_escala` — escala geral (agora também escala os símbolos).
 
+## Posição da legenda: arrastar, X/Y ou coordenada do eixo
+
+- **No app:** na prévia aparece uma **caixa tracejada verde sobre a legenda** — **arraste** para mudar a posição e puxe a **alça da direita** para mudar a largura. Os campos (bloco 11) são atualizados sozinhos. Desligue em "Arrastar a legenda" se atrapalhar.
+- **Campos:** posição horizontal e vertical de 0 a 1 (`legenda_x`, `legenda_y`) ou, no lugar, a **coordenada do eixo**: `legenda_x_dados <- 2016; legenda_y_dados <- 600000` (o canto superior esquerdo da legenda fica nesse ponto; avisa se estiver fora do eixo). Não serve para eixos de categorias.
+- **Com quebra de eixo:** vale a parte de cima (onde a legenda mora).
+
 ## Fonte oficial: Barlow
 
 A **Barlow** (Barlow, Barlow Condensed e Barlow Semi Condensed; licença SIL OFL, `fontes/Barlow/OFL.txt`) é a fonte padrão. Os arquivos estão em **`fontes/Barlow/`** e são carregados sozinhos — não precisa instalar nada no Windows para PNG, TIFF, JPEG e SVG. O `graficos_R_completo.R` traz uma cópia embutida. **PDF e EMF** usam as fontes *instaladas* no Windows: para a Barlow sair no PDF, abra os `.ttf` de `fontes/Barlow` e clique em *Instalar*.
@@ -196,7 +202,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
 | `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 181 testes automáticos — rode depois de qualquer alteração no motor |
+| `06_testes.R` | 187 testes automáticos — rode depois de qualquer alteração no motor |
 | `painel_de_ajustes.R` | **o painel**: variáveis simples por categoria (escala, ticks, grade, quebra, cores...). Veja a seção 2.1 |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |
