@@ -487,6 +487,11 @@ cl <- suppressMessages(aplicar_painel(c0, list2env(list(y2_series = "POP", y2_le
 teste("painel Y2: y2_igual_y1 copia título e cor do Y1; sufixo na legenda única só nas séries do Y2",
       cl$eixo_y2$titulo == "Valor (10^{3})" && cl$eixo_y2$cor_eixo == "black" &&
       cl$series$POP$nome_legenda == "POP (eixo dir.)")
+teste("painel Y2: aplicar o painel várias vezes no mesmo cfg não repete o sufixo da legenda",
+      { pr <- list2env(list(y2_series = "POP", y2_legenda_sufixo = " (eixo dir.)"))
+        c1 <- suppressMessages(aplicar_painel(c0, pr)); c2 <- suppressMessages(aplicar_painel(c1, pr))
+        c3 <- suppressMessages(aplicar_painel(c2, pr))
+        c3$series$POP$nome_legenda == "POP (eixo dir.)" && identical(c2$series, c3$series) })
 cl$grafico <- utils::modifyList(cl$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "POP")))
 gl <- suppressWarnings(plotar(aq, cl))
 teste("painel Y2: a legenda é uma só, com as séries dos dois eixos",

@@ -4701,7 +4701,9 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     if (!is.null(suf)) {
       for (nm in y2s) {
         s2 <- cfg$series[[nm]] %||% list()
-        cfg$series[[nm]] <- utils::modifyList(s2, list(nome_legenda = paste0(s2$nome_legenda %||% nm, suf)))
+        atual <- s2$nome_legenda %||% nm
+        if (endsWith(atual, suf)) next                # aplicar_painel() de novo no mesmo cfg não soma outra vez
+        cfg$series[[nm]] <- utils::modifyList(s2, list(nome_legenda = paste0(atual, suf)))
       }
       marca("y2_legenda_sufixo")
     }
