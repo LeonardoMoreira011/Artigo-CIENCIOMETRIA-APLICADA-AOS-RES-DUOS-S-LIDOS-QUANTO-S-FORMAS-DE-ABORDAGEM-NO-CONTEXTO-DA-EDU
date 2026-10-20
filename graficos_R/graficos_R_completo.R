@@ -1157,8 +1157,18 @@ cfg$legenda <- list(
   # espacamento_pt: espaço vertical entre os itens.
   espacamento_pt = 2,
 
-  # escala: aumenta (> 1) ou diminui (< 1) a legenda inteira: texto, quadradinhos, espaços e folgas.
+  # escala: aumenta (> 1) ou diminui (< 1) a legenda inteira: texto, quadradinhos, símbolos, linhas, espaços e folgas.
   #   OPÇÕES: número > 0      EX.: cfg$legenda$escala <- 0.8
+  # largura_pt: largura MANUAL da caixa da legenda, em pt (como esticar uma caixa solta): o conteúdo é escalado até a
+  #   caixa ter essa largura, e os símbolos e linhas acompanham. NULL = a largura que o conteúdo pedir.
+  #   OPÇÕES: NULL | número > 0      EX.: cfg$legenda$largura_pt <- 110
+  largura_pt = NULL,
+  # espaco_chave_texto_pt: espaço entre o símbolo e o nome. Menor = legenda mais compacta. NULL = padrão do ggplot2.
+  #   OPÇÕES: NULL | número >= 0      EX.: cfg$legenda$espaco_chave_texto_pt <- 2
+  espaco_chave_texto_pt = NULL,
+  # largura_chave_pt: largura do espaço reservado ao símbolo. NULL = igual a tamanho_chave_pt.
+  #   OPÇÕES: NULL | número > 0      EX.: cfg$legenda$largura_chave_pt <- 12
+  largura_chave_pt = NULL,
   escala = 1,
 
   # distancia_pt: com a legenda "dentro", distância (pt) entre ela e a borda da caixa, para dentro:
@@ -2149,6 +2159,12 @@ colunas <- function(dados) {
       .erro("cfg$caixa$", k, " deve ser um número maior que 0 (cm).")
   if (!is.null(lg$escala) && (!is.numeric(lg$escala) || length(lg$escala) != 1 || lg$escala <= 0))
     .erro("cfg$legenda$escala deve ser um número maior que 0 (ex.: 0.8).")
+  for (k in c("largura_pt", "largura_chave_pt"))
+    if (!is.null(lg[[k]]) && (!is.numeric(lg[[k]]) || length(lg[[k]]) != 1 || lg[[k]] <= 0))
+      .erro("cfg$legenda$", k, " deve ser um número maior que 0 (pt).")
+  if (!is.null(lg$espaco_chave_texto_pt) && (!is.numeric(lg$espaco_chave_texto_pt) || length(lg$espaco_chave_texto_pt) != 1 ||
+                                             lg$espaco_chave_texto_pt < 0))
+    .erro("cfg$legenda$espaco_chave_texto_pt deve ser um número >= 0 (pt).")
   if (!is.null(lg$distancia_pt) && (!is.numeric(lg$distancia_pt) || !length(lg$distancia_pt) %in% 1:2 || any(lg$distancia_pt < 0)))
     .erro("cfg$legenda$distancia_pt deve ser um número >= 0 ou c(horizontal, vertical), em pt.")
   if (!is.null(lg$alinhar)) {
@@ -2883,6 +2899,8 @@ colunas <- function(dados) {
     class(caixa) <- c("element_sombra", class(caixa))
   }
   esc <- lg$escala %||% 1                      # aumenta/diminui tudo na legenda: texto, quadradinhos, espaços e folgas
+  if (!is.null(cfg$.interno$esc_leg)) cfg$.interno$esc_leg$v <- esc       # os símbolos/linhas das chaves seguem esta escala
+  gap <- lg$espaco_chave_texto_pt             # espaço entre o símbolo e o texto (NULL = o padrão do ggplot2)
   t <- theme(
     legend.position = pos,
     legend.background = caixa,
@@ -2890,11 +2908,13 @@ colunas <- function(dados) {
     legend.key.size = unit(lg$tamanho_chave_pt * esc, "pt"),
     legend.key.spacing.y = unit(lg$espacamento_pt * esc, "pt"),
     legend.text = element_text(size = (lg$tamanho_texto_pt %||% tx$tamanho_base_pt) * esc,
-                               face = if (.neg(cfg, lg$negrito_texto)) "bold" else "plain"),
+                               face = if (.neg(cfg, lg$negrito_texto)) "bold" else "plain",
+                               margin = if (!is.null(gap)) margin(l = gap * esc) else NULL),
     legend.title = if (is.null(lg$titulo)) element_blank() else
       element_text(size = (lg$tamanho_titulo_pt %||% tx$tamanho_base_pt) * esc,
                    face = if (.neg(cfg, lg$negrito_titulo)) "bold" else "plain"),
     legend.margin = do.call(margin, as.list(lg$margem_interna_pt * esc)))
+  if (!is.null(lg$largura_chave_pt)) t <- t + theme(legend.key.width = unit(lg$largura_chave_pt * esc, "pt"))
   if (pos == "inside") {
     anc <- if (identical(lg$ancora, "auto")) c(lg$dentro_x, lg$dentro_y) else lg$ancora
     t <- t + theme(legend.position.inside = c(lg$dentro_x, lg$dentro_y),
@@ -3261,7 +3281,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
       for (s in ycols) cam[[length(cam) + 1]] <- .camada_linha(d[d$serie == s, ], L$ligacao, mapeado = FALSE,
                                                                e = est[[s]])
     } else {
-      cam[[length(cam) + 1]] <- .camada_linha(d, L$ligacao, mapeado = TRUE)
+      cam[[length(cam) + 1]] <- .camada_linha(d, L$ligacao, mapeado = TRUE, cfg = cfg)
       aes_leg <- c(aes_leg, "colour", "linetype", "linewidth", "alpha")
     }
   }
@@ -3278,10 +3298,11 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
       cam[[length(cam) + 1]] <- geom_point(data = d[!d$serie %in% esf, ],
                                            aes(x = x, y = y, colour = serie, fill = serie,
                                                          shape = serie, size = serie, stroke = serie, alpha = serie),
-        show.legend = TRUE, na.rm = TRUE, key_glyph = .draw_key_ponto_ou_nada)   # na.rm: células vazias sem aviso
+        show.legend = TRUE, na.rm = TRUE, key_glyph = .key_escala(.draw_key_ponto_ou_nada, cfg))   # na.rm: células vazias sem aviso
       if (length(esf))
         cam[[length(cam) + 1]] <- geom_esfera(data = d[d$serie %in% esf, ], luz = cfg$serie_padrao$esfera_luz,
-          mapping = aes(x = x, y = y, colour = serie, shape = serie, size = serie, stroke = serie), show.legend = TRUE)
+          mapping = aes(x = x, y = y, colour = serie, shape = serie, size = serie, stroke = serie), show.legend = TRUE,
+          key_glyph = .key_escala(.draw_key_esfera, cfg))
       aes_leg <- unique(c(aes_leg, "colour", "shape", "size", "stroke",
                           if (length(setdiff(ycols, esf))) c("fill_simb",
                                                              "alpha")))   # só esferas: sem escalas de fill/alpha
@@ -3317,7 +3338,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
 }
 
 # Camada de linha (reta, spline ou degrau) de uma série ou de todas, com estilo mapeado ou fixo.
-.camada_linha <- function(d, ligacao, mapeado, e = NULL) {
+.camada_linha <- function(d, ligacao, mapeado, e = NULL, cfg = NULL) {
   d <- d[!is.na(d$y), ]
   if (ligacao == "spline") {
     niveis <- levels(d$serie)
@@ -3338,7 +3359,8 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   if (mapeado) {
     geo(data = d, aes(x = x, y = y, colour = serie, linetype = serie, linewidth = serie,
                       alpha = serie, group = serie), lineend = "round", linejoin = "round",
-        show.legend = TRUE)   # TRUE: a legenda mostra a série mesmo sem dados nesta camada (quebra de eixo)
+        show.legend = TRUE,   # TRUE: a legenda mostra a série mesmo sem dados nesta camada (quebra de eixo)
+        key_glyph = if (is.null(cfg)) "path" else .key_escala(ggplot2::draw_key_path, cfg))
   } else {
     geo(data = d, aes(x = x, y = y), colour = .alfa(e$cor, e$op), linetype = e$lt,
         linewidth = .lw(e$lw), lineend = "round", linejoin = "round")
@@ -4016,6 +4038,9 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
 # passada prévia dos painéis precisa.
 .plotar_um <- function(dados, cfg, so_info = FALSE) {
   tipo <- cfg$grafico$tipo
+  # escala atual da legenda, lida na hora de desenhar pelas chaves (símbolos/linhas) — assim eles acompanham a caixa
+  esc_leg <- new.env(); esc_leg$v <- cfg$legenda$escala %||% 1
+  cfg$.interno$esc_leg <- esc_leg
   res <- switch(tipo,
     pontos = , linha = , linha_pontos = , area = , area_empilhada = .construir_xy(dados, cfg),
     barras = .construir_barras(dados, cfg),
@@ -4662,14 +4687,14 @@ visualizar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv
   cfg <- .completar_cfg(cfg)
   ex <- cfg$exportacao
   fator <- switch(ex$unidade, cm = 1 / 2.54, mm = 1 / 25.4, `in` = 1)
-  arq <- tempfile("previa_", fileext = ".png")
+  arq <- file.path(tempdir(), "previa_do_grafico.png")           # nomes fixos e legíveis (não números aleatórios)
   prep <- .preparar_saida(g, cfg)
   .abrir_dispositivo("png", arq, prep$larg, prep$alt, dpi, "white", usar_ragg = .ragg_ok(cfg))
   disp <- grDevices::dev.cur()
   tryCatch(.desenhar(prep, g), finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
   viewer <- getOption("viewer")
   if (!is.null(viewer)) {
-    html <- tempfile("previa_", fileext = ".html")
+    html <- file.path(tempdir(), "previa_do_grafico.html")
     writeLines(sprintf(paste0(
       '<html><body style="margin:0;background:#e5e5e5;display:flex;justify-content:center;',
       'align-items:flex-start;padding:12px"><img src="%s" style="max-width:100%%;',
@@ -4948,6 +4973,8 @@ jsonlite_b64 <- function(txt) {
   quebra_marcas = c("quebra", "marcas"), quebra_marca_largura_pt = c("quebra", "marca_largura_pt"),
   quebra_marca_altura_pt = c("quebra", "marca_altura_pt"),
   painel_fixo = c("caixa", "painel_fixo"),
+  legenda_largura_pt = c("legenda", "largura_pt"), legenda_espaco_texto_pt = c("legenda", "espaco_chave_texto_pt"),
+  legenda_largura_chave_pt = c("legenda", "largura_chave_pt"),
   legenda_escala = c("legenda", "escala"), legenda_distancia_pt = c("legenda", "distancia_pt"),
   legenda_ajustar_caixa = c("legenda", "ajustar_caixa"),
   painel_largura_cm = c("caixa", "painel_largura_cm"), painel_altura_cm = c("caixa", "painel_altura_cm"),
@@ -5235,9 +5262,23 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
                   co$colour, luz = luz)
   })
 
-geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show.legend = NA, na.rm = TRUE, ...) {
+geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show.legend = NA, na.rm = TRUE,
+                        key_glyph = NULL, ...) {
   ggplot2::layer(geom = .GeomEsfera, stat = "identity", position = "identity", data = data, mapping = mapping,
-                 show.legend = show.legend, inherit.aes = FALSE, params = list(na.rm = na.rm, luz = luz, ...))
+                 show.legend = show.legend, inherit.aes = FALSE,
+                 params = c(list(na.rm = na.rm, luz = luz), if (!is.null(key_glyph)) list(key_glyph = key_glyph), list(...)))
+}
+
+# Chave da legenda que acompanha a escala da caixa da legenda (cfg$legenda$escala, inclusive a reduzida sozinha para caber):
+# o tamanho do símbolo, o contorno e a grossura da linha mudam junto. 'base' = função draw_key_*.
+.key_escala <- function(base, cfg) {
+  env <- cfg$.interno$esc_leg
+  function(data, params, size) {
+    e <- if (is.null(env)) 1 else (env$v %||% 1)
+    if (!isTRUE(all.equal(e, 1)))
+      for (k in c("size", "stroke", "linewidth")) if (!is.null(data[[k]])) data[[k]] <- data[[k]] * e
+    base(data, params, size)
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -5284,10 +5325,10 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
             if (dev_ant %in% grDevices::dev.list()) grDevices::dev.set(dev_ant) }, add = TRUE)
   gt <- tryCatch(ggplot2::ggplotGrob(g), error = function(e) NULL)
   if (is.null(gt)) return(NULL)
-  k <- which(gt$layout$name == "guide-box-inside")
+  k <- grep("^guide-box", gt$layout$name)                    # inside / right / left / top / bottom
+  k <- k[!vapply(gt$grobs[k], function(x) inherits(x, "zeroGrob"), NA)]
   if (!length(k)) return(NULL)
   lg <- gt$grobs[[k[1]]]
-  if (inherits(lg, "zeroGrob")) return(NULL)
   mede <- function(u, total) {                  # soma das partes absolutas; o que sobra é do painel
     nulas <- grid::unitType(u) == "null"
     abs_pt <- if (any(!nulas)) sum(grid::convertUnit(u[!nulas], "pt", valueOnly = TRUE)) else 0
@@ -5298,27 +5339,38 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
                    grid::convertHeight(grid::grobHeight(lg), "pt", valueOnly = TRUE)))
 }
 
-# Se a legenda "dentro" for maior que a caixa do gráfico, reduz (escala) até caber. Entra: g e cfg. Sai: g.
+# Ajusta a escala da legenda: (1) com cfg$legenda$largura_pt a caixa fica EXATAMENTE com essa largura (símbolos e linhas
+# acompanham); (2) senão, uma legenda "dentro" maior que a caixa do gráfico é reduzida até caber. Entra: g e cfg. Sai: g.
 .ajustar_legenda <- function(g, cfg) {
   lg <- cfg$legenda
-  if (!identical(lg$posicao, "dentro") || !isTRUE(lg$ajustar_caixa %||% TRUE)) return(g)
+  manual <- !is.null(lg$largura_pt)
+  if (!manual && (!identical(lg$posicao, "dentro") || !isTRUE(lg$ajustar_caixa %||% TRUE))) return(g)
   esc0 <- lg$escala %||% 1; esc <- esc0
   fr <- cfg$.interno$fracao_altura %||% 1       # quebra de eixo: a legenda mora só na parte de cima
   pf <- .painel_cm(cfg)
   fixo <- if (!is.null(pf) && !is.null(pf$w) && !is.null(pf$h)) c(pf$w, pf$h) else NULL
-  for (it in 1:3) {
+  refaz <- function(e) { c2 <- cfg; c2$legenda$escala <- e; g <<- g + .tema_legenda(c2, .fonte(cfg$texto$fonte)) }
+  for (it in 1:(if (manual) 5 else 3)) {
     m <- tryCatch(.medir_legenda(g, .tamanho_pagina_in(cfg)), error = function(e) NULL)
     if (is.null(m)) break
+    if (manual) {                                # largura pedida: escala até a caixa ter essa largura
+      if (abs(m$legenda[1] - lg$largura_pt) < 0.4) break
+      esc <- esc * max(min(lg$largura_pt / m$legenda[1], 4), 0.1)
+      refaz(esc); next
+    }
     painel <- m$painel
     if (length(fixo) == 2) painel <- fixo * 72 / 2.54          # caixa de tamanho fixo: as medidas são exatas
     d <- if (is.null(lg$distancia_pt)) c(0, 0) else rep_len(lg$distancia_pt, 2)
     f <- min(1, (painel[1] * 0.97 - d[1]) / m$legenda[1], (painel[2] * fr * 0.95 - d[2]) / m$legenda[2])
     if (!is.finite(f) || f >= 0.995) break
     esc <- esc * max(f * 0.99, 0.2)
-    c2 <- cfg; c2$legenda$escala <- esc
-    g <- g + .tema_legenda(c2, .fonte(cfg$texto$fonte))
+    refaz(esc)
   }
-  if (esc < esc0 * 0.995)
+  if (manual) {
+    m <- tryCatch(.medir_legenda(g, .tamanho_pagina_in(cfg)), error = function(e) NULL)
+    if (!is.null(m) && identical(lg$posicao, "dentro") && m$legenda[1] > (if (length(fixo) == 2) fixo[1] * 72 / 2.54 else m$painel[1]))
+      .aviso("A largura pedida para a legenda (", lg$largura_pt, " pt) é maior que a caixa do gráfico.")
+  } else if (esc < esc0 * 0.995)
     message("Legenda reduzida para ", round(100 * esc / esc0), "% para caber dentro da caixa ",
             "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam).")
   g
@@ -8680,6 +8732,10 @@ legenda_y        <- NULL   # de 0 (embaixo) a 1 (em cima). EX.: 0.96
 legenda_ancora   <- NULL   # qual ponto da caixa fica em (x, y): c(0, 1) = canto sup. esq. | c(1, 1) = sup. dir. ...
 legenda_alinhar  <- NULL   # com a legenda FORA: onde ela fica ao longo do lado.
 legenda_escala   <- NULL   # aumenta (> 1) ou diminui (< 1) a legenda toda. EX.: 0.8
+legenda_largura_pt <- NULL   # LARGURA da caixa da legenda, em pt (como esticar uma caixa solta): o conteúdo escala até caber nela e os
+                            #   símbolos e linhas acompanham. EX.: 110.  Vazio = a largura que o conteúdo pedir
+legenda_espaco_texto_pt <- NULL  # espaço entre o símbolo e o nome (menor = mais compacta). EX.: 2
+legenda_largura_chave_pt <- NULL # largura do espaço do símbolo. EX.: 12
 legenda_distancia_pt <- NULL  # com "dentro": distância até a borda da caixa, em pt. EX.: 8  |  c(10, 6). Use com legenda_canto
 legenda_ajustar_caixa <- NULL # TRUE (padrão) = se a legenda for maior que a caixa, é reduzida até caber | FALSE = como pedido
                            #   direita/esquerda: "topo" | "centro" | "base"; topo/base: "esquerda" | "centro" | "direita"

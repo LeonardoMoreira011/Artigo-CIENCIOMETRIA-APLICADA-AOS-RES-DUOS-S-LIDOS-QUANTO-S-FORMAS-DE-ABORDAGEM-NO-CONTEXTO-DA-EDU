@@ -1039,8 +1039,18 @@ cfg$legenda <- list(
   # espacamento_pt: espaço vertical entre os itens.
   espacamento_pt = 2,
 
-  # escala: aumenta (> 1) ou diminui (< 1) a legenda inteira: texto, quadradinhos, espaços e folgas.
+  # escala: aumenta (> 1) ou diminui (< 1) a legenda inteira: texto, quadradinhos, símbolos, linhas, espaços e folgas.
   #   OPÇÕES: número > 0      EX.: cfg$legenda$escala <- 0.8
+  # largura_pt: largura MANUAL da caixa da legenda, em pt (como esticar uma caixa solta): o conteúdo é escalado até a
+  #   caixa ter essa largura, e os símbolos e linhas acompanham. NULL = a largura que o conteúdo pedir.
+  #   OPÇÕES: NULL | número > 0      EX.: cfg$legenda$largura_pt <- 110
+  largura_pt = NULL,
+  # espaco_chave_texto_pt: espaço entre o símbolo e o nome. Menor = legenda mais compacta. NULL = padrão do ggplot2.
+  #   OPÇÕES: NULL | número >= 0      EX.: cfg$legenda$espaco_chave_texto_pt <- 2
+  espaco_chave_texto_pt = NULL,
+  # largura_chave_pt: largura do espaço reservado ao símbolo. NULL = igual a tamanho_chave_pt.
+  #   OPÇÕES: NULL | número > 0      EX.: cfg$legenda$largura_chave_pt <- 12
+  largura_chave_pt = NULL,
   escala = 1,
 
   # distancia_pt: com a legenda "dentro", distância (pt) entre ela e a borda da caixa, para dentro:

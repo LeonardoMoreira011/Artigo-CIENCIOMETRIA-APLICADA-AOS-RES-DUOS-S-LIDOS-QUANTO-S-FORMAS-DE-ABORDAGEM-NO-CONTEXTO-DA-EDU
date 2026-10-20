@@ -80,6 +80,8 @@
   quebra_marcas = c("quebra", "marcas"), quebra_marca_largura_pt = c("quebra", "marca_largura_pt"),
   quebra_marca_altura_pt = c("quebra", "marca_altura_pt"),
   painel_fixo = c("caixa", "painel_fixo"),
+  legenda_largura_pt = c("legenda", "largura_pt"), legenda_espaco_texto_pt = c("legenda", "espaco_chave_texto_pt"),
+  legenda_largura_chave_pt = c("legenda", "largura_chave_pt"),
   legenda_escala = c("legenda", "escala"), legenda_distancia_pt = c("legenda", "distancia_pt"),
   legenda_ajustar_caixa = c("legenda", "ajustar_caixa"),
   painel_largura_cm = c("caixa", "painel_largura_cm"), painel_altura_cm = c("caixa", "painel_altura_cm"),

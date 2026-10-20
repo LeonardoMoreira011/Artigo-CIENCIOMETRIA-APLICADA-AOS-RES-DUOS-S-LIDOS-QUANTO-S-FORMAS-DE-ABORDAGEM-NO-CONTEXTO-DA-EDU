@@ -184,14 +184,14 @@ visualizar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv
   cfg <- .completar_cfg(cfg)
   ex <- cfg$exportacao
   fator <- switch(ex$unidade, cm = 1 / 2.54, mm = 1 / 25.4, `in` = 1)
-  arq <- tempfile("previa_", fileext = ".png")
+  arq <- file.path(tempdir(), "previa_do_grafico.png")           # nomes fixos e legíveis (não números aleatórios)
   prep <- .preparar_saida(g, cfg)
   .abrir_dispositivo("png", arq, prep$larg, prep$alt, dpi, "white", usar_ragg = .ragg_ok(cfg))
   disp <- grDevices::dev.cur()
   tryCatch(.desenhar(prep, g), finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
   viewer <- getOption("viewer")
   if (!is.null(viewer)) {
-    html <- tempfile("previa_", fileext = ".html")
+    html <- file.path(tempdir(), "previa_do_grafico.html")
     writeLines(sprintf(paste0(
       '<html><body style="margin:0;background:#e5e5e5;display:flex;justify-content:center;',
       'align-items:flex-start;padding:12px"><img src="%s" style="max-width:100%%;',

@@ -39,10 +39,10 @@
             if (dev_ant %in% grDevices::dev.list()) grDevices::dev.set(dev_ant) }, add = TRUE)
   gt <- tryCatch(ggplot2::ggplotGrob(g), error = function(e) NULL)
   if (is.null(gt)) return(NULL)
-  k <- which(gt$layout$name == "guide-box-inside")
+  k <- grep("^guide-box", gt$layout$name)                    # inside / right / left / top / bottom
+  k <- k[!vapply(gt$grobs[k], function(x) inherits(x, "zeroGrob"), NA)]
   if (!length(k)) return(NULL)
   lg <- gt$grobs[[k[1]]]
-  if (inherits(lg, "zeroGrob")) return(NULL)
   mede <- function(u, total) {                  # soma das partes absolutas; o que sobra é do painel
     nulas <- grid::unitType(u) == "null"
     abs_pt <- if (any(!nulas)) sum(grid::convertUnit(u[!nulas], "pt", valueOnly = TRUE)) else 0
@@ -53,27 +53,38 @@
                    grid::convertHeight(grid::grobHeight(lg), "pt", valueOnly = TRUE)))
 }
 
-# Se a legenda "dentro" for maior que a caixa do gráfico, reduz (escala) até caber. Entra: g e cfg. Sai: g.
+# Ajusta a escala da legenda: (1) com cfg$legenda$largura_pt a caixa fica EXATAMENTE com essa largura (símbolos e linhas
+# acompanham); (2) senão, uma legenda "dentro" maior que a caixa do gráfico é reduzida até caber. Entra: g e cfg. Sai: g.
 .ajustar_legenda <- function(g, cfg) {
   lg <- cfg$legenda
-  if (!identical(lg$posicao, "dentro") || !isTRUE(lg$ajustar_caixa %||% TRUE)) return(g)
+  manual <- !is.null(lg$largura_pt)
+  if (!manual && (!identical(lg$posicao, "dentro") || !isTRUE(lg$ajustar_caixa %||% TRUE))) return(g)
   esc0 <- lg$escala %||% 1; esc <- esc0
   fr <- cfg$.interno$fracao_altura %||% 1       # quebra de eixo: a legenda mora só na parte de cima
   pf <- .painel_cm(cfg)
   fixo <- if (!is.null(pf) && !is.null(pf$w) && !is.null(pf$h)) c(pf$w, pf$h) else NULL
-  for (it in 1:3) {
+  refaz <- function(e) { c2 <- cfg; c2$legenda$escala <- e; g <<- g + .tema_legenda(c2, .fonte(cfg$texto$fonte)) }
+  for (it in 1:(if (manual) 5 else 3)) {
     m <- tryCatch(.medir_legenda(g, .tamanho_pagina_in(cfg)), error = function(e) NULL)
     if (is.null(m)) break
+    if (manual) {                                # largura pedida: escala até a caixa ter essa largura
+      if (abs(m$legenda[1] - lg$largura_pt) < 0.4) break
+      esc <- esc * max(min(lg$largura_pt / m$legenda[1], 4), 0.1)
+      refaz(esc); next
+    }
     painel <- m$painel
     if (length(fixo) == 2) painel <- fixo * 72 / 2.54          # caixa de tamanho fixo: as medidas são exatas
     d <- if (is.null(lg$distancia_pt)) c(0, 0) else rep_len(lg$distancia_pt, 2)
     f <- min(1, (painel[1] * 0.97 - d[1]) / m$legenda[1], (painel[2] * fr * 0.95 - d[2]) / m$legenda[2])
     if (!is.finite(f) || f >= 0.995) break
     esc <- esc * max(f * 0.99, 0.2)
-    c2 <- cfg; c2$legenda$escala <- esc
-    g <- g + .tema_legenda(c2, .fonte(cfg$texto$fonte))
+    refaz(esc)
   }
-  if (esc < esc0 * 0.995)
+  if (manual) {
+    m <- tryCatch(.medir_legenda(g, .tamanho_pagina_in(cfg)), error = function(e) NULL)
+    if (!is.null(m) && identical(lg$posicao, "dentro") && m$legenda[1] > (if (length(fixo) == 2) fixo[1] * 72 / 2.54 else m$painel[1]))
+      .aviso("A largura pedida para a legenda (", lg$largura_pt, " pt) é maior que a caixa do gráfico.")
+  } else if (esc < esc0 * 0.995)
     message("Legenda reduzida para ", round(100 * esc / esc0), "% para caber dentro da caixa ",
             "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam).")
   g

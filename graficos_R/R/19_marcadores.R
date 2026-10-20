@@ -82,7 +82,21 @@
                   co$colour, luz = luz)
   })
 
-geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show.legend = NA, na.rm = TRUE, ...) {
+geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show.legend = NA, na.rm = TRUE,
+                        key_glyph = NULL, ...) {
   ggplot2::layer(geom = .GeomEsfera, stat = "identity", position = "identity", data = data, mapping = mapping,
-                 show.legend = show.legend, inherit.aes = FALSE, params = list(na.rm = na.rm, luz = luz, ...))
+                 show.legend = show.legend, inherit.aes = FALSE,
+                 params = c(list(na.rm = na.rm, luz = luz), if (!is.null(key_glyph)) list(key_glyph = key_glyph), list(...)))
+}
+
+# Chave da legenda que acompanha a escala da caixa da legenda (cfg$legenda$escala, inclusive a reduzida sozinha para caber):
+# o tamanho do símbolo, o contorno e a grossura da linha mudam junto. 'base' = função draw_key_*.
+.key_escala <- function(base, cfg) {
+  env <- cfg$.interno$esc_leg
+  function(data, params, size) {
+    e <- if (is.null(env)) 1 else (env$v %||% 1)
+    if (!isTRUE(all.equal(e, 1)))
+      for (k in c("size", "stroke", "linewidth")) if (!is.null(data[[k]])) data[[k]] <- data[[k]] * e
+    base(data, params, size)
+  }
 }

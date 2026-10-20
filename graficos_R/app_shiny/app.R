@@ -28,7 +28,7 @@ EXEMPLOS <- EXEMPLOS[file.exists(file.path(raiz, "dados", EXEMPLOS))]
 
 ui <- fluidPage(
   title = "Gerador de gráficos",
-  tags$head(tags$link(rel = "icon", href = "data:,"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(src = "app.js"),
+  tags$head(tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(src = "app.js"),
             tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")),
   tags$header(class = "topo",
     div(class = "marca", div(class = "marca-ico", HTML("&#9650;")),

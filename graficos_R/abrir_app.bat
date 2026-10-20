@@ -57,8 +57,9 @@ exit /b 1
 :rodar
 echo.
 echo R encontrado: %RS%
-echo Abrindo o gerador de graficos... (feche esta janela para encerrar)
-"%RS%" -e "options(repos=c(CRAN='https://cloud.r-project.org')); for (p in c('shiny','ggplot2','scales','patchwork','ragg','systemfonts')) if (!requireNamespace(p, quietly=TRUE)) install.packages(p); shiny::runApp('app_shiny', launch.browser=TRUE)"
+echo Abrindo o gerador de graficos no navegador (http://gerador.localhost:8421)...
+echo Esta janela fecha sozinha quando voce fechar a aba do navegador. Para evitar a janela, use Criar_atalho_na_area_de_trabalho.bat.
+"%RS%" -e "options(repos=c(CRAN='https://cloud.r-project.org')); for (p in c('shiny','ggplot2','scales','patchwork','ragg','systemfonts')) if (!requireNamespace(p, quietly=TRUE)) install.packages(p); file.create('app_shiny/.pronto'); source('app_shiny/iniciar.R', encoding='UTF-8'); iniciar_gerador(encerrar_ao_fechar = TRUE)"
 echo.
 pause
 exit /b 0

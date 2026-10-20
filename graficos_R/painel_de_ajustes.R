@@ -211,6 +211,10 @@ legenda_y        <- NULL   # de 0 (embaixo) a 1 (em cima). EX.: 0.96
 legenda_ancora   <- NULL   # qual ponto da caixa fica em (x, y): c(0, 1) = canto sup. esq. | c(1, 1) = sup. dir. ...
 legenda_alinhar  <- NULL   # com a legenda FORA: onde ela fica ao longo do lado.
 legenda_escala   <- NULL   # aumenta (> 1) ou diminui (< 1) a legenda toda. EX.: 0.8
+legenda_largura_pt <- NULL   # LARGURA da caixa da legenda, em pt (como esticar uma caixa solta): o conteúdo escala até caber nela e os
+                            #   símbolos e linhas acompanham. EX.: 110.  Vazio = a largura que o conteúdo pedir
+legenda_espaco_texto_pt <- NULL  # espaço entre o símbolo e o nome (menor = mais compacta). EX.: 2
+legenda_largura_chave_pt <- NULL # largura do espaço do símbolo. EX.: 12
 legenda_distancia_pt <- NULL  # com "dentro": distância até a borda da caixa, em pt. EX.: 8  |  c(10, 6). Use com legenda_canto
 legenda_ajustar_caixa <- NULL # TRUE (padrão) = se a legenda for maior que a caixa, é reduzida até caber | FALSE = como pedido
                            #   direita/esquerda: "topo" | "centro" | "base"; topo/base: "esquerda" | "centro" | "direita"

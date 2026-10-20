@@ -717,6 +717,35 @@ tem_cor <- function(img, canal) { m <- grDevices::col2rgb(unique(as.vector(img))
 teste("grade pode ser ligada nos traços grandes e nos pequenos, cada uma com a sua cor",
       tem_cor(ggM, 1) && !tem_cor(ggM, 3) && tem_cor(ggm, 3) && !tem_cor(ggm, 1) && !tem_cor(gg0, 1) && !tem_cor(gg0, 3))
 
+cat("\n--- Legenda: largura manual, espaço símbolo-texto e símbolos que seguem a escala ---\n")
+clw <- cle2; clw$legenda$ajustar_caixa <- FALSE
+wid <- function(c1) m_leg(c1)$legenda[1]
+w0 <- wid(clw)
+cg1 <- clw; cg1$legenda$espaco_chave_texto_pt <- 0; cg2 <- clw; cg2$legenda$espaco_chave_texto_pt <- 30
+teste("espaço entre símbolo e texto: menor deixa a legenda mais estreita, maior alarga",
+      wid(cg1) < w0 && wid(cg2) > w0 && wid(cg2) - wid(cg1) > 25)
+cw1 <- clw; cw1$legenda$largura_chave_pt <- 6; cw2 <- clw; cw2$legenda$largura_chave_pt <- 40
+teste("largura do espaço do símbolo muda a largura da legenda", wid(cw1) < w0 && wid(cw2) > w0)
+for (alvo in c(60, 130)) {
+  cm1 <- clw; cm1$legenda$largura_pt <- alvo
+  teste(paste0("largura manual da legenda = ", alvo, " pt (a caixa fica com essa largura)"), abs(wid(cm1) - alvo) < 1.5)
+}
+teste("largura manual maior que a caixa avisa; sem pedir largura nada avisa",
+      da_aviso(plotar(aq, utils::modifyList(clw, list(legenda = list(largura_pt = 5000)))), "maior que a caixa") &&
+      !any(grepl("maior que a caixa", avisas <- avisos_de(plotar(aq, clw)))))
+teste("largura manual inválida dá erro claro", da_erro(plotar(aq, utils::modifyList(clw, list(legenda = list(largura_pt = -3)))), "largura_pt"))
+# chaves seguem a escala
+env_t <- new.env(); env_t$v <- 0.5; visto <- NULL
+chave_t <- .key_escala(function(data, params, size) { visto <<- data; grid::nullGrob() }, list(.interno = list(esc_leg = env_t)))
+chave_t(data.frame(size = 4, stroke = 1, linewidth = 2), list(), 10)
+teste("a chave da legenda escala símbolo, contorno e linha pela escala da caixa (0.5 -> metade)",
+      visto$size == 2 && visto$stroke == 0.5 && visto$linewidth == 1)
+cs <- clw; cs$legenda$escala <- 0.5
+teste("legenda com escala 0.5 monta e o painel usa só as chaves escaladas (imprime sem aviso)", length(avisos_de(imprime(plotar(aq, cs)))) == 0)
+pw <- suppressMessages(aplicar_painel(c0, list2env(list(legenda_largura_pt = 120, legenda_espaco_texto_pt = 2, legenda_largura_chave_pt = 12))))
+teste("painel: largura da legenda, espaço símbolo-texto e largura do símbolo chegam ao cfg",
+      pw$legenda$largura_pt == 120 && pw$legenda$espaco_chave_texto_pt == 2 && pw$legenda$largura_chave_pt == 12)
+
 cat("\n--- Legenda: posição, fundo, borda e sombra ---\n")
 pl <- list2env(list(tipo_grafico = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL"),
                     legenda_canto = "inf_dir", legenda_fundo = "#EEEEEE", legenda_fundo_opacidade = 0.8,

@@ -25,6 +25,18 @@ Para quem não quer mexer em código: abra o **gerador de gráficos** no navegad
 - **Grade:** nos traços grandes (`grade_x`, `grade_y`) e nos pequenos (`grade_menor_x`, `grade_menor_y`), cada grupo com tipo, cor, grossura e opacidade; a menor precisa de traços pequenos (`x_ticks_menores` ≥ 1).
 - **Fontes:** o app lista **todas as fontes do computador (systemfonts)**, com busca, e aceita uma fonte de arquivo `.ttf`/`.otf`. No script: `listar_fontes()` e `fonte <- "Nome da fonte"`.
 
+## Atalho com ícone, sem janela de comando, e endereço bonito
+
+- **Atalho com ícone:** um `.bat` não pode ter ícone no Windows; o jeito é um **atalho**. Dê dois cliques em **`Criar_atalho_na_area_de_trabalho.bat`** (uma vez): ele cria "Gerador de gráficos" na área de trabalho e no menu Iniciar, com o ícone do projeto (`app_shiny/www/icone.ico`). Pode fixar na barra de tarefas pelo menu de contexto do atalho.
+- **Sem janela de comando:** o atalho abre o app por `iniciar_gerador_oculto.vbs` (R escondido). O R **fecha sozinho** poucos segundos depois que você fecha a aba do navegador; recarregar a página não encerra. A primeira vez (ou se o R não for achado) abre o `abrir_app.bat` com janela, que instala o que falta.
+- **Endereço:** `http://gerador.localhost:8421` (porta fixa; se estiver ocupada o app escolhe outra e mostra o endereço). O navegador entende `*.localhost` sozinho, sem editar nada no Windows.
+- **No R:** `source("app_shiny/iniciar.R"); iniciar_gerador()` (com `encerrar_ao_fechar = TRUE` o R fecha junto com a aba). A prévia do `visualizar()` agora grava `previa_do_grafico.html` (nome fixo, não números aleatórios).
+
+## Legenda como caixa ajustável
+
+- `legenda_largura_pt` — largura da caixa da legenda, em pt (como esticar uma caixa solta): o conteúdo escala até a caixa ter essa largura e os **símbolos, esferas e linhas acompanham a escala**.
+- `legenda_espaco_texto_pt` — espaço entre o símbolo e o nome (menor = mais compacta); `legenda_largura_chave_pt` — largura do espaço do símbolo; `legenda_escala` — escala geral (agora também escala os símbolos).
+
 ## Fonte oficial: Barlow
 
 A **Barlow** (Barlow, Barlow Condensed e Barlow Semi Condensed; licença SIL OFL, `fontes/Barlow/OFL.txt`) é a fonte padrão. Os arquivos estão em **`fontes/Barlow/`** e são carregados sozinhos — não precisa instalar nada no Windows para PNG, TIFF, JPEG e SVG. O `graficos_R_completo.R` traz uma cópia embutida. **PDF e EMF** usam as fontes *instaladas* no Windows: para a Barlow sair no PDF, abra os `.ttf` de `fontes/Barlow` e clique em *Instalar*.
@@ -184,7 +196,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
 | `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 172 testes automáticos — rode depois de qualquer alteração no motor |
+| `06_testes.R` | 181 testes automáticos — rode depois de qualquer alteração no motor |
 | `painel_de_ajustes.R` | **o painel**: variáveis simples por categoria (escala, ticks, grade, quebra, cores...). Veja a seção 2.1 |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |

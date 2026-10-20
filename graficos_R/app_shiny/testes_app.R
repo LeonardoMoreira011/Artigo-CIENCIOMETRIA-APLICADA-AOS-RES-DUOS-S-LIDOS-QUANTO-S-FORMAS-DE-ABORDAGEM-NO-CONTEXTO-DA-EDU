@@ -87,6 +87,18 @@ teste("a lista de fontes do app traz a Barlow, as genéricas e as instaladas (sy
 teste("a Barlow é a fonte padrão e está registrada", identical(CFG0$texto$fonte, "Barlow") && "Barlow" %in% .familias_fontes() &&
       all(file.exists(file.path(raiz, "fontes", "Barlow", c("Barlow-Regular.ttf", "Barlow-Bold.ttf", "Barlow-Italic.ttf", "Barlow-BoldItalic.ttf", "OFL.txt")))))
 
+# ---- lançadores e ícone -------------------------------------------------------------------------------------------------
+ico <- readBin(file.path("www", "icone.ico"), "raw", 6)
+teste("o ícone é um .ico válido e os lançadores (bat, vbs, ps1, iniciar.R) existem",
+      identical(ico[1:4], as.raw(c(0, 0, 1, 0))) && ico[5] >= as.raw(4) &&
+      all(file.exists(file.path(raiz, c("abrir_app.bat", "iniciar_gerador_oculto.vbs", "criar_atalho.ps1", "Criar_atalho_na_area_de_trabalho.bat", "abrir_app.R"))),
+          file.exists("iniciar.R")))
+teste("iniciar_gerador() existe e usa o endereço bonito gerador.localhost", { source("iniciar.R"); is.function(iniciar_gerador) &&
+      grepl("gerador.localhost", paste(deparse(iniciar_gerador), collapse = "")) })
+teste("o .vbs e os .bat têm quebras de linha do Windows (CRLF)",
+      all(vapply(file.path(raiz, c("abrir_app.bat", "iniciar_gerador_oculto.vbs", "Criar_atalho_na_area_de_trabalho.bat")),
+                 function(f) { b <- readBin(f, "raw", file.size(f)); any(b[-length(b)] == as.raw(13) & b[-1] == as.raw(10)) }, NA)))
+
 # ---- negrito, rotação, grossura, break pelo app --------------------------------------------------------------------
 vn <- v0; vn$negrito_geral <- TRUE; vn$y_rotacao_titulo <- 0; vn$quebra_marca_largura_pt <- 4; vn$painel_fixo <- FALSE; vn$moldura_espessura_pt <- 2
 vn$grade_menor_x <- TRUE; vn$legenda_negrito <- TRUE

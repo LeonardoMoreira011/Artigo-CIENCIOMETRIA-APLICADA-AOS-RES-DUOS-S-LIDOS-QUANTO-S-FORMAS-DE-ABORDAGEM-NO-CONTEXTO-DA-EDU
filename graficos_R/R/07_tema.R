@@ -151,6 +151,8 @@
     class(caixa) <- c("element_sombra", class(caixa))
   }
   esc <- lg$escala %||% 1                      # aumenta/diminui tudo na legenda: texto, quadradinhos, espaços e folgas
+  if (!is.null(cfg$.interno$esc_leg)) cfg$.interno$esc_leg$v <- esc       # os símbolos/linhas das chaves seguem esta escala
+  gap <- lg$espaco_chave_texto_pt             # espaço entre o símbolo e o texto (NULL = o padrão do ggplot2)
   t <- theme(
     legend.position = pos,
     legend.background = caixa,
@@ -158,11 +160,13 @@
     legend.key.size = unit(lg$tamanho_chave_pt * esc, "pt"),
     legend.key.spacing.y = unit(lg$espacamento_pt * esc, "pt"),
     legend.text = element_text(size = (lg$tamanho_texto_pt %||% tx$tamanho_base_pt) * esc,
-                               face = if (.neg(cfg, lg$negrito_texto)) "bold" else "plain"),
+                               face = if (.neg(cfg, lg$negrito_texto)) "bold" else "plain",
+                               margin = if (!is.null(gap)) margin(l = gap * esc) else NULL),
     legend.title = if (is.null(lg$titulo)) element_blank() else
       element_text(size = (lg$tamanho_titulo_pt %||% tx$tamanho_base_pt) * esc,
                    face = if (.neg(cfg, lg$negrito_titulo)) "bold" else "plain"),
     legend.margin = do.call(margin, as.list(lg$margem_interna_pt * esc)))
+  if (!is.null(lg$largura_chave_pt)) t <- t + theme(legend.key.width = unit(lg$largura_chave_pt * esc, "pt"))
   if (pos == "inside") {
     anc <- if (identical(lg$ancora, "auto")) c(lg$dentro_x, lg$dentro_y) else lg$ancora
     t <- t + theme(legend.position.inside = c(lg$dentro_x, lg$dentro_y),

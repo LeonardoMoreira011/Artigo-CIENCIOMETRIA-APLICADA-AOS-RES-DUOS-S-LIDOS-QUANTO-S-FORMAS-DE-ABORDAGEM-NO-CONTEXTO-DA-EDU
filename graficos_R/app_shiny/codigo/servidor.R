@@ -24,7 +24,16 @@ atualizar_campo <- function(session, campo, valor, cfg0, colunas = NULL) {
     colsy = , colsy2 = updateSelectInput(session, id, selected = as.character(valor)))
 }
 
+# Sessões abertas: com gerador_encerrar_ao_fechar (atalho sem janela), o R termina quando a última aba fecha.
+.sessoes <- new.env(); .sessoes$n <- 0
+
 servidor <- function(input, output, session) {
+  .sessoes$n <- .sessoes$n + 1
+  session$onSessionEnded(function() {
+    .sessoes$n <- .sessoes$n - 1
+    if (isTRUE(getOption("gerador_encerrar_ao_fechar")))          # espera 6 s: recarregar a página não encerra o app
+      later::later(function() if (.sessoes$n <= 0) shiny::stopApp(), 6)
+  })
   rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL)
   dir_dados <- file.path(raiz, "dados")
 

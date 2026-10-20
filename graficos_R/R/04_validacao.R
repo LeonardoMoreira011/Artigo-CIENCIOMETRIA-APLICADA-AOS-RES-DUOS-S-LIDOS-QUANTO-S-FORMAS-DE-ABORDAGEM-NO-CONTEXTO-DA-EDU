@@ -175,6 +175,12 @@
       .erro("cfg$caixa$", k, " deve ser um número maior que 0 (cm).")
   if (!is.null(lg$escala) && (!is.numeric(lg$escala) || length(lg$escala) != 1 || lg$escala <= 0))
     .erro("cfg$legenda$escala deve ser um número maior que 0 (ex.: 0.8).")
+  for (k in c("largura_pt", "largura_chave_pt"))
+    if (!is.null(lg[[k]]) && (!is.numeric(lg[[k]]) || length(lg[[k]]) != 1 || lg[[k]] <= 0))
+      .erro("cfg$legenda$", k, " deve ser um número maior que 0 (pt).")
+  if (!is.null(lg$espaco_chave_texto_pt) && (!is.numeric(lg$espaco_chave_texto_pt) || length(lg$espaco_chave_texto_pt) != 1 ||
+                                             lg$espaco_chave_texto_pt < 0))
+    .erro("cfg$legenda$espaco_chave_texto_pt deve ser um número >= 0 (pt).")
   if (!is.null(lg$distancia_pt) && (!is.numeric(lg$distancia_pt) || !length(lg$distancia_pt) %in% 1:2 || any(lg$distancia_pt < 0)))
     .erro("cfg$legenda$distancia_pt deve ser um número >= 0 ou c(horizontal, vertical), em pt.")
   if (!is.null(lg$alinhar)) {

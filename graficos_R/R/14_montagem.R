@@ -70,6 +70,9 @@
 # passada prévia dos painéis precisa.
 .plotar_um <- function(dados, cfg, so_info = FALSE) {
   tipo <- cfg$grafico$tipo
+  # escala atual da legenda, lida na hora de desenhar pelas chaves (símbolos/linhas) — assim eles acompanham a caixa
+  esc_leg <- new.env(); esc_leg$v <- cfg$legenda$escala %||% 1
+  cfg$.interno$esc_leg <- esc_leg
   res <- switch(tipo,
     pontos = , linha = , linha_pontos = , area = , area_empilhada = .construir_xy(dados, cfg),
     barras = .construir_barras(dados, cfg),

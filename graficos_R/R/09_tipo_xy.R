@@ -187,7 +187,7 @@
       for (s in ycols) cam[[length(cam) + 1]] <- .camada_linha(d[d$serie == s, ], L$ligacao, mapeado = FALSE,
                                                                e = est[[s]])
     } else {
-      cam[[length(cam) + 1]] <- .camada_linha(d, L$ligacao, mapeado = TRUE)
+      cam[[length(cam) + 1]] <- .camada_linha(d, L$ligacao, mapeado = TRUE, cfg = cfg)
       aes_leg <- c(aes_leg, "colour", "linetype", "linewidth", "alpha")
     }
   }
@@ -204,10 +204,11 @@
       cam[[length(cam) + 1]] <- geom_point(data = d[!d$serie %in% esf, ],
                                            aes(x = x, y = y, colour = serie, fill = serie,
                                                          shape = serie, size = serie, stroke = serie, alpha = serie),
-        show.legend = TRUE, na.rm = TRUE, key_glyph = .draw_key_ponto_ou_nada)   # na.rm: células vazias sem aviso
+        show.legend = TRUE, na.rm = TRUE, key_glyph = .key_escala(.draw_key_ponto_ou_nada, cfg))   # na.rm: células vazias sem aviso
       if (length(esf))
         cam[[length(cam) + 1]] <- geom_esfera(data = d[d$serie %in% esf, ], luz = cfg$serie_padrao$esfera_luz,
-          mapping = aes(x = x, y = y, colour = serie, shape = serie, size = serie, stroke = serie), show.legend = TRUE)
+          mapping = aes(x = x, y = y, colour = serie, shape = serie, size = serie, stroke = serie), show.legend = TRUE,
+          key_glyph = .key_escala(.draw_key_esfera, cfg))
       aes_leg <- unique(c(aes_leg, "colour", "shape", "size", "stroke",
                           if (length(setdiff(ycols, esf))) c("fill_simb",
                                                              "alpha")))   # só esferas: sem escalas de fill/alpha
@@ -243,7 +244,7 @@
 }
 
 # Camada de linha (reta, spline ou degrau) de uma série ou de todas, com estilo mapeado ou fixo.
-.camada_linha <- function(d, ligacao, mapeado, e = NULL) {
+.camada_linha <- function(d, ligacao, mapeado, e = NULL, cfg = NULL) {
   d <- d[!is.na(d$y), ]
   if (ligacao == "spline") {
     niveis <- levels(d$serie)
@@ -264,7 +265,8 @@
   if (mapeado) {
     geo(data = d, aes(x = x, y = y, colour = serie, linetype = serie, linewidth = serie,
                       alpha = serie, group = serie), lineend = "round", linejoin = "round",
-        show.legend = TRUE)   # TRUE: a legenda mostra a série mesmo sem dados nesta camada (quebra de eixo)
+        show.legend = TRUE,   # TRUE: a legenda mostra a série mesmo sem dados nesta camada (quebra de eixo)
+        key_glyph = if (is.null(cfg)) "path" else .key_escala(ggplot2::draw_key_path, cfg))
   } else {
     geo(data = d, aes(x = x, y = y), colour = .alfa(e$cor, e$op), linetype = e$lt,
         linewidth = .lw(e$lw), lineend = "round", linejoin = "round")
