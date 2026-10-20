@@ -109,6 +109,13 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     if (!is.null(iv)) { cfg[[e]]$ticks_modo <- "incremento"; cfg[[e]]$incremento <- iv; marca(paste0(ax, "_intervalo")) }
     if (!is.null(tm)) { cfg[[e]]$ticks_modo <- "manual"; cfg[[e]]$ticks_manuais <- tm; marca(paste0(ax, "_ticks_manuais")) }
   }
+  # fonte que está só num arquivo .ttf (sem instalar): registra antes de o gráfico usar o nome
+  fp <- pega("fonte_pasta")
+  if (!is.null(fp)) {
+    nome_f <- pega("fonte")
+    if (is.null(nome_f)) .erro("fonte_pasta precisa de 'fonte' (o nome), ex.: fonte <- \"Barlow\".")
+    registrar_fonte(nome_f, pasta = fp); marca("fonte_pasta")
+  }
   # legenda: canto pronto (posição + âncora) e ligação automática da borda / sombra quando só o detalhe é dado
   canto <- pega("legenda_canto")
   if (!is.null(canto)) {

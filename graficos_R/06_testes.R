@@ -389,7 +389,7 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
                     "y2_series", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo", "y2_ticks_manuais", "y2_ticks_menores",
                     "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais", "y2_notacao", "y2_prefixo", "y2_sufixo",
                     "y2_fator", "y2_deslocamento", "linha_espessura_por_serie", "simbolo_tamanho_por_serie",
-                    "simbolo_borda_por_serie", "y2_igual_y1", "y2_legenda_sufixo", "legenda_canto")
+                    "simbolo_borda_por_serie", "y2_igual_y1", "y2_legenda_sufixo", "legenda_canto", "fonte_pasta")
         all(v %in% c(names(.PAINEL_MAPA), extras)) })
 teste("painel: cores_por_serie sem nomes dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))
@@ -497,6 +497,28 @@ gl <- suppressWarnings(plotar(aq, cl))
 teste("painel Y2: a legenda é uma só, com as séries dos dois eixos",
       identical(as.character(unlist(ggplot2::get_guide_data(ggplot2::ggplot_build(gl), "colour")$.label)),
                 c("WORLD", "POP (eixo dir.)")))
+
+cat("\n--- Fonte registrada a partir de arquivos .ttf ---\n")
+ttf <- systemfonts::system_fonts()$path; ttf <- ttf[grepl("\\.ttf$", ttf, ignore.case = TRUE) & file.exists(ttf)][1]
+pf <- file.path(tmp, "fonte_teste"); dir.create(pf)
+file.copy(ttf, file.path(pf, c("FonteTeste-Regular.ttf", "FonteTeste-Bold.ttf", "FonteTeste-Italic.ttf",
+                               "FonteTesteCondensed-Regular.ttf")))
+teste("fonte: sem registrar, a fonte é desconhecida e cai em 'sans' com aviso",
+      da_aviso(.fonte("Fonte Teste"), "não encontrada"))
+teste("fonte: registrar_fonte() acha os .ttf da pasta (a família 'Condensed' não entra) e passa a valer sem aviso",
+      { suppressMessages(registrar_fonte("Fonte Teste", pf))
+        r <- systemfonts::registry_fonts(); r <- r[r$family == "Fonte Teste", ]
+        length(avisos_de(.fonte("Fonte Teste"))) == 0 && identical(.fonte("Fonte Teste"), "Fonte Teste") &&
+        "Fonte Teste" %in% .familias_fontes() && nrow(r) >= 1 && !any(grepl("Condensed", r$path)) })
+teste("fonte: o painel (fonte + fonte_pasta) registra e o gráfico desenha sem aviso de fonte",
+      { pfn <- list2env(list(fonte = "Fonte Teste", fonte_pasta = pf))
+        cf <- suppressMessages(aplicar_painel(c0, pfn))
+        cf$grafico <- utils::modifyList(cf$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL")))
+        cf$texto$fonte == "Fonte Teste" && !any(grepl("fonte", avisos_de(imprime(plotar(aq, cf))), ignore.case = TRUE)) })
+teste("fonte: pasta inexistente ou sem o Regular dão erro claro; fonte_pasta sem fonte também",
+      da_erro(registrar_fonte("Fonte Teste", file.path(tmp, "nao_existe")), "não existe") &&
+      da_erro(registrar_fonte("Outra", pf), "Regular") &&
+      da_erro(aplicar_painel(c0, list2env(list(fonte_pasta = pf))), "precisa de 'fonte'"))
 
 cat("\n--- Legenda: posição, fundo, borda e sombra ---\n")
 pl <- list2env(list(tipo_grafico = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL"),

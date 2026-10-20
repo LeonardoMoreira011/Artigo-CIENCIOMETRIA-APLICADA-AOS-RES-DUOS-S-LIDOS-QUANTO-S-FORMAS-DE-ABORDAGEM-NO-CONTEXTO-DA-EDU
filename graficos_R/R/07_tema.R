@@ -176,7 +176,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   if (!is.null(.fontes_cache[[f]])) return(.fontes_cache[[f]])
   ok <- TRUE
   if (.tem("systemfonts")) {
-    fams <- unique(systemfonts::system_fonts()$family)
+    fams <- unique(.familias_fontes())
     ok <- tolower(f) %in% tolower(fams)
   }
   res <- if (ok) f else {

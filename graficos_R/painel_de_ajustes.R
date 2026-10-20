@@ -150,6 +150,8 @@ simbolo_borda_por_serie   <- NULL   # EX.: c("BRAZIL" = 1.5)
 
 # ---- 9. FONTE -----------------------------------------------------------------------------------
 fonte            <- NULL   # EX.: "Arial" | "Times New Roman" | "Calibri"  (nomes instalados: listar_fontes())
+fonte_pasta      <- NULL   # pasta com os .ttf da fonte, para usá-la SEM instalar no Windows (quando listar_fontes() não a
+                           #   mostra). EX.: "C:/Users/voce/Downloads/Barlow"  com  fonte <- "Barlow"
 tamanho_texto_pt <- NULL   # tamanho BASE de todo o texto (os itens abaixo, se preenchidos, têm prioridade). EX.: 12
 cor_texto        <- NULL   # EX.: "black"
 #  Tamanhos separados, em pt (NULL = usa o tamanho base):

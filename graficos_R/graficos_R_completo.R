@@ -2808,7 +2808,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   if (!is.null(.fontes_cache[[f]])) return(.fontes_cache[[f]])
   ok <- TRUE
   if (.tem("systemfonts")) {
-    fams <- unique(systemfonts::system_fonts()$family)
+    fams <- unique(.familias_fontes())
     ok <- tolower(f) %in% tolower(fams)
   }
   res <- if (ok) f else {
@@ -4526,9 +4526,53 @@ listar_fontes <- function() {
     message("Instale 'systemfonts' (vem com ragg) para listar as fontes.")
     return(invisible())
   }
-  f <- sort(unique(systemfonts::system_fonts()$family))
+  f <- sort(unique(.familias_fontes()))
   print(f)
   invisible(f)
+}
+
+# Famílias que o R enxerga: as instaladas no sistema e as registradas por registrar_fonte().
+.familias_fontes <- function() {
+  c(systemfonts::system_fonts()$family, systemfonts::registry_fonts()$family)
+}
+
+# Usa uma fonte que está num arquivo .ttf/.otf, SEM instalá-la no Windows (vale só nesta sessão do R).
+# Serve quando a fonte instalada não aparece em listar_fontes().
+# Entra: nome (como vai em cfg$texto$fonte) e pasta (com os arquivos, ex.: "Barlow-Regular.ttf",
+#   "Barlow-Bold.ttf", "Barlow-Italic.ttf", "Barlow-BoldItalic.ttf") ou arquivos (vetor com nomes
+#   regular, bold, italic, bolditalic). Só o regular é obrigatório. Sai (invisível): o nome registrado.
+registrar_fonte <- function(nome, pasta = NULL, arquivos = NULL) {
+  if (!.tem("systemfonts")) .erro("registrar_fonte() precisa do pacote systemfonts (vem com ragg).")
+  if (!is.character(nome) || length(nome) != 1 || !nzchar(nome)) .erro("registrar_fonte(nome): informe o nome da fonte, ex.: \"Barlow\".")
+  if (is.null(arquivos)) {
+    if (is.null(pasta) || !dir.exists(pasta)) .erro("registrar_fonte: a pasta '", pasta %||% "", "' não existe. ",
+                                                    "Use o caminho da pasta com os .ttf, ex.: \"C:/Users/voce/Downloads/Barlow\".")
+    todos <- list.files(pasta, pattern = "\\.(ttf|otf)$", full.names = TRUE, recursive = TRUE, ignore.case = TRUE)
+    base <- gsub("[ _]", "", nome)
+    estilo <- sub("\\.(ttf|otf)$", "", basename(todos), ignore.case = TRUE)
+    ok <- grepl(paste0("^", base, "-"), estilo, ignore.case = TRUE)   # "Barlow-Bold" sim; "BarlowCondensed-Bold" não
+    estilo <- tolower(sub("^[^-]*-", "", estilo[ok])); todos <- todos[ok]
+    achar <- function(e) { i <- which(estilo == e); if (length(i)) todos[i[1]] else NA_character_ }
+    arquivos <- c(regular = achar("regular"), bold = achar("bold"), italic = achar("italic"),
+                  bolditalic = achar("bolditalic"))
+  }
+  arquivos <- unlist(arquivos)
+  if (is.null(names(arquivos))) names(arquivos) <- c("regular", "bold", "italic", "bolditalic")[seq_along(arquivos)]
+  reg <- arquivos[["regular"]]
+  if (is.null(reg) || is.na(reg) || !file.exists(reg))
+    .erro("registrar_fonte: não achei o arquivo \"", nome, "-Regular.ttf\" em '", pasta %||% "", "'.\n",
+          "  Arquivos .ttf/.otf encontrados lá: ",
+          paste(utils::head(basename(list.files(pasta %||% ".", pattern = "\\.(ttf|otf)$", recursive = TRUE, ignore.case = TRUE)), 8),
+                collapse = ", "),
+          "\n  Use os arquivos estáticos (Barlow-Regular.ttf...), não o arquivo de fonte variável (com colchetes no nome).")
+  pega <- function(k) { v <- arquivos[k]; if (length(v) && !is.na(v) && file.exists(v)) unname(v) else reg }
+  bo <- pega("bold"); it <- pega("italic")
+  bi <- { v <- arquivos["bolditalic"]; if (length(v) && !is.na(v) && file.exists(v)) unname(v) else bo }
+  systemfonts::register_font(name = nome, plain = reg, bold = bo, italic = it, bolditalic = bi)
+  .fontes_cache[[nome]] <- NULL                       # esquece um "não encontrada" anterior
+  message("Fonte '", nome, "' registrada (", sum(!is.na(arquivos) & file.exists(arquivos)), " arquivo(s)). ",
+          "Use cfg$texto$fonte <- \"", nome, "\".")
+  invisible(nome)
 }
 
 # -----------------------------------------------------------------------------
@@ -4644,6 +4688,13 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     iv <- pega(paste0(ax, "_intervalo")); tm <- pega(paste0(ax, "_ticks_manuais"))
     if (!is.null(iv)) { cfg[[e]]$ticks_modo <- "incremento"; cfg[[e]]$incremento <- iv; marca(paste0(ax, "_intervalo")) }
     if (!is.null(tm)) { cfg[[e]]$ticks_modo <- "manual"; cfg[[e]]$ticks_manuais <- tm; marca(paste0(ax, "_ticks_manuais")) }
+  }
+  # fonte que está só num arquivo .ttf (sem instalar): registra antes de o gráfico usar o nome
+  fp <- pega("fonte_pasta")
+  if (!is.null(fp)) {
+    nome_f <- pega("fonte")
+    if (is.null(nome_f)) .erro("fonte_pasta precisa de 'fonte' (o nome), ex.: fonte <- \"Barlow\".")
+    registrar_fonte(nome_f, pasta = fp); marca("fonte_pasta")
   }
   # legenda: canto pronto (posição + âncora) e ligação automática da borda / sombra quando só o detalhe é dado
   canto <- pega("legenda_canto")
@@ -5167,6 +5218,8 @@ simbolo_borda_por_serie   <- NULL   # EX.: c("BRAZIL" = 1.5)
 
 # ---- 9. FONTE -----------------------------------------------------------------------------------
 fonte            <- NULL   # EX.: "Arial" | "Times New Roman" | "Calibri"  (nomes instalados: listar_fontes())
+fonte_pasta      <- NULL   # pasta com os .ttf da fonte, para usá-la SEM instalar no Windows (quando listar_fontes() não a
+                           #   mostra). EX.: "C:/Users/voce/Downloads/Barlow"  com  fonte <- "Barlow"
 tamanho_texto_pt <- NULL   # tamanho BASE de todo o texto (os itens abaixo, se preenchidos, têm prioridade). EX.: 12
 cor_texto        <- NULL   # EX.: "black"
 #  Tamanhos separados, em pt (NULL = usa o tamanho base):
