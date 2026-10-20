@@ -76,6 +76,11 @@ x_rotacao_numeros <- NULL  # graus. EX.: 45
 y_rotacao_numeros <- NULL
 x_mostrar_numeros <- NULL  # FALSE = esconde os números do eixo
 y_mostrar_numeros <- NULL
+#  Distâncias (pt): quanto afastar o título dos números e os números do eixo
+x_distancia_titulo_pt  <- NULL   # título do X até os números. EX.: 6
+y_distancia_titulo_pt  <- NULL   # título do Y até os números (com quebra de eixo vale também). EX.: 6
+x_distancia_numeros_pt <- NULL   # números do X até o eixo. EX.: 3
+y_distancia_numeros_pt <- NULL
 
 # ---- 5. GRADE (linhas de fundo) ---------------------------------------------------------------
 grade_x          <- NULL   # TRUE = linhas verticais nos ticks maiores do X
@@ -128,6 +133,8 @@ y2_prefixo   <- NULL      # EX.: "US$ "
 y2_sufixo    <- NULL      # EX.: " %"
 y2_fator     <- NULL      # SEM séries novas: mostra o MESMO dado em outra unidade (y2 = fator × y + deslocamento).
 y2_deslocamento <- NULL   #   EX. de °C para °F:  y2_fator <- 1.8;  y2_deslocamento <- 32
+y2_distancia_titulo_pt  <- NULL   # título do Y2 até os números. EX.: 6
+y2_distancia_numeros_pt <- NULL   # números do Y2 até o eixo. EX.: 3
 #  As cores de cada série (esquerda ou direita) também podem vir de cores_por_serie (bloco 8).
 
 # ---- 8. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
@@ -147,6 +154,15 @@ linha_espessura_por_serie <- NULL   # EX.: c("WORLD" = 1, "BRAZIL" = 3.5)
 simbolo_tamanho_por_serie <- NULL   # EX.: c("BRAZIL" = 10)
 simbolo_borda_por_serie   <- NULL   # EX.: c("BRAZIL" = 1.5)
 #  Só linhas, só pontos ou os dois: o "tipo" do bloco 1 ("linha" | "pontos" | "linha_pontos").
+#  Formas dos pontos:
+simbolo_forma  <- NULL   # UMA forma para todas as séries: "circulo" | "quadrado" | "losango" | "triangulo" |
+                         #   "triangulo_invertido" | "estrela" | "cruz" | "x" | "circulo_vazio" | "quadrado_vazio" | "esfera"
+                         #   (ou o número do R, 0 a 25). Preencher isto desliga a troca automática de formas.
+simbolo_variar <- NULL   # TRUE = cada série com uma forma diferente | FALSE = todas iguais (simbolo_forma, padrão círculo)
+simbolos_ordem <- NULL   # com variar: quais formas, em ordem. EX.: c("quadrado", "circulo", "triangulo")
+simbolo_forma_por_serie <- NULL  # forma de séries específicas. EX.: c("WORLD" = "esfera", "BRAZIL" = "quadrado")
+simbolo_preenchimento <- NULL    # "serie" (cheio) | "branco" | "vazio" | uma cor
+esfera_luz     <- NULL   # de onde vem a luz na "esfera", c(x, y) de -1 a 1. EX.: c(-0.4, 0.5) (brilho em cima, à esquerda)
 
 # ---- 9. FONTE -----------------------------------------------------------------------------------
 fonte            <- NULL   # EX.: "Arial" | "Times New Roman" | "Calibri"  (nomes instalados: listar_fontes())
@@ -166,6 +182,8 @@ rotulos_dados_tamanho_pt  <- NULL   # texto escrito junto dos pontos/barras (ró
 
 # ---- 10. MOLDURA DO GRÁFICO ---------------------------------------------------------------------------
 caixa_fechada    <- NULL   # TRUE = moldura nos 4 lados | FALSE = só eixos esquerdo e inferior
+painel_largura_cm <- NULL  # TAMANHO FIXO da caixa do gráfico (dentro dos eixos), em cm, igual em todos os gráficos.
+painel_altura_cm  <- NULL  #   EX.: 9 e 6.5. Números, títulos e legenda ficam fora; a página se ajusta para caber tudo.
 
 # ---- 11. LEGENDA: POSIÇÃO, FUNDO, BORDA E SOMBRA -------------------------------------------------------
 legenda_mostrar  <- NULL   # FALSE = sem legenda
@@ -178,6 +196,9 @@ legenda_x        <- NULL   # posição fina com "dentro", de 0 (esquerda) a 1 (d
 legenda_y        <- NULL   # de 0 (embaixo) a 1 (em cima). EX.: 0.96
 legenda_ancora   <- NULL   # qual ponto da caixa fica em (x, y): c(0, 1) = canto sup. esq. | c(1, 1) = sup. dir. ...
 legenda_alinhar  <- NULL   # com a legenda FORA: onde ela fica ao longo do lado.
+legenda_escala   <- NULL   # aumenta (> 1) ou diminui (< 1) a legenda toda. EX.: 0.8
+legenda_distancia_pt <- NULL  # com "dentro": distância até a borda da caixa, em pt. EX.: 8  |  c(10, 6). Use com legenda_canto
+legenda_ajustar_caixa <- NULL # TRUE (padrão) = se a legenda for maior que a caixa, é reduzida até caber | FALSE = como pedido
                            #   direita/esquerda: "topo" | "centro" | "base"; topo/base: "esquerda" | "centro" | "direita"
 #  Disposição dos itens
 legenda_direcao  <- NULL   # "vertical" (um embaixo do outro) | "horizontal" (lado a lado)
@@ -201,8 +222,10 @@ legenda_sombra_opacidade <- NULL    # 0 a 1. EX.: 0.35
 legenda_sombra_deslocamento_pt <- NULL  # c(para a direita, para baixo) em pt. EX.: c(3, 3)  |  c(5, 2)
 
 # ---- 12. EXPORTAÇÃO ------------------------------------------------------------------------------------
-largura_cm   <- NULL       # EX.: 14
+largura_cm   <- NULL       # EX.: 14   (com painel_largura_cm preenchido a página se ajusta sozinha e estes valores não valem)
 altura_cm    <- NULL       # EX.: 10
+ajustar_pagina <- NULL     # com caixa de tamanho fixo: TRUE (padrão) = a página cresce/encolhe para caber tudo |
+                           #   FALSE = página sempre largura_cm x altura_cm (a caixa fica centralizada)
 dpi          <- NULL       # EX.: 600
 formatos     <- NULL       # EX.: c("png", "pdf")   (também "tiff", "svg", "jpeg", "emf")
 nome_arquivo <- NULL       # EX.: "minha_figura"

@@ -72,7 +72,8 @@
   # quebra de eixo sem ligar através: cada série só mostra os valores desta parte (Y1 e Y2 têm faixas próprias)
   rec <- cfg$.interno$recortar_y; rec2 <- cfg$.interno$recortar_y2 %||% rec
   if (!is.null(rec)) {
-    r <- if (length(ser_y2)) { e2 <- d$serie %in% ser_y2; list(lo = ifelse(e2, rec2[1], rec[1]), hi = ifelse(e2, rec2[2], rec[2])) }
+    r <- if (length(ser_y2)) { e2 <- d$serie %in% ser_y2; list(lo = ifelse(e2, rec2[1], rec[1]),
+                                                               hi = ifelse(e2, rec2[2], rec[2])) }
          else list(lo = rec[1], hi = rec[2])
     d <- d[is.na(d$y) | (d$y >= r$lo & d$y <= r$hi), ]
   }
@@ -198,10 +199,18 @@
                                                   na.rm = TRUE)   # células vazias: sem aviso em inglês
       aes_leg <- unique(c(aes_leg, "shape", "size", "stroke"))
     } else {
-      cam[[length(cam) + 1]] <- geom_point(data = d, aes(x = x, y = y, colour = serie, fill = serie,
+      esf <- ycols[vapply(est[ycols], function(e) isTRUE(e$simbolo == .COD_ESFERA), NA)]   # séries "esfera"
+      if (length(setdiff(ycols, esf)))
+      cam[[length(cam) + 1]] <- geom_point(data = d[!d$serie %in% esf, ],
+                                           aes(x = x, y = y, colour = serie, fill = serie,
                                                          shape = serie, size = serie, stroke = serie, alpha = serie),
-        show.legend = TRUE, na.rm = TRUE)   # na.rm: células vazias do CSV não geram aviso em inglês
-      aes_leg <- unique(c(aes_leg, "colour", "fill_simb", "shape", "size", "stroke", "alpha"))
+        show.legend = TRUE, na.rm = TRUE, key_glyph = .draw_key_ponto_ou_nada)   # na.rm: células vazias sem aviso
+      if (length(esf))
+        cam[[length(cam) + 1]] <- geom_esfera(data = d[d$serie %in% esf, ], luz = cfg$serie_padrao$esfera_luz,
+          mapping = aes(x = x, y = y, colour = serie, shape = serie, size = serie, stroke = serie), show.legend = TRUE)
+      aes_leg <- unique(c(aes_leg, "colour", "shape", "size", "stroke",
+                          if (length(setdiff(ycols, esf))) c("fill_simb",
+                                                             "alpha")))   # só esferas: sem escalas de fill/alpha
     }
   }
   # rótulos de dados

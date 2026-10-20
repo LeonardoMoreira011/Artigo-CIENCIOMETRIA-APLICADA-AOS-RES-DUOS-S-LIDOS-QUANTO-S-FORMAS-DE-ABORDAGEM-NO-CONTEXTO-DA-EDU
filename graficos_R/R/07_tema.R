@@ -62,10 +62,14 @@
     element_line(colour = .alfa(.cor(cor, "grade"), opac), linewidth = .lw(esp), linetype = tipo)
   }
   t <- t + theme(
-    panel.grid.major.x = gl(lados$grade_x_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior, gr$opacidade_maior),
-    panel.grid.major.y = gl(lados$grade_y_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior, gr$opacidade_maior),
-    panel.grid.minor.x = gl(lados$grade_x_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor, gr$opacidade_menor),
-    panel.grid.minor.y = gl(lados$grade_y_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor, gr$opacidade_menor))
+    panel.grid.major.x = gl(lados$grade_x_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior,
+                            gr$opacidade_maior),
+    panel.grid.major.y = gl(lados$grade_y_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior,
+                            gr$opacidade_maior),
+    panel.grid.minor.x = gl(lados$grade_x_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor,
+                            gr$opacidade_menor),
+    panel.grid.minor.y = gl(lados$grade_y_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor,
+                            gr$opacidade_menor))
   if (sem_eixos) {
     t <- t + theme(axis.text = element_blank(), axis.title = element_blank(),
                    axis.ticks = element_blank(), axis.line = element_blank(),
@@ -134,20 +138,26 @@
     attr(caixa, "sombra") <- list(cor = .alfa(.cor(lg$sombra_cor), lg$sombra_opacidade), dx = d[1], dy = d[2])
     class(caixa) <- c("element_sombra", class(caixa))
   }
+  esc <- lg$escala %||% 1                      # aumenta/diminui tudo na legenda: texto, quadradinhos, espaços e folgas
   t <- theme(
     legend.position = pos,
     legend.background = caixa,
     legend.key = element_rect(fill = NA, colour = NA),
-    legend.key.size = unit(lg$tamanho_chave_pt, "pt"),
-    legend.key.spacing.y = unit(lg$espacamento_pt, "pt"),
-    legend.text = element_text(size = lg$tamanho_texto_pt %||% tx$tamanho_base_pt),
+    legend.key.size = unit(lg$tamanho_chave_pt * esc, "pt"),
+    legend.key.spacing.y = unit(lg$espacamento_pt * esc, "pt"),
+    legend.text = element_text(size = (lg$tamanho_texto_pt %||% tx$tamanho_base_pt) * esc),
     legend.title = if (is.null(lg$titulo)) element_blank() else
-      element_text(size = lg$tamanho_titulo_pt %||% tx$tamanho_base_pt),
-    legend.margin = do.call(margin, as.list(lg$margem_interna_pt)))
+      element_text(size = (lg$tamanho_titulo_pt %||% tx$tamanho_base_pt) * esc),
+    legend.margin = do.call(margin, as.list(lg$margem_interna_pt * esc)))
   if (pos == "inside") {
     anc <- if (identical(lg$ancora, "auto")) c(lg$dentro_x, lg$dentro_y) else lg$ancora
     t <- t + theme(legend.position.inside = c(lg$dentro_x, lg$dentro_y),
                    legend.justification.inside = anc)
+    if (!is.null(lg$distancia_pt)) {            # distância da legenda até a borda da caixa, em pt (para dentro)
+      d <- rep_len(lg$distancia_pt, 2)
+      t <- t + theme(legend.box.margin = margin(t = if (anc[2] > 0.5) d[2] else 0, r = if (anc[1] > 0.5) d[1] else 0,
+                                                b = if (anc[2] < 0.5) d[2] else 0, l = if (anc[1] < 0.5) d[1] else 0))
+    }
   }
   if (pos %in% c("top", "bottom")) t <- t + theme(legend.direction = "horizontal")
   if (!is.null(lg$direcao)) t <- t + theme(legend.direction = lg$direcao)

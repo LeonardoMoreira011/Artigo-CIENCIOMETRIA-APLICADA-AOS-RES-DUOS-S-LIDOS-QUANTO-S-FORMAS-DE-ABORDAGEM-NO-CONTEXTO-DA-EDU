@@ -158,8 +158,14 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   if (!is.null(y2)) {
     lim2 <- y2$ax$limites
     de2 <- Q$y2_de %||% y2$para2(Q$de); ate2 <- Q$y2_ate %||% y2$para2(Q$ate)
+    if (is.null(Q$y2_de) && is.null(Q$y2_ate)) {     # divisa derivada do Y1: arredonda para números "redondos" (sem 0.373714286)
+      passo <- .passo_bonito(diff(lim2) / 25)
+      d3 <- ceiling(de2 / passo - 1e-9) * passo; a3 <- floor(ate2 / passo + 1e-9) * passo
+      if (d3 < a3 && d3 > lim2[1] && a3 < lim2[2]) { de2 <- d3; ate2 <- a3 }
+    }
     if (de2 >= ate2) .erro("cfg$quebra: no eixo Y da direita defina y2_de < y2_ate (ex.: y2_de = 2000, y2_ate = 6000).")
-    if (de2 <= lim2[1] || ate2 >= lim2[2]) .erro("cfg$quebra: o trecho omitido do eixo Y da direita (", de2, " a ", ate2,
+    if (de2 <= lim2[1] || ate2 >= lim2[2]) .erro("cfg$quebra: o trecho omitido do eixo Y da direita (", de2, " a ",
+                                                 ate2,
                                                  ") precisa estar dentro do eixo (", lim2[1], " a ", lim2[2], ").")
     inferior$eixo_y2$inicio <- lim2[1]; inferior$eixo_y2$fim <- de2
     superior$eixo_y2$inicio <- ate2; superior$eixo_y2$fim <- lim2[2]
@@ -176,21 +182,20 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
       if (!is.null(y2)) ck$.interno$recortar_y2 <- c(ck$eixo_y2$inicio, ck$eixo_y2$fim)
     }
     ck$eixo_y$mostrar_titulo <- FALSE
+    ck$.interno$fracao_altura <- if (parte == "superior") Q$proporcao_superior else 1 - Q$proporcao_superior
     if (!is.null(y2)) ck$.interno$sem_titulo_y2 <- TRUE   # o título do Y2 vai uma vez só, ao lado das duas partes
     # intervalo entre os ticks de cada parte (NULL = automático)
     inc <- Q[[paste0("incremento_", parte)]]; inc2 <- Q[[paste0("y2_incremento_", parte)]]
     if (!is.null(inc)) { ck$eixo_y$ticks_modo <- "incremento"; ck$eixo_y$incremento <- inc }
     if (!is.null(inc2) && !is.null(y2)) { ck$eixo_y2$ticks_modo <- "incremento"; ck$eixo_y2$incremento <- inc2 }
-    if (continuo) {
-      ck$caixa$proporcao <- NULL                       # as alturas das partes seguem proporcao_superior
-      if (isTRUE(cfg$exportacao$fundo_transparente)) { ck$caixa$fundo_pagina <- "transparente"; ck$caixa$fundo_painel <- "transparente" }
-      if (parte == "inferior") ck$eixo_y$.ocultar_extremo <- "max"   # o número da divisa aparece só uma vez
-    }
+    ck$caixa$proporcao <- NULL                         # as alturas das partes seguem proporcao_superior
+    if (isTRUE(cfg$exportacao$fundo_transparente)) { ck$caixa$fundo_pagina <- "transparente"; ck$caixa$fundo_painel <- "transparente" }
+    if (continuo && parte == "inferior") ck$eixo_y$.ocultar_extremo <- "max"   # o número da divisa aparece só uma vez
     if (parte == "superior") {
-      ck$caixa$margens_cm <- c(m[1], m[2], esp, m[4])
+      ck$caixa$margens_cm <- c(m[1], 0, esp, 0)
       ck$eixo_x$mostrar_rotulos <- FALSE; ck$eixo_x$mostrar_titulo <- FALSE
     } else {
-      ck$caixa$margens_cm <- c(esp, m[2], m[3], m[4])
+      ck$caixa$margens_cm <- c(esp, 0, m[3], 0)
       ck$legenda$mostrar <- FALSE; ck$titulos$titulo <- NULL; ck$titulos$subtitulo <- NULL
       ck$anotacoes$letra <- NULL
     }
@@ -199,10 +204,7 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   gs <- .plotar_um(dados, ajustar_parte(superior, "superior", c(Q$ate, lim[2])))
   gi <- .plotar_um(dados, ajustar_parte(inferior, "inferior", c(lim[1], Q$de)))
   pr <- Q$proporcao_superior
-  if (continuo) {
-    pw <- .quebra_continua(gs, gi, cfg, Q, pr)
-  } else {
-  if (isTRUE(Q$marcas)) {
+  if (!continuo && isTRUE(Q$marcas)) {
     marca <- function(y) {
       gp <- gpar(col = cfg$caixa$cor, lwd = .lw(cfg$caixa$espessura_pt) * ggplot2::.pt)
       dx <- unit(Q$marca_largura_pt, "pt"); dy <- unit(Q$marca_altura_pt, "pt")
@@ -213,15 +215,8 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
     gs <- gs + annotation_custom(marca(0), -Inf, Inf, -Inf, Inf)
     gi <- gi + annotation_custom(marca(1), -Inf, Inf, -Inf, Inf)
   }
-  pw <- patchwork::wrap_plots(gs, gi, ncol = 1, heights = c(pr, 1 - pr))
-  }
-  tit <- inf$titulo_y
-  if (isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(tit, ""))
-    pw <- patchwork::wrap_plots(.rotulo_lateral(tit, cfg, TRUE), pw, nrow = 1,
-                                widths = grid::unit(c(1.6, 1), c("lines", "null")))
-  if (!is.null(y2) && isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(y2$titulo, ""))
-    pw <- patchwork::wrap_plots(pw, .rotulo_lateral(y2$titulo, cfg, TRUE, direita = TRUE, cor = .cor(y2$cor)), nrow = 1,
-                                widths = grid::unit(c(1, 1.6), c("null", "lines")))
-  if (continuo) attr(pw, "quebra_continua") <- TRUE   # o salvar() refaz a figura se o fundo for transparente
+  pw <- .quebra_montar(gs, gi, cfg, Q, pr, continuo, inf$titulo_y, y2)
+  attr(pw, "partes") <- list(gs, gi)
+  attr(pw, "quebra_gtable") <- TRUE   # o salvar() refaz a figura se o fundo for transparente
   pw
 }

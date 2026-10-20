@@ -57,6 +57,64 @@
   cfg
 }
 
+# Tamanho de saída. Sem painel de tamanho fixo: o da página (cfg$exportacao). Com cfg$caixa$painel_largura_cm /
+# painel_altura_cm: a caixa do gráfico fica EXATAMENTE nesse tamanho, e a página cresce (ou encolhe) para caber
+# números, títulos e legenda sem cortar nada (exportacao$ajustar_pagina = TRUE) — o gráfico tem o mesmo tamanho
+# em todos os arquivos. Entra: g e cfg. Sai: list(grob = NULL | gtable pronto para desenhar, larg, alt em polegadas).
+.preparar_saida <- function(g, cfg) {
+  pg <- .tamanho_pagina_in(cfg)
+  cx <- cfg$caixa
+  pw <- cx$painel_largura_cm; ph <- cx$painel_altura_cm
+  if (is.null(pw) && is.null(ph)) return(list(grob = NULL, larg = pg[1], alt = pg[2]))
+  if (is.null(ph) && !is.null(pw) && !is.null(cx$proporcao)) ph <- pw * cx$proporcao
+  if (is.null(pw) && !is.null(ph) && !is.null(cx$proporcao)) pw <- ph / cx$proporcao
+  gt <- attr(g, "gt")
+  if (is.null(gt)) {
+    if (inherits(g, "patchwork")) {
+      .aviso("caixa$painel_largura_cm/painel_altura_cm não valem para painéis empilhados; tamanho da página usado.")
+      return(list(grob = NULL, larg = pg[1], alt = pg[2]))
+    }
+    if (is.null(grDevices::dev.list())) { grDevices::pdf(NULL); on.exit(grDevices::dev.off(), add = TRUE) }
+    gt <- ggplot2::ggplotGrob(g)
+  }
+  pan <- gt$layout[gt$layout$name == "panel", ]
+  pan <- pan[order(pan$t, pan$l), ]
+  cols <- sort(unique(unlist(Map(seq, pan$l, pan$r)))); linhas <- sort(unique(unlist(Map(seq, pan$t, pan$b))))
+  if (!is.null(pw) && length(cols) == 1) gt$widths[cols] <- grid::unit(pw, "cm")
+  if (!is.null(ph)) {
+    if (length(linhas) == 1) gt$heights[linhas] <- grid::unit(ph, "cm")
+    else if (length(linhas) == 2) {                      # quebra de eixo: a altura se divide entre as duas partes
+      pr <- cfg$quebra$proporcao_superior %||% 0.5
+      gt$heights[linhas] <- grid::unit(c(ph * pr, ph * (1 - pr)), "cm")
+    }
+  }
+  gt$respect <- FALSE
+  dev_ant <- grDevices::dev.cur()
+  if (.tem("ragg")) ragg::agg_capture(width = 10, height = 10, units = "in", res = 72) else grDevices::pdf(NULL)
+  dev_nosso <- grDevices::dev.cur()
+  tam <- tryCatch({
+    soma <- function(u, f) if (any(grid::unitType(u) == "null")) NA_real_ else f(sum(u), "in", valueOnly = TRUE)
+    c(soma(gt$widths, grid::convertWidth), soma(gt$heights, grid::convertHeight))
+  }, finally = if (dev_nosso %in% grDevices::dev.list()) grDevices::dev.off(dev_nosso))
+  if (dev_ant %in% grDevices::dev.list()) grDevices::dev.set(dev_ant)
+  if (isTRUE(cfg$exportacao$ajustar_pagina %||% TRUE)) {
+    larg <- if (is.na(tam[1])) pg[1] else tam[1]; alt <- if (is.na(tam[2])) pg[2] else tam[2]
+  } else {
+    larg <- pg[1]; alt <- pg[2]
+    if (!is.na(tam[1]) && tam[1] > larg * 1.005 || !is.na(tam[2]) && tam[2] > alt * 1.005)
+      .aviso("O gráfico (caixa de tamanho fixo + números, títulos e legenda) tem ", round(tam[1] * 2.54, 1), " x ",
+             round(tam[2] * 2.54, 1), " cm e não cabe na página de ", round(pg[1] * 2.54, 1), " x ",
+             round(pg[2] * 2.54,
+                   1), " cm: parte será cortada. Aumente a página ou use exportacao$ajustar_pagina <- TRUE.")
+  }
+  list(grob = gt, larg = larg, alt = alt)
+}
+
+# Desenha o gráfico no dispositivo aberto: o gtable de tamanho fixo (se houver) ou o objeto como está.
+.desenhar <- function(prep, g) {
+  if (is.null(prep$grob)) print(g) else { grid::grid.newpage(); grid::grid.draw(prep$grob) }
+}
+
 #' Exporta o gráfico nos formatos de cfg$exportacao
 # Deixa transparentes o fundo da página e o do painel SEM refazer o gráfico, para não perder o que
 # o usuário somou ao objeto (+ theme(), + labs(), + camadas). Serve para ggplot e para patchwork.
@@ -83,9 +141,11 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
   transparente <- isTRUE(ex$fundo_transparente)
   if (transparente) {
     # quebra contínua: as partes têm fundo próprio e só nascem transparentes ao montar o gráfico
-    if (isTRUE(attr(g, "quebra_continua")) && !is.null(dados)) g <- plotar(dados, cfg)
+    if (isTRUE(attr(g, "quebra_gtable")) && !is.null(dados)) g <- plotar(dados, cfg)
     g <- .fundo_transparente(g)
   }
+  prep <- .preparar_saida(g, cfg)
+  larg <- prep$larg; alt <- prep$alt
   saidas <- character(0)
   for (f in tolower(ex$formatos)) {
     ext <- switch(f, jpeg = "jpg", f)
@@ -100,7 +160,7 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
     .abrir_dispositivo(f, arq, larg, alt, ex$dpi, fundo, usar_ragg = .ragg_ok(cfg))
     disp <- grDevices::dev.cur()
     tryCatch({
-      gg <- g
+      gg <- g; prep_f <- prep
       if (.usa_gradiente(cfg)) {
         cap <- tryCatch(unlist(grDevices::dev.capabilities()$patterns), error = function(e) character(0))
         if (!"LinearGradient" %in% cap) {
@@ -110,10 +170,11 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
           if (!is.null(dados)) {
             gg <- plotar(dados, .sem_gradiente(cfg))
             if (transparente) gg <- .fundo_transparente(gg)
+            prep_f <- .preparar_saida(gg, cfg)
           }
         }
       }
-      print(gg)
+      .desenhar(prep_f, gg)
     }, finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
     saidas <- c(saidas, arq)
   }
@@ -127,9 +188,10 @@ visualizar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv
   ex <- cfg$exportacao
   fator <- switch(ex$unidade, cm = 1 / 2.54, mm = 1 / 25.4, `in` = 1)
   arq <- tempfile("previa_", fileext = ".png")
-  .abrir_dispositivo("png", arq, ex$largura * fator, ex$altura * fator, dpi, "white", usar_ragg = .ragg_ok(cfg))
+  prep <- .preparar_saida(g, cfg)
+  .abrir_dispositivo("png", arq, prep$larg, prep$alt, dpi, "white", usar_ragg = .ragg_ok(cfg))
   disp <- grDevices::dev.cur()
-  tryCatch(print(g), finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
+  tryCatch(.desenhar(prep, g), finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
   viewer <- getOption("viewer")
   if (!is.null(viewer)) {
     html <- tempfile("previa_", fileext = ".html")
@@ -140,7 +202,7 @@ visualizar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv
     file.copy(arq, file.path(dirname(html), basename(arq)), overwrite = TRUE)
     viewer(html)
   } else {
-    print(g)
+    .desenhar(prep, g)
   }
   invisible(arq)
 }

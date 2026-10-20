@@ -102,6 +102,11 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | Renomear item da legenda | `cfg$series[["B"]] <- list(nome_legenda = "Amostra B (25 °C)")` |
 | Moldura na legenda | `cfg$legenda$moldura <- TRUE; cfg$legenda$fundo <- "white"` |
 | Fundo, borda e sombra da legenda | `cfg$legenda$fundo <- "white"; cfg$legenda$fundo_opacidade <- 0.8; cfg$legenda$sombra <- TRUE` (no painel: bloco 11, `legenda_canto`, `legenda_sombra_*`) |
+| Legenda dentro da caixa, maior/menor, distância da borda | `cfg$legenda$escala <- 0.8; cfg$legenda$distancia_pt <- 8` (a legenda "dentro" que passa da caixa é reduzida sozinha; `ajustar_caixa <- FALSE` desliga). Painel: `legenda_escala`, `legenda_canto`, `legenda_distancia_pt` |
+| Gráfico em tamanho padrão (como o layer do Origin) | `cfg$caixa$painel_largura_cm <- 9; cfg$caixa$painel_altura_cm <- 6.5` — a caixa tem sempre esse tamanho e a página se ajusta ao conteúdo (`exportacao$ajustar_pagina`) |
+| Distância entre título e números dos eixos | `cfg$eixo_y$distancia_titulo_pt <- 8` (também `eixo_x`, `eixo_y2`; no painel `y_distancia_titulo_pt`...) |
+| Todos os pontos quadrados / formas à escolha | `cfg$cores$incrementar_simbolo <- FALSE; cfg$serie_padrao$simbolo <- "quadrado"` ou `cfg$cores$simbolos_ordem <- c("quadrado", "circulo")`. Painel: `simbolo_forma <- "quadrado"` |
+| Bolinha 3D (esfera, estilo Origin) | `cfg$series[["A"]] <- list(simbolo = "esfera")`; luz em `cfg$serie_padrao$esfera_luz`. Painel: `simbolo_forma_por_serie <- c("A" = "esfera")` |
 | Grade | `cfg$grade$maior_y <- TRUE` |
 | Grade com tipo, cor e transparência | `cfg$grade$maior_x <- TRUE; tipo_maior <- "dashed"; cor_maior <- "#1F4E9E"; opacidade_maior <- 0.4` |
 | Linha de referência | `cfg$referencias <- list(list(eixo = "y", valor = 0, tipo = "dashed"))` |
@@ -155,7 +160,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
 | `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 140 testes automáticos — rode depois de qualquer alteração no motor |
+| `06_testes.R` | 160 testes automáticos — rode depois de qualquer alteração no motor |
 | `painel_de_ajustes.R` | **o painel**: variáveis simples por categoria (escala, ticks, grade, quebra, cores...). Veja a seção 2.1 |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |

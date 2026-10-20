@@ -254,6 +254,12 @@ cfg$cores <- list(
   #   OPÇÕES: TRUE | FALSE (todas usam o símbolo de serie_padrao$simbolo)
   incrementar_simbolo = TRUE,
 
+  # simbolos_ordem: quais símbolos usar, na ordem, quando incrementar_simbolo = TRUE (repete se faltar).
+  #   NULL = a sequência padrão. Aceita nomes ou números: "circulo" | "quadrado" | "losango" | "triangulo" |
+  #   "triangulo_invertido" | "circulo_vazio" | "quadrado_vazio" | "cruz" | "x" | "estrela" | "esfera"
+  #   EX.: cfg$cores$simbolos_ordem <- c("quadrado", "circulo")   |   só quadrados: c("quadrado")
+  simbolos_ordem = NULL,
+
   # incrementar_tipo_linha: cada série recebe um tipo de linha diferente.
   #   OPÇÕES: TRUE | FALSE (todas sólidas, salvo definição por série)
   incrementar_tipo_linha = FALSE,
@@ -291,10 +297,16 @@ cfg$serie_padrao <- list(
   #   OPÇÕES: número de 0 a 25 (veja galeria())
   #   EX.: cfg$serie_padrao$simbolo <- 22
   simbolo = 21,
+  # (aceita também o nome: "circulo", "quadrado", "losango", "triangulo", "triangulo_invertido", "estrela", "esfera"...
+  #  "esfera" = bolinha com volume (sombreado e brilho), no estilo do Origin; use com preenchimento "serie".)
 
   # tamanho_simbolo_pt: tamanho do símbolo em pt.
   #   OPÇÕES: número > 0      EX.: cfg$serie_padrao$tamanho_simbolo_pt <- 8
   tamanho_simbolo_pt = 6,
+
+  # esfera_luz: de onde vem a luz nas esferas, c(x, y) de -1 a 1 (x < 0 = esquerda; y < 0 = embaixo).
+  #   EX.: cfg$serie_padrao$esfera_luz <- c(-0.4, 0.5)   (brilho em cima, à esquerda)
+  esfera_luz = c(-0.35, -0.45),
 
   # espessura_borda_pt: espessura do contorno do símbolo em pt.
   #   OPÇÕES: número >= 0
@@ -970,6 +982,11 @@ cfg$eixo_y2 <- list(
   #   OPÇÕES: NULL | número      EX.: cfg$eixo_y2$fator_divisao <- 1000
   fator_divisao = NULL,
 
+  # distancia_titulo_pt / distancia_rotulos_pt: espaço (pt) entre o título e os números do eixo secundário, e entre
+  #   os números e o eixo. NULL = o mesmo do eixo_y.      EX.: cfg$eixo_y2$distancia_titulo_pt <- 10
+  distancia_titulo_pt = NULL,
+  distancia_rotulos_pt = NULL,
+
   # cor_eixo: pinta números, título e ticks do eixo secundário.
   #   OPÇÕES: NULL (preto) | "serie" (cor da 1ª série do y2) | qualquer cor
   cor_eixo = "serie"
@@ -1001,6 +1018,13 @@ cfg$caixa <- list(
   # proporcao: altura/largura da área de plotagem. NULL = ocupa o espaço.
   #   OPÇÕES: NULL | número (1 = quadrado; 0.75 = 4:3)
   proporcao = NULL,
+
+  # painel_largura_cm / painel_altura_cm: tamanho FIXO da caixa do gráfico (a área dentro dos eixos), em cm,
+  #   igual em todos os gráficos (como o layer do Origin). Números, títulos e legenda ficam fora dela e a
+  #   página é ajustada para caber tudo (veja exportacao$ajustar_pagina). NULL = a caixa ocupa o que sobra da página.
+  #   EX.: cfg$caixa$painel_largura_cm <- 9; cfg$caixa$painel_altura_cm <- 6.5
+  painel_largura_cm = NULL,
+  painel_altura_cm = NULL,
 
   # margens_cm: margens externas c(topo, direita, baixo, esquerda) em cm.
   margens_cm = c(0.3, 0.5, 0.3, 0.3),
@@ -1108,6 +1132,20 @@ cfg$legenda <- list(
 
   # espacamento_pt: espaço vertical entre os itens.
   espacamento_pt = 2,
+
+  # escala: aumenta (> 1) ou diminui (< 1) a legenda inteira: texto, quadradinhos, espaços e folgas.
+  #   OPÇÕES: número > 0      EX.: cfg$legenda$escala <- 0.8
+  escala = 1,
+
+  # distancia_pt: com a legenda "dentro", distância (pt) entre ela e a borda da caixa, para dentro:
+  #   um número (vale para os dois lados) ou c(horizontal, vertical). NULL = pela posição dentro_x/dentro_y.
+  #   EX.: cfg$legenda$distancia_pt <- c(8, 6)    (use com ancora/canto: a legenda encosta no canto mais próximo)
+  distancia_pt = NULL,
+
+  # ajustar_caixa: TRUE = se a legenda "dentro" for maior que a caixa do gráfico, ela é reduzida até caber
+  #   (nunca aumenta). FALSE = tamanho exatamente como pedido, mesmo que passe da caixa.
+  #   OPÇÕES: TRUE | FALSE
+  ajustar_caixa = TRUE,
 
   # margem_interna_pt: folga entre o texto da legenda e a sua moldura: c(cima, direita,
   #   baixo, esquerda), em pt.
@@ -1325,6 +1363,12 @@ cfg$exportacao <- list(
 
   # fundo_transparente: OPÇÕES: TRUE | FALSE
   fundo_transparente = FALSE,
+
+  # ajustar_pagina: com caixa$painel_largura_cm/painel_altura_cm, a página do arquivo se ajusta ao conteúdo (caixa
+  #   do tamanho pedido + números, títulos e legenda), sem cortar nada; largura/altura acima não são usadas.
+  #   FALSE = página sempre de largura x altura (a caixa fica centralizada; avisa se não couber).
+  #   OPÇÕES: TRUE | FALSE
+  ajustar_pagina = TRUE,
 
   # carimbo_data: acrescenta data e hora ao nome do arquivo.  OPÇÕES: TRUE | FALSE
   carimbo_data = FALSE,
@@ -2067,6 +2111,13 @@ colunas <- function(dados) {
   for (k in c("fundo_opacidade", "sombra_opacidade"))
     if (!is.null(lg[[k]]) && (!is.numeric(lg[[k]]) || length(lg[[k]]) != 1 || lg[[k]] < 0 || lg[[k]] > 1))
       .erro("cfg$legenda$", k, " deve ser um número entre 0 e 1.")
+  for (k in c("painel_largura_cm", "painel_altura_cm"))
+    if (!is.null(cfg$caixa[[k]]) && (!is.numeric(cfg$caixa[[k]]) || length(cfg$caixa[[k]]) != 1 || cfg$caixa[[k]] <= 0))
+      .erro("cfg$caixa$", k, " deve ser um número maior que 0 (cm).")
+  if (!is.null(lg$escala) && (!is.numeric(lg$escala) || length(lg$escala) != 1 || lg$escala <= 0))
+    .erro("cfg$legenda$escala deve ser um número maior que 0 (ex.: 0.8).")
+  if (!is.null(lg$distancia_pt) && (!is.numeric(lg$distancia_pt) || !length(lg$distancia_pt) %in% 1:2 || any(lg$distancia_pt < 0)))
+    .erro("cfg$legenda$distancia_pt deve ser um número >= 0 ou c(horizontal, vertical), em pt.")
   if (!is.null(lg$alinhar)) {
     lado <- if (lg$posicao %in% c("direita", "esquerda")) c("topo", "centro", "base") else c("esquerda", "centro", "direita")
     if (lg$posicao != "dentro" && !lg$alinhar %in% lado)
@@ -2120,8 +2171,9 @@ colunas <- function(dados) {
     p <- cfg$serie_padrao
     cor <- .cor(s$cor %||% cores[i], paste0("series '", it, "'"))
     cor2 <- .cor(s$cor2 %||% cfg$cores$gradiente_cor2, paste0("series '", it, "' cor2"))
-    simb <- s$simbolo %||% (if (isTRUE(cfg$cores$incrementar_simbolo))
-      .SIMBOLOS_INC[(i - 1) %% length(.SIMBOLOS_INC) + 1] else p$simbolo)
+    ordem <- cfg$cores$simbolos_ordem %||% .SIMBOLOS_INC
+    simb <- .simbolo_codigo(s$simbolo %||% (if (isTRUE(cfg$cores$incrementar_simbolo))
+      ordem[(i - 1) %% length(ordem) + 1] else p$simbolo), paste0("símbolo de '", it, "'"))
     lt <- s$linha_tipo %||% (if (isTRUE(cfg$cores$incrementar_tipo_linha))
       .LINHAS_INC[(i - 1) %% length(.LINHAS_INC) + 1] else p$linha_tipo)
     ps <- s$preenchimento_simbolo %||% p$preenchimento_simbolo
@@ -2367,6 +2419,14 @@ colunas <- function(dados) {
       ini <- e$primeiro_tick %||% lo
       n <- floor((hi - ini) / e$incremento + 1e-9)
       if (n > 1000) .erro("incremento muito pequeno: geraria ", n, " ticks.")
+      if (n > 40 && is.null(tempo)) {            # intervalo pequeno demais para a faixa: os números se sobreporiam
+        passo <- .passo_bonito((hi - ini) / 8)
+        .aviso("O intervalo ", e$incremento, " gera ", n + 1, " traços entre ", signif(ini, 6), " e ", signif(hi, 6),
+               " (os números ficariam um sobre o outro); usando ", passo, " neste eixo. ",
+               "Com quebra de eixo, defina o intervalo de cada parte (quebra_y_intervalo_* / quebra_y2_intervalo_*).")
+        e$incremento <- passo
+        n <- floor((hi - ini) / passo + 1e-9)
+      }
       maiores <- round(ini + (0:max(n, 0)) * e$incremento, 12)
     }
   } else if (modo == "quantidade") {
@@ -2434,6 +2494,13 @@ colunas <- function(dados) {
   tl <- sort(ax$trans$transform(ax$limites))
   r <- tl + c(-1, 1) * diff(tl) * ax$mult
   (ax$trans$transform(v) - r[1]) / diff(r)
+}
+
+# Passo "redondo" (1, 2, 2.5, 5 x 10^k) mais próximo de 'alvo'.
+.passo_bonito <- function(alvo) {
+  if (!is.finite(alvo) || alvo <= 0) return(1)
+  k <- 10^floor(log10(alvo)); m <- alvo / k
+  k * c(1, 2, 2.5, 5, 10)[which.min(abs(c(1, 2, 2.5, 5, 10) - m))]
 }
 
 # -----------------------------------------------------------------------------
@@ -2694,10 +2761,14 @@ colunas <- function(dados) {
     element_line(colour = .alfa(.cor(cor, "grade"), opac), linewidth = .lw(esp), linetype = tipo)
   }
   t <- t + theme(
-    panel.grid.major.x = gl(lados$grade_x_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior, gr$opacidade_maior),
-    panel.grid.major.y = gl(lados$grade_y_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior, gr$opacidade_maior),
-    panel.grid.minor.x = gl(lados$grade_x_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor, gr$opacidade_menor),
-    panel.grid.minor.y = gl(lados$grade_y_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor, gr$opacidade_menor))
+    panel.grid.major.x = gl(lados$grade_x_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior,
+                            gr$opacidade_maior),
+    panel.grid.major.y = gl(lados$grade_y_maior, gr$cor_maior, gr$espessura_maior_pt, gr$tipo_maior,
+                            gr$opacidade_maior),
+    panel.grid.minor.x = gl(lados$grade_x_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor,
+                            gr$opacidade_menor),
+    panel.grid.minor.y = gl(lados$grade_y_menor, gr$cor_menor, gr$espessura_menor_pt, gr$tipo_menor,
+                            gr$opacidade_menor))
   if (sem_eixos) {
     t <- t + theme(axis.text = element_blank(), axis.title = element_blank(),
                    axis.ticks = element_blank(), axis.line = element_blank(),
@@ -2766,20 +2837,26 @@ colunas <- function(dados) {
     attr(caixa, "sombra") <- list(cor = .alfa(.cor(lg$sombra_cor), lg$sombra_opacidade), dx = d[1], dy = d[2])
     class(caixa) <- c("element_sombra", class(caixa))
   }
+  esc <- lg$escala %||% 1                      # aumenta/diminui tudo na legenda: texto, quadradinhos, espaços e folgas
   t <- theme(
     legend.position = pos,
     legend.background = caixa,
     legend.key = element_rect(fill = NA, colour = NA),
-    legend.key.size = unit(lg$tamanho_chave_pt, "pt"),
-    legend.key.spacing.y = unit(lg$espacamento_pt, "pt"),
-    legend.text = element_text(size = lg$tamanho_texto_pt %||% tx$tamanho_base_pt),
+    legend.key.size = unit(lg$tamanho_chave_pt * esc, "pt"),
+    legend.key.spacing.y = unit(lg$espacamento_pt * esc, "pt"),
+    legend.text = element_text(size = (lg$tamanho_texto_pt %||% tx$tamanho_base_pt) * esc),
     legend.title = if (is.null(lg$titulo)) element_blank() else
-      element_text(size = lg$tamanho_titulo_pt %||% tx$tamanho_base_pt),
-    legend.margin = do.call(margin, as.list(lg$margem_interna_pt)))
+      element_text(size = (lg$tamanho_titulo_pt %||% tx$tamanho_base_pt) * esc),
+    legend.margin = do.call(margin, as.list(lg$margem_interna_pt * esc)))
   if (pos == "inside") {
     anc <- if (identical(lg$ancora, "auto")) c(lg$dentro_x, lg$dentro_y) else lg$ancora
     t <- t + theme(legend.position.inside = c(lg$dentro_x, lg$dentro_y),
                    legend.justification.inside = anc)
+    if (!is.null(lg$distancia_pt)) {            # distância da legenda até a borda da caixa, em pt (para dentro)
+      d <- rep_len(lg$distancia_pt, 2)
+      t <- t + theme(legend.box.margin = margin(t = if (anc[2] > 0.5) d[2] else 0, r = if (anc[1] > 0.5) d[1] else 0,
+                                                b = if (anc[2] < 0.5) d[2] else 0, l = if (anc[1] < 0.5) d[1] else 0))
+    }
   }
   if (pos %in% c("top", "bottom")) t <- t + theme(legend.direction = "horizontal")
   if (!is.null(lg$direcao)) t <- t + theme(legend.direction = lg$direcao)
@@ -3020,7 +3097,8 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   # quebra de eixo sem ligar através: cada série só mostra os valores desta parte (Y1 e Y2 têm faixas próprias)
   rec <- cfg$.interno$recortar_y; rec2 <- cfg$.interno$recortar_y2 %||% rec
   if (!is.null(rec)) {
-    r <- if (length(ser_y2)) { e2 <- d$serie %in% ser_y2; list(lo = ifelse(e2, rec2[1], rec[1]), hi = ifelse(e2, rec2[2], rec[2])) }
+    r <- if (length(ser_y2)) { e2 <- d$serie %in% ser_y2; list(lo = ifelse(e2, rec2[1], rec[1]),
+                                                               hi = ifelse(e2, rec2[2], rec[2])) }
          else list(lo = rec[1], hi = rec[2])
     d <- d[is.na(d$y) | (d$y >= r$lo & d$y <= r$hi), ]
   }
@@ -3146,10 +3224,18 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
                                                   na.rm = TRUE)   # células vazias: sem aviso em inglês
       aes_leg <- unique(c(aes_leg, "shape", "size", "stroke"))
     } else {
-      cam[[length(cam) + 1]] <- geom_point(data = d, aes(x = x, y = y, colour = serie, fill = serie,
+      esf <- ycols[vapply(est[ycols], function(e) isTRUE(e$simbolo == .COD_ESFERA), NA)]   # séries "esfera"
+      if (length(setdiff(ycols, esf)))
+      cam[[length(cam) + 1]] <- geom_point(data = d[!d$serie %in% esf, ],
+                                           aes(x = x, y = y, colour = serie, fill = serie,
                                                          shape = serie, size = serie, stroke = serie, alpha = serie),
-        show.legend = TRUE, na.rm = TRUE)   # na.rm: células vazias do CSV não geram aviso em inglês
-      aes_leg <- unique(c(aes_leg, "colour", "fill_simb", "shape", "size", "stroke", "alpha"))
+        show.legend = TRUE, na.rm = TRUE, key_glyph = .draw_key_ponto_ou_nada)   # na.rm: células vazias sem aviso
+      if (length(esf))
+        cam[[length(cam) + 1]] <- geom_esfera(data = d[d$serie %in% esf, ], luz = cfg$serie_padrao$esfera_luz,
+          mapping = aes(x = x, y = y, colour = serie, shape = serie, size = serie, stroke = serie), show.legend = TRUE)
+      aes_leg <- unique(c(aes_leg, "colour", "shape", "size", "stroke",
+                          if (length(setdiff(ycols, esf))) c("fill_simb",
+                                                             "alpha")))   # só esferas: sem escalas de fill/alpha
     }
   }
   # rótulos de dados
@@ -3966,9 +4052,11 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   g <- g + .tema(cfg, eh, ev, lados, cor_y2 = if (!is.null(info$y2)) .cor(info$y2$cor) else NULL)
   if (!is.null(info$y2)) {
     # estilo de rótulos do y2: casas/notação próprias já nos rótulos; mostra sempre
-    g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, list(mostrar_rotulos = TRUE)), cfg, "right",
+    d2 <- Filter(Negate(is.null), cfg$eixo_y2[c("distancia_titulo_pt", "distancia_rotulos_pt")])   # distâncias do Y2
+    g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, c(list(mostrar_rotulos = TRUE), d2)), cfg,
+                                                    "right",
                                                     .cor(info$y2$cor)),
-                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, list(mostrar_titulo = !isTRUE(cfg$.interno$sem_titulo_y2))), cfg, "right",
+                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, c(list(mostrar_titulo = !isTRUE(cfg$.interno$sem_titulo_y2)), d2)), cfg, "right",
                                                      .cor(info$y2$cor)))
   }
   if (y_dir && espelhar) {
@@ -3983,6 +4071,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
     if (!is.null(tm)) g <- g + tm
   }
   if (!mostrar_leg) g <- g + theme(legend.position = "none")
+  else g <- .ajustar_legenda(g, cfg)
   attr(g, "info") <- info
   g
 }
@@ -4150,8 +4239,14 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   if (!is.null(y2)) {
     lim2 <- y2$ax$limites
     de2 <- Q$y2_de %||% y2$para2(Q$de); ate2 <- Q$y2_ate %||% y2$para2(Q$ate)
+    if (is.null(Q$y2_de) && is.null(Q$y2_ate)) {     # divisa derivada do Y1: arredonda para números "redondos" (sem 0.373714286)
+      passo <- .passo_bonito(diff(lim2) / 25)
+      d3 <- ceiling(de2 / passo - 1e-9) * passo; a3 <- floor(ate2 / passo + 1e-9) * passo
+      if (d3 < a3 && d3 > lim2[1] && a3 < lim2[2]) { de2 <- d3; ate2 <- a3 }
+    }
     if (de2 >= ate2) .erro("cfg$quebra: no eixo Y da direita defina y2_de < y2_ate (ex.: y2_de = 2000, y2_ate = 6000).")
-    if (de2 <= lim2[1] || ate2 >= lim2[2]) .erro("cfg$quebra: o trecho omitido do eixo Y da direita (", de2, " a ", ate2,
+    if (de2 <= lim2[1] || ate2 >= lim2[2]) .erro("cfg$quebra: o trecho omitido do eixo Y da direita (", de2, " a ",
+                                                 ate2,
                                                  ") precisa estar dentro do eixo (", lim2[1], " a ", lim2[2], ").")
     inferior$eixo_y2$inicio <- lim2[1]; inferior$eixo_y2$fim <- de2
     superior$eixo_y2$inicio <- ate2; superior$eixo_y2$fim <- lim2[2]
@@ -4168,21 +4263,20 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
       if (!is.null(y2)) ck$.interno$recortar_y2 <- c(ck$eixo_y2$inicio, ck$eixo_y2$fim)
     }
     ck$eixo_y$mostrar_titulo <- FALSE
+    ck$.interno$fracao_altura <- if (parte == "superior") Q$proporcao_superior else 1 - Q$proporcao_superior
     if (!is.null(y2)) ck$.interno$sem_titulo_y2 <- TRUE   # o título do Y2 vai uma vez só, ao lado das duas partes
     # intervalo entre os ticks de cada parte (NULL = automático)
     inc <- Q[[paste0("incremento_", parte)]]; inc2 <- Q[[paste0("y2_incremento_", parte)]]
     if (!is.null(inc)) { ck$eixo_y$ticks_modo <- "incremento"; ck$eixo_y$incremento <- inc }
     if (!is.null(inc2) && !is.null(y2)) { ck$eixo_y2$ticks_modo <- "incremento"; ck$eixo_y2$incremento <- inc2 }
-    if (continuo) {
-      ck$caixa$proporcao <- NULL                       # as alturas das partes seguem proporcao_superior
-      if (isTRUE(cfg$exportacao$fundo_transparente)) { ck$caixa$fundo_pagina <- "transparente"; ck$caixa$fundo_painel <- "transparente" }
-      if (parte == "inferior") ck$eixo_y$.ocultar_extremo <- "max"   # o número da divisa aparece só uma vez
-    }
+    ck$caixa$proporcao <- NULL                         # as alturas das partes seguem proporcao_superior
+    if (isTRUE(cfg$exportacao$fundo_transparente)) { ck$caixa$fundo_pagina <- "transparente"; ck$caixa$fundo_painel <- "transparente" }
+    if (continuo && parte == "inferior") ck$eixo_y$.ocultar_extremo <- "max"   # o número da divisa aparece só uma vez
     if (parte == "superior") {
-      ck$caixa$margens_cm <- c(m[1], m[2], esp, m[4])
+      ck$caixa$margens_cm <- c(m[1], 0, esp, 0)
       ck$eixo_x$mostrar_rotulos <- FALSE; ck$eixo_x$mostrar_titulo <- FALSE
     } else {
-      ck$caixa$margens_cm <- c(esp, m[2], m[3], m[4])
+      ck$caixa$margens_cm <- c(esp, 0, m[3], 0)
       ck$legenda$mostrar <- FALSE; ck$titulos$titulo <- NULL; ck$titulos$subtitulo <- NULL
       ck$anotacoes$letra <- NULL
     }
@@ -4191,10 +4285,7 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   gs <- .plotar_um(dados, ajustar_parte(superior, "superior", c(Q$ate, lim[2])))
   gi <- .plotar_um(dados, ajustar_parte(inferior, "inferior", c(lim[1], Q$de)))
   pr <- Q$proporcao_superior
-  if (continuo) {
-    pw <- .quebra_continua(gs, gi, cfg, Q, pr)
-  } else {
-  if (isTRUE(Q$marcas)) {
+  if (!continuo && isTRUE(Q$marcas)) {
     marca <- function(y) {
       gp <- gpar(col = cfg$caixa$cor, lwd = .lw(cfg$caixa$espessura_pt) * ggplot2::.pt)
       dx <- unit(Q$marca_largura_pt, "pt"); dy <- unit(Q$marca_altura_pt, "pt")
@@ -4205,16 +4296,9 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
     gs <- gs + annotation_custom(marca(0), -Inf, Inf, -Inf, Inf)
     gi <- gi + annotation_custom(marca(1), -Inf, Inf, -Inf, Inf)
   }
-  pw <- patchwork::wrap_plots(gs, gi, ncol = 1, heights = c(pr, 1 - pr))
-  }
-  tit <- inf$titulo_y
-  if (isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(tit, ""))
-    pw <- patchwork::wrap_plots(.rotulo_lateral(tit, cfg, TRUE), pw, nrow = 1,
-                                widths = grid::unit(c(1.6, 1), c("lines", "null")))
-  if (!is.null(y2) && isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(y2$titulo, ""))
-    pw <- patchwork::wrap_plots(pw, .rotulo_lateral(y2$titulo, cfg, TRUE, direita = TRUE, cor = .cor(y2$cor)), nrow = 1,
-                                widths = grid::unit(c(1, 1.6), c("null", "lines")))
-  if (continuo) attr(pw, "quebra_continua") <- TRUE   # o salvar() refaz a figura se o fundo for transparente
+  pw <- .quebra_montar(gs, gi, cfg, Q, pr, continuo, inf$titulo_y, y2)
+  attr(pw, "partes") <- list(gs, gi)
+  attr(pw, "quebra_gtable") <- TRUE   # o salvar() refaz a figura se o fundo for transparente
   pw
 }
 
@@ -4229,23 +4313,29 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
 #  com o ggplot2), pois o patchwork não sabe desenhar uma moldura que atravessa dois gráficos.
 # =============================================================================
 
-# Entra: as duas partes (ggplot), cfg, cfg$quebra e a proporção da parte de cima (0 a 1).
-# Sai: um elemento do patchwork com as duas partes empilhadas, sem espaço entre elas, e a moldura contínua.
-.quebra_continua <- function(gs, gi, cfg, Q, pr) {
-  if (!requireNamespace("gtable", quietly = TRUE)) .erro("A quebra contínua precisa do pacote gtable (vem com o ggplot2).")
+# Entra: as duas partes (ggplot), cfg, cfg$quebra, a proporção da parte de cima (0 a 1), o estilo (continuo: TRUE) e os
+#   títulos laterais (título do Y e info do Y2).
+# Sai: um elemento do patchwork com as duas partes empilhadas (gtable). No estilo contínuo ficam coladas, com uma moldura
+#   só; no separado cada uma tem a sua moldura. Os títulos dos eixos Y ficam ao lado, à distância pedida dos números.
+#   O gtable também vai no atributo "gt" (usado para fixar o tamanho do gráfico).
+.quebra_montar <- function(gs, gi, cfg, Q, pr, continuo, tit_y1 = NULL, y2 = NULL) {
+  if (!requireNamespace("gtable",
+                        quietly = TRUE)) .erro("A quebra de eixo precisa do pacote gtable (vem com o ggplot2).")
   zero <- unit(0, "pt")
   if (is.null(grDevices::dev.list())) {           # ggplotGrob() precisa de um dispositivo: usa um nulo, sem arquivo
     grDevices::pdf(NULL); on.exit(grDevices::dev.off(), add = TRUE)
   }
-  # a moldura e as linhas dos eixos são desenhadas por cima (um traço só); aqui somem as de cada parte
-  sem_linhas <- theme(panel.border = element_blank(), axis.line.x.bottom = element_blank(),
-                      axis.line.x.top = element_blank(), axis.line.y.left = element_blank(),
-                      axis.line.y.right = element_blank())
-  gs <- gs + sem_linhas + theme(axis.ticks.x.bottom = element_blank(), axis.ticks.length.x.bottom = zero,
-                                axis.minor.ticks.x.bottom = element_blank(), axis.minor.ticks.length.x.bottom = zero)
-  gi <- gi + sem_linhas + theme(axis.ticks.x.top = element_blank(), axis.ticks.length.x.top = zero,
-                                axis.minor.ticks.x.top = element_blank(), axis.minor.ticks.length.x.top = zero,
-                                axis.text.x.top = element_blank(), axis.title.x.top = element_blank())
+  if (continuo) {
+    # a moldura e as linhas dos eixos são desenhadas por cima (um traço só); aqui somem as de cada parte
+    sem_linhas <- theme(panel.border = element_blank(), axis.line.x.bottom = element_blank(),
+                        axis.line.x.top = element_blank(), axis.line.y.left = element_blank(),
+                        axis.line.y.right = element_blank())
+    gs <- gs + sem_linhas + theme(axis.ticks.x.bottom = element_blank(), axis.ticks.length.x.bottom = zero,
+                                  axis.minor.ticks.x.bottom = element_blank(), axis.minor.ticks.length.x.bottom = zero)
+    gi <- gi + sem_linhas + theme(axis.ticks.x.top = element_blank(), axis.ticks.length.x.top = zero,
+                                  axis.minor.ticks.x.top = element_blank(), axis.minor.ticks.length.x.top = zero,
+                                  axis.text.x.top = element_blank(), axis.title.x.top = element_blank())
+  }
   ts <- ggplot2::ggplotGrob(gs); ti <- ggplot2::ggplotGrob(gi)
   # legenda à direita/esquerda existe só na parte de cima: dá à de baixo as mesmas colunas, vazias
   falta <- ncol(ts) - ncol(ti)
@@ -4254,16 +4344,44 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
       gtable::gtable_add_cols(ti, ts$widths[seq_len(falta)], pos = 0)
     else gtable::gtable_add_cols(ti, ts$widths[(ncol(ti) + 1):ncol(ts)], pos = -1)
   }
-  if (ncol(ts) != ncol(ti)) .erro("Quebra contínua: as duas partes ficaram com colunas diferentes. ",
-                                  "Tente cfg$legenda$posicao <- \"dentro\" ou cfg$quebra$estilo <- \"separado\".")
+  if (ncol(ts) != ncol(ti)) .erro("Quebra de eixo: as duas partes ficaram com colunas diferentes. ",
+                                  "Tente cfg$legenda$posicao <- \"dentro\".")
   gt <- rbind(ts, ti, size = "max")
   pan <- gt$layout[gt$layout$name == "panel", ]
   pan <- pan[order(pan$t), ]
   gt$heights[pan$t[1]] <- unit(pr, "null"); gt$heights[pan$t[2]] <- unit(1 - pr, "null")
-  moldura <- .moldura_quebra(cfg, Q, pr)
-  gt <- gtable::gtable_add_grob(gt, moldura, t = pan$t[1], b = pan$b[2], l = pan$l[1], r = pan$r[1],
-                                clip = "off", z = Inf, name = "moldura-quebra")
-  patchwork::wrap_elements(full = gt)
+  if (continuo) {
+    moldura <- .moldura_quebra(cfg, Q, pr)
+    gt <- gtable::gtable_add_grob(gt, moldura, t = pan$t[1], b = pan$b[2], l = pan$l[1], r = pan$r[1],
+                                  clip = "off", z = Inf, name = "moldura-quebra")
+  }
+  # títulos dos eixos Y ao lado das duas partes (centrados nas duas), com a distância pedida dos números
+  titulo_lateral <- function(gt, texto, e, lado, cor) {
+    d <- e$distancia_titulo_pt %||% 4
+    gp <- gpar(fontsize = e$tamanho_titulo_pt %||% cfg$texto$tamanho_base_pt,
+               fontface = if (isTRUE(e$negrito_titulo)) "bold" else "plain",
+               fontfamily = .fonte(cfg$texto$fonte), col = cor %||% e$cor_titulo %||% cfg$texto$cor)
+    rot <- if (lado == "esq") 90 else -90
+    lab <- .texto(texto, isTRUE(e$negrito_titulo))
+    largura <- grid::grobWidth(textGrob(lab, rot = rot, gp = gp)) + unit(d, "pt")
+    desl <- unit(if (lado == "esq") -d / 2 else d / 2, "pt")
+    tg <- textGrob(lab, rot = rot, x = unit(0.5, "npc") + desl, gp = gp)
+    pos <- if (lado == "esq") 0 else -1
+    gt <- gtable::gtable_add_cols(gt, largura, pos = pos)
+    gtable::gtable_add_grob(gt, tg, t = pan$t[1], b = pan$b[2], l = if (lado == "esq") 1 else ncol(gt),
+                            r = if (lado == "esq") 1 else ncol(gt), clip = "off", name = paste0("titulo-y-", lado))
+  }
+  if (isTRUE(cfg$eixo_y$mostrar_titulo) && !is.null(tit_y1) && !identical(tit_y1, ""))
+    gt <- titulo_lateral(gt, tit_y1, cfg$eixo_y, "esq", NULL)
+  if (!is.null(y2) && isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(y2$titulo, ""))
+    gt <- titulo_lateral(gt, y2$titulo, utils::modifyList(cfg$eixo_y, cfg$eixo_y2[c("distancia_titulo_pt")[
+      !is.null(cfg$eixo_y2$distancia_titulo_pt)]]), "dir", .cor(y2$cor))
+  m <- cfg$caixa$margens_cm                          # margem externa esquerda/direita (as partes ficam sem ela)
+  gt <- gtable::gtable_add_cols(gt, unit(m[4], "cm"), pos = 0)
+  gt <- gtable::gtable_add_cols(gt, unit(m[2], "cm"), pos = -1)
+  w <- patchwork::wrap_elements(full = gt)
+  attr(w, "gt") <- gt
+  w
 }
 
 # Moldura contínua com as barras "//" no ponto da quebra (coordenadas relativas às duas partes juntas).
@@ -4355,6 +4473,64 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   cfg
 }
 
+# Tamanho de saída. Sem painel de tamanho fixo: o da página (cfg$exportacao). Com cfg$caixa$painel_largura_cm /
+# painel_altura_cm: a caixa do gráfico fica EXATAMENTE nesse tamanho, e a página cresce (ou encolhe) para caber
+# números, títulos e legenda sem cortar nada (exportacao$ajustar_pagina = TRUE) — o gráfico tem o mesmo tamanho
+# em todos os arquivos. Entra: g e cfg. Sai: list(grob = NULL | gtable pronto para desenhar, larg, alt em polegadas).
+.preparar_saida <- function(g, cfg) {
+  pg <- .tamanho_pagina_in(cfg)
+  cx <- cfg$caixa
+  pw <- cx$painel_largura_cm; ph <- cx$painel_altura_cm
+  if (is.null(pw) && is.null(ph)) return(list(grob = NULL, larg = pg[1], alt = pg[2]))
+  if (is.null(ph) && !is.null(pw) && !is.null(cx$proporcao)) ph <- pw * cx$proporcao
+  if (is.null(pw) && !is.null(ph) && !is.null(cx$proporcao)) pw <- ph / cx$proporcao
+  gt <- attr(g, "gt")
+  if (is.null(gt)) {
+    if (inherits(g, "patchwork")) {
+      .aviso("caixa$painel_largura_cm/painel_altura_cm não valem para painéis empilhados; tamanho da página usado.")
+      return(list(grob = NULL, larg = pg[1], alt = pg[2]))
+    }
+    if (is.null(grDevices::dev.list())) { grDevices::pdf(NULL); on.exit(grDevices::dev.off(), add = TRUE) }
+    gt <- ggplot2::ggplotGrob(g)
+  }
+  pan <- gt$layout[gt$layout$name == "panel", ]
+  pan <- pan[order(pan$t, pan$l), ]
+  cols <- sort(unique(unlist(Map(seq, pan$l, pan$r)))); linhas <- sort(unique(unlist(Map(seq, pan$t, pan$b))))
+  if (!is.null(pw) && length(cols) == 1) gt$widths[cols] <- grid::unit(pw, "cm")
+  if (!is.null(ph)) {
+    if (length(linhas) == 1) gt$heights[linhas] <- grid::unit(ph, "cm")
+    else if (length(linhas) == 2) {                      # quebra de eixo: a altura se divide entre as duas partes
+      pr <- cfg$quebra$proporcao_superior %||% 0.5
+      gt$heights[linhas] <- grid::unit(c(ph * pr, ph * (1 - pr)), "cm")
+    }
+  }
+  gt$respect <- FALSE
+  dev_ant <- grDevices::dev.cur()
+  if (.tem("ragg")) ragg::agg_capture(width = 10, height = 10, units = "in", res = 72) else grDevices::pdf(NULL)
+  dev_nosso <- grDevices::dev.cur()
+  tam <- tryCatch({
+    soma <- function(u, f) if (any(grid::unitType(u) == "null")) NA_real_ else f(sum(u), "in", valueOnly = TRUE)
+    c(soma(gt$widths, grid::convertWidth), soma(gt$heights, grid::convertHeight))
+  }, finally = if (dev_nosso %in% grDevices::dev.list()) grDevices::dev.off(dev_nosso))
+  if (dev_ant %in% grDevices::dev.list()) grDevices::dev.set(dev_ant)
+  if (isTRUE(cfg$exportacao$ajustar_pagina %||% TRUE)) {
+    larg <- if (is.na(tam[1])) pg[1] else tam[1]; alt <- if (is.na(tam[2])) pg[2] else tam[2]
+  } else {
+    larg <- pg[1]; alt <- pg[2]
+    if (!is.na(tam[1]) && tam[1] > larg * 1.005 || !is.na(tam[2]) && tam[2] > alt * 1.005)
+      .aviso("O gráfico (caixa de tamanho fixo + números, títulos e legenda) tem ", round(tam[1] * 2.54, 1), " x ",
+             round(tam[2] * 2.54, 1), " cm e não cabe na página de ", round(pg[1] * 2.54, 1), " x ",
+             round(pg[2] * 2.54,
+                   1), " cm: parte será cortada. Aumente a página ou use exportacao$ajustar_pagina <- TRUE.")
+  }
+  list(grob = gt, larg = larg, alt = alt)
+}
+
+# Desenha o gráfico no dispositivo aberto: o gtable de tamanho fixo (se houver) ou o objeto como está.
+.desenhar <- function(prep, g) {
+  if (is.null(prep$grob)) print(g) else { grid::grid.newpage(); grid::grid.draw(prep$grob) }
+}
+
 #' Exporta o gráfico nos formatos de cfg$exportacao
 # Deixa transparentes o fundo da página e o do painel SEM refazer o gráfico, para não perder o que
 # o usuário somou ao objeto (+ theme(), + labs(), + camadas). Serve para ggplot e para patchwork.
@@ -4381,9 +4557,11 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
   transparente <- isTRUE(ex$fundo_transparente)
   if (transparente) {
     # quebra contínua: as partes têm fundo próprio e só nascem transparentes ao montar o gráfico
-    if (isTRUE(attr(g, "quebra_continua")) && !is.null(dados)) g <- plotar(dados, cfg)
+    if (isTRUE(attr(g, "quebra_gtable")) && !is.null(dados)) g <- plotar(dados, cfg)
     g <- .fundo_transparente(g)
   }
+  prep <- .preparar_saida(g, cfg)
+  larg <- prep$larg; alt <- prep$alt
   saidas <- character(0)
   for (f in tolower(ex$formatos)) {
     ext <- switch(f, jpeg = "jpg", f)
@@ -4398,7 +4576,7 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
     .abrir_dispositivo(f, arq, larg, alt, ex$dpi, fundo, usar_ragg = .ragg_ok(cfg))
     disp <- grDevices::dev.cur()
     tryCatch({
-      gg <- g
+      gg <- g; prep_f <- prep
       if (.usa_gradiente(cfg)) {
         cap <- tryCatch(unlist(grDevices::dev.capabilities()$patterns), error = function(e) character(0))
         if (!"LinearGradient" %in% cap) {
@@ -4408,10 +4586,11 @@ salvar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv()),
           if (!is.null(dados)) {
             gg <- plotar(dados, .sem_gradiente(cfg))
             if (transparente) gg <- .fundo_transparente(gg)
+            prep_f <- .preparar_saida(gg, cfg)
           }
         }
       }
-      print(gg)
+      .desenhar(prep_f, gg)
     }, finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
     saidas <- c(saidas, arq)
   }
@@ -4425,9 +4604,10 @@ visualizar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv
   ex <- cfg$exportacao
   fator <- switch(ex$unidade, cm = 1 / 2.54, mm = 1 / 25.4, `in` = 1)
   arq <- tempfile("previa_", fileext = ".png")
-  .abrir_dispositivo("png", arq, ex$largura * fator, ex$altura * fator, dpi, "white", usar_ragg = .ragg_ok(cfg))
+  prep <- .preparar_saida(g, cfg)
+  .abrir_dispositivo("png", arq, prep$larg, prep$alt, dpi, "white", usar_ragg = .ragg_ok(cfg))
   disp <- grDevices::dev.cur()
-  tryCatch(print(g), finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
+  tryCatch(.desenhar(prep, g), finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
   viewer <- getOption("viewer")
   if (!is.null(viewer)) {
     html <- tempfile("previa_", fileext = ".html")
@@ -4438,7 +4618,7 @@ visualizar <- function(g, cfg = attr(g, "cfg") %||% get("cfg", envir = globalenv
     file.copy(arq, file.path(dirname(html), basename(arq)), overwrite = TRUE)
     viewer(html)
   } else {
-    print(g)
+    .desenhar(prep, g)
   }
   invisible(arq)
 }
@@ -4562,7 +4742,8 @@ registrar_fonte <- function(nome, pasta = NULL, arquivos = NULL) {
   if (is.null(reg) || is.na(reg) || !file.exists(reg))
     .erro("registrar_fonte: não achei o arquivo \"", nome, "-Regular.ttf\" em '", pasta %||% "", "'.\n",
           "  Arquivos .ttf/.otf encontrados lá: ",
-          paste(utils::head(basename(list.files(pasta %||% ".", pattern = "\\.(ttf|otf)$", recursive = TRUE, ignore.case = TRUE)), 8),
+          paste(utils::head(basename(list.files(pasta %||% ".", pattern = "\\.(ttf|otf)$", recursive = TRUE,
+                                                ignore.case = TRUE)), 8),
                 collapse = ", "),
           "\n  Use os arquivos estáticos (Barlow-Regular.ttf...), não o arquivo de fonte variável (com colchetes no nome).")
   pega <- function(k) { v <- arquivos[k]; if (length(v) && !is.na(v) && file.exists(v)) unname(v) else reg }
@@ -4639,6 +4820,9 @@ registrar_fonte <- function(nome, pasta = NULL, arquivos = NULL) {
   linha_espessura_pt = c("serie_padrao",
                          "linha_espessura_pt"), simbolo_tamanho_pt = c("serie_padrao", "tamanho_simbolo_pt"),
   simbolo_borda_pt = c("serie_padrao", "espessura_borda_pt"),
+  simbolo_forma = c("serie_padrao", "simbolo"), simbolo_variar = c("cores", "incrementar_simbolo"),
+  simbolos_ordem = c("cores", "simbolos_ordem"), simbolo_preenchimento = c("serie_padrao", "preenchimento_simbolo"),
+  esfera_luz = c("serie_padrao", "esfera_luz"),
   # texto
   fonte = c("texto", "fonte"), tamanho_texto_pt = c("texto", "tamanho_base_pt"), cor_texto = c("texto", "cor"),
   titulo_grafico_tamanho_pt = c("titulos", "tamanho_titulo_pt"),
@@ -4649,10 +4833,21 @@ registrar_fonte <- function(nome, pasta = NULL, arquivos = NULL) {
   # legenda e moldura
   legenda_mostrar = c("legenda", "mostrar"), legenda_posicao = c("legenda", "posicao"),
   legenda_x = c("legenda", "dentro_x"), legenda_y = c("legenda", "dentro_y"), legenda_titulo = c("legenda", "titulo"),
+  legenda_escala = c("legenda", "escala"), legenda_distancia_pt = c("legenda", "distancia_pt"),
+  legenda_ajustar_caixa = c("legenda", "ajustar_caixa"),
+  painel_largura_cm = c("caixa", "painel_largura_cm"), painel_altura_cm = c("caixa", "painel_altura_cm"),
+  ajustar_pagina = c("exportacao", "ajustar_pagina"),
+  x_distancia_titulo_pt = c("eixo_x",
+                            "distancia_titulo_pt"), y_distancia_titulo_pt = c("eixo_y", "distancia_titulo_pt"),
+  x_distancia_numeros_pt = c("eixo_x",
+                             "distancia_rotulos_pt"), y_distancia_numeros_pt = c("eixo_y", "distancia_rotulos_pt"),
+  y2_distancia_titulo_pt = c("eixo_y2",
+                             "distancia_titulo_pt"), y2_distancia_numeros_pt = c("eixo_y2", "distancia_rotulos_pt"),
   legenda_ancora = c("legenda", "ancora"), legenda_alinhar = c("legenda", "alinhar"),
   legenda_direcao = c("legenda", "direcao"), legenda_n_colunas = c("legenda", "n_colunas"),
   legenda_inverter_ordem = c("legenda", "inverter_ordem"), legenda_tamanho_chave_pt = c("legenda", "tamanho_chave_pt"),
-  legenda_espacamento_pt = c("legenda", "espacamento_pt"), legenda_margem_interna_pt = c("legenda", "margem_interna_pt"),
+  legenda_espacamento_pt = c("legenda",
+                             "espacamento_pt"), legenda_margem_interna_pt = c("legenda", "margem_interna_pt"),
   legenda_fundo = c("legenda", "fundo"), legenda_fundo_opacidade = c("legenda", "fundo_opacidade"),
   legenda_borda = c("legenda", "moldura"), legenda_borda_cor = c("legenda", "cor_moldura"),
   legenda_borda_espessura_pt = c("legenda", "espessura_moldura_pt"), legenda_borda_tipo = c("legenda", "tipo_moldura"),
@@ -4666,13 +4861,13 @@ registrar_fonte <- function(nome, pasta = NULL, arquivos = NULL) {
   pasta_saida = c("exportacao", "pasta")
 )
 
-# Entra: cfg, o ambiente onde estão as variáveis do painel (padrão: o console/global) e, opcional, os
-# dados (para a quebra automática). Sai: o cfg com os ajustes do painel; imprime o que foi aplicado.
 # Variáveis do painel que mexem no eixo Y da direita (Y2).
 .Y2_VARIAVEIS <- c("y2_series", "y2_fator", "y2_deslocamento", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo",
                    "y2_ticks_manuais", "y2_ticks_menores", "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais",
                    "y2_notacao", "y2_prefixo", "y2_sufixo", "y2_igual_y1", "y2_legenda_sufixo")
 
+# Entra: cfg, o ambiente onde estão as variáveis do painel (padrão: o console/global) e, opcional, os
+# dados (para a quebra automática). Sai: o cfg com os ajustes do painel; imprime o que foi aplicado.
 aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
   cfg <- .completar_cfg(cfg)
   pega <- function(nome) get0(nome, envir = painel, inherits = FALSE)
@@ -4704,12 +4899,13 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
   # legenda: canto pronto (posição + âncora) e ligação automática da borda / sombra quando só o detalhe é dado
   canto <- pega("legenda_canto")
   if (!is.null(canto)) {
-    cantos <- list(sup_esq = c(0, 1), sup_centro = c(0.5, 1), sup_dir = c(1, 1), centro_esq = c(0, 0.5), centro = c(0.5, 0.5),
+    cantos <- list(sup_esq = c(0, 1), sup_centro = c(0.5, 1), sup_dir = c(1, 1), centro_esq = c(0, 0.5),
+                   centro = c(0.5, 0.5),
                    centro_dir = c(1, 0.5), inf_esq = c(0, 0), inf_centro = c(0.5, 0), inf_dir = c(1, 0))
     if (length(canto) != 1 || !canto %in% names(cantos))
       .erro("legenda_canto = '", paste(canto, collapse = ","), "' não é válido. OPÇÕES: ",
             paste0('"', names(cantos), '"', collapse = " | "))
-    a <- cantos[[canto]]; folga <- 0.03
+    a <- cantos[[canto]]; folga <- if (is.null(pega("legenda_distancia_pt"))) 0.03 else 0   # com distância em pt: encosta na borda
     cfg$legenda$posicao <- "dentro"               # legenda_x / legenda_y / legenda_ancora, se dados, valem mais
     if (is.null(pega("legenda_ancora"))) cfg$legenda$ancora <- a
     if (is.null(pega("legenda_x"))) cfg$legenda$dentro_x <- if (a[1] == 0) folga else if (a[1] == 1) 1 - folga else 0.5
@@ -4774,7 +4970,8 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     }
   }
   else if (length(y2_dadas))
-    .aviso("O painel tem ", paste(y2_dadas, collapse = ", "), " preenchido(s), mas o eixo direito (Y2) não está ativo — ",
+    .aviso("O painel tem ", paste(y2_dadas, collapse = ", "),
+           " preenchido(s), mas o eixo direito (Y2) não está ativo — ",
            "ajuste ignorado. Preencha y2_series (ex.: y2_series <- \"Temperatura\") para ligar o Y2.")
   neg <- pega("eixos_titulo_negrito")
   if (!is.null(neg)) { cfg$eixo_x$negrito_titulo <- isTRUE(neg); cfg$eixo_y$negrito_titulo <- isTRUE(neg); marca("eixos_titulo_negrito") }
@@ -4790,14 +4987,24 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
       cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(cor = por_serie[[nm]]))
     marca("cores_por_serie")
   }
+  # uma forma só para todas as séries: basta dar simbolo_forma (a troca automática de formas é desligada)
+  if (!is.null(pega("simbolo_forma")) && is.null(pega("simbolo_variar")) && is.null(pega("simbolos_ordem")))
+    cfg$cores$incrementar_simbolo <- FALSE
+  if (!is.null(pega("simbolo_forma"))) .simbolo_codigo(pega("simbolo_forma"), "simbolo_forma")   # valida o nome
   # grossura da linha / tamanho do ponto / contorno do ponto de séries específicas (vencem o valor geral)
-  for (nome in c("linha_espessura_por_serie", "simbolo_tamanho_por_serie", "simbolo_borda_por_serie")) {
+  for (nome in c("linha_espessura_por_serie", "simbolo_tamanho_por_serie", "simbolo_borda_por_serie",
+                 "simbolo_forma_por_serie")) {
     v <- pega(nome)
     if (is.null(v)) next
-    if (is.null(names(v)) || any(!nzchar(names(v))) || !is.numeric(v))
-      .erro(nome, " precisa de números com o nome da série: c(\"WORLD\" = 1, \"BRAZIL\" = 3).")
+    forma <- nome == "simbolo_forma_por_serie"          # este recebe o nome da forma (texto) ou o número
+    if (is.null(names(v)) || any(!nzchar(names(v))) || (!forma && !is.numeric(v)))
+      .erro(nome,
+            if (forma) " precisa do nome da série e da forma: c(\"WORLD\" = \"esfera\", \"BRAZIL\" = \"quadrado\")."
+                  else " precisa de números com o nome da série: c(\"WORLD\" = 1, \"BRAZIL\" = 3).")
+    if (forma) for (k in seq_along(v)) .simbolo_codigo(v[[k]], paste0(nome, "[\"", names(v)[k], "\"]"))
     chave <- switch(nome, linha_espessura_por_serie = "linha_espessura_pt",
-                    simbolo_tamanho_por_serie = "tamanho_simbolo_pt", simbolo_borda_por_serie = "espessura_borda_pt")
+                    simbolo_tamanho_por_serie = "tamanho_simbolo_pt",
+                    simbolo_borda_por_serie = "espessura_borda_pt", simbolo_forma_por_serie = "simbolo")
     for (nm in names(v)) {
       novo <- list(v[[nm]]); names(novo) <- chave
       cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), novo)
@@ -4816,6 +5023,163 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
   if (length(aplicados)) message("Painel de ajustes aplicado: ", paste(aplicados, collapse = ", "))
   else message("Painel de ajustes: nenhum ajuste ativo (tudo NULL = padrão do template).")
   cfg
+}
+
+# -----------------------------------------------------------------------------
+#  19_marcadores.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/19_marcadores.R — formas dos símbolos (nomes) e o símbolo "esfera" (bolinha com profundidade)
+# =============================================================================
+
+# Formas pelo nome (o número do R, de 0 a 25, continua valendo). "esfera" é o símbolo com volume (veja abaixo).
+.SIMBOLOS_NOME <- c(circulo = 21, quadrado = 22, losango = 23, triangulo = 24, triangulo_invertido = 25,
+                    circulo_vazio = 1, quadrado_vazio = 0, triangulo_vazio = 2, losango_vazio = 5,
+                    triangulo_invertido_vazio = 6, cruz = 3, x = 4, estrela = 8, esfera = 99)
+.COD_ESFERA <- 99
+
+# Entra: nome ("quadrado") ou número (22). Sai: o código numérico. Erro claro se não existir.
+.simbolo_codigo <- function(x, onde = "simbolo") {
+  if (is.numeric(x)) return(x)
+  if (length(x) != 1 || !x %in% names(.SIMBOLOS_NOME))
+    .erro(onde, " = '", paste(x, collapse = ","), "' não é um símbolo válido. OPÇÕES: um número de 0 a 25 ou ",
+          paste0('"', names(.SIMBOLOS_NOME), '"', collapse = " | "))
+  unname(.SIMBOLOS_NOME[x])
+}
+
+# Escurece (f < 0) ou clareia (f > 0) uma cor. f entre -1 e 1.
+.tom <- function(cor, f) {
+  m <- grDevices::col2rgb(cor) / 255
+  m <- if (f >= 0) m + (1 - m) * f else m * (1 + f)
+  grDevices::rgb(m[1, ], m[2, ], m[3, ])
+}
+
+# Desenha esferas: círculos concentrados na direção da luz, do tom escuro (borda) ao claro (miolo), e um brilho.
+# x, y: posições (unit); r_pt: raio em pt (vetor); cores: vetor; luz: c(x, y) de -1 a 1 (direção do brilho).
+.grob_esferas <- function(x, y, r_pt, cores, luz = c(-0.35, -0.45), passos = 18) {
+  n <- length(x)
+  cores <- rep_len(cores, n); r_pt <- rep_len(r_pt, n)
+  norma <- sqrt(sum(luz^2)); luz <- if (norma > 0) luz / norma else c(-0.6, -0.8)   # só a direção importa
+  unicas <- unique(cores)                                # uma rampa de tons por cor (não por ponto)
+  rampas <- lapply(unicas, function(cr) grDevices::colorRampPalette(c(.tom(cr, -0.45), cr, .tom(cr, 0.55)))(21))
+  idx <- match(cores, unicas)
+  filhos <- list()
+  for (k in seq_len(passos)) {
+    t <- (k - 1) / (passos - 1)                         # 0 = borda ... 1 = miolo claro
+    raio <- r_pt * (1 - 0.82 * t)
+    desloc <- (r_pt - raio) * 0.85                       # o miolo se afasta do centro, rumo à luz
+    j <- 1 + round(t^1.15 * 20)
+    col_k <- vapply(idx, function(i) rampas[[i]][j], "")
+    filhos[[k]] <- grid::circleGrob(x = x + grid::unit(luz[1] * desloc, "pt"),
+                                    y = y + grid::unit(luz[2] * desloc, "pt"),
+                                    r = grid::unit(raio, "pt"), gp = grid::gpar(fill = col_k, col = NA))
+  }
+  brilho <- c(0.36, 0.25, 0.14)                          # brilho: 3 círculos brancos pequenos e translúcidos
+  for (j in seq_along(brilho)) {
+    filhos[[length(filhos) + 1]] <- grid::circleGrob(
+      x = x + grid::unit(luz[1] * r_pt * 0.5, "pt"), y = y + grid::unit(luz[2] * r_pt * 0.5, "pt"),
+      r = grid::unit(r_pt * brilho[j], "pt"), gp = grid::gpar(fill = grDevices::rgb(1, 1, 1, c(0.18, 0.32, 0.6)[j]),
+                                                              col = NA))
+  }
+  do.call(grid::grobTree, filhos)
+}
+
+# Raio (pt) de um símbolo do ggplot (círculo 21): o mesmo cálculo do R base.
+.raio_simbolo_pt <- function(size, stroke) 0.375 * (size * ggplot2::.pt + stroke * ggplot2::.stroke / 2)
+
+# Chave da legenda da esfera: só desenha se a série for esfera (shape = 99).
+.draw_key_esfera <- function(data, params, size) {
+  if (!isTRUE(all(data$shape == .COD_ESFERA))) return(grid::nullGrob())
+  .grob_esferas(grid::unit(0.5, "npc"), grid::unit(0.5, "npc"), .raio_simbolo_pt(data$size, data$stroke %||% 0.5),
+                data$colour, luz = params$luz %||% c(-0.35, -0.45))
+}
+
+# Chave comum de ponto que não desenha as séries que são esfera (senão o R desenharia o caractere 99).
+.draw_key_ponto_ou_nada <- function(data, params, size) {
+  if (isTRUE(all(data$shape == .COD_ESFERA))) return(grid::nullGrob())
+  ggplot2::draw_key_point(data, params, size)
+}
+
+.GeomEsfera <- ggplot2::ggproto("GeomEsfera", ggplot2::Geom,
+  required_aes = c("x", "y"),
+  default_aes = ggplot2::aes(colour = "black", size = 2, stroke = 0.5, shape = 99, alpha = NA, fill = NA),
+  draw_key = .draw_key_esfera,
+  extra_params = c("na.rm", "luz"),
+  draw_panel = function(data, panel_params, coord, luz = c(-0.35, -0.45), na.rm = FALSE) {
+    if (!nrow(data)) return(grid::nullGrob())
+    co <- coord$transform(data, panel_params)
+    .grob_esferas(grid::unit(co$x, "npc"), grid::unit(co$y, "npc"), .raio_simbolo_pt(co$size, co$stroke),
+                  co$colour, luz = luz)
+  })
+
+geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show.legend = NA, na.rm = TRUE, ...) {
+  ggplot2::layer(geom = .GeomEsfera, stat = "identity", position = "identity", data = data, mapping = mapping,
+                 show.legend = show.legend, inherit.aes = FALSE, params = list(na.rm = na.rm, luz = luz, ...))
+}
+
+# -----------------------------------------------------------------------------
+#  20_legenda_ajuste.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/20_legenda_ajuste.R — garante que a legenda "dentro" caiba na caixa do gráfico
+# =============================================================================
+
+# Tamanho da página em polegadas (o do cfg$exportacao) e o do painel (a caixa) em pt, se for fixo.
+.tamanho_pagina_in <- function(cfg) {
+  ex <- cfg$exportacao
+  f <- switch(ex$unidade %||% "cm", cm = 1 / 2.54, mm = 1 / 25.4, `in` = 1)
+  c(ex$largura * f, ex$altura * f)
+}
+
+# Mede o gráfico como será desenhado (mesmo dispositivo e fontes do arquivo final).
+# Entra: g (ggplot), tamanho da página em polegadas. Sai: list(painel = c(larg, alt) em pt, legenda = c(larg, alt) em pt)
+# ou NULL se não houver legenda "dentro" medível.
+.medir_legenda <- function(g, tam_in) {
+  dev_ant <- grDevices::dev.cur()
+  if (.tem("ragg")) ragg::agg_capture(width = tam_in[1], height = tam_in[2], units = "in", res = 72)
+  else grDevices::pdf(NULL, width = tam_in[1], height = tam_in[2])
+  dev_nosso <- grDevices::dev.cur()
+  on.exit({ if (dev_nosso %in% grDevices::dev.list()) grDevices::dev.off(dev_nosso)
+            if (dev_ant %in% grDevices::dev.list()) grDevices::dev.set(dev_ant) }, add = TRUE)
+  gt <- tryCatch(ggplot2::ggplotGrob(g), error = function(e) NULL)
+  if (is.null(gt)) return(NULL)
+  k <- which(gt$layout$name == "guide-box-inside")
+  if (!length(k)) return(NULL)
+  lg <- gt$grobs[[k[1]]]
+  if (inherits(lg, "zeroGrob")) return(NULL)
+  mede <- function(u, total) {                  # soma das partes absolutas; o que sobra é do painel
+    nulas <- grid::unitType(u) == "null"
+    abs_pt <- if (any(!nulas)) sum(grid::convertUnit(u[!nulas], "pt", valueOnly = TRUE)) else 0
+    max(total * 72 - abs_pt, 1)
+  }
+  list(painel = c(mede(gt$widths, tam_in[1]), mede(gt$heights, tam_in[2])),
+       legenda = c(grid::convertWidth(grid::grobWidth(lg), "pt", valueOnly = TRUE),
+                   grid::convertHeight(grid::grobHeight(lg), "pt", valueOnly = TRUE)))
+}
+
+# Se a legenda "dentro" for maior que a caixa do gráfico, reduz (escala) até caber. Entra: g e cfg. Sai: g.
+.ajustar_legenda <- function(g, cfg) {
+  lg <- cfg$legenda
+  if (!identical(lg$posicao, "dentro") || !isTRUE(lg$ajustar_caixa %||% TRUE)) return(g)
+  esc0 <- lg$escala %||% 1; esc <- esc0
+  fr <- cfg$.interno$fracao_altura %||% 1       # quebra de eixo: a legenda mora só na parte de cima
+  fixo <- c(cfg$caixa$painel_largura_cm, cfg$caixa$painel_altura_cm)
+  for (it in 1:3) {
+    m <- tryCatch(.medir_legenda(g, .tamanho_pagina_in(cfg)), error = function(e) NULL)
+    if (is.null(m)) break
+    painel <- m$painel
+    if (length(fixo) == 2) painel <- fixo * 72 / 2.54          # caixa de tamanho fixo: as medidas são exatas
+    d <- if (is.null(lg$distancia_pt)) c(0, 0) else rep_len(lg$distancia_pt, 2)
+    f <- min(1, (painel[1] * 0.97 - d[1]) / m$legenda[1], (painel[2] * fr * 0.95 - d[2]) / m$legenda[2])
+    if (!is.finite(f) || f >= 0.995) break
+    esc <- esc * max(f * 0.99, 0.2)
+    c2 <- cfg; c2$legenda$escala <- esc
+    g <- g + .tema_legenda(c2, .fonte(cfg$texto$fonte))
+  }
+  if (esc < esc0 * 0.995)
+    message("Legenda reduzida para ", round(100 * esc / esc0), "% para caber dentro da caixa ",
+            "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam).")
+  g
 }
 
 # -----------------------------------------------------------------------------
@@ -5156,6 +5520,11 @@ x_rotacao_numeros <- NULL  # graus. EX.: 45
 y_rotacao_numeros <- NULL
 x_mostrar_numeros <- NULL  # FALSE = esconde os números do eixo
 y_mostrar_numeros <- NULL
+#  Distâncias (pt): quanto afastar o título dos números e os números do eixo
+x_distancia_titulo_pt  <- NULL   # título do X até os números. EX.: 6
+y_distancia_titulo_pt  <- NULL   # título do Y até os números (com quebra de eixo vale também). EX.: 6
+x_distancia_numeros_pt <- NULL   # números do X até o eixo. EX.: 3
+y_distancia_numeros_pt <- NULL
 
 # ---- 5. GRADE (linhas de fundo) ---------------------------------------------------------------
 grade_x          <- NULL   # TRUE = linhas verticais nos ticks maiores do X
@@ -5208,6 +5577,8 @@ y2_prefixo   <- NULL      # EX.: "US$ "
 y2_sufixo    <- NULL      # EX.: " %"
 y2_fator     <- NULL      # SEM séries novas: mostra o MESMO dado em outra unidade (y2 = fator × y + deslocamento).
 y2_deslocamento <- NULL   #   EX. de °C para °F:  y2_fator <- 1.8;  y2_deslocamento <- 32
+y2_distancia_titulo_pt  <- NULL   # título do Y2 até os números. EX.: 6
+y2_distancia_numeros_pt <- NULL   # números do Y2 até o eixo. EX.: 3
 #  As cores de cada série (esquerda ou direita) também podem vir de cores_por_serie (bloco 8).
 
 # ---- 8. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
@@ -5227,6 +5598,15 @@ linha_espessura_por_serie <- NULL   # EX.: c("WORLD" = 1, "BRAZIL" = 3.5)
 simbolo_tamanho_por_serie <- NULL   # EX.: c("BRAZIL" = 10)
 simbolo_borda_por_serie   <- NULL   # EX.: c("BRAZIL" = 1.5)
 #  Só linhas, só pontos ou os dois: o "tipo" do bloco 1 ("linha" | "pontos" | "linha_pontos").
+#  Formas dos pontos:
+simbolo_forma  <- NULL   # UMA forma para todas as séries: "circulo" | "quadrado" | "losango" | "triangulo" |
+                         #   "triangulo_invertido" | "estrela" | "cruz" | "x" | "circulo_vazio" | "quadrado_vazio" | "esfera"
+                         #   (ou o número do R, 0 a 25). Preencher isto desliga a troca automática de formas.
+simbolo_variar <- NULL   # TRUE = cada série com uma forma diferente | FALSE = todas iguais (simbolo_forma, padrão círculo)
+simbolos_ordem <- NULL   # com variar: quais formas, em ordem. EX.: c("quadrado", "circulo", "triangulo")
+simbolo_forma_por_serie <- NULL  # forma de séries específicas. EX.: c("WORLD" = "esfera", "BRAZIL" = "quadrado")
+simbolo_preenchimento <- NULL    # "serie" (cheio) | "branco" | "vazio" | uma cor
+esfera_luz     <- NULL   # de onde vem a luz na "esfera", c(x, y) de -1 a 1. EX.: c(-0.4, 0.5) (brilho em cima, à esquerda)
 
 # ---- 9. FONTE -----------------------------------------------------------------------------------
 fonte            <- NULL   # EX.: "Arial" | "Times New Roman" | "Calibri"  (nomes instalados: listar_fontes())
@@ -5246,6 +5626,8 @@ rotulos_dados_tamanho_pt  <- NULL   # texto escrito junto dos pontos/barras (ró
 
 # ---- 10. MOLDURA DO GRÁFICO ---------------------------------------------------------------------------
 caixa_fechada    <- NULL   # TRUE = moldura nos 4 lados | FALSE = só eixos esquerdo e inferior
+painel_largura_cm <- NULL  # TAMANHO FIXO da caixa do gráfico (dentro dos eixos), em cm, igual em todos os gráficos.
+painel_altura_cm  <- NULL  #   EX.: 9 e 6.5. Números, títulos e legenda ficam fora; a página se ajusta para caber tudo.
 
 # ---- 11. LEGENDA: POSIÇÃO, FUNDO, BORDA E SOMBRA -------------------------------------------------------
 legenda_mostrar  <- NULL   # FALSE = sem legenda
@@ -5258,6 +5640,9 @@ legenda_x        <- NULL   # posição fina com "dentro", de 0 (esquerda) a 1 (d
 legenda_y        <- NULL   # de 0 (embaixo) a 1 (em cima). EX.: 0.96
 legenda_ancora   <- NULL   # qual ponto da caixa fica em (x, y): c(0, 1) = canto sup. esq. | c(1, 1) = sup. dir. ...
 legenda_alinhar  <- NULL   # com a legenda FORA: onde ela fica ao longo do lado.
+legenda_escala   <- NULL   # aumenta (> 1) ou diminui (< 1) a legenda toda. EX.: 0.8
+legenda_distancia_pt <- NULL  # com "dentro": distância até a borda da caixa, em pt. EX.: 8  |  c(10, 6). Use com legenda_canto
+legenda_ajustar_caixa <- NULL # TRUE (padrão) = se a legenda for maior que a caixa, é reduzida até caber | FALSE = como pedido
                            #   direita/esquerda: "topo" | "centro" | "base"; topo/base: "esquerda" | "centro" | "direita"
 #  Disposição dos itens
 legenda_direcao  <- NULL   # "vertical" (um embaixo do outro) | "horizontal" (lado a lado)
@@ -5281,8 +5666,10 @@ legenda_sombra_opacidade <- NULL    # 0 a 1. EX.: 0.35
 legenda_sombra_deslocamento_pt <- NULL  # c(para a direita, para baixo) em pt. EX.: c(3, 3)  |  c(5, 2)
 
 # ---- 12. EXPORTAÇÃO ------------------------------------------------------------------------------------
-largura_cm   <- NULL       # EX.: 14
+largura_cm   <- NULL       # EX.: 14   (com painel_largura_cm preenchido a página se ajusta sozinha e estes valores não valem)
 altura_cm    <- NULL       # EX.: 10
+ajustar_pagina <- NULL     # com caixa de tamanho fixo: TRUE (padrão) = a página cresce/encolhe para caber tudo |
+                           #   FALSE = página sempre largura_cm x altura_cm (a caixa fica centralizada)
 dpi          <- NULL       # EX.: 600
 formatos     <- NULL       # EX.: c("png", "pdf")   (também "tiff", "svg", "jpeg", "emf")
 nome_arquivo <- NULL       # EX.: "minha_figura"

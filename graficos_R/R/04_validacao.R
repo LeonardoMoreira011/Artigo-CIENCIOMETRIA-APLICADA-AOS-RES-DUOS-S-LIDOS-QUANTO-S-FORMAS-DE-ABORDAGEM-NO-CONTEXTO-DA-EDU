@@ -170,6 +170,13 @@
   for (k in c("fundo_opacidade", "sombra_opacidade"))
     if (!is.null(lg[[k]]) && (!is.numeric(lg[[k]]) || length(lg[[k]]) != 1 || lg[[k]] < 0 || lg[[k]] > 1))
       .erro("cfg$legenda$", k, " deve ser um número entre 0 e 1.")
+  for (k in c("painel_largura_cm", "painel_altura_cm"))
+    if (!is.null(cfg$caixa[[k]]) && (!is.numeric(cfg$caixa[[k]]) || length(cfg$caixa[[k]]) != 1 || cfg$caixa[[k]] <= 0))
+      .erro("cfg$caixa$", k, " deve ser um número maior que 0 (cm).")
+  if (!is.null(lg$escala) && (!is.numeric(lg$escala) || length(lg$escala) != 1 || lg$escala <= 0))
+    .erro("cfg$legenda$escala deve ser um número maior que 0 (ex.: 0.8).")
+  if (!is.null(lg$distancia_pt) && (!is.numeric(lg$distancia_pt) || !length(lg$distancia_pt) %in% 1:2 || any(lg$distancia_pt < 0)))
+    .erro("cfg$legenda$distancia_pt deve ser um número >= 0 ou c(horizontal, vertical), em pt.")
   if (!is.null(lg$alinhar)) {
     lado <- if (lg$posicao %in% c("direita", "esquerda")) c("topo", "centro", "base") else c("esquerda", "centro", "direita")
     if (lg$posicao != "dentro" && !lg$alinhar %in% lado)

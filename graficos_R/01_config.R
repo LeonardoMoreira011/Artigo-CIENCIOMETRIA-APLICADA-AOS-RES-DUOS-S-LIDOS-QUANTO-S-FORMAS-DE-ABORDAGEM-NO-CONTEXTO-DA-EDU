@@ -137,6 +137,12 @@ cfg$cores <- list(
   #   OPÇÕES: TRUE | FALSE (todas usam o símbolo de serie_padrao$simbolo)
   incrementar_simbolo = TRUE,
 
+  # simbolos_ordem: quais símbolos usar, na ordem, quando incrementar_simbolo = TRUE (repete se faltar).
+  #   NULL = a sequência padrão. Aceita nomes ou números: "circulo" | "quadrado" | "losango" | "triangulo" |
+  #   "triangulo_invertido" | "circulo_vazio" | "quadrado_vazio" | "cruz" | "x" | "estrela" | "esfera"
+  #   EX.: cfg$cores$simbolos_ordem <- c("quadrado", "circulo")   |   só quadrados: c("quadrado")
+  simbolos_ordem = NULL,
+
   # incrementar_tipo_linha: cada série recebe um tipo de linha diferente.
   #   OPÇÕES: TRUE | FALSE (todas sólidas, salvo definição por série)
   incrementar_tipo_linha = FALSE,
@@ -174,10 +180,16 @@ cfg$serie_padrao <- list(
   #   OPÇÕES: número de 0 a 25 (veja galeria())
   #   EX.: cfg$serie_padrao$simbolo <- 22
   simbolo = 21,
+  # (aceita também o nome: "circulo", "quadrado", "losango", "triangulo", "triangulo_invertido", "estrela", "esfera"...
+  #  "esfera" = bolinha com volume (sombreado e brilho), no estilo do Origin; use com preenchimento "serie".)
 
   # tamanho_simbolo_pt: tamanho do símbolo em pt.
   #   OPÇÕES: número > 0      EX.: cfg$serie_padrao$tamanho_simbolo_pt <- 8
   tamanho_simbolo_pt = 6,
+
+  # esfera_luz: de onde vem a luz nas esferas, c(x, y) de -1 a 1 (x < 0 = esquerda; y < 0 = embaixo).
+  #   EX.: cfg$serie_padrao$esfera_luz <- c(-0.4, 0.5)   (brilho em cima, à esquerda)
+  esfera_luz = c(-0.35, -0.45),
 
   # espessura_borda_pt: espessura do contorno do símbolo em pt.
   #   OPÇÕES: número >= 0
@@ -853,6 +865,11 @@ cfg$eixo_y2 <- list(
   #   OPÇÕES: NULL | número      EX.: cfg$eixo_y2$fator_divisao <- 1000
   fator_divisao = NULL,
 
+  # distancia_titulo_pt / distancia_rotulos_pt: espaço (pt) entre o título e os números do eixo secundário, e entre
+  #   os números e o eixo. NULL = o mesmo do eixo_y.      EX.: cfg$eixo_y2$distancia_titulo_pt <- 10
+  distancia_titulo_pt = NULL,
+  distancia_rotulos_pt = NULL,
+
   # cor_eixo: pinta números, título e ticks do eixo secundário.
   #   OPÇÕES: NULL (preto) | "serie" (cor da 1ª série do y2) | qualquer cor
   cor_eixo = "serie"
@@ -884,6 +901,13 @@ cfg$caixa <- list(
   # proporcao: altura/largura da área de plotagem. NULL = ocupa o espaço.
   #   OPÇÕES: NULL | número (1 = quadrado; 0.75 = 4:3)
   proporcao = NULL,
+
+  # painel_largura_cm / painel_altura_cm: tamanho FIXO da caixa do gráfico (a área dentro dos eixos), em cm,
+  #   igual em todos os gráficos (como o layer do Origin). Números, títulos e legenda ficam fora dela e a
+  #   página é ajustada para caber tudo (veja exportacao$ajustar_pagina). NULL = a caixa ocupa o que sobra da página.
+  #   EX.: cfg$caixa$painel_largura_cm <- 9; cfg$caixa$painel_altura_cm <- 6.5
+  painel_largura_cm = NULL,
+  painel_altura_cm = NULL,
 
   # margens_cm: margens externas c(topo, direita, baixo, esquerda) em cm.
   margens_cm = c(0.3, 0.5, 0.3, 0.3),
@@ -991,6 +1015,20 @@ cfg$legenda <- list(
 
   # espacamento_pt: espaço vertical entre os itens.
   espacamento_pt = 2,
+
+  # escala: aumenta (> 1) ou diminui (< 1) a legenda inteira: texto, quadradinhos, espaços e folgas.
+  #   OPÇÕES: número > 0      EX.: cfg$legenda$escala <- 0.8
+  escala = 1,
+
+  # distancia_pt: com a legenda "dentro", distância (pt) entre ela e a borda da caixa, para dentro:
+  #   um número (vale para os dois lados) ou c(horizontal, vertical). NULL = pela posição dentro_x/dentro_y.
+  #   EX.: cfg$legenda$distancia_pt <- c(8, 6)    (use com ancora/canto: a legenda encosta no canto mais próximo)
+  distancia_pt = NULL,
+
+  # ajustar_caixa: TRUE = se a legenda "dentro" for maior que a caixa do gráfico, ela é reduzida até caber
+  #   (nunca aumenta). FALSE = tamanho exatamente como pedido, mesmo que passe da caixa.
+  #   OPÇÕES: TRUE | FALSE
+  ajustar_caixa = TRUE,
 
   # margem_interna_pt: folga entre o texto da legenda e a sua moldura: c(cima, direita,
   #   baixo, esquerda), em pt.
@@ -1208,6 +1246,12 @@ cfg$exportacao <- list(
 
   # fundo_transparente: OPÇÕES: TRUE | FALSE
   fundo_transparente = FALSE,
+
+  # ajustar_pagina: com caixa$painel_largura_cm/painel_altura_cm, a página do arquivo se ajusta ao conteúdo (caixa
+  #   do tamanho pedido + números, títulos e legenda), sem cortar nada; largura/altura acima não são usadas.
+  #   FALSE = página sempre de largura x altura (a caixa fica centralizada; avisa se não couber).
+  #   OPÇÕES: TRUE | FALSE
+  ajustar_pagina = TRUE,
 
   # carimbo_data: acrescenta data e hora ao nome do arquivo.  OPÇÕES: TRUE | FALSE
   carimbo_data = FALSE,

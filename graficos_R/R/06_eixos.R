@@ -172,6 +172,14 @@
       ini <- e$primeiro_tick %||% lo
       n <- floor((hi - ini) / e$incremento + 1e-9)
       if (n > 1000) .erro("incremento muito pequeno: geraria ", n, " ticks.")
+      if (n > 40 && is.null(tempo)) {            # intervalo pequeno demais para a faixa: os números se sobreporiam
+        passo <- .passo_bonito((hi - ini) / 8)
+        .aviso("O intervalo ", e$incremento, " gera ", n + 1, " traços entre ", signif(ini, 6), " e ", signif(hi, 6),
+               " (os números ficariam um sobre o outro); usando ", passo, " neste eixo. ",
+               "Com quebra de eixo, defina o intervalo de cada parte (quebra_y_intervalo_* / quebra_y2_intervalo_*).")
+        e$incremento <- passo
+        n <- floor((hi - ini) / passo + 1e-9)
+      }
       maiores <- round(ini + (0:max(n, 0)) * e$incremento, 12)
     }
   } else if (modo == "quantidade") {
@@ -239,4 +247,11 @@
   tl <- sort(ax$trans$transform(ax$limites))
   r <- tl + c(-1, 1) * diff(tl) * ax$mult
   (ax$trans$transform(v) - r[1]) / diff(r)
+}
+
+# Passo "redondo" (1, 2, 2.5, 5 x 10^k) mais próximo de 'alvo'.
+.passo_bonito <- function(alvo) {
+  if (!is.finite(alvo) || alvo <= 0) return(1)
+  k <- 10^floor(log10(alvo)); m <- alvo / k
+  k * c(1, 2, 2.5, 5, 10)[which.min(abs(c(1, 2, 2.5, 5, 10) - m))]
 }

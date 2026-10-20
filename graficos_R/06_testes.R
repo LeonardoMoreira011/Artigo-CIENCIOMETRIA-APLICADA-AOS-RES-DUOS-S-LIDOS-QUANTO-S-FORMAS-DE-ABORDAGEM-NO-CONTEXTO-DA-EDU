@@ -308,11 +308,12 @@ gb <- plotar(gq, cq)
 ys_parte <- function(p) range(unlist(lapply(p$layers, function(l) if (!is.null(l$data$y)) l$data$y)), na.rm = TRUE)
 lim_x <- function(p) ggplot2::ggplot_build(p)$layout$panel_scales_x[[1]]$get_limits()
 teste("quebra com ligar_atraves = FALSE: cada parte mostra só os seus pontos",
-      ys_parte(gb[[1]])[1] >= sug$ate && ys_parte(gb[[2]])[2] <= sug$de)
-teste("quebra: as duas partes compartilham o mesmo eixo X", identical(lim_x(gb[[1]]), lim_x(gb[[2]])))
+      ys_parte(attr(gb, "partes")[[1]])[1] >= sug$ate && ys_parte(attr(gb, "partes")[[2]])[2] <= sug$de)
+teste("quebra: as duas partes compartilham o mesmo eixo X", identical(lim_x(attr(gb, "partes")[[1]]),
+                                                                      lim_x(attr(gb, "partes")[[2]])))
 cq$quebra$ligar_atraves <- TRUE; gb <- plotar(gq, cq)
 teste("quebra com ligar_atraves = TRUE (padrão) mantém todos os pontos nas duas partes",
-      ys_parte(gb[[1]])[1] < sug$de && ys_parte(gb[[2]])[2] > sug$ate)
+      ys_parte(attr(gb, "partes")[[1]])[1] < sug$de && ys_parte(attr(gb, "partes")[[2]])[2] > sug$ate)
 
 cat("\n--- Painel de ajustes e grade ---\n")
 pe <- list2env(list(x_intervalo = 1, x_ticks_menores = 0, y_ticks_menores = 0, x_inicio = 2015, x_fim = 2026,
@@ -353,7 +354,7 @@ cq2 <- c0; cq2$grafico <- utils::modifyList(cq2$grafico, list(tipo = "linha_pont
 cq2$quebra <- utils::modifyList(cq2$quebra, list(ativo = TRUE, de = 110000, ate = 440000, ligar_atraves = FALSE))
 cq2$eixo_y$mostrar_titulo <- FALSE; cq2$legenda$posicao <- "dentro"
 teste("quebra sem ligar pontos: a legenda da parte de cima mostra TODAS as séries (chave vermelha da LATAM)",
-      any(grepl("^#D62728", renderiza(plotar(an, cq2)[[1]]))))
+      any(grepl("^#D62728", renderiza(attr(plotar(an, cq2), "partes")[[1]]))))
 pg <- list2env(list(x_ticks_espessura_pt = 2.5, y_ticks_espessura_pt = 0.5, x_linha_espessura_pt = 2,
                     moldura_espessura_pt = 3,
                     x_ticks_cor = "red", x_intervalo = 2, x_primeiro_tick = 2016, x_inicio = 2015, x_fim = 2026))
@@ -389,7 +390,7 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
                     "y2_series", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo", "y2_ticks_manuais", "y2_ticks_menores",
                     "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais", "y2_notacao", "y2_prefixo", "y2_sufixo",
                     "y2_fator", "y2_deslocamento", "linha_espessura_por_serie", "simbolo_tamanho_por_serie",
-                    "simbolo_borda_por_serie", "y2_igual_y1", "y2_legenda_sufixo", "legenda_canto", "fonte_pasta")
+                    "simbolo_borda_por_serie", "y2_igual_y1", "y2_legenda_sufixo", "legenda_canto", "fonte_pasta", "simbolo_forma_por_serie")
         all(v %in% c(names(.PAINEL_MAPA), extras)) })
 teste("painel: cores_por_serie sem nomes dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))
@@ -442,7 +443,8 @@ teste("painel: no gráfico a linha e o ponto engrossam de forma independente (BR
 cgr2 <- cgr; cgr2$serie_padrao$linha_espessura_pt <- 4
 ggr2 <- suppressWarnings(plotar(an, cgr2)); dp2 <- camada(ggr2, "stroke")
 teste("painel: mudar só a linha não mexe no ponto",
-      identical(sort(unique(dp2$size)), sort(unique(dp$size))) && max(camada(ggr2, "linewidth")$linewidth) > max(dl$linewidth) * 0.99)
+      identical(sort(unique(dp2$size)),
+                sort(unique(dp$size))) && max(camada(ggr2, "linewidth")$linewidth) > max(dl$linewidth) * 0.99)
 teste("painel: *_por_serie sem nome ou não numérico dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(linha_espessura_por_serie = c(1, 2)))), "nome da série") &&
       da_erro(aplicar_painel(c0, list2env(list(simbolo_tamanho_por_serie = c(BRAZIL = "grande")))), "nome da série"))
@@ -470,7 +472,13 @@ teste("quebra + Y2: mudar y2_de muda o desenho (o eixo da direita tem quebra pr�
       { cb <- cq2; cb$quebra$y2_de <- 1500; !identical(renderiza(plotar(aq, cq2)), renderiza(plotar(aq, cb))) })
 teste("quebra + Y2: sem y2_de/y2_ate o Y2 acompanha a posição do trecho omitido do Y1",
       { cs <- cq2; cs$quebra$y2_de <- NULL; cs$quebra$y2_ate <- NULL
-        inherits(suppressWarnings(plotar(aq, cs)), "patchwork") })
+        inherits(suppressWarnings(plotar(aq, cs)),
+                 "gg") && isTRUE(attr(suppressWarnings(plotar(aq, cs)), "quebra_gtable")) })
+teste("quebra + Y2: a divisa do Y2 derivada do Y1 cai em números redondos (sem 0.373714286 no eixo)",
+      { cs <- cq2; cs$quebra$y2_de <- NULL; cs$quebra$y2_ate <- NULL; cs$quebra$de <- 83000; cs$quebra$ate <- 437000
+        pt <- attr(suppressWarnings(plotar(aq, cs)), "partes")
+        l1 <- attr(pt[[2]], "info")$y2$ax$limites; l2 <- attr(pt[[1]], "info")$y2$ax$limites
+        signif(l1[2], 2) == l1[2] && signif(l2[1], 2) == l2[1] && l1[2] < l2[1] })
 teste("quebra + Y2: y2_de >= y2_ate e trecho fora do eixo dão erro claro",
       { cb <- cq2; cb$quebra$y2_de <- 6000; cb$quebra$y2_ate <- 5000
         cf <- cq2; cf$quebra$y2_de <- 100000; cf$quebra$y2_ate <- 200000
@@ -513,12 +521,132 @@ teste("fonte: registrar_fonte() acha os .ttf da pasta (a família 'Condensed' n�
 teste("fonte: o painel (fonte + fonte_pasta) registra e o gráfico desenha sem aviso de fonte",
       { pfn <- list2env(list(fonte = "Fonte Teste", fonte_pasta = pf))
         cf <- suppressMessages(aplicar_painel(c0, pfn))
-        cf$grafico <- utils::modifyList(cf$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL")))
-        cf$texto$fonte == "Fonte Teste" && !any(grepl("fonte", avisos_de(imprime(plotar(aq, cf))), ignore.case = TRUE)) })
+        cf$grafico <- utils::modifyList(cf$grafico, list(tipo = "linha_pontos", coluna_x = 1,
+                                                         colunas_y = c("WORLD", "BRAZIL")))
+        cf$texto$fonte == "Fonte Teste" && !any(grepl("fonte", avisos_de(imprime(plotar(aq, cf))),
+                                                      ignore.case = TRUE)) })
 teste("fonte: pasta inexistente ou sem o Regular dão erro claro; fonte_pasta sem fonte também",
       da_erro(registrar_fonte("Fonte Teste", file.path(tmp, "nao_existe")), "não existe") &&
       da_erro(registrar_fonte("Outra", pf), "Regular") &&
       da_erro(aplicar_painel(c0, list2env(list(fonte_pasta = pf))), "precisa de 'fonte'"))
+
+cat("\n--- Símbolos (formas, esfera), legenda que cabe, distâncias e tamanho fixo da caixa ---\n")
+teste("símbolos: o nome vira o código do R e um nome inválido dá erro claro",
+      .simbolo_codigo("quadrado") == 22 && .simbolo_codigo(24) == 24 && .simbolo_codigo("esfera") == .COD_ESFERA &&
+      da_erro(.simbolo_codigo("hexagono"), "quadrado"))
+ss <- c0; ss$grafico <- utils::modifyList(ss$grafico, list(tipo = "linha_pontos", coluna_x = 1,
+                                                           colunas_y = c("WORLD", "BRAZIL", "POP")))
+ps1 <- suppressMessages(aplicar_painel(ss, list2env(list(simbolo_forma = "quadrado"))))
+teste("painel símbolos: simbolo_forma = 'quadrado' deixa TODAS as séries quadradas (desliga a troca de formas)",
+      !ps1$cores$incrementar_simbolo && all(vapply(.estilos(ps1, c("WORLD", "BRAZIL", "POP")), function(e) e$simbolo,
+                                                   0) == 22))
+ps2 <- suppressMessages(aplicar_painel(ss, list2env(list(simbolos_ordem = c("quadrado", "circulo")))))
+teste("painel símbolos: simbolos_ordem se repete na ordem pedida",
+      identical(unname(vapply(.estilos(ps2, c("WORLD", "BRAZIL", "POP")), function(e) e$simbolo, 0)), c(22, 21, 22)))
+ps3 <- suppressMessages(aplicar_painel(ss,
+                                       list2env(list(simbolo_forma_por_serie = c(WORLD = "esfera", POP = "quadrado"),
+                                                         simbolo_tamanho_pt = 9))))
+teste("painel símbolos: forma por série (esfera / quadrado) e nome inválido",
+      ps3$series$WORLD$simbolo == "esfera" && ps3$series$POP$simbolo == "quadrado" &&
+      da_erro(aplicar_painel(ss, list2env(list(simbolo_forma_por_serie = c(WORLD = "hexagono")))), "hexagono") &&
+      da_erro(aplicar_painel(ss, list2env(list(simbolo_forma = "hexagono"))), "hexagono"))
+gs3 <- suppressWarnings(plotar(aq, ps3))
+teste("esfera: vira uma camada própria (GeomEsfera), imprime sem aviso e a legenda tem a esfera",
+      any(vapply(gs3$layers, function(l) inherits(l$geom, "GeomEsfera"), NA)) && length(avisos_de(imprime(gs3))) == 0 &&
+      !identical(renderiza(gs3), renderiza(suppressWarnings(plotar(aq, ps1)))))
+ps4 <- ps3; ps4$series$POP <- NULL; ps4$series$BRAZIL <- list(simbolo = "esfera"); ps4$series$WORLD <- list(simbolo = "esfera")
+ps4$grafico$colunas_y <- c("WORLD", "BRAZIL")
+teste("esfera: todas as séries esfera também imprime sem aviso (sem camada de pontos comuns)",
+      length(avisos_de(imprime(plotar(aq, ps4)))) == 0)
+teste("esfera: o brilho muda de lado com esfera_luz",
+      !identical(renderiza(plotar(aq, utils::modifyList(ps4, list(serie_padrao = list(esfera_luz = c(0.5, 0.6)))))),
+                 renderiza(plotar(aq, ps4))))
+# legenda: escala, distância e caber na caixa
+cle <- ss; cle$grafico$colunas_y <- c("WORLD",
+                                      "BRAZIL"); cle$legenda <- utils::modifyList(cle$legenda, list(n_colunas = 2, tamanho_texto_pt = 40))
+cle$exportacao$largura <- 9; cle$exportacao$altura <- 7
+m_leg <- function(c1) { r <- suppressMessages(.medir_legenda(plotar(aq, c1), .tamanho_pagina_in(c1))); r }
+cle_n <- cle; cle_n$legenda$ajustar_caixa <- FALSE
+msgs_de <- function(expr) {                       # mensagens (message()) emitidas ao avaliar expr
+  m <- character(0)
+  withCallingHandlers(force(expr), message = function(x) { m <<- c(m,
+                                                                   conditionMessage(x)); invokeRestart("muffleMessage") })
+  m
+}
+teste("legenda: sem ajuste ela passa da caixa; com ajuste (padrão) cabe, e dá uma mensagem avisando",
+      { mn <- m_leg(cle_n); mj <- m_leg(cle)
+        mn$legenda[1] > mn$painel[1] && mj$legenda[1] <= mj$painel[1] * 0.99 && mj$legenda[2] <= mj$painel[2] &&
+        any(grepl("Legenda reduzida", msgs_de(plotar(aq, cle)))) })
+cle2 <- cle; cle2$legenda$tamanho_texto_pt <- 9
+teste("legenda: escala maior/menor aumenta/diminui o tamanho; legenda pequena não é mexida pelo ajuste",
+      { a <- m_leg(cle2)$legenda; cb <- cle2; cb$legenda$escala <- 0.5; b <- m_leg(cb)$legenda
+        cc <- cle2; cc$legenda$escala <- 1.4; c <- m_leg(cc)$legenda
+        b[1] < a[1] && c[1] > a[1] && !any(grepl("Legenda reduzida", msgs_de(plotar(aq, cle2)))) })
+cld <- cle2; cld$legenda <- utils::modifyList(cld$legenda, list(dentro_x = 1, dentro_y = 0, distancia_pt = c(20, 10)))
+teste("legenda: distancia_pt vira margem para dentro a partir do canto (inferior direito: direita e baixo)",
+      { mg <- .tema_legenda(cld,
+                            "sans")$legend.box.margin; all(as.numeric(mg)[c(2, 3)] > 0) && all(as.numeric(mg)[c(1, 4)] == 0) &&
+        da_erro(plotar(aq, utils::modifyList(cld, list(legenda = list(distancia_pt = -3)))), "distancia_pt") &&
+        da_erro(plotar(aq, utils::modifyList(cld, list(legenda = list(escala = 0)))), "escala") })
+# painel: novas variáveis chegam ao cfg
+pn <- suppressMessages(aplicar_painel(c0, list2env(list(legenda_escala = 0.8, legenda_distancia_pt = 8,
+                                                        legenda_canto = "sup_dir",
+                                                         painel_largura_cm = 9, painel_altura_cm = 6, ajustar_pagina = FALSE,
+                                                         x_distancia_titulo_pt = 9, y_distancia_titulo_pt = 7,
+                                                         y2_distancia_titulo_pt = 12, y_distancia_numeros_pt = 5))))
+teste("painel: escala/distância da legenda, tamanho fixo da caixa e distâncias dos títulos chegam ao cfg",
+      pn$legenda$escala == 0.8 && pn$legenda$distancia_pt == 8 && pn$legenda$dentro_x == 1 && pn$legenda$dentro_y == 1 &&
+      pn$caixa$painel_largura_cm == 9 && pn$caixa$painel_altura_cm == 6 && !pn$exportacao$ajustar_pagina &&
+      pn$eixo_x$distancia_titulo_pt == 9 && pn$eixo_y$distancia_titulo_pt == 7 && pn$eixo_y2$distancia_titulo_pt == 12 &&
+      pn$eixo_y$distancia_rotulos_pt == 5)
+# tamanho fixo da caixa
+cfx <- c0; cfx$grafico <- utils::modifyList(cfx$grafico, list(tipo = "linha_pontos", coluna_x = 1,
+                                                              colunas_y = c("WORLD", "POP")))
+cfx$caixa$painel_largura_cm <- 8; cfx$caixa$painel_altura_cm <- 6
+cfy <- cfx; cfy$series$POP <- list(eixo = "y2"); cfy$eixo_y2$ativo <- TRUE; cfy$eixo_y2$titulo <- "Pop (10^{3})"
+medidas <- function(c1, dd = aq) {
+  pr <- .preparar_saida(suppressWarnings(plotar(dd, c1)), c1); gt <- pr$grob
+  pan <- gt$layout[gt$layout$name == "panel", ]
+  pdf(NULL); on.exit(dev.off())
+  list(pw = sum(grid::convertWidth(gt$widths[pan$l[1]:pan$r[1]], "cm", valueOnly = TRUE)),
+       ph = sum(grid::convertHeight(gt$heights[sort(unique(pan$t))], "cm", valueOnly = TRUE)),
+       larg = pr$larg * 2.54, alt = pr$alt * 2.54)
+}
+mx <- medidas(cfx); my <- medidas(cfy)
+teste("caixa de tamanho fixo: a caixa tem exatamente 8 x 6 cm com ou sem Y2; só a página muda",
+      abs(mx$pw - 8) < 1e-6 && abs(mx$ph - 6) < 1e-6 && abs(my$pw - 8) < 1e-6 && abs(my$ph - 6) < 1e-6 &&
+      my$larg > mx$larg + 0.3 && mx$larg > 8 && mx$alt > 6)
+aqq <- data.frame(Years = 2015:2026, WORLD = c(10, 30, 20, 50, 40, 60, 300, 310, 320, 330, 340, 350),
+                  POP = c(1, 1.2, 1.5, 1.6, 2, 2.2, 6, 6.5, 7, 7.4, 7.9, 8.1))
+cfq <- cfy; cfq$quebra <- utils::modifyList(cfq$quebra, list(ativo = TRUE, de = 80, ate = 280,
+                                                             proporcao_superior = 0.4))
+cfq$quebra$y2_de <- 2.5; cfq$quebra$y2_ate <- 5.5; cfq$eixo_y2$fator_divisao <- 1
+for (est in c("continuo", "separado")) {
+  cq9 <- cfq; cq9$quebra$estilo <- est; mq <- medidas(cq9, aqq)
+  teste(paste0("caixa de tamanho fixo também vale na quebra de eixo (", est, "): 8 x 6 cm"),
+        abs(mq$pw - 8) < 1e-6 && abs(mq$ph - 6) < 1e-6)
+}
+teste("caixa de tamanho fixo: salvar() grava a página do tamanho calculado (PNG)",
+      { cs <- cfy; cs$exportacao$pasta <- tmp; cs$exportacao$dpi <- 100; cs$exportacao$nome_arquivo <- "fixo"
+        suppressMessages(salvar(suppressWarnings(plotar(aq, cs)), cs))
+        cap <- readBin(file.path(tmp, "fixo.png"), "raw", 24)
+        w <- sum(as.integer(cap[17:20]) * 256^(3:0)); h <- sum(as.integer(cap[21:24]) * 256^(3:0))
+        abs(w - my$larg / 2.54 * 100) <= 1 && abs(h - my$alt / 2.54 * 100) <= 1 })
+cfp <- cfx; cfp$exportacao$ajustar_pagina <- FALSE; cfp$exportacao$largura <- 6; cfp$exportacao$altura <- 5
+teste("caixa de tamanho fixo com página fixa pequena demais avisa que não cabe",
+      da_aviso(.preparar_saida(suppressWarnings(plotar(aq, cfp)), cfp), "não cabe"))
+teste("caixa de tamanho fixo: valor inválido dá erro claro",
+      da_erro(plotar(aq, utils::modifyList(cfx, list(caixa = list(painel_largura_cm = -2)))), "painel_largura_cm"))
+# distância do título lateral na quebra
+cqd1 <- cfq; cqd1$quebra$estilo <- "continuo"; cqd1$eixo_y$titulo <- "Intensidade"
+cqd1$eixo_y2$distancia_titulo_pt <- 4; cqd2 <- cqd1; cqd2$eixo_y$distancia_titulo_pt <- 24
+teste("distância do título do Y na quebra: aumentar de 4 para 24 pt alarga a figura em 20 pt",
+      abs((medidas(cqd2, aqq)$larg - medidas(cqd1, aqq)$larg) * 72 / 2.54 - 20) < 1)
+# intervalo pequeno demais não amontoa os números
+ci <- c0; ci$grafico <- utils::modifyList(ci$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD")))
+ci$eixo_y$ticks_modo <- "incremento"; ci$eixo_y$incremento <- 5000
+teste("intervalo que geraria centenas de traços avisa e usa um intervalo razoável (números não se amontoam)",
+      da_aviso(plotar(aq, ci), "gera") && length(attr(suppressWarnings(plotar(aq, ci)), "info")$ax_y$maiores) <= 12)
 
 cat("\n--- Legenda: posição, fundo, borda e sombra ---\n")
 pl <- list2env(list(tipo_grafico = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL"),
@@ -535,7 +663,8 @@ teste("painel legenda: legenda_x/legenda_y explícitos vencem o canto; borda FAL
       { c3 <- suppressMessages(aplicar_painel(c0, list2env(list(legenda_canto = "sup_esq", legenda_x = 0.5,
                                                                   legenda_borda = FALSE, legenda_borda_cor = "red"))))
         c3$legenda$dentro_x == 0.5 && c3$legenda$dentro_y == 0.97 && !c3$legenda$moldura })
-cl2$grafico <- utils::modifyList(cl2$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "BRAZIL")))
+cl2$grafico <- utils::modifyList(cl2$grafico, list(tipo = "linha_pontos", coluna_x = 1,
+                                                   colunas_y = c("WORLD", "BRAZIL")))
 tl <- .tema_legenda(cl2, "sans")
 teste("legenda com sombra: o retângulo da legenda é o element_sombra; sem sombra é o element_rect comum",
       inherits(tl$legend.background, "element_sombra") &&
@@ -546,16 +675,19 @@ r1 <- renderiza(plotar(aq, cl2))
 teste("legenda: sombra e borda mudam o desenho; a sombra não gera aviso",
       !identical(r0, r1) && !any(grepl("rect|element|grob", avisos_de(imprime(plotar(aq, cl2))), ignore.case = TRUE)))
 teste("legenda: direção horizontal e posição fora (alinhar) mudam o desenho sem erro",
-      { ch <- utils::modifyList(cl2, list(legenda = list(direcao = "horizontal", posicao = "topo", alinhar = "esquerda")))
+      { ch <- utils::modifyList(cl2, list(legenda = list(direcao = "horizontal", posicao = "topo",
+                                                         alinhar = "esquerda")))
         cv <- utils::modifyList(cl2, list(legenda = list(direcao = "vertical", posicao = "topo", alinhar = "direita")))
         !identical(renderiza(plotar(aq, ch)), renderiza(plotar(aq, cv))) })
 teste("legenda: opacidade fora de 0-1 e alinhar incompatível com a posição dão erro claro",
       da_erro(plotar(aq, utils::modifyList(cl2, list(legenda = list(fundo_opacidade = 2)))), "entre 0 e 1") &&
-      da_erro(plotar(aq, utils::modifyList(cl2, list(legenda = list(posicao = "direita", alinhar = "esquerda")))), "não serve"))
+      da_erro(plotar(aq, utils::modifyList(cl2, list(legenda = list(posicao = "direita", alinhar = "esquerda")))),
+              "não serve"))
 
 cat("\n--- Y2 ligado fora do painel: y2_* não podem ser ignorados em silêncio ---\n")
 cm <- c0; cm$series$POP <- list(eixo = "y2"); cm$eixo_y2$ativo <- TRUE        # Y2 ligado "na mão", sem y2_series
-cm1 <- suppressMessages(aplicar_painel(cm, list2env(list(y2_intervalo = 2000, y2_ticks_menores = 0, y2_cor = "#C00000"))))
+cm1 <- suppressMessages(aplicar_painel(cm, list2env(list(y2_intervalo = 2000, y2_ticks_menores = 0,
+                                                         y2_cor = "#C00000"))))
 teste("painel Y2: com o Y2 ligado fora do painel (sem y2_series), y2_intervalo e y2_cor valem para as séries do Y2",
       cm1$eixo_y2$ticks_modo == "incremento" && cm1$eixo_y2$incremento == 2000 && cm1$eixo_y2$n_menores == 0 &&
       cm1$series$POP$cor == "#C00000" && cm1$eixo_y2$cor_eixo == "#C00000")
@@ -597,7 +729,8 @@ cat("\n--- Um CSV só com Y1 e Y2 (células vazias) ---\n")
 vz <- an; vz$LATAM[c(4, 5)] <- NA; vz$BRAZIL[c(2, 9)] <- NA
 cvz <- c0; cvz$grafico <- utils::modifyList(cvz$grafico, list(tipo = "linha_pontos", coluna_x = 1))
 cvz$series[["BRAZIL"]] <- list(eixo = "y2"); cvz$eixo_y2$ativo <- TRUE
-imprime2 <- function(g) { ragg::agg_capture(width = 400, height = 300, res = 72); print(g); invisible(grDevices::dev.off()) }
+imprime2 <- function(g) { ragg::agg_capture(width = 400, height = 300,
+                                            res = 72); print(g); invisible(grDevices::dev.off()) }
 teste("CSV único com células vazias (Y1 e Y2): imprime sem aviso do ggplot2 ('Removed rows...')",
       !any(grepl("Removed", avisos_de(imprime2(plotar(vz, cvz))))))
 

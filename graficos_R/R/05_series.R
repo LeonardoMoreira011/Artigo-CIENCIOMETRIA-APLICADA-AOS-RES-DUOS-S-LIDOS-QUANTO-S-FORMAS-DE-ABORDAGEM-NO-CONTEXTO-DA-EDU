@@ -32,8 +32,9 @@
     p <- cfg$serie_padrao
     cor <- .cor(s$cor %||% cores[i], paste0("series '", it, "'"))
     cor2 <- .cor(s$cor2 %||% cfg$cores$gradiente_cor2, paste0("series '", it, "' cor2"))
-    simb <- s$simbolo %||% (if (isTRUE(cfg$cores$incrementar_simbolo))
-      .SIMBOLOS_INC[(i - 1) %% length(.SIMBOLOS_INC) + 1] else p$simbolo)
+    ordem <- cfg$cores$simbolos_ordem %||% .SIMBOLOS_INC
+    simb <- .simbolo_codigo(s$simbolo %||% (if (isTRUE(cfg$cores$incrementar_simbolo))
+      ordem[(i - 1) %% length(ordem) + 1] else p$simbolo), paste0("símbolo de '", it, "'"))
     lt <- s$linha_tipo %||% (if (isTRUE(cfg$cores$incrementar_tipo_linha))
       .LINHAS_INC[(i - 1) %% length(.LINHAS_INC) + 1] else p$linha_tipo)
     ps <- s$preenchimento_simbolo %||% p$preenchimento_simbolo

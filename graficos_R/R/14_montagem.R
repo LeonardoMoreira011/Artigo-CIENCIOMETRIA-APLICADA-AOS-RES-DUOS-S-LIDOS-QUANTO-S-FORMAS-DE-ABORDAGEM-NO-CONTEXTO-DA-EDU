@@ -157,9 +157,11 @@
   g <- g + .tema(cfg, eh, ev, lados, cor_y2 = if (!is.null(info$y2)) .cor(info$y2$cor) else NULL)
   if (!is.null(info$y2)) {
     # estilo de rótulos do y2: casas/notação próprias já nos rótulos; mostra sempre
-    g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, list(mostrar_rotulos = TRUE)), cfg, "right",
+    d2 <- Filter(Negate(is.null), cfg$eixo_y2[c("distancia_titulo_pt", "distancia_rotulos_pt")])   # distâncias do Y2
+    g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, c(list(mostrar_rotulos = TRUE), d2)), cfg,
+                                                    "right",
                                                     .cor(info$y2$cor)),
-                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, list(mostrar_titulo = !isTRUE(cfg$.interno$sem_titulo_y2))), cfg, "right",
+                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, c(list(mostrar_titulo = !isTRUE(cfg$.interno$sem_titulo_y2)), d2)), cfg, "right",
                                                      .cor(info$y2$cor)))
   }
   if (y_dir && espelhar) {
@@ -174,6 +176,7 @@
     if (!is.null(tm)) g <- g + tm
   }
   if (!mostrar_leg) g <- g + theme(legend.position = "none")
+  else g <- .ajustar_legenda(g, cfg)
   attr(g, "info") <- info
   g
 }

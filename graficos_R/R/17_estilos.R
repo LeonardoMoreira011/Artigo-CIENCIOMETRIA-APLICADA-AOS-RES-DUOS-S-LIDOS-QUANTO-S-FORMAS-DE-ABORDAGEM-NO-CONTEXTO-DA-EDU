@@ -95,7 +95,8 @@ registrar_fonte <- function(nome, pasta = NULL, arquivos = NULL) {
   if (is.null(reg) || is.na(reg) || !file.exists(reg))
     .erro("registrar_fonte: não achei o arquivo \"", nome, "-Regular.ttf\" em '", pasta %||% "", "'.\n",
           "  Arquivos .ttf/.otf encontrados lá: ",
-          paste(utils::head(basename(list.files(pasta %||% ".", pattern = "\\.(ttf|otf)$", recursive = TRUE, ignore.case = TRUE)), 8),
+          paste(utils::head(basename(list.files(pasta %||% ".", pattern = "\\.(ttf|otf)$", recursive = TRUE,
+                                                ignore.case = TRUE)), 8),
                 collapse = ", "),
           "\n  Use os arquivos estáticos (Barlow-Regular.ttf...), não o arquivo de fonte variável (com colchetes no nome).")
   pega <- function(k) { v <- arquivos[k]; if (length(v) && !is.na(v) && file.exists(v)) unname(v) else reg }

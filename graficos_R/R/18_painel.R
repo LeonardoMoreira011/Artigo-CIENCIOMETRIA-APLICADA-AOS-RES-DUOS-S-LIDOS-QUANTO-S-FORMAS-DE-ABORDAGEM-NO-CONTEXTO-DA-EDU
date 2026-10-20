@@ -59,6 +59,9 @@
   linha_espessura_pt = c("serie_padrao",
                          "linha_espessura_pt"), simbolo_tamanho_pt = c("serie_padrao", "tamanho_simbolo_pt"),
   simbolo_borda_pt = c("serie_padrao", "espessura_borda_pt"),
+  simbolo_forma = c("serie_padrao", "simbolo"), simbolo_variar = c("cores", "incrementar_simbolo"),
+  simbolos_ordem = c("cores", "simbolos_ordem"), simbolo_preenchimento = c("serie_padrao", "preenchimento_simbolo"),
+  esfera_luz = c("serie_padrao", "esfera_luz"),
   # texto
   fonte = c("texto", "fonte"), tamanho_texto_pt = c("texto", "tamanho_base_pt"), cor_texto = c("texto", "cor"),
   titulo_grafico_tamanho_pt = c("titulos", "tamanho_titulo_pt"),
@@ -69,10 +72,21 @@
   # legenda e moldura
   legenda_mostrar = c("legenda", "mostrar"), legenda_posicao = c("legenda", "posicao"),
   legenda_x = c("legenda", "dentro_x"), legenda_y = c("legenda", "dentro_y"), legenda_titulo = c("legenda", "titulo"),
+  legenda_escala = c("legenda", "escala"), legenda_distancia_pt = c("legenda", "distancia_pt"),
+  legenda_ajustar_caixa = c("legenda", "ajustar_caixa"),
+  painel_largura_cm = c("caixa", "painel_largura_cm"), painel_altura_cm = c("caixa", "painel_altura_cm"),
+  ajustar_pagina = c("exportacao", "ajustar_pagina"),
+  x_distancia_titulo_pt = c("eixo_x",
+                            "distancia_titulo_pt"), y_distancia_titulo_pt = c("eixo_y", "distancia_titulo_pt"),
+  x_distancia_numeros_pt = c("eixo_x",
+                             "distancia_rotulos_pt"), y_distancia_numeros_pt = c("eixo_y", "distancia_rotulos_pt"),
+  y2_distancia_titulo_pt = c("eixo_y2",
+                             "distancia_titulo_pt"), y2_distancia_numeros_pt = c("eixo_y2", "distancia_rotulos_pt"),
   legenda_ancora = c("legenda", "ancora"), legenda_alinhar = c("legenda", "alinhar"),
   legenda_direcao = c("legenda", "direcao"), legenda_n_colunas = c("legenda", "n_colunas"),
   legenda_inverter_ordem = c("legenda", "inverter_ordem"), legenda_tamanho_chave_pt = c("legenda", "tamanho_chave_pt"),
-  legenda_espacamento_pt = c("legenda", "espacamento_pt"), legenda_margem_interna_pt = c("legenda", "margem_interna_pt"),
+  legenda_espacamento_pt = c("legenda",
+                             "espacamento_pt"), legenda_margem_interna_pt = c("legenda", "margem_interna_pt"),
   legenda_fundo = c("legenda", "fundo"), legenda_fundo_opacidade = c("legenda", "fundo_opacidade"),
   legenda_borda = c("legenda", "moldura"), legenda_borda_cor = c("legenda", "cor_moldura"),
   legenda_borda_espessura_pt = c("legenda", "espessura_moldura_pt"), legenda_borda_tipo = c("legenda", "tipo_moldura"),
@@ -86,13 +100,13 @@
   pasta_saida = c("exportacao", "pasta")
 )
 
-# Entra: cfg, o ambiente onde estão as variáveis do painel (padrão: o console/global) e, opcional, os
-# dados (para a quebra automática). Sai: o cfg com os ajustes do painel; imprime o que foi aplicado.
 # Variáveis do painel que mexem no eixo Y da direita (Y2).
 .Y2_VARIAVEIS <- c("y2_series", "y2_fator", "y2_deslocamento", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo",
                    "y2_ticks_manuais", "y2_ticks_menores", "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais",
                    "y2_notacao", "y2_prefixo", "y2_sufixo", "y2_igual_y1", "y2_legenda_sufixo")
 
+# Entra: cfg, o ambiente onde estão as variáveis do painel (padrão: o console/global) e, opcional, os
+# dados (para a quebra automática). Sai: o cfg com os ajustes do painel; imprime o que foi aplicado.
 aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
   cfg <- .completar_cfg(cfg)
   pega <- function(nome) get0(nome, envir = painel, inherits = FALSE)
@@ -124,12 +138,13 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
   # legenda: canto pronto (posição + âncora) e ligação automática da borda / sombra quando só o detalhe é dado
   canto <- pega("legenda_canto")
   if (!is.null(canto)) {
-    cantos <- list(sup_esq = c(0, 1), sup_centro = c(0.5, 1), sup_dir = c(1, 1), centro_esq = c(0, 0.5), centro = c(0.5, 0.5),
+    cantos <- list(sup_esq = c(0, 1), sup_centro = c(0.5, 1), sup_dir = c(1, 1), centro_esq = c(0, 0.5),
+                   centro = c(0.5, 0.5),
                    centro_dir = c(1, 0.5), inf_esq = c(0, 0), inf_centro = c(0.5, 0), inf_dir = c(1, 0))
     if (length(canto) != 1 || !canto %in% names(cantos))
       .erro("legenda_canto = '", paste(canto, collapse = ","), "' não é válido. OPÇÕES: ",
             paste0('"', names(cantos), '"', collapse = " | "))
-    a <- cantos[[canto]]; folga <- 0.03
+    a <- cantos[[canto]]; folga <- if (is.null(pega("legenda_distancia_pt"))) 0.03 else 0   # com distância em pt: encosta na borda
     cfg$legenda$posicao <- "dentro"               # legenda_x / legenda_y / legenda_ancora, se dados, valem mais
     if (is.null(pega("legenda_ancora"))) cfg$legenda$ancora <- a
     if (is.null(pega("legenda_x"))) cfg$legenda$dentro_x <- if (a[1] == 0) folga else if (a[1] == 1) 1 - folga else 0.5
@@ -194,7 +209,8 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     }
   }
   else if (length(y2_dadas))
-    .aviso("O painel tem ", paste(y2_dadas, collapse = ", "), " preenchido(s), mas o eixo direito (Y2) não está ativo — ",
+    .aviso("O painel tem ", paste(y2_dadas, collapse = ", "),
+           " preenchido(s), mas o eixo direito (Y2) não está ativo — ",
            "ajuste ignorado. Preencha y2_series (ex.: y2_series <- \"Temperatura\") para ligar o Y2.")
   neg <- pega("eixos_titulo_negrito")
   if (!is.null(neg)) { cfg$eixo_x$negrito_titulo <- isTRUE(neg); cfg$eixo_y$negrito_titulo <- isTRUE(neg); marca("eixos_titulo_negrito") }
@@ -210,14 +226,24 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
       cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(cor = por_serie[[nm]]))
     marca("cores_por_serie")
   }
+  # uma forma só para todas as séries: basta dar simbolo_forma (a troca automática de formas é desligada)
+  if (!is.null(pega("simbolo_forma")) && is.null(pega("simbolo_variar")) && is.null(pega("simbolos_ordem")))
+    cfg$cores$incrementar_simbolo <- FALSE
+  if (!is.null(pega("simbolo_forma"))) .simbolo_codigo(pega("simbolo_forma"), "simbolo_forma")   # valida o nome
   # grossura da linha / tamanho do ponto / contorno do ponto de séries específicas (vencem o valor geral)
-  for (nome in c("linha_espessura_por_serie", "simbolo_tamanho_por_serie", "simbolo_borda_por_serie")) {
+  for (nome in c("linha_espessura_por_serie", "simbolo_tamanho_por_serie", "simbolo_borda_por_serie",
+                 "simbolo_forma_por_serie")) {
     v <- pega(nome)
     if (is.null(v)) next
-    if (is.null(names(v)) || any(!nzchar(names(v))) || !is.numeric(v))
-      .erro(nome, " precisa de números com o nome da série: c(\"WORLD\" = 1, \"BRAZIL\" = 3).")
+    forma <- nome == "simbolo_forma_por_serie"          # este recebe o nome da forma (texto) ou o número
+    if (is.null(names(v)) || any(!nzchar(names(v))) || (!forma && !is.numeric(v)))
+      .erro(nome,
+            if (forma) " precisa do nome da série e da forma: c(\"WORLD\" = \"esfera\", \"BRAZIL\" = \"quadrado\")."
+                  else " precisa de números com o nome da série: c(\"WORLD\" = 1, \"BRAZIL\" = 3).")
+    if (forma) for (k in seq_along(v)) .simbolo_codigo(v[[k]], paste0(nome, "[\"", names(v)[k], "\"]"))
     chave <- switch(nome, linha_espessura_por_serie = "linha_espessura_pt",
-                    simbolo_tamanho_por_serie = "tamanho_simbolo_pt", simbolo_borda_por_serie = "espessura_borda_pt")
+                    simbolo_tamanho_por_serie = "tamanho_simbolo_pt",
+                    simbolo_borda_por_serie = "espessura_borda_pt", simbolo_forma_por_serie = "simbolo")
     for (nm in names(v)) {
       novo <- list(v[[nm]]); names(novo) <- chave
       cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), novo)
