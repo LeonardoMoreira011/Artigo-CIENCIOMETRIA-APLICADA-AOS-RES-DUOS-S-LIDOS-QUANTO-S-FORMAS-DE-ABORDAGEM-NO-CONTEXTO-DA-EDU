@@ -78,9 +78,7 @@ RECURSOS QUE VALEM PARA TODOS (exceto pizza): eixo_x, eixo_y, eixo_y2, caixa, gr
 }
 
 .grafico_paletas <- function(n = 8) {
-  nomes <- c("classico", "okabe_ito", "tableau", "viridis", "magma", "plasma", "cividis", "cinza",
-             "brewer_Set1", "brewer_Set2", "brewer_Dark2", "brewer_Paired", "brewer_Blues", "brewer_RdBu",
-             "personalizada")
+  nomes <- c(unlist(.PALETAS_GRUPOS, use.names = FALSE), "personalizada")
   cfg0 <- if (exists("cfg", envir = globalenv())) get("cfg", envir = globalenv())$cores else .cfg_ref$cores
   d <- do.call(rbind, lapply(nomes, function(p) {
     cores <- tryCatch(.paleta(p, n, cfg0), error = function(e) rep("grey90", n))
@@ -91,7 +89,7 @@ RECURSOS QUE VALEM PARA TODOS (exceto pizza): eixo_x, eixo_y, eixo_y2, caixa, gr
     geom_text(aes(label = i), size = 2.6, colour = "white") +
     scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
     labs(x = NULL, y = NULL, title = "Paletas  (cfg$cores$paleta <- \"nome\")") +
-    theme_minimal(11) + theme(panel.grid = element_blank(), axis.text.y = element_text(face = "bold"))
+    theme_minimal(11) + theme(panel.grid = element_blank(), axis.text.y = element_text(face = "bold", size = 8))
   g
 }
 

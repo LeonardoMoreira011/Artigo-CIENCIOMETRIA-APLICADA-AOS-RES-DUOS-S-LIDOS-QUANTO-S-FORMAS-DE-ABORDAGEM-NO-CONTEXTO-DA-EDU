@@ -134,6 +134,8 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   cfg <- .completar_cfg(cfg)
   ys <- .colunas_y(dados, cfg, excluir = .coluna(dados, cfg$grafico$coluna_x, "cfg$grafico$coluna_x"))
+  if (isTRUE(cfg$eixo_y2$ativo) && identical(cfg$eixo_y2$modo, "independente"))   # as séries do eixo direito têm outra escala
+    ys <- setdiff(ys, names(Filter(function(x) identical(x$eixo, "y2"), cfg$series)))
   v <- sort(unique(unlist(lapply(ys, function(y) dados[[y]]))))
   v <- v[is.finite(v)]
   if (length(v) < 2) .erro("Preciso de pelo menos 2 valores Y diferentes para procurar um vazio.")
@@ -199,6 +201,9 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
     inc <- Q[[paste0("incremento_", parte)]]; inc2 <- Q[[paste0("y2_incremento_", parte)]]
     if (!is.null(inc)) { ck$eixo_y$ticks_modo <- "incremento"; ck$eixo_y$incremento <- inc }
     if (!is.null(inc2) && !is.null(y2)) { ck$eixo_y2$ticks_modo <- "incremento"; ck$eixo_y2$incremento <- inc2 }
+    nm <- Q[[paste0("n_menores_", parte)]]; nm2 <- Q[[paste0("y2_n_menores_", parte)]]      # ticks pequenos de cada parte
+    if (!is.null(nm)) ck$eixo_y$n_menores <- nm
+    if (!is.null(nm2) && !is.null(y2)) ck$eixo_y2$n_menores <- nm2
     ck$caixa$proporcao <- NULL                         # as alturas das partes seguem proporcao_superior
     if (isTRUE(cfg$exportacao$fundo_transparente)) { ck$caixa$fundo_pagina <- "transparente"; ck$caixa$fundo_painel <- "transparente" }
     if (continuo && parte == "inferior") ck$eixo_y$.ocultar_extremo <- "max"   # o número da divisa aparece só uma vez

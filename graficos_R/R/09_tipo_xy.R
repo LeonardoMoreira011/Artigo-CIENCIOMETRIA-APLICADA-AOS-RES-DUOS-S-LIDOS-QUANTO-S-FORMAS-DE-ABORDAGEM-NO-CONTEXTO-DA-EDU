@@ -3,13 +3,37 @@
 # =============================================================================
 
 # ---- Pontos / linhas / áreas --------------------------------------------------
+# Opções de aparência do eixo Y2 que, vazias (NULL), seguem o eixo Y.
+.Y2_ESTILO <- c("direcao_maiores", "direcao_menores", "comprimento_maiores_pt", "comprimento_menores_pt", "espessura_ticks_pt",
+                "cor_ticks", "mostrar_linha", "espessura_linha_pt", "cor_linha", "mostrar_rotulos", "tamanho_rotulos_pt",
+                "cor_rotulos", "negrito_rotulos", "rotacao_rotulos", "mostrar_titulo", "tamanho_titulo_pt", "cor_titulo",
+                "negrito_titulo", "italico_titulo", "distancia_rotulos_pt", "distancia_titulo_pt", "rotacao_titulo")
+
 # Config do eixo Y2: a do eixo Y com o que o eixo_y2 define por cima (limites, ticks, formato). O divisor
 # dos números (fator_divisao) é o do eixo_y2 se existir; senão herda o do eixo_y, como sempre foi.
+# Limites, ticks e formato vazios no Y2 significam "automático" (não herdam os do Y); a aparência e a folga vazias herdam.
 .eixo_y2_efetivo <- function(cfg) {
-  e2 <- utils::modifyList(cfg$eixo_y, cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))])
+  sobre <- cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))]
+  herda <- names(sobre) %in% c(.Y2_ESTILO, "margem_percentual") & vapply(sobre, is.null, NA)
+  e2 <- utils::modifyList(cfg$eixo_y, sobre[!herda])
   e2$fator_divisao <- cfg$eixo_y2$fator_divisao %||% cfg$eixo_y$fator_divisao
   e2$escala <- "linear"; e2$inverter <- FALSE
   e2
+}
+# Aparência do eixo Y2 (ticks, linha, números, título): a do eixo vertical `ev` com o que o eixo_y2 preencher por cima.
+.estilo_y2 <- function(cfg, ev) {
+  sobre <- cfg$eixo_y2[intersect(.Y2_ESTILO, names(cfg$eixo_y2))]
+  sobre <- sobre[!vapply(sobre, is.null, NA)]
+  out <- utils::modifyList(ev, sobre)
+  out$mostrar_rotulos <- sobre$mostrar_rotulos %||% TRUE                       # sem pedir nada, o Y2 sempre mostra números e título
+  out$mostrar_titulo <- if (isTRUE(cfg$.interno$sem_titulo_y2)) FALSE else (sobre$mostrar_titulo %||% TRUE)
+  out
+}
+# Cores de cada parte do eixo Y2: a própria (cor_ticks, cor_rotulos...) ou, se vazia, a cor do eixo (cor_eixo / da série).
+.cores_y2 <- function(cfg, cor_eixo) {
+  e <- cfg$eixo_y2
+  list(ticks = .cor(e$cor_ticks) %||% cor_eixo, rotulos = .cor(e$cor_rotulos) %||% cor_eixo,
+       titulo = .cor(e$cor_titulo) %||% cor_eixo, linha = .cor(e$cor_linha) %||% cor_eixo)
 }
 # Avisa quantos pontos saem do gráfico por não existirem na escala do eixo (<= 0 em log, 0 em 1/x).
 .avisar_omitidos <- function(n, eixo, escala) {

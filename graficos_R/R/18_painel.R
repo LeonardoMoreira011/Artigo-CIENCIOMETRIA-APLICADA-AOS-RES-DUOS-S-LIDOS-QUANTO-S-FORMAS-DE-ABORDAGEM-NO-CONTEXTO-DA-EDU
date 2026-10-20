@@ -53,6 +53,10 @@
   quebra_y_intervalo_superior = c("quebra", "incremento_superior"),
   quebra_y2_intervalo_inferior = c("quebra", "y2_incremento_inferior"),
   quebra_y2_intervalo_superior = c("quebra", "y2_incremento_superior"),
+  quebra_y_ticks_menores_inferior = c("quebra", "n_menores_inferior"),
+  quebra_y_ticks_menores_superior = c("quebra", "n_menores_superior"),
+  quebra_y2_ticks_menores_inferior = c("quebra", "y2_n_menores_inferior"),
+  quebra_y2_ticks_menores_superior = c("quebra", "y2_n_menores_superior"),
   quebra_ligar_pontos = c("quebra", "ligar_atraves"), quebra_proporcao_superior = c("quebra", "proporcao_superior"),
   # cores, linhas e símbolos
   cores_paleta = c("cores", "paleta"), cores_gradiente_cor2 = c("cores", "gradiente_cor2"),
@@ -77,6 +81,15 @@
   legenda_negrito = c("legenda", "negrito_texto"), legenda_titulo_negrito = c("legenda", "negrito_titulo"),
   x_rotacao_titulo = c("eixo_x", "rotacao_titulo"), y_rotacao_titulo = c("eixo_y", "rotacao_titulo"),
   y2_rotacao_titulo = c("eixo_y2", "rotacao_titulo"),
+  y2_primeiro_tick = c("eixo_y2", "primeiro_tick"), y2_folga_pct = c("eixo_y2", "margem_percentual"),
+  y2_ticks_direcao = c("eixo_y2", "direcao_maiores"), y2_ticks_menores_direcao = c("eixo_y2", "direcao_menores"),
+  y2_ticks_comprimento_pt = c("eixo_y2", "comprimento_maiores_pt"),
+  y2_ticks_menores_comprimento_pt = c("eixo_y2", "comprimento_menores_pt"),
+  y2_ticks_espessura_pt = c("eixo_y2", "espessura_ticks_pt"), y2_ticks_cor = c("eixo_y2", "cor_ticks"),
+  y2_linha_espessura_pt = c("eixo_y2", "espessura_linha_pt"), y2_mostrar_numeros = c("eixo_y2", "mostrar_rotulos"),
+  y2_numeros_tamanho_pt = c("eixo_y2", "tamanho_rotulos_pt"), y2_numeros_negrito = c("eixo_y2", "negrito_rotulos"),
+  y2_rotacao_numeros = c("eixo_y2", "rotacao_rotulos"), y2_titulo_tamanho_pt = c("eixo_y2", "tamanho_titulo_pt"),
+  y2_titulo_negrito = c("eixo_y2", "negrito_titulo"), y2_titulo_italico = c("eixo_y2", "italico_titulo"),
   quebra_marcas = c("quebra", "marcas"), quebra_marca_largura_pt = c("quebra", "marca_largura_pt"),
   quebra_marca_altura_pt = c("quebra", "marca_altura_pt"),
   painel_fixo = c("caixa", "painel_fixo"),
@@ -94,7 +107,7 @@
   y2_distancia_titulo_pt = c("eixo_y2",
                              "distancia_titulo_pt"), y2_distancia_numeros_pt = c("eixo_y2", "distancia_rotulos_pt"),
   legenda_ancora = c("legenda", "ancora"), legenda_alinhar = c("legenda", "alinhar"),
-  legenda_direcao = c("legenda", "direcao"), legenda_n_colunas = c("legenda", "n_colunas"),
+  legenda_direcao = c("legenda", "direcao"), legenda_n_colunas = c("legenda", "n_colunas"), legenda_n_linhas = c("legenda", "n_linhas"),
   legenda_inverter_ordem = c("legenda", "inverter_ordem"), legenda_tamanho_chave_pt = c("legenda", "tamanho_chave_pt"),
   legenda_espacamento_pt = c("legenda",
                              "espacamento_pt"), legenda_margem_interna_pt = c("legenda", "margem_interna_pt"),
@@ -106,6 +119,7 @@
   legenda_sombra_deslocamento_pt = c("legenda", "sombra_deslocamento_pt"),
   caixa_fechada = c("caixa", "fechada"),
   # exportação
+  fundo_transparente = c("exportacao", "fundo_transparente"),
   largura_cm = c("exportacao", "largura"), altura_cm = c("exportacao", "altura"), dpi = c("exportacao", "dpi"),
   formatos = c("exportacao", "formatos"), nome_arquivo = c("exportacao", "nome_arquivo"),
   pasta_saida = c("exportacao", "pasta")
@@ -114,7 +128,11 @@
 # Variáveis do painel que mexem no eixo Y da direita (Y2).
 .Y2_VARIAVEIS <- c("y2_series", "y2_fator", "y2_deslocamento", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo",
                    "y2_ticks_manuais", "y2_ticks_menores", "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais",
-                   "y2_notacao", "y2_prefixo", "y2_sufixo", "y2_igual_y1", "y2_legenda_sufixo")
+                   "y2_notacao", "y2_prefixo", "y2_sufixo", "y2_igual_y1", "y2_legenda_sufixo", "y2_rotacao_titulo", "y2_distancia_titulo_pt",
+                   "y2_distancia_numeros_pt", "y2_primeiro_tick", "y2_folga_pct", "y2_ticks_direcao", "y2_ticks_menores_direcao",
+                   "y2_ticks_comprimento_pt", "y2_ticks_menores_comprimento_pt", "y2_ticks_espessura_pt", "y2_ticks_cor",
+                   "y2_linha_espessura_pt", "y2_mostrar_numeros", "y2_numeros_tamanho_pt", "y2_numeros_negrito",
+                   "y2_rotacao_numeros", "y2_titulo_tamanho_pt", "y2_titulo_negrito", "y2_titulo_italico")
 
 # Entra: cfg, o ambiente onde estão as variáveis do painel (padrão: o console/global) e, opcional, os
 # dados (para a quebra automática). Sai: o cfg com os ajustes do painel; imprime o que foi aplicado.
@@ -179,6 +197,8 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     cfg$eixo_y2$ativo <- TRUE
     if (!is.null(y2s)) {
       for (nm in y2s) cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(eixo = "y2"))
+      cy <- cfg$grafico$colunas_y                  # marcar uma coluna para o eixo direito também a coloca no gráfico
+      if (is.character(cy) && is.character(y2s) && length(setdiff(y2s, cy))) cfg$grafico$colunas_y <- c(cy, setdiff(y2s, cy))
       marca("y2_series")
     } else if (!is.null(y2f) || !is.null(y2d)) cfg$eixo_y2$modo <- "transformado"   # o mesmo dado em outra unidade
     # séries do Y2: as de y2_series ou, se o Y2 já estava ligado, as que já têm eixo = "y2" no cfg

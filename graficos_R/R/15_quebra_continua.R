@@ -66,9 +66,10 @@
   }
   if (isTRUE(cfg$eixo_y$mostrar_titulo) && !is.null(tit_y1) && !identical(tit_y1, ""))
     gt <- titulo_lateral(gt, tit_y1, cfg$eixo_y, "esq", NULL)
-  if (!is.null(y2) && isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(y2$titulo, ""))
-    gt <- titulo_lateral(gt, y2$titulo, utils::modifyList(cfg$eixo_y, Filter(Negate(is.null),
-                         cfg$eixo_y2[c("distancia_titulo_pt", "rotacao_titulo")])), "dir", .cor(y2$cor))
+  if (!is.null(y2) && !identical(y2$titulo, "")) {
+    ev2 <- .estilo_y2(cfg, cfg$eixo_y)
+    if (isTRUE(ev2$mostrar_titulo)) gt <- titulo_lateral(gt, y2$titulo, ev2, "dir", .cores_y2(cfg, .cor(y2$cor))$titulo)
+  }
   m <- cfg$caixa$margens_cm                          # margem externa esquerda/direita (as partes ficam sem ela)
   gt <- gtable::gtable_add_cols(gt, unit(m[4], "cm"), pos = 0)
   gt <- gtable::gtable_add_cols(gt, unit(m[2], "cm"), pos = -1)

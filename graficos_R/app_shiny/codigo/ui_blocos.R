@@ -24,6 +24,10 @@ numero_vazio_ok <- function(tag, ini) {
   htmltools::tagQuery(tag)$find("input")$removeAttrs("value")$allTags()
 }
 
+# A lista suspensa abre no <body> para não ser cortada pelo bloco; nas de várias escolhas, cada item tem um "×".
+OPC_SELECTIZE <- list(dropdownParent = "body", maxOptions = 2000)
+OPC_SELECTIZE_MULTI <- list(dropdownParent = "body", maxOptions = 2000, plugins = list("remove_button"), closeAfterSelect = FALSE, hideSelected = FALSE)
+
 ui_campo <- function(campo, cfg0) {
   id <- campo$id; ini <- valor_inicial(campo, cfg0)
   rot <- campo$rotulo
@@ -33,12 +37,18 @@ ui_campo <- function(campo, cfg0) {
     txt = textInput(id, rot, value = ini),
     vec = textInput(id, rot, value = ""),
     sel = , tri = selectInput(id, rot, choices = campo$opcoes, selected = ini, selectize = FALSE),
-    selbusca = selectInput(id, rot, choices = campo$opcoes, selected = ini, selectize = TRUE),
+    selbusca = selectizeInput(id, rot, choices = campo$opcoes, selected = ini,
+                              options = if (id == "cores_paleta") c(OPC_SELECTIZE, list(render = I("window.renderPaleta"))) else OPC_SELECTIZE),
     chk = checkboxInput(id, rot, value = ini),
+    chkgrupo = checkboxGroupInput(id, rot, choices = campo$opcoes, selected = ini, inline = TRUE),
     cor = cor_input(id, rot, hex_de(padrao_do_campo(campo, cfg0))),
-    selmulti = selectInput(id, rot, choices = campo$opcoes, selected = NULL, multiple = TRUE, selectize = TRUE),
+    selmulti = selectizeInput(id, rot, choices = campo$opcoes, selected = NULL, multiple = TRUE, options = OPC_SELECTIZE_MULTI),
     colx = selectInput(id, rot, choices = c("(1ª coluna)" = ""), selectize = FALSE),
-    colsy = , colsy2 = selectInput(id, rot, choices = character(0), multiple = TRUE, selectize = TRUE))
+    colsy = , colsy2 = tagList(
+      selectizeInput(id, rot, choices = character(0), multiple = TRUE,
+                     options = c(OPC_SELECTIZE_MULTI, list(placeholder = if (campo$tipo == "colsy") "Vazio = todas as colunas numéricas" else "Clique para escolher..."))),
+      div(class = "sel-atalhos", tags$a(href = "#", `data-sel-todas` = id, "Selecionar todas"), tags$a(href = "#", `data-sel-limpar` = id, "Limpar"))))
+  if (id == "cores_paleta") ctrl <- tagList(ctrl, uiOutput("previa_paleta"))          # as cores da paleta escolhida, desenhadas
   caixa <- div(class = paste0("campo campo-", campo$tipo, if (campo$largura >= 12) " span2" else ""),
                ctrl, if (!is.null(campo$ajuda)) tags$small(class = "ajuda", campo$ajuda))
   if (is.null(campo$se)) return(caixa)
@@ -60,7 +70,10 @@ ui_bloco <- function(b, n, cfg0, aberto = FALSE, extra = NULL) {
     div(class = "bloco-corpo",
         if (!is.null(b$dica)) div(class = "dica", span(class = "dica-ic", "Dica"), b$dica),
         if (length(b$campos)) ui_grade_campos(b$campos, cfg0),
-        lapply(b$grupos, function(g) div(class = "grupo", tags$h4(g$titulo), ui_grade_campos(g$campos, cfg0))),
+        lapply(b$grupos, function(g) {
+          gr <- div(class = "grupo", tags$h4(g$titulo), ui_grade_campos(g$campos, cfg0))
+          if (is.null(g$se)) gr else conditionalPanel(condition = g$se, gr)
+        }),
         extra))
 }
 
@@ -83,7 +96,7 @@ guia_rapido <- function() {
       div(class = "passo", span(class = "num", "1"), div(tags$b("Carregue seus dados"), tags$p("Envie um arquivo CSV (1ª linha com os títulos das colunas) ou escolha um dos exemplos. Escolha o tipo de gráfico."))),
       div(class = "passo", span(class = "num", "2"), div(tags$b("Ajuste os blocos"), tags$p("Cada bloco numerado tem um assunto: intervalos, escala, números, grade, quebra, eixo direito, cores, fonte, legenda... Abra um bloco e mude só o que precisar. O gráfico se atualiza ao lado."))),
       div(class = "passo", span(class = "num", "3"), div(tags$b("Confira o gráfico"), tags$p("A prévia mostra o gráfico como vai sair no arquivo. Os avisos abaixo dela explicam, em português, qualquer problema."))),
-      div(class = "passo", span(class = "num", "4"), div(tags$b("Baixe"), tags$p("Escolha o formato (PNG, TIFF, SVG, PDF...). Salve a configuração para repetir depois, ou copie o código para usar no script."))),
+      div(class = "passo", span(class = "num", "4"), div(tags$b("Baixe"), tags$p("Marque o tipo de arquivo no bloco 12 (PNG, TIFF, JPEG, SVG, PDF...) e use o botão de baixar. Salve a configuração para repetir depois, ou copie o código para usar no script."))),
       tags$h4("Palavras que aparecem"),
       tags$dl(
         tags$dt("Traço (tick)"), tags$dd("Marca pequena no eixo, ao lado de cada número. Grande = com número; pequeno = entre dois grandes."),
@@ -92,4 +105,29 @@ guia_rapido <- function() {
         tags$dt("Quebra do eixo"), tags$dd("Corta o trecho vazio entre dois grupos de dados muito distantes."),
         tags$dt("Eixo Y da direita (Y2)"), tags$dd("Um segundo eixo vertical, com escala própria, para séries de outra grandeza."),
         tags$dt("Caixa do gráfico"), tags$dd("A área dentro dos eixos. Com tamanho fixo, ela é igual em todos os gráficos."))))
+}
+
+# Editor da paleta própria (bloco 8): códigos de cor, quadradinhos que se editam, guardar com um nome.
+ui_paleta_propria <- function() {
+  div(class = "grupo", id = "paleta-editor",
+      tags$h4("Criar a minha paleta"),
+      tags$p(class = "ajuda", "Cole os códigos das cores (por exemplo os que você copiou do Origin ou do site coolors.co), separados por vírgula, espaço ou linha. Os quadradinhos abaixo podem ser clicados para trocar a cor. As séries usam as cores nesta ordem. Para usar, escolha \"A que estou criando\" na lista de paletas, em cima."),
+      textAreaInput("paleta_propria", NULL, value = "", rows = 3, width = "100%", placeholder = "#1B3A8C, #0E9F4B, #0B6E78, #8CC63F"),
+      div(id = "paleta-chips", class = "paleta-chips"),
+      div(class = "botoes-config",
+          tags$button(type = "button", class = "btn-sec", id = "paleta-mais", "+ Cor"),
+          tags$button(type = "button", class = "btn-sec", id = "paleta-inverter", "Inverter ordem"),
+          tags$button(type = "button", class = "btn-sec", id = "paleta-limpar", "Limpar"),
+          actionButton("paleta_copiar", "Começar pela paleta escolhida", class = "btn-sec")),
+      div(class = "campos paleta-guardar",
+          div(class = "campo", textInput("paleta_nome", "Nome para guardar", value = "", placeholder = "ex.: Minha marca")),
+          div(class = "campo botoes-config", actionButton("paleta_salvar", "Guardar paleta", class = "btn-verde"),
+              actionButton("paleta_excluir", "Excluir a guardada selecionada", class = "btn-sec"))),
+      tags$p(class = "ajuda", "As paletas guardadas ficam neste navegador (e vão junto na configuração salva)."))
+}
+
+# As cores de cada paleta pronta (6 de cada), para desenhar os quadradinhos na lista de paletas.
+paletas_js <- function() {
+  ids <- unlist(.PALETAS_GRUPOS, use.names = FALSE)
+  stats::setNames(lapply(ids, function(i) as.list(tryCatch(.paleta(i, 6, CFG0$cores), error = function(e) character(0)))), ids)
 }

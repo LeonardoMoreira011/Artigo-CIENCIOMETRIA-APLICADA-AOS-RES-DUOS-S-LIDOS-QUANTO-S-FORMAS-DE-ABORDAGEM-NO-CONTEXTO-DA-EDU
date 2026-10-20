@@ -4,8 +4,17 @@
 #  valores da tela  ->  variáveis do painel_de_ajustes.R  ->  aplicar_painel()  ->  plotar()
 # =============================================================================
 
-MARCA_CORES <- c("#1B3A8C", "#0E9F4B", "#0B6E78", "#8CC63F", "#0F4C81", "#2FB5A0", "#5B7DB1", "#6BBF59")
 `%||%` <- function(a, b) if (is.null(a)) b else a
+
+# Texto com cores (códigos #RRGGBB, #RGB, RRGGBB ou nomes do R, separados por vírgula, espaço ou linha) -> vetor de #RRGGBB.
+ler_cores_texto <- function(txt) {
+  p <- strsplit(trimws(paste(txt, collapse = " ")), "[[:space:],;]+")[[1]]; p <- p[nzchar(p)]
+  p <- ifelse(grepl("^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$", p), paste0("#", p), p)
+  ok <- vapply(p, function(x) tryCatch({ grDevices::col2rgb(x); TRUE }, error = function(e) FALSE), NA)
+  if (!any(ok)) return(character(0))
+  m <- grDevices::col2rgb(p[ok])
+  toupper(grDevices::rgb(m[1, ], m[2, ], m[3, ], maxColorValue = 255))
+}
 
 # Valor inicial (padrão) de um campo: o do template, ou o 'padrao' da especificação.
 padrao_do_campo <- function(campo, cfg0) {
@@ -27,6 +36,7 @@ valor_inicial <- function(campo, cfg0) {
     chk = isTRUE(d),
     sel = , tri = , selbusca = { o <- unname(unlist(campo$opcoes)); if (!is.null(d) && length(d) == 1 && as.character(d) %in% o) as.character(d) else o[1] },
     cor = "",
+    chkgrupo = as.character(d),
     vec = "", selmulti = character(0), colx = "", colsy = character(0), colsy2 = character(0), NULL)
 }
 
@@ -44,7 +54,7 @@ ler_valor <- function(campo, v, cfg0) {
     cor = { v <- as.character(v %||% ""); if (!nzchar(v)) NULL else v },
     vec = { p <- strsplit(gsub(",", ".", trimws(v %||% "")), "[;[:space:]]+")[[1]]; p <- p[nzchar(p)]
             n <- suppressWarnings(as.numeric(p)); if (!length(n) || anyNA(n)) NULL else n },
-    selmulti = if (length(v)) as.character(v) else NULL,
+    selmulti = , chkgrupo = if (length(v)) as.character(v) else NULL,
     colx = { v <- as.character(v %||% ""); if (!nzchar(v)) NULL else v },
     colsy = , colsy2 = if (length(v)) as.character(v) else NULL,
     NULL)
@@ -53,6 +63,7 @@ ler_valor <- function(campo, v, cfg0) {
     if (!is.null(.PAINEL_MAPA[[campo$id]])) { if (iguais(out, isTRUE(d))) return(NULL) }
     else if (!isTRUE(out)) return(NULL)
   }
+  if (campo$tipo == "chkgrupo" && iguais(sort(out), sort(as.character(d)))) return(NULL)
   if (campo$tipo %in% c("num", "int") && iguais(as.numeric(out), if (is.numeric(d)) as.numeric(d) else NULL)) return(NULL)
   out
 }
@@ -67,8 +78,13 @@ montar_variaveis <- function(v, cfg0, series = NULL) {
     val <- ler_valor(campo, v[[id]], cfg0)
     if (!is.null(val)) vars[[id]] <- val
   }
-  # paleta da marca = cores personalizadas
-  if (identical(vars$cores_paleta, "marca")) { vars$cores_paleta <- NULL; vars$cores_personalizadas <- MARCA_CORES }
+  # paleta própria (a do editor ou uma guardada) = cores personalizadas
+  pal <- vars$cores_paleta
+  if (identical(pal, "propria") || (is.character(pal) && startsWith(pal, "salva:"))) {
+    cores <- if (identical(pal, "propria")) ler_cores_texto(v$.paleta_propria) else v$.paletas_salvas[[sub("^salva:", "", pal)]]
+    vars$cores_paleta <- NULL
+    if (length(cores)) vars$cores_personalizadas <- as.character(cores)
+  }
   # formas: todas iguais (sempre manda a forma) ou variando
   if (identical(v$simbolo_modo, "igual")) vars$simbolo_forma <- v$simbolo_forma %||% "circulo"
   else { vars$simbolo_forma <- NULL }

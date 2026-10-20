@@ -683,8 +683,8 @@ teste("rotação do título do Y também na quebra de eixo e no Y2 (largura da f
       { cq <- c0; cq$grafico <- utils::modifyList(cq$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "POP")))
         cq$series$POP <- list(eixo = "y2"); cq$eixo_y2$ativo <- TRUE; cq$eixo_y2$titulo <- "Populacao"; cq$eixo_y$titulo <- "Intensidade do sinal"
         cq$quebra <- list(ativo = TRUE, de = 80, ate = 280, estilo = "continuo", y2_de = 2.5, y2_ate = 5.5, proporcao_superior = 0.4)
-        cq2 <- cq; cq2$eixo_y$rotacao_titulo <- 0; cq2$eixo_y2$rotacao_titulo <- 0
-        medidas(cq, aqq)$larg < medidas(cq2, aqq)$larg - 0.5 })
+        cq2r <- cq; cq2r$eixo_y$rotacao_titulo <- 0; cq2r$eixo_y2$rotacao_titulo <- 0
+        medidas(cq, aqq)$larg < medidas(cq2r, aqq)$larg - 0.5 })
 # marcas da quebra menores por padrão
 teste("a barra // da quebra é curta por padrão (2.5 x 3 pt) e configurável pelo painel",
       c0$quebra$marca_largura_pt == 2.5 && c0$quebra$marca_altura_pt == 3 &&
@@ -865,6 +865,95 @@ imprime2 <- function(g) { ragg::agg_capture(width = 400, height = 300,
                                             res = 72); print(g); invisible(grDevices::dev.off()) }
 teste("CSV único com células vazias (Y1 e Y2): imprime sem aviso do ggplot2 ('Removed rows...')",
       !any(grepl("Removed", avisos_de(imprime2(plotar(vz, cvz))))))
+
+cat("\n--- Segunda rodada: Y2 completo, legenda horizontal, paletas, quebra por partes ---\n")
+y2p <- list2env(list(y2_series = "POP", y2_ticks_direcao = "fora", y2_ticks_menores_direcao = "ambos", y2_ticks_comprimento_pt = 9,
+                     y2_numeros_tamanho_pt = 13, y2_numeros_negrito = TRUE, y2_rotacao_numeros = 30, y2_titulo_tamanho_pt = 15,
+                     y2_titulo_negrito = TRUE, y2_titulo_italico = TRUE, y2_ticks_cor = "red", y2_ticks_espessura_pt = 2,
+                     y2_primeiro_tick = 0, y2_folga_pct = 8, y2_linha_espessura_pt = 3, y2_mostrar_numeros = TRUE))
+cy2n <- suppressMessages(aplicar_painel(c0, y2p, dados = aq))
+cy2n$grafico <- utils::modifyList(cy2n$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "POP")))
+teste("painel Y2: as opções de aparência chegam ao cfg$eixo_y2", cy2n$eixo_y2$direcao_maiores == "fora" &&
+      cy2n$eixo_y2$direcao_menores == "ambos" && cy2n$eixo_y2$comprimento_maiores_pt == 9 && cy2n$eixo_y2$tamanho_rotulos_pt == 13 &&
+      isTRUE(cy2n$eixo_y2$negrito_rotulos) && cy2n$eixo_y2$rotacao_rotulos == 30 && cy2n$eixo_y2$tamanho_titulo_pt == 15 &&
+      isTRUE(cy2n$eixo_y2$negrito_titulo) && isTRUE(cy2n$eixo_y2$italico_titulo) && cy2n$eixo_y2$cor_ticks == "red" &&
+      cy2n$eixo_y2$espessura_ticks_pt == 2 && cy2n$eixo_y2$primeiro_tick == 0 && cy2n$eixo_y2$margem_percentual == 8)
+gy2 <- suppressWarnings(plotar(aq, cy2n)); thy2 <- gy2$theme
+teste("Y2 completo: números, título, traços e cor do lado direito seguem o eixo_y2 (e o lado esquerdo não muda)",
+      thy2$axis.text.y.right$size == 13 && thy2$axis.text.y.right$face == "bold" && thy2$axis.text.y.right$angle == 30 &&
+      thy2$axis.title.y.right$size == 15 && thy2$axis.title.y.right$face == "bold.italic" &&
+      as.numeric(thy2$axis.ticks.length.y.right) > 0 && thy2$axis.ticks.y.right$colour == "red" &&
+      thy2$axis.text.y.left$face == "plain" && as.numeric(thy2$axis.ticks.length.y.left) < 0)
+teste("Y2 completo: monta e imprime sem aviso", length(avisos_de(imprime(gy2))) == 0)
+cy2h <- suppressMessages(aplicar_painel(c0, list2env(list(y2_series = "POP", y_numeros_tamanho_pt = 11, y_ticks_direcao = "fora")), dados = aq))
+cy2h$grafico <- utils::modifyList(cy2h$grafico, list(tipo = "linha_pontos", coluna_x = 1, colunas_y = c("WORLD", "POP")))
+thh <- suppressWarnings(plotar(aq, cy2h))$theme
+teste("Y2 sem opções próprias herda tamanho e direção dos traços do eixo Y",
+      thh$axis.text.y.right$size == 11 && as.numeric(thh$axis.ticks.length.y.right) > 0)
+cy2o <- cy2n; cy2o$eixo_y2$mostrar_rotulos <- FALSE
+teste("Y2 com mostrar_rotulos = FALSE esconde só os números do eixo direito",
+      inherits(suppressWarnings(plotar(aq, cy2o))$theme$axis.text.y.right, "element_blank"))
+cy2a <- cy2n; cy2a$eixo_y2$direcao_maiores <- "ambos"; cy2a$eixo_y2$direcao_menores <- "dentro"
+teste("Y2 com traços 'ambos' e menores desenha a anotação dos traços do lado direito", {
+  g1 <- suppressWarnings(plotar(aq, cy2a)); length(g1$layers) > length(suppressWarnings(plotar(aq, c0))$layers) })
+cq3 <- suppressMessages(aplicar_painel(c0, pq, dados = aq)); cq3$quebra$estilo <- "continuo"; cq3$eixo_y2$cor_ticks <- "blue"; cq3$eixo_y2$tamanho_titulo_pt <- 13
+teste("quebra + Y2 com aparência própria do Y2 monta e imprime sem aviso", length(avisos_de(imprime(plotar(aq, cq3)))) == 0)
+
+teste("painel Y2: série marcada para o eixo direito entra no gráfico mesmo fora de colunas_y",
+      { cc <- suppressMessages(aplicar_painel(c0, list2env(list(colunas_y = c("WORLD", "BRAZIL"), y2_series = "POP")), dados = aq))
+        identical(cc$grafico$colunas_y, c("WORLD", "BRAZIL", "POP")) && inherits(suppressWarnings(plotar(aq, utils::modifyList(cc, list(grafico = list(coluna_x = 1))))), "gg") })
+
+cat("--- legenda: orientação, linhas e colunas ---\n")
+cgl <- c0; cgl$legenda$direcao <- "horizontal"
+cgn <- c0; cgn$legenda$n_colunas <- 2; cgn$legenda$n_linhas <- 1
+teste("legenda: horizontal = uma linha; colunas e linhas dados valem; os dois ao mesmo tempo que não cabem aumentam as linhas", {
+  pr <- function(cf, n) .guia_legenda(cf, n)$params
+  pr(cgl, 4)$nrow == 1 && is.null(pr(c0, 4)$nrow) && pr(cgn, 6)$ncol == 2 && pr(cgn, 6)$nrow == 3 })
+cgh <- c0; cgh$legenda$direcao <- "horizontal"; cgh$legenda$n_linhas <- 2; cgh$legenda$ajustar_caixa <- FALSE
+cgv <- c0; cgv$legenda$direcao <- "vertical"; cgv$legenda$ajustar_caixa <- FALSE
+teste("legenda horizontal em 2 linhas é mais larga e mais baixa que a vertical", {
+  gx <- list(grafico = list(tipo = "linha_pontos", coluna_x = 1))
+  mh <- .medir_legenda(plotar(aq, utils::modifyList(cgh, gx)), c(6, 5))$legenda
+  mv <- .medir_legenda(plotar(aq, utils::modifyList(cgv, gx)), c(6, 5))$legenda
+  mh[1] > mv[1] && mh[2] < mv[2] })
+pl <- list2env(list(legenda_direcao = "horizontal", legenda_n_linhas = 2, fundo_transparente = TRUE))
+cpl <- suppressMessages(aplicar_painel(c0, pl))
+teste("painel: legenda_n_linhas e fundo_transparente chegam ao cfg", cpl$legenda$n_linhas == 2 && isTRUE(cpl$exportacao$fundo_transparente))
+
+cat("--- paletas ---\n")
+ids_pal <- unlist(.PALETAS_GRUPOS, use.names = FALSE)
+teste("paletas: todas as do catálogo (grupos da tela) existem e entregam n cores válidas (n = 1, 3 e 12)",
+      length(ids_pal) >= 35 && all(vapply(ids_pal, function(i) all(vapply(c(1, 3, 12), function(n) {
+        x <- .paleta(i, n, c0$cores); length(x) == n && !anyNA(x) && is.matrix(grDevices::col2rgb(x)) }, NA)), NA)))
+teste("paletas: 'marca' (azul e verde) é uma paleta do motor e o painel a aceita",
+      identical(.paleta("marca", 2, c0$cores), c("#1B3A8C", "#0E9F4B")) &&
+      suppressMessages(aplicar_painel(c0, list2env(list(cores_paleta = "marca"))))$cores$paleta == "marca")
+teste("paletas: de uma cor só (seq_azul) vão do claro ao escuro e as demais (qualitativas) ficam na ordem da lista", {
+  a <- .paleta("seq_azul", 5, c0$cores); l <- function(x) sum(grDevices::col2rgb(x)) / 3
+  l(a[1]) > l(a[5]) && identical(.paleta("origin_basico", 3, c0$cores), c("#000000", "#FF0000", "#0000FF")) })
+teste("paleta desconhecida dá erro com a lista de opções", da_erro(.paleta("nao_existe", 3, c0$cores), "Opções:"))
+teste("paletas: mostrar_paletas() desenha todas sem erro", { g <- .grafico_paletas(6); inherits(g, "gg") && monta(g) })
+
+cat("--- quebra: traços pequenos por parte ---\n")
+cqm <- suppressMessages(aplicar_painel(c0, pq, dados = aq)); cqm$eixo_y2$ativo <- FALSE; cqm$series[["POP"]] <- NULL; cqm$grafico$colunas_y <- c("WORLD", "BRAZIL")
+cqm$quebra$y2_de <- NULL; cqm$quebra$y2_ate <- NULL; cqm$quebra$y2_incremento_inferior <- NULL; cqm$quebra$y2_incremento_superior <- NULL
+cqm$eixo_y$n_menores <- 1; cqm$quebra$n_menores_inferior <- 4; cqm$quebra$n_menores_superior <- 0
+ptm <- attr(suppressWarnings(plotar(aq, cqm)), "partes")
+nmen <- function(g) length(attr(g, "info")$ax_y$menores)
+teste("quebra: n_menores_inferior / n_menores_superior mudam os traços pequenos de cada parte (e vazio herda o eixo)", {
+  cqn <- cqm; cqn$quebra$n_menores_inferior <- NULL; cqn$quebra$n_menores_superior <- NULL
+  pn <- attr(suppressWarnings(plotar(aq, cqn)), "partes")
+  nmen(ptm[[2]]) > nmen(pn[[2]]) && nmen(ptm[[1]]) == 0 && nmen(pn[[1]]) > 0 })
+teste("painel: traços pequenos por parte da quebra (e do Y2) chegam ao cfg$quebra", {
+  cp <- suppressMessages(aplicar_painel(c0, list2env(list(quebra_y_ticks_menores_inferior = 3, quebra_y_ticks_menores_superior = 1,
+        quebra_y2_ticks_menores_inferior = 2, quebra_y2_ticks_menores_superior = 0))))
+  cp$quebra$n_menores_inferior == 3 && cp$quebra$n_menores_superior == 1 && cp$quebra$y2_n_menores_inferior == 2 &&
+  cp$quebra$y2_n_menores_superior == 0 })
+teste("sugerir_quebra ignora as séries do eixo direito (têm outra escala)", {
+  ss <- suppressMessages(aplicar_painel(c0, list2env(list(y2_series = "POP"))))
+  ss$grafico <- utils::modifyList(ss$grafico, list(coluna_x = 1))
+  dd <- aq; dd$POP <- dd$POP * 1000                       # o eixo direito tem o maior vazio, mas não conta
+  r <- NULL; utils::capture.output(r <- sugerir_quebra(dd, ss)); r$de < 100000 && r$ate > 300000 })
 
 cat("\n--- Exportação e estilos ---\n")
 c1 <- c0; c1$exportacao$formatos <- c("png", "pdf", "svg", "tiff"); c1$exportacao$nome_arquivo <- "t"

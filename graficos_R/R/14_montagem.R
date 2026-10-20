@@ -126,7 +126,7 @@
   sec_x <- sec_dup(info$ax_x)
   sec_y <- if (!is.null(info$y2)) {
     a2 <- info$y2$ax
-    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo, .neg(cfg, cfg$eixo_y$negrito_titulo)), breaks = a2$maiores,
+    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo, .neg(cfg, cfg$eixo_y2$negrito_titulo %||% cfg$eixo_y$negrito_titulo)), breaks = a2$maiores,
              labels = a2$rotulos)
   } else sec_dup(info$ax_y)
   g <- g + .escala_continua(info$ax_x, "x", sec_x, if (x_topo) "top") +
@@ -156,18 +156,10 @@
                 grade_y_maior = if (isTRUE(info$flip)) cfg$grade$maior_x else cfg$grade$maior_y,
                 grade_x_menor = if (isTRUE(info$flip)) cfg$grade$menor_y else cfg$grade$menor_x,
                 grade_y_menor = if (isTRUE(info$flip)) cfg$grade$menor_x else cfg$grade$menor_y)
-  ev_y2 <- ev
   cfg <- .legenda_por_coordenadas(cfg, info)             # posição da legenda dada em unidades dos eixos (x_dados / y_dados)
-  g <- g + .tema(cfg, eh, ev, lados, cor_y2 = if (!is.null(info$y2)) .cor(info$y2$cor) else NULL)
-  if (!is.null(info$y2)) {
-    # estilo de rótulos do y2: casas/notação próprias já nos rótulos; mostra sempre
-    d2 <- Filter(Negate(is.null), cfg$eixo_y2[c("distancia_titulo_pt", "distancia_rotulos_pt", "rotacao_titulo")])   # só do Y2
-    g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, c(list(mostrar_rotulos = TRUE), d2)), cfg,
-                                                    "right",
-                                                    .cor(info$y2$cor)),
-                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, c(list(mostrar_titulo = !isTRUE(cfg$.interno$sem_titulo_y2)), d2)), cfg, "right",
-                                                     .cor(info$y2$cor)))
-  }
+  ev2 <- if (!is.null(info$y2)) .estilo_y2(cfg, ev) else NULL
+  cor_y2 <- if (!is.null(info$y2)) .cores_y2(cfg, .cor(info$y2$cor)) else NULL
+  g <- g + .tema(cfg, eh, ev, lados, cor_y2 = cor_y2, ev2 = ev2)
   if (y_dir && espelhar) {
     g <- g + theme(axis.text.y.left = element_blank(), axis.title.y.left = element_blank(),
                    axis.text.y.right = .elem_rotulo(ev, cfg,
@@ -176,7 +168,7 @@
   ti <- .ticks_internos(axh, axv, lados, info$ax_x, info$ax_y)
   if (!is.null(ti)) g <- g + ti
   if (!is.null(info$y2)) {
-    tm <- .ticks_y2_menores(info$y2, info$ax_y, ev, info$ax_x)
+    tm <- .ticks_y2_menores(info$y2, info$ax_y, ev2, info$ax_x, cor_y2$ticks)
     if (!is.null(tm)) g <- g + tm
   }
   if (!mostrar_leg) g <- g + theme(legend.position = "none")

@@ -19,8 +19,17 @@
       var a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); document.body.removeChild(a);
     }).then(function () { b.textContent = 'Copiado!'; setTimeout(function () { b.textContent = 'Copiar'; }, 1600); });
   });
+  // "Selecionar todas" / "Limpar" nas listas de colunas
+  function seletor(id) { var el = document.getElementById(id); return el && el.selectize; }
+  $(document).on('click', '[data-sel-todas]', function (e) {
+    e.preventDefault(); var s = seletor($(this).data('sel-todas')); if (!s) return;
+    s.setValue(Object.keys(s.options), false);
+  });
+  $(document).on('click', '[data-sel-limpar]', function (e) {
+    e.preventDefault(); var s = seletor($(this).data('sel-limpar')); if (s) s.clear(false);
+  });
   // clicar num atalho do índice abre o bloco
-  $(document).on('click', '.passos-mini a', function () { var d = document.querySelector($(this).attr('href')); if (d) d.open = true; });
+  $(document).on('click', 'a[href^="#bloco-"]', function () { var d = document.querySelector($(this).attr('href')); if (d) d.open = true; });
 
   // ---- caixa da legenda: arrastar (posição) e puxar a alça (largura) sobre a prévia ------------------------------------------
   var geo = null, ar = null;
@@ -68,5 +77,49 @@
     } else {
       Shiny.setInputValue('legenda_redimensionada', { largura: $b.width() / m.W, t: Date.now() }, { priority: 'event' });
     }
+  });
+
+  // ---- paletas: editor de cores, paletas guardadas no navegador ---------------------------------------------------------------------
+  var CHAVE = 'gerador_paletas';
+  window.PALETAS_SALVAS = {};
+  function quadradinhos(cores) {
+    return '<span class="op-cores">' + (cores || []).slice(0, 8).map(function (c) { return '<i style="background:' + c + '"></i>'; }).join('') + '</span>';
+  }
+  window.renderPaleta = {
+    option: function (item, escape) {
+      var v = item.value, cores = (window.PALETAS || {})[v] || (v.indexOf('salva:') === 0 ? window.PALETAS_SALVAS[v.slice(6)] : null);
+      return '<div class="op-pal">' + quadradinhos(cores) + '<span>' + escape(item.label) + '</span></div>';
+    },
+    item: function (item, escape) { return '<div>' + escape(item.label) + '</div>'; }
+  };
+  function normHex(t) {
+    t = (t || '').trim();
+    if (/^[0-9a-fA-F]{3}$/.test(t)) t = '#' + t.split('').map(function (c) { return c + c; }).join('');
+    else if (/^[0-9a-fA-F]{6}$/.test(t)) t = '#' + t;
+    return /^#[0-9a-fA-F]{6}$/.test(t) ? t.toUpperCase() : (/^#[0-9a-fA-F]{3}$/.test(t) ? normHex(t.slice(1)) : null);
+  }
+  function listaHex() { return ($('#paleta_propria').val() || '').split(/[\s,;]+/).map(normHex).filter(Boolean); }
+  function gravar(lista) { $('#paleta_propria').val(lista.join(', ')).trigger('input'); desenharChips(lista); }
+  function desenharChips(lista) {
+    var $c = $('#paleta-chips').empty();
+    lista.forEach(function (h, i) {
+      var $s = $('<span class="chip-cor">'), $i = $('<input type="color">').val(h).attr('data-i', i), $x = $('<button type="button" class="chip-x" title="Remover">&times;</button>').attr('data-i', i);
+      $s.append($i, $('<em>').text(h), $x); $c.append($s);
+    });
+  }
+  $(document).on('shiny:inputchanged', function (e) { if (e.name === 'paleta_propria') desenharChips((e.value || '').split(/[\s,;]+/).map(normHex).filter(Boolean)); });
+  $(document).on('change', '#paleta-chips input[type=color]', function () { var l = listaHex(); l[+$(this).attr('data-i')] = this.value.toUpperCase(); gravar(l); });
+  $(document).on('click', '#paleta-chips .chip-x', function () { var l = listaHex(); l.splice(+$(this).attr('data-i'), 1); gravar(l); });
+  $(document).on('click', '#paleta-mais', function () { var l = listaHex(); l.push(l.length ? l[l.length - 1] : '#1B3A8C'); gravar(l); });
+  $(document).on('click', '#paleta-inverter', function () { gravar(listaHex().reverse()); });
+  $(document).on('click', '#paleta-limpar', function () { gravar([]); });
+  $(document).on('shiny:connected', function () {
+    var o = {}; try { o = JSON.parse(localStorage.getItem(CHAVE) || '{}') || {}; } catch (e) { o = {}; }
+    if (Array.isArray(o)) o = {};
+    window.PALETAS_SALVAS = o;
+    Shiny.setInputValue('paletas_do_navegador', o, { priority: 'event' });
+  });
+  Shiny.addCustomMessageHandler('guardar_paletas', function (txt) {
+    try { var o = JSON.parse(txt); if (Array.isArray(o)) o = {}; window.PALETAS_SALVAS = o; localStorage.setItem(CHAVE, JSON.stringify(o)); } catch (e) {}
   });
 })();

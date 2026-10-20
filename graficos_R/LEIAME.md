@@ -13,7 +13,7 @@ Para quem não quer mexer em código: abra o **gerador de gráficos** no navegad
 - **O que tem:** os mesmos 12 blocos do `painel_de_ajustes.R` (dados, intervalos, escala, números e títulos, grade, quebra do eixo, eixo Y direito, cores/linhas/símbolos série por série, fonte, moldura e tamanho fixo da caixa, legenda, exportação), cada um com explicação e dicas, prévia que se atualiza sozinha, avisos em português, e botões para baixar **PNG, TIFF, JPEG, SVG e PDF**.
 - **Repetir depois:** *Salvar configuração* (arquivo .json) e *Carregar configuração*; *Código equivalente* mostra as linhas do painel e baixa um script `.R` pronto — a ponte entre o app e o script.
 - **Para o time:** basta compartilhar a pasta `graficos_R` inteira (o app usa o motor da pasta de cima e a fonte de `fontes/`).
-- **Testes do app:** `Rscript app_shiny/testes_app.R`.
+- **Testes do app:** `Rscript app_shiny/testes_app.R` (37 testes).
 
 ## Refinos de aparência (atualização)
 
@@ -24,6 +24,15 @@ Para quem não quer mexer em código: abra o **gerador de gráficos** no navegad
 - **Quebra de eixo:** as barras `//` ficaram curtas (2,5 × 3 pt) para não encostar nos números; `quebra_marca_largura_pt`, `quebra_marca_altura_pt`, `quebra_marcas`.
 - **Grade:** nos traços grandes (`grade_x`, `grade_y`) e nos pequenos (`grade_menor_x`, `grade_menor_y`), cada grupo com tipo, cor, grossura e opacidade; a menor precisa de traços pequenos (`x_ticks_menores` ≥ 1).
 - **Fontes:** o app lista **todas as fontes do computador (systemfonts)**, com busca, e aceita uma fonte de arquivo `.ttf`/`.otf`. No script: `listar_fontes()` e `fonte <- "Nome da fonte"`.
+
+## Segunda rodada de ajustes (app e motor)
+
+- **Listas de colunas (Y e Y2):** a lista suspensa não é mais cortada pelo bloco; tem **"Selecionar todas"** e **"Limpar"**, e a coluna do eixo X não aparece como série.
+- **Tipo de arquivo (bloco 12):** marque PNG, TIFF, JPEG, SVG, PDF (e EMF, se o pacote *devEMF* estiver instalado): o cartão *Baixar* mostra um botão para cada tipo marcado. Novo: `fundo_transparente <- TRUE`.
+- **Legenda:** `legenda_direcao` ("vertical" = um embaixo do outro, "horizontal" = lado a lado numa linha), `legenda_n_colunas` e novo `legenda_n_linhas` (ex.: horizontal em 2 linhas).
+- **Paletas:** 39 paletas prontas, agrupadas — *Estilo Origin* (cores básicas, vivas, escuras, pastel...), *Marca*, *Acessíveis* (Okabe-Ito, Paul Tol), *Revistas* (Tableau, D3, Nature, Lancet, JCO, NEJM), degradês de uma cor, divergentes, viridis e cinza (`mostrar_paletas()` desenha todas). As "Estilo Origin" são inspiradas na sequência de cores básicas do Origin e em conjuntos parecidos — **não são cópias exatas das paletas do Origin** (não consegui acessar a documentação deles). **Criar a minha paleta:** no app, cole códigos de cor (ex.: copiados do Origin), edite os quadradinhos, inverta a ordem e **guarde com um nome** (fica no navegador e vai junto na configuração salva). No script: `cores_personalizadas <- c("#...", "#...")`.
+- **Eixo Y direito (Y2) completo:** as mesmas opções do Y1 — traços (direção, comprimento, grossura, cor, primeiro traço), linha do eixo, números (tamanho, negrito, giro, mostrar), título (tamanho, negrito, itálico, giro) e folga. Vazio = igual ao eixo esquerdo (`y2_ticks_direcao`, `y2_numeros_tamanho_pt`, `y2_titulo_negrito`...).
+- **Quebra do eixo Y completa:** botão **"Achar o maior vazio nos meus dados"**; traços pequenos e intervalo **de cada parte** (`quebra_y_ticks_menores_inferior`/`_superior`, e `quebra_y2_...` para o eixo direito); as opções do eixo direito aparecem sozinhas quando há séries no Y2.
 
 ## Atalho com ícone, sem janela de comando, e endereço bonito
 
@@ -202,7 +211,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
 | `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 187 testes automáticos — rode depois de qualquer alteração no motor |
+| `06_testes.R` | 205 testes automáticos — rode depois de qualquer alteração no motor |
 | `painel_de_ajustes.R` | **o painel**: variáveis simples por categoria (escala, ticks, grade, quebra, cores...). Veja a seção 2.1 |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |
@@ -212,7 +221,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 
 - Gradientes exigem R ≥ 4.2 e não existem em EMF (o arquivo EMF sai com cor sólida, com aviso).
 - No Windows, a aba Plots do RStudio só mostra gradientes com o backend **AGG** (passo 1.4). `visualizar()` e `salvar()` sempre funcionam.
-- Eixo Y2 é linear. Quebra de eixo só no Y. O eixo de datas vale para pontos, linhas e áreas (em barras, pizza e boxplot a data continua sendo texto).
+- Eixo Y2 é linear. Quebra de eixo só no Y (não existe quebra do eixo X). O eixo de datas vale para pontos, linhas e áreas (em barras, pizza e boxplot a data continua sendo texto).
 - Com datas, o fuso é sempre UTC (sem horário de verão) e o dia vem antes do mês, salvo `formato_data`.
 - Sem gráficos 3D, mapas de contorno ou rótulos nos ticks menores.
 - Interface com botões (Shiny) não incluída: é a "Fase 2" opcional descrita no prompt.

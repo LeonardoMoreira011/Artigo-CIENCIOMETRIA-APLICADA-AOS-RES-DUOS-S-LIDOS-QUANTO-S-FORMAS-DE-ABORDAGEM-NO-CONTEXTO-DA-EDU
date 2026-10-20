@@ -68,6 +68,16 @@
   stats::setNames(out, itens)
 }
 
+# Guia da legenda: como os itens se organizam. direcao "horizontal" = lado a lado (uma linha, ou n_linhas /
+# n_colunas se dados); "vertical" = um embaixo do outro (uma coluna, ou n_colunas / n_linhas).
+.guia_legenda <- function(cfg, n_itens, ...) {
+  lg <- cfg$legenda
+  nc <- lg$n_colunas; nl <- lg$n_linhas
+  if (is.null(nc) && is.null(nl) && identical(lg$direcao, "horizontal")) nl <- 1
+  if (!is.null(nc) && !is.null(nl) && n_itens > 0 && nc * nl < n_itens) nl <- ceiling(n_itens / nc)   # não cabem: aumenta as linhas
+  guide_legend(ncol = nc, nrow = nl, byrow = TRUE, ...)
+}
+
 # Escalas manuais "fundidas" numa só legenda
 .escalas_legenda <- function(est, aes_usadas, cfg) {
   itens <- names(est)
@@ -75,7 +85,7 @@
   if (isTRUE(cfg$legenda$inverter_ordem)) quebras <- rev(quebras)
   rotulos <- .rotulos_legenda(vapply(est[quebras], function(e) as.character(e$rotulo), ""))
   nome <- if (is.null(cfg$legenda$titulo)) NULL else .texto(cfg$legenda$titulo)
-  guia <- guide_legend(ncol = cfg$legenda$n_colunas, byrow = TRUE)
+  guia <- .guia_legenda(cfg, length(quebras))
   valores <- list(
     colour    = function() stats::setNames(vapply(est, function(e) e$cor, ""), itens),
     fill      = function() stats::setNames(lapply(est, function(e) e$preench), itens),
@@ -91,7 +101,7 @@
   lapply(aes_usadas, function(a) {
     v <- valores[[a]]()
     if (a == "fill" && radial && length(quebras))
-      guia <- guide_legend(ncol = cfg$legenda$n_colunas, byrow = TRUE,
+      guia <- .guia_legenda(cfg, length(quebras),
                            override.aes = list(fill = unname(vapply(est[quebras], function(e) e$cor_solida, ""))))
     estetica <- if (a == "fill_simb") "fill" else a
     if (estetica == "fill" && !is.list(v)) v <- as.list(v)

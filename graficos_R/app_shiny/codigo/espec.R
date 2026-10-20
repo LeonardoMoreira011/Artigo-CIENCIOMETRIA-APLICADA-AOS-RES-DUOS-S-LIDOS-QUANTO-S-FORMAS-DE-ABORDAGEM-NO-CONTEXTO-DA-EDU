@@ -3,7 +3,7 @@
 # =============================================================================
 #  Cada campo do app é uma variável do painel_de_ajustes.R (mesmo nome). O app monta as variáveis e chama
 #  aplicar_painel(), então tudo o que o painel faz o app faz, igual. Para acrescentar um ajuste novo: escreva
-#  um campo() no bloco certo. Tipos: num | int | txt | sel | chk | tri | cor | vec | colx | colsy | colsy2.
+#  um campo() no bloco certo. Tipos: num | int | txt | sel | selbusca | selmulti | chk | tri | cor | vec | colx | colsy | colsy2 | chkgrupo.
 # =============================================================================
 
 campo <- function(id, tipo, rotulo, ajuda = NULL, opcoes = NULL, min = NA, max = NA, passo = NA,
@@ -41,6 +41,13 @@ opcoes_fontes <- function() {
   out
 }
 .FONTES <- opcoes_fontes()
+# Paletas da tela: as do motor (agrupadas) + "Minhas paletas" (a que está sendo criada e as guardadas).
+opcoes_paletas <- function(guardadas = character(0)) {
+  minhas <- c("★ A que estou criando (veja abaixo)" = "propria", if (length(guardadas)) stats::setNames(paste0("salva:", guardadas), paste0("★ ", guardadas)))
+  c(.PALETAS_GRUPOS, list("Minhas paletas" = minhas))
+}
+.FORMATOS <- c("PNG (imagem)" = "png", "TIFF (revistas)" = "tiff", "JPEG (foto)" = "jpeg", "SVG (editável)" = "svg", "PDF (vetorial)" = "pdf",
+                if (requireNamespace("devEMF", quietly = TRUE)) c("EMF (Word/PowerPoint)" = "emf"))
 .CANTOS <- c("(posição manual)" = "", "Em cima, à esquerda" = "sup_esq", "Em cima, no centro" = "sup_centro",
              "Em cima, à direita" = "sup_dir", "No meio, à esquerda" = "centro_esq", "No centro" = "centro",
              "No meio, à direita" = "centro_dir", "Embaixo, à esquerda" = "inf_esq", "Embaixo, no centro" = "inf_centro",
@@ -93,6 +100,49 @@ opcoes_fontes <- function() {
     campo(paste0(p, "_escala"), "sel", paste0("Escala do eixo ", P), "Logarítmica serve para dados que variam muitas ordens de grandeza.", opcoes = .ESCALAS),
     campo(paste0(p, "_folga_pct"), "num", "Folga nas pontas (%)", "Espaço extra além do primeiro e do último valor. 4 evita que os pontos das pontas sejam cortados.", min = 0, max = 50, passo = 1),
     campo(paste0(p, "_inverter"), "chk", "Inverter o eixo", "Os valores crescem no sentido contrário.")
+  )
+}
+
+.SE_Y2 <- "input.y2_series && input.y2_series.length"
+.SE_QUEBRA <- "input.quebra_ativar"
+.SE_QUEBRA_Y2 <- "input.quebra_ativar && input.y2_series && input.y2_series.length"
+
+# Eixo da direita (Y2): as mesmas opções do eixo Y.
+.campos_intervalo_y2 <- function() {
+  list(
+    campo("y2_inicio", "num", "Eixo direito começa em", "Deixe vazio para o automático."),
+    campo("y2_fim", "num", "Eixo direito termina em", "Deixe vazio para o automático."),
+    campo("y2_intervalo", "num", "Distância entre os traços", "5 = de 5 em 5. Vazio = automático."),
+    campo("y2_primeiro_tick", "num", "Primeiro traço em", "De onde começa a contar."),
+    campo("y2_ticks_menores", "int", "Traços pequenos entre dois grandes", "0 = sem traços pequenos.", min = 0, max = 20),
+    campo("y2_ticks_manuais", "vec", "Traços em posições escolhidas", "Separe por vírgula: 0, 10, 25, 40. Ignora a distância.", largura = 12),
+    campo("y2_ticks_direcao", "sel", "Traços grandes", "Para onde apontam. Vazio = como o eixo esquerdo.", opcoes = c("(como o esquerdo)" = "", .DIRECAO), padrao = "", mais = TRUE),
+    campo("y2_ticks_menores_direcao", "sel", "Traços pequenos", NULL, opcoes = c("(como o esquerdo)" = "", .DIRECAO), padrao = "", mais = TRUE),
+    campo("y2_ticks_comprimento_pt", "num", "Comprimento do traço grande (pt)", "Vazio = como o eixo esquerdo.", min = 0, passo = 0.5, mais = TRUE),
+    campo("y2_ticks_menores_comprimento_pt", "num", "Comprimento do traço pequeno (pt)", NULL, min = 0, passo = 0.5, mais = TRUE),
+    campo("y2_ticks_espessura_pt", "num", "Grossura dos traços (pt)", "Vazio = como o eixo esquerdo (a da moldura).", min = 0, passo = 0.25, mais = TRUE),
+    campo("y2_ticks_cor", "cor", "Cor dos traços", "Vazio = a cor do eixo direito.", mais = TRUE),
+    campo("y2_linha_espessura_pt", "num", "Grossura da linha do eixo (pt)", "Só aparece quando a moldura NÃO é fechada.", min = 0, passo = 0.25, mais = TRUE)
+  )
+}
+.campos_numeros_y2 <- function() {
+  list(
+    campo("y2_titulo", "txt", "Título do eixo direito", "Expoente: m^{2}  Índice: CO_{2}", largura = 12),
+    campo("y2_dividir_por", "num", "Dividir os números por", "1000 mostra 100 em vez de 100000 (avise no título)."),
+    campo("y2_casas_decimais", "int", "Casas decimais", "Vazio = automático.", min = 0, max = 10),
+    campo("y2_notacao", "sel", "Formato dos números", NULL, opcoes = .NOTACAO),
+    campo("y2_rotacao_numeros", "num", "Girar os números (graus)", "45 deixa os números inclinados.", min = -90, max = 90),
+    campo("y2_mostrar_numeros", "chk", "Mostrar os números do eixo", NULL, padrao = TRUE),
+    campo("y2_numeros_negrito", "chk", "Números do eixo em negrito"),
+    campo("y2_numeros_tamanho_pt", "num", "Tamanho dos números (pt)", "Vazio = como o eixo esquerdo.", min = 4, passo = 1),
+    campo("y2_rotacao_titulo", "num", "Girar o título do eixo (graus)", "Vazio = -90 (lendo de cima para baixo).", min = -180, max = 180, passo = 15),
+    campo("y2_titulo_tamanho_pt", "num", "Tamanho do título (pt)", "Vazio = como o eixo esquerdo.", min = 4, passo = 1),
+    campo("y2_titulo_negrito", "chk", "Título em negrito"),
+    campo("y2_titulo_italico", "chk", "Título em itálico"),
+    campo("y2_prefixo", "txt", "Texto antes do número", "Ex.: US$ ", mais = TRUE),
+    campo("y2_sufixo", "txt", "Texto depois do número", "Ex.: %", mais = TRUE),
+    campo("y2_distancia_titulo_pt", "num", "Distância título ↔ números (pt)", NULL, min = 0, mais = TRUE),
+    campo("y2_distancia_numeros_pt", "num", "Distância números ↔ eixo (pt)", NULL, min = 0, mais = TRUE)
   )
 }
 
@@ -150,54 +200,55 @@ ESPEC <- list(
             campo("grade_menor_opacidade", "num", "Opacidade (0 a 1)", NULL, min = 0, max = 1, passo = 0.05))))),
   bloco("quebra", "Quebra do eixo Y",
         "Corta o trecho vazio entre grupos de dados muito distantes, como no Origin.",
-        "Ligue e o app procura sozinho o maior vazio entre os seus dados. Depois você pode ajustar o trecho omitido.",
-        list(campo("quebra_ativar", "chk", "Usar quebra no eixo Y", largura = 12),
-             campo("quebra_estilo", "sel", "Estilo", "Contínuo: uma moldura só com as barras // (como o Origin). Separado: dois gráficos.",
-                   opcoes = c("Separado (dois gráficos)" = "separado", "Contínuo (estilo Origin)" = "continuo"), se = "input.quebra_ativar"),
-             campo("quebra_proporcao_superior", "num", "Altura da parte de cima (0 a 1)", NULL, min = 0.1, max = 0.9, passo = 0.05, se = "input.quebra_ativar"),
-             campo("quebra_de", "num", "Trecho omitido: de", "Vazio = o app acha o maior vazio.", se = "input.quebra_ativar"),
-             campo("quebra_ate", "num", "Trecho omitido: até", NULL, se = "input.quebra_ativar"),
-             campo("quebra_y_intervalo_inferior", "num", "Intervalo dos traços: parte de baixo", "Eixo esquerdo.", se = "input.quebra_ativar"),
-             campo("quebra_y_intervalo_superior", "num", "Intervalo dos traços: parte de cima", "Os traços começam no fim do trecho omitido.", se = "input.quebra_ativar"),
-             campo("quebra_y2_de", "num", "Eixo direito: omitido de", "Vazio = acompanha o do eixo esquerdo.", se = "input.quebra_ativar", mais = TRUE),
-             campo("quebra_y2_ate", "num", "Eixo direito: omitido até", NULL, se = "input.quebra_ativar", mais = TRUE),
-             campo("quebra_y2_intervalo_inferior", "num", "Eixo direito: intervalo embaixo", NULL, se = "input.quebra_ativar", mais = TRUE),
-             campo("quebra_y2_intervalo_superior", "num", "Eixo direito: intervalo em cima", NULL, se = "input.quebra_ativar", mais = TRUE),
-             campo("quebra_marcas", "chk", "Desenhar as barras \"//\" da quebra", NULL, se = "input.quebra_ativar", mais = TRUE),
-             campo("quebra_marca_largura_pt", "num", "Barra: largura (pt)", "Menor = não encosta nos números. Padrão 2.5.", min = 0.5, passo = 0.5, se = "input.quebra_ativar", mais = TRUE),
-             campo("quebra_marca_altura_pt", "num", "Barra: altura (pt)", "Padrão 3.", min = 0.5, passo = 0.5, se = "input.quebra_ativar", mais = TRUE),
-             campo("quebra_espaco_pt", "num", "Espaço entre as partes (pt)", "Só no estilo separado.", min = 0, se = "input.quebra_ativar", mais = TRUE),
-             campo("quebra_ligar_pontos", "chk", "Ligar os pontos através da quebra", "Desligue para cada parte mostrar só os seus pontos.", se = "input.quebra_ativar", mais = TRUE))),
+        "Ligue a quebra e use o botão \"Achar o maior vazio\" para o app sugerir o trecho a omitir; depois ajuste à mão. Cada parte do eixo pode ter o seu próprio intervalo e traços pequenos. Onde o eixo começa (embaixo) e termina (em cima) é o \"Eixo Y começa/termina em\" do bloco 2; a quebra de eixo só existe no Y.",
+        list(campo("quebra_ativar", "chk", "Usar quebra no eixo Y", largura = 12)),
+        grupos = list(
+          list(titulo = "Onde cortar", se = .SE_QUEBRA, campos = list(
+            campo("quebra_estilo", "sel", "Estilo", "Contínuo: uma moldura só com as barras // (como o Origin). Separado: dois gráficos.",
+                  opcoes = c("Separado (dois gráficos)" = "separado", "Contínuo (estilo Origin)" = "continuo"), largura = 12),
+            campo("quebra_de", "num", "Trecho omitido: de", "Vazio = o app acha o maior vazio."),
+            campo("quebra_ate", "num", "Trecho omitido: até"),
+            campo("quebra_proporcao_superior", "num", "Altura da parte de cima (0 a 1)", "0.35 = a parte de cima ocupa 35% da altura.", min = 0.1, max = 0.9, passo = 0.05))),
+          list(titulo = "Eixo esquerdo: cada parte", se = .SE_QUEBRA, campos = list(
+            campo("quebra_y_intervalo_inferior", "num", "Parte de baixo: distância entre os traços", "Os traços começam no início do eixo."),
+            campo("quebra_y_intervalo_superior", "num", "Parte de cima: distância entre os traços", "Os traços começam no fim do trecho omitido."),
+            campo("quebra_y_ticks_menores_inferior", "int", "Parte de baixo: traços pequenos", "Entre dois traços grandes. 0 = sem.", min = 0, max = 20),
+            campo("quebra_y_ticks_menores_superior", "int", "Parte de cima: traços pequenos", NULL, min = 0, max = 20))),
+          list(titulo = "Eixo direito (Y2): trecho omitido e cada parte", se = .SE_QUEBRA_Y2, campos = list(
+            campo("quebra_y2_de", "num", "Omitido de", "Vazio = acompanha a posição do eixo esquerdo."),
+            campo("quebra_y2_ate", "num", "Omitido até"),
+            campo("quebra_y2_intervalo_inferior", "num", "Parte de baixo: distância entre os traços"),
+            campo("quebra_y2_intervalo_superior", "num", "Parte de cima: distância entre os traços"),
+            campo("quebra_y2_ticks_menores_inferior", "int", "Parte de baixo: traços pequenos", NULL, min = 0, max = 20),
+            campo("quebra_y2_ticks_menores_superior", "int", "Parte de cima: traços pequenos", NULL, min = 0, max = 20))),
+          list(titulo = "Barras \"//\" e espaço", se = .SE_QUEBRA, campos = list(
+            campo("quebra_marcas", "chk", "Desenhar as barras \"//\" da quebra", NULL, largura = 12),
+            campo("quebra_marca_largura_pt", "num", "Barra: largura (pt)", "Menor = não encosta nos números. Padrão 2.5.", min = 0.5, passo = 0.5),
+            campo("quebra_marca_altura_pt", "num", "Barra: altura (pt)", "Padrão 3.", min = 0.5, passo = 0.5),
+            campo("quebra_espaco_pt", "num", "Espaço entre as partes (pt)", "Só no estilo separado.", min = 0),
+            campo("quebra_ligar_pontos", "chk", "Ligar os pontos através da quebra", "Desligue para cada parte mostrar só os seus pontos.", largura = 12)))
+        )),
   bloco("y2", "Eixo Y da direita (Y2)",
         "Coloca outras séries num segundo eixo vertical, com escala, cor e intervalos próprios. O eixo X continua o mesmo.",
-        "No mesmo CSV: marque aqui quais colunas ficam à direita. Ex.: população no eixo direito e PIB no esquerdo.",
-        list(campo("y2_series", "colsy2", "Séries no eixo direito", "Escolha entre as colunas Y.", largura = 12),
-             campo("y2_titulo", "txt", "Título do eixo direito", NULL, largura = 12, se = "input.y2_series && input.y2_series.length"),
-             campo("y2_inicio", "num", "Começa em", NULL, se = "input.y2_series && input.y2_series.length"),
-             campo("y2_fim", "num", "Termina em", NULL, se = "input.y2_series && input.y2_series.length"),
-             campo("y2_intervalo", "num", "Distância entre os traços", NULL, se = "input.y2_series && input.y2_series.length"),
-             campo("y2_ticks_menores", "int", "Traços pequenos entre dois grandes", NULL, min = 0, max = 20, se = "input.y2_series && input.y2_series.length"),
-             campo("y2_dividir_por", "num", "Dividir os números por", "1000 mostra 100 em vez de 100000.", se = "input.y2_series && input.y2_series.length"),
-             campo("y2_cor", "cor", "Cor das séries e do eixo", "Pinta as séries da direita e o eixo.", se = "input.y2_series && input.y2_series.length"),
-             campo("y2_igual_y1", "chk", "Eixo direito no mesmo estilo do esquerdo", "Números, título e traços no mesmo estilo (preto).", se = "input.y2_series && input.y2_series.length", mais = TRUE),
-             campo("y2_legenda_sufixo", "txt", "Texto somado ao nome na legenda", "Ex.: \" (eixo dir.)\"", se = "input.y2_series && input.y2_series.length", mais = TRUE),
-             campo("y2_cor_eixo", "cor", "Só a cor do eixo", NULL, se = "input.y2_series && input.y2_series.length", mais = TRUE),
-             campo("y2_ticks_manuais", "vec", "Traços em posições escolhidas", "Separe por vírgula. Ignora a distância.", se = "input.y2_series && input.y2_series.length", mais = TRUE),
-             campo("y2_casas_decimais", "int", "Casas decimais", NULL, min = 0, max = 10, se = "input.y2_series && input.y2_series.length", mais = TRUE),
-             campo("y2_notacao", "sel", "Formato dos números", NULL, opcoes = .NOTACAO, se = "input.y2_series && input.y2_series.length", mais = TRUE),
-             campo("y2_prefixo", "txt", "Texto antes do número", "Ex.: US$ ", se = "input.y2_series && input.y2_series.length", mais = TRUE),
-             campo("y2_sufixo", "txt", "Texto depois do número", "Ex.: %", se = "input.y2_series && input.y2_series.length", mais = TRUE),
-             campo("y2_distancia_titulo_pt", "num", "Distância título ↔ números (pt)", NULL, min = 0, se = "input.y2_series && input.y2_series.length", mais = TRUE),
-             campo("y2_rotacao_titulo", "num", "Girar o título (graus)", "Vazio = -90.", min = -180, max = 180, passo = 15, se = "input.y2_series && input.y2_series.length", mais = TRUE),
-             campo("y2_distancia_numeros_pt", "num", "Distância números ↔ eixo (pt)", NULL, min = 0, se = "input.y2_series && input.y2_series.length", mais = TRUE),
-             campo("y2_fator", "num", "SEM séries novas: multiplicar por", "Mostra o MESMO dado em outra unidade no eixo direito (y2 = fator × y + deslocamento). Ex.: °C para °F: fator 1.8 e deslocamento 32.", mais = TRUE),
-             campo("y2_deslocamento", "num", "SEM séries novas: somar", NULL, mais = TRUE))),
+        "No mesmo CSV: marque aqui quais colunas ficam à direita. Ex.: população no eixo direito e PIB no esquerdo. As opções são as mesmas do eixo Y da esquerda; o que ficar vazio segue o eixo esquerdo.",
+        list(campo("y2_series", "colsy2", "Séries no eixo direito", "Escolha entre as colunas Y.", largura = 12)),
+        grupos = list(
+          list(titulo = "Cor e legenda", se = .SE_Y2, campos = list(
+            campo("y2_cor", "cor", "Cor das séries e do eixo", "Pinta as séries da direita e o eixo (números, título e traços)."),
+            campo("y2_cor_eixo", "cor", "Só a cor do eixo", "Pinta só o eixo, sem mudar as séries."),
+            campo("y2_igual_y1", "chk", "Eixo direito no mesmo estilo do esquerdo", "Números, título e traços no mesmo estilo (preto).", largura = 12),
+            campo("y2_legenda_sufixo", "txt", "Texto somado ao nome na legenda", "Ex.: \" (eixo dir.)\"", largura = 12))),
+          list(titulo = "Intervalos e traços do eixo direito", se = .SE_Y2, campos = c(.campos_intervalo_y2(),
+            list(campo("y2_folga_pct", "num", "Folga nas pontas (%)", "Espaço extra além do primeiro e do último valor.", min = 0, max = 50, passo = 1, mais = TRUE)))),
+          list(titulo = "Números e título do eixo direito", se = .SE_Y2, campos = .campos_numeros_y2()),
+          list(titulo = "Só converter a unidade (sem séries novas)", campos = list(
+            campo("y2_fator", "num", "Multiplicar por", "Mostra o MESMO dado em outra unidade no eixo direito (y2 = fator × y + deslocamento). Ex.: °C para °F: fator 1.8 e deslocamento 32."),
+            campo("y2_deslocamento", "num", "Somar", NULL))))),
   bloco("cores", "Cores, linhas e símbolos",
         "A cor, a forma e a grossura de cada série: tudo junto ou série por série.",
         "Linhas e pontos têm grossuras separadas. Para uma forma só (tudo quadrado), escolha \"Todas iguais\".",
-        list(campo("cores_paleta", "sel", "Paleta de cores", "A cor automática de cada série.",
-                   opcoes = c("Clássica (tipo Origin)" = "classico", "Marca (azul e verde)" = "marca", "Okabe-Ito (acessível)" = "okabe_ito",
-                              "Tableau" = "tableau", "Viridis" = "viridis", "Tons de cinza" = "cinza"), padrao = "classico", largura = 12),
+        list(campo("cores_paleta", "selbusca", "Paleta de cores", "A cor automática de cada série. Dá para criar a sua logo abaixo (\"Criar a minha paleta\").",
+                   opcoes = opcoes_paletas(), padrao = "classico", largura = 12),
              campo("linha_espessura_pt", "num", "Grossura das linhas (pt)", NULL, min = 0, passo = 0.25),
              campo("simbolo_tamanho_pt", "num", "Tamanho dos pontos (pt)", NULL, min = 0, passo = 0.5),
              campo("simbolo_borda_pt", "num", "Grossura do contorno dos pontos (pt)", NULL, min = 0, passo = 0.25),
@@ -237,55 +288,65 @@ ESPEC <- list(
              campo("painel_largura_cm", "num", "Largura da caixa (cm)", "Vazio = 10 cm.", min = 1, passo = 0.5, se = "input.painel_fixo"),
              campo("painel_altura_cm", "num", "Altura da caixa (cm)", "Vazio = 7.5 cm.", min = 1, passo = 0.5, se = "input.painel_fixo"))),
   bloco("legenda", "Legenda: posição, fundo, borda e sombra",
-        "Onde a legenda fica, como ela é e o quanto ela pode crescer sem sair da caixa.",
+        "Onde a legenda fica, se os itens ficam em pé ou deitados, como ela é e o quanto ela pode crescer sem sair da caixa.",
         "Arraste a caixa tracejada sobre a prévia para mudar a posição, e a alça da direita para mudar a largura. Ou digite a posição (0 a 1) ou a coordenada do eixo.",
-        list(campo("legenda_mostrar", "tri", "Mostrar a legenda", NULL, opcoes = c("Automático" = "auto", "Sim" = "sim", "Não" = "nao"), padrao = "auto"),
-             campo("legenda_titulo", "txt", "Título da legenda", NULL),
-             campo("legenda_negrito", "chk", "Nomes da legenda em negrito"),
-             campo("legenda_titulo_negrito", "chk", "Título da legenda em negrito"),
-             campo("legenda_posicao", "sel", "Posição", "Dentro do gráfico ou fora, em um dos lados.",
-                   opcoes = c("Dentro do gráfico" = "dentro", "Fora, à direita" = "direita", "Fora, à esquerda" = "esquerda",
-                              "Fora, em cima" = "topo", "Fora, embaixo" = "base"), padrao = "dentro"),
-             campo("legenda_canto", "sel", "Canto (legenda dentro)", "Atalho para um canto da caixa.", opcoes = .CANTOS, padrao = "",
-                   se = "input.legenda_posicao == 'dentro'"),
-             campo("legenda_x", "num", "Posição horizontal (0 a 1)", "0 = encostada na esquerda, 1 = na direita. Dá para ARRASTAR a caixa tracejada sobre a prévia.", min = 0, max = 1, passo = 0.01,
-                   se = "input.legenda_posicao == 'dentro'"),
-             campo("legenda_y", "num", "Posição vertical (0 a 1)", "0 = embaixo, 1 = em cima.", min = 0, max = 1, passo = 0.01, se = "input.legenda_posicao == 'dentro'"),
-             campo("legenda_x_dados", "num", "OU: posição X na coordenada do eixo", "Valor do eixo X onde fica o canto superior esquerdo da legenda (ex.: o ano 2016). Vale no lugar da posição acima.",
-                   se = "input.legenda_posicao == 'dentro'"),
-             campo("legenda_y_dados", "num", "OU: posição Y na coordenada do eixo", "Valor do eixo Y (esquerdo) do mesmo canto (ex.: 600000).", se = "input.legenda_posicao == 'dentro'"),
-             campo("legenda_distancia_pt", "num", "Distância da borda (pt)", "Com um canto escolhido: afasta a legenda da moldura.", min = 0, passo = 1,
-                   se = "input.legenda_posicao == 'dentro'"),
-             campo("legenda_largura_pt", "num", "Largura da caixa da legenda (pt)",
-                   "Como esticar uma caixa solta: a legenda escala até ter essa largura e os símbolos acompanham. Vazio = automática.", min = 20, passo = 5),
-             campo("legenda_escala", "num", "Tamanho da legenda (escala)", "1 = normal; 0.8 = menor; 1.2 = maior. Símbolos e linhas acompanham.", min = 0.2, max = 3, passo = 0.1),
-             campo("legenda_espaco_texto_pt", "num", "Espaço entre o símbolo e o nome (pt)", "Menor = legenda mais compacta.", min = 0, passo = 1),
-             campo("legenda_largura_chave_pt", "num", "Largura do espaço do símbolo (pt)", NULL, min = 2, passo = 1),
-             campo("legenda_ajustar_caixa", "chk", "Reduzir sozinha se passar da caixa", NULL),
-             campo("legenda_direcao", "sel", "Itens", NULL, opcoes = c("Automático" = "", "Um embaixo do outro" = "vertical", "Lado a lado" = "horizontal"), padrao = ""),
-             campo("legenda_n_colunas", "int", "Número de colunas", NULL, min = 1, max = 8),
-             campo("legenda_alinhar", "sel", "Alinhamento (legenda fora)", NULL,
-                   opcoes = c("Centro" = "", "Topo / esquerda" = "inicio", "Base / direita" = "fim"), padrao = "", mais = TRUE),
-
-             campo("legenda_inverter_ordem", "chk", "Inverter a ordem dos itens", NULL, mais = TRUE),
-             campo("legenda_tamanho_chave_pt", "num", "Tamanho do quadradinho (pt)", NULL, min = 4, mais = TRUE),
-             campo("legenda_espacamento_pt", "num", "Espaço entre os itens (pt)", NULL, min = 0, mais = TRUE),
-             campo("legenda_margem_interna_pt", "vec", "Folga dentro da caixa (pt)", "4 números: em cima, direita, embaixo, esquerda. Ex.: 6, 8, 6, 8", mais = TRUE),
-             campo("legenda_fundo", "cor", "Cor de fundo", "Preencha para dar fundo à caixa da legenda."),
-             campo("legenda_fundo_opacidade", "num", "Opacidade do fundo (0 a 1)", NULL, min = 0, max = 1, passo = 0.05),
-             campo("legenda_borda", "chk", "Borda na caixa da legenda"),
-             campo("legenda_borda_cor", "cor", "Cor da borda"),
-             campo("legenda_borda_espessura_pt", "num", "Grossura da borda (pt)", NULL, min = 0, passo = 0.25),
-             campo("legenda_borda_tipo", "sel", "Tipo da borda", NULL, opcoes = .LINHAS),
-             campo("legenda_sombra", "chk", "Sombra atrás da legenda", "Com fundo transparente a caixa fica branca."),
-             campo("legenda_sombra_cor", "cor", "Cor da sombra"),
-             campo("legenda_sombra_opacidade", "num", "Opacidade da sombra", NULL, min = 0, max = 1, passo = 0.05),
-             campo("legenda_sombra_dx", "num", "Sombra: para a direita (pt)", NULL, passo = 0.5),
-             campo("legenda_sombra_dy", "num", "Sombra: para baixo (pt)", NULL, passo = 0.5))),
+        list(),
+        grupos = list(
+          list(titulo = "Itens: texto e disposição", campos = list(
+            campo("legenda_mostrar", "tri", "Mostrar a legenda", NULL, opcoes = c("Automático" = "auto", "Sim" = "sim", "Não" = "nao"), padrao = "auto"),
+            campo("legenda_titulo", "txt", "Título da legenda", NULL),
+            campo("legenda_negrito", "chk", "Nomes da legenda em negrito"),
+            campo("legenda_titulo_negrito", "chk", "Título da legenda em negrito"),
+            campo("legenda_direcao", "sel", "Orientação: vertical ou horizontal", "Vertical: um item embaixo do outro. Horizontal: todos lado a lado, numa linha. Dá para trocar a qualquer momento.",
+                  opcoes = c("Automática" = "", "Vertical (um embaixo do outro)" = "vertical", "Horizontal (lado a lado)" = "horizontal"), padrao = "", largura = 12),
+            campo("legenda_n_colunas", "int", "Número de colunas", "Divide os itens em colunas. Ex.: 6 itens em 2 colunas = 3 linhas.", min = 1, max = 12),
+            campo("legenda_n_linhas", "int", "Número de linhas", "Divide os itens em linhas. Ex.: horizontal com 2 linhas.", min = 1, max = 12),
+            campo("legenda_inverter_ordem", "chk", "Inverter a ordem dos itens", NULL, mais = TRUE),
+            campo("legenda_tamanho_chave_pt", "num", "Tamanho do quadradinho (pt)", NULL, min = 4, mais = TRUE),
+            campo("legenda_espacamento_pt", "num", "Espaço entre os itens (pt)", NULL, min = 0, mais = TRUE))),
+          list(titulo = "Posição", campos = list(
+            campo("legenda_posicao", "sel", "Posição", "Dentro do gráfico ou fora, em um dos lados.",
+                  opcoes = c("Dentro do gráfico" = "dentro", "Fora, à direita" = "direita", "Fora, à esquerda" = "esquerda",
+                             "Fora, em cima" = "topo", "Fora, embaixo" = "base"), padrao = "dentro"),
+            campo("legenda_canto", "sel", "Canto (legenda dentro)", "Atalho para um canto da caixa.", opcoes = .CANTOS, padrao = "",
+                  se = "input.legenda_posicao == 'dentro'"),
+            campo("legenda_x", "num", "Posição horizontal (0 a 1)", "0 = encostada na esquerda, 1 = na direita. Dá para ARRASTAR a caixa tracejada sobre a prévia.", min = 0, max = 1, passo = 0.01,
+                  se = "input.legenda_posicao == 'dentro'"),
+            campo("legenda_y", "num", "Posição vertical (0 a 1)", "0 = embaixo, 1 = em cima.", min = 0, max = 1, passo = 0.01, se = "input.legenda_posicao == 'dentro'"),
+            campo("legenda_x_dados", "num", "OU: posição X na coordenada do eixo", "Valor do eixo X onde fica o canto superior esquerdo da legenda (ex.: o ano 2016). Vale no lugar da posição acima.",
+                  se = "input.legenda_posicao == 'dentro'"),
+            campo("legenda_y_dados", "num", "OU: posição Y na coordenada do eixo", "Valor do eixo Y (esquerdo) do mesmo canto (ex.: 600000).", se = "input.legenda_posicao == 'dentro'"),
+            campo("legenda_distancia_pt", "num", "Distância da borda (pt)", "Com um canto escolhido: afasta a legenda da moldura.", min = 0, passo = 1,
+                  se = "input.legenda_posicao == 'dentro'"),
+            campo("legenda_alinhar", "sel", "Alinhamento (legenda fora)", NULL,
+                  opcoes = c("Centro" = "", "Topo / esquerda" = "inicio", "Base / direita" = "fim"), padrao = "", mais = TRUE))),
+          list(titulo = "Tamanho da caixa", campos = list(
+            campo("legenda_largura_pt", "num", "Largura da caixa da legenda (pt)",
+                  "Como esticar uma caixa solta: a legenda escala até ter essa largura e os símbolos acompanham. Vazio = automática.", min = 20, passo = 5),
+            campo("legenda_escala", "num", "Tamanho da legenda (escala)", "1 = normal; 0.8 = menor; 1.2 = maior. Símbolos e linhas acompanham.", min = 0.2, max = 3, passo = 0.1),
+            campo("legenda_espaco_texto_pt", "num", "Espaço entre o símbolo e o nome (pt)", "Menor = legenda mais compacta.", min = 0, passo = 1),
+            campo("legenda_largura_chave_pt", "num", "Largura do espaço do símbolo (pt)", NULL, min = 2, passo = 1),
+            campo("legenda_ajustar_caixa", "chk", "Reduzir sozinha se passar da caixa", NULL, largura = 12),
+            campo("legenda_margem_interna_pt", "vec", "Folga dentro da caixa (pt)", "4 números: em cima, direita, embaixo, esquerda. Ex.: 6, 8, 6, 8", mais = TRUE))),
+          list(titulo = "Fundo, borda e sombra", campos = list(
+            campo("legenda_fundo", "cor", "Cor de fundo", "Preencha para dar fundo à caixa da legenda."),
+            campo("legenda_fundo_opacidade", "num", "Opacidade do fundo (0 a 1)", NULL, min = 0, max = 1, passo = 0.05),
+            campo("legenda_borda", "chk", "Borda na caixa da legenda"),
+            campo("legenda_borda_cor", "cor", "Cor da borda"),
+            campo("legenda_borda_espessura_pt", "num", "Grossura da borda (pt)", NULL, min = 0, passo = 0.25),
+            campo("legenda_borda_tipo", "sel", "Tipo da borda", NULL, opcoes = .LINHAS),
+            campo("legenda_sombra", "chk", "Sombra atrás da legenda", "Com fundo transparente a caixa fica branca."),
+            campo("legenda_sombra_cor", "cor", "Cor da sombra"),
+            campo("legenda_sombra_opacidade", "num", "Opacidade da sombra", NULL, min = 0, max = 1, passo = 0.05),
+            campo("legenda_sombra_dx", "num", "Sombra: para a direita (pt)", NULL, passo = 0.5),
+            campo("legenda_sombra_dy", "num", "Sombra: para baixo (pt)", NULL, passo = 0.5))))),
   bloco("exportacao", "Exportação",
-        "O tamanho do arquivo e a qualidade. Os botões de baixar ficam ao lado do gráfico.",
+        "O tipo de arquivo, o tamanho e a qualidade. Os botões de baixar ficam ao lado do gráfico.",
         "Para jornais e artigos use 600 dpi. PNG/TIFF/SVG usam a Barlow direto; PDF precisa da fonte instalada no computador.",
-        list(campo("dpi", "int", "Resolução (dpi)", "300 = bom para relatório; 600 = publicação.", min = 72, max = 1200, largura = 12),
+        list(campo("formatos", "chkgrupo", "Tipo de arquivo", "Marque um ou mais: aparece um botão de baixar para cada tipo escolhido. PNG/JPEG/TIFF são imagens; SVG, PDF e EMF são vetoriais (editáveis).",
+                   opcoes = .FORMATOS, largura = 12),
+             campo("fundo_transparente", "chk", "Fundo transparente", "Sem o branco atrás do gráfico (PNG, TIFF, SVG, PDF). O JPEG não tem transparência.", largura = 12),
+             campo("dpi", "int", "Resolução (dpi)", "300 = bom para relatório; 600 = publicação. Vale para PNG, TIFF e JPEG.", min = 72, max = 1200, largura = 12),
              campo("ajustar_pagina", "chk", "Ajustar a página ao conteúdo", "Com a caixa de tamanho fixo (bloco 10): a página cresce ou encolhe para caber números, títulos e legenda, sem cortar.",
                    se = "input.painel_fixo", largura = 12),
              campo("largura_cm", "num", "Largura da página (cm)", "Vale quando a caixa NÃO é fixa ou \"Ajustar a página\" está desmarcado.", min = 2, passo = 0.5,

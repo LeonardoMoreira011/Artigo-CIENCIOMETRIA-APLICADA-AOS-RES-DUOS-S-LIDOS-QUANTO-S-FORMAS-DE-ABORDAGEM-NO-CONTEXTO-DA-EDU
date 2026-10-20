@@ -24,7 +24,7 @@ tratadas_a_parte <- c("fonte_pasta",                                    # arquiv
                       "cores_personalizadas", "cores_por_serie", "legenda_nomes", "linha_espessura_por_serie",
                       "simbolo_tamanho_por_serie", "simbolo_borda_por_serie", "simbolo_forma_por_serie",   # tabela de séries
                       "simbolo_variar", "legenda_sombra_deslocamento_pt", "legenda_ancora",
-                      "formatos", "pasta_saida")                      # formato = botões de baixar; pasta = o navegador baixa
+                      "pasta_saida")                                  # a pasta: o navegador é que baixa o arquivo
 teste("o app tem um campo para cada variável do painel_de_ajustes.R (as exceções estão listadas e são tratadas à parte)",
       length(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte))) == 0)
 if (length(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte)))) print(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte)))
@@ -44,7 +44,7 @@ vv <- montar_variaveis(v1, CFG0)
 teste("valores alterados viram as variáveis certas, com o tipo certo", identical(vv$x_intervalo, 1) && vv$y_dividir_por == 1000 &&
       identical(vv$grade_tipo, "dotted") && vv$grade_opacidade == 0.3 && isTRUE(vv$grade_x) && isTRUE(vv$quebra_ativar) &&
       vv$legenda_canto == "sup_dir" && vv$painel_largura_cm == 9 && vv$simbolo_forma == "quadrado" &&
-      identical(vv$cores_personalizadas, MARCA_CORES) && is.null(vv$cores_paleta) && identical(vv$esfera_luz, c(0.35, 0.45)) &&
+      identical(vv$cores_paleta, "marca") && is.null(vv$cores_personalizadas) && identical(vv$esfera_luz, c(0.35, 0.45)) &&
       identical(vv$x_ticks_manuais, c(2015, 2020, 2026)) && identical(vv$legenda_sombra_deslocamento_pt, c(5, 2)) &&
       identical(vv$legenda_mostrar, FALSE) && vv$y_titulo == "Receita (US$ ×10^{3})")
 v2 <- v0; v2$simbolo_modo <- "variar"; v2$simbolo_forma <- "estrela"
@@ -56,6 +56,42 @@ teste("tabela de séries vira variáveis por série (e nome igual ao da coluna n
       identical(vs$cores_por_serie, c(A = "#112233")) && identical(vs$simbolo_forma_por_serie, c(A = "esfera")) &&
       identical(vs$simbolo_tamanho_por_serie, c(B = 9)) && identical(vs$linha_espessura_por_serie, c(A = 3)) &&
       identical(vs$legenda_nomes, c(A = "Série A")) && is.null(vs$simbolo_borda_por_serie))
+
+# ---- segunda rodada: paletas, formatos, campos novos ----------------------------------------------------------------------
+teste("ler_cores_texto entende #RRGGBB, #RGB, RRGGBB, nomes do R, vírgulas, espaços e linhas (e ignora o que não é cor)",
+      identical(ler_cores_texto("#1b3a8c, 0E9F4B\n#f80 red xyz"), c("#1B3A8C", "#0E9F4B", "#FF8800", "#FF0000")) && length(ler_cores_texto("nada aqui")) == 0)
+vp <- v0; vp$cores_paleta <- "propria"; vp$.paleta_propria <- "#112233, #445566"
+vpp <- montar_variaveis(vp, CFG0)
+vs2 <- v0; vs2$cores_paleta <- "salva:Minha"; vs2$.paletas_salvas <- list(Minha = c("#AA0000", "#00AA00"))
+vss <- montar_variaveis(vs2, CFG0)
+teste("paleta própria (do editor ou guardada) vira cores_personalizadas; paleta pronta vira cores_paleta",
+      identical(vpp$cores_personalizadas, c("#112233", "#445566")) && is.null(vpp$cores_paleta) &&
+      identical(vss$cores_personalizadas, c("#AA0000", "#00AA00")) &&
+      identical({ vq <- v0; vq$cores_paleta <- "npg"; montar_variaveis(vq, CFG0)$cores_paleta }, "npg"))
+teste("a lista de paletas da tela tem todos os grupos do motor + 'Minhas paletas' (com as guardadas)", {
+  o <- opcoes_paletas("Minha"); all(names(.PALETAS_GRUPOS) %in% names(o)) && identical(unname(o[["Minhas paletas"]][2]), "salva:Minha") })
+vf <- v0; vf$formatos <- c("tiff", "svg"); vf$fundo_transparente <- TRUE
+vff <- montar_variaveis(vf, CFG0)
+teste("tipo de arquivo (marcados) e fundo transparente viram formatos e fundo_transparente; o padrão não é enviado",
+      identical(vff$formatos, c("tiff", "svg")) && isTRUE(vff$fundo_transparente) && is.null(montar_variaveis(v0, CFG0)$formatos))
+teste("os 'tipos de arquivo' do app são os que o salvar() grava", all(c("png", "tiff", "jpeg", "svg", "pdf") %in% .FORMATOS))
+# cada campo do app, alterado sozinho, vira variável e o painel aplica (sem desenhar: rápido). O desenho de cada um foi
+# conferido à parte (389 casos, nenhum erro inesperado).
+alt_campo <- function(c, d) switch(c$tipo,
+  num = , int = { v <- if (!is.na(c$min) && !is.na(c$max)) (c$min + c$max) / 2 else if (!is.na(c$min)) c$min + 2 else 3
+                  if (isTRUE(all.equal(v, d))) v + 1 else v },
+  txt = "2", vec = "2016, 2020", sel = , tri = , selbusca = { o <- unname(unlist(c$opcoes)); o[o != "" & o != d][1] },
+  chkgrupo = c("svg"), chk = !isTRUE(d), cor = "#FF0000", selmulti = c("quadrado", "triangulo"),
+  colx = "Ano", colsy = "Brasil (RSP)", colsy2 = "Brasil (RSP)", NULL)
+erros_campos <- character(0)
+for (id in names(ESPEC_CAMPOS)) {
+  vc <- v0; vc[[id]] <- alt_campo(ESPEC_CAMPOS[[id]], v0[[id]])
+  r <- tryCatch({ vars <- montar_variaveis(vc, CFG0); suppressMessages(suppressWarnings(aplicar_painel(CFG0, list2env(vars, parent = emptyenv()), dados = NULL))); "" },
+                error = function(e) paste0(id, ": ", conditionMessage(e)))
+  if (nzchar(r)) erros_campos <- c(erros_campos, r)
+}
+if (length(erros_campos)) print(erros_campos)
+teste("todos os campos do app, alterados um a um, viram variáveis e o painel aplica sem erro", length(erros_campos) == 0)
 
 # ---- gráfico de verdade -----------------------------------------------------------------------------------------------
 d <- ler_csv(file.path(raiz, "dados", "exemplo_dois_eixos_e_quebra.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE)))
@@ -120,6 +156,15 @@ testServer(servidor, {
         !is.null(rv$geo) && all(rv$geo$legenda[1:2] >= rv$geo$painel[1:2] - 1e-6) && rv$geo$legenda[3] < rv$geo$painel[3])
   session$setInputs(legenda_arrastada = list(esq = 0.25, base = 0.5, t = 1), legenda_redimensionada = list(largura = 0.3, t = 1))
   teste("servidor: arrastar e redimensionar a legenda na prévia roda sem erro", is.null(rv$erro))
+  session$setInputs(paleta_propria = "#112233, #445566, #778899", paleta_nome = "Teste", paleta_salvar = 1)
+  teste("servidor: guardar a paleta própria cria 'salva:Teste' na lista e fica nos valores", identical(names(rv$paletas), "Teste") &&
+        identical(rv$paletas$Teste, c("#112233", "#445566", "#778899")))
+  session$setInputs(cores_paleta = "salva:Teste", atualizar = 11)
+  teste("servidor: usar a paleta guardada monta o gráfico com as cores dela", is.null(rv$erro) && identical(rv$res$cfg$cores$personalizada, c("#112233", "#445566", "#778899")))
+  session$setInputs(paleta_excluir = 1)
+  teste("servidor: excluir a paleta guardada selecionada", length(rv$paletas) == 0)
+  session$setInputs(cores_paleta = "classico", quebra_ativar = TRUE, quebra_sugerir = 1)
+  teste("servidor: 'Achar o maior vazio' funciona sem erro (o resultado vai para os campos de/até)", is.null(rv$erro))
   session$setInputs(quebra_ativar = TRUE, quebra_de = 100000, quebra_ate = 450000, quebra_estilo = "continuo", atualizar = 2)
   teste("servidor: ligar a quebra muda o gráfico e aparece em 'o que você mudou'", "quebra_ativar" %in% rv$res$aplicado && is.null(rv$erro))
   session$setInputs(quebra_de = 450000, quebra_ate = 100000, atualizar = 3)

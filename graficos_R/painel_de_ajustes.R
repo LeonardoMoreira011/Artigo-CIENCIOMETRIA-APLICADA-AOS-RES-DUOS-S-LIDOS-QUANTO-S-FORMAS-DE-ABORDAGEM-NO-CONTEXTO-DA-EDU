@@ -113,6 +113,10 @@ quebra_y_intervalo_inferior <- NULL   # intervalo entre os traços da parte de b
 quebra_y_intervalo_superior <- NULL   # ... e da parte de cima (começa no quebra_ate). EX.: 100
 quebra_y2_intervalo_inferior <- NULL  # o mesmo para o eixo direito (baixo)
 quebra_y2_intervalo_superior <- NULL  # ... (cima)
+quebra_y_ticks_menores_inferior <- NULL   # traços pequenos entre dois grandes na parte de baixo do eixo esquerdo (0 = sem). EX.: 4
+quebra_y_ticks_menores_superior <- NULL   # ... e na de cima
+quebra_y2_ticks_menores_inferior <- NULL  # o mesmo para o eixo direito
+quebra_y2_ticks_menores_superior <- NULL
 quebra_ligar_pontos      <- NULL   # FALSE = não liga os pontos através da quebra
 quebra_marcas    <- NULL   # FALSE = sem as barras "//" na quebra
 quebra_marca_largura_pt <- NULL    # largura de cada barra "//", em pt (padrão 2.5: curta, não encosta nos números). EX.: 4
@@ -144,11 +148,29 @@ y2_deslocamento <- NULL   #   EX. de °C para °F:  y2_fator <- 1.8;  y2_desloca
 y2_distancia_titulo_pt  <- NULL   # título do Y2 até os números. EX.: 6
 y2_distancia_numeros_pt <- NULL   # números do Y2 até o eixo. EX.: 3
 y2_rotacao_titulo <- NULL         # ângulo do título do eixo direito (padrão -90). EX.: 90
+#  Aparência do eixo direito: as MESMAS opções do Y1. Vazio = igual ao eixo esquerdo.
+y2_primeiro_tick <- NULL          # de onde começam os traços do Y2. EX.: 0
+y2_folga_pct     <- NULL          # folga nas pontas do Y2, em %. EX.: 4
+y2_ticks_direcao <- NULL          # traços grandes: "dentro" | "fora" | "ambos" | "nenhum"
+y2_ticks_menores_direcao <- NULL  # traços pequenos: "dentro" | "fora" | "ambos" | "nenhum"
+y2_ticks_comprimento_pt <- NULL   # comprimento do traço grande, pt. EX.: 5
+y2_ticks_menores_comprimento_pt <- NULL  # comprimento do traço pequeno, pt. EX.: 3
+y2_ticks_espessura_pt <- NULL     # grossura dos traços, pt (vazio = a do eixo esquerdo / moldura)
+y2_ticks_cor     <- NULL          # cor dos traços (vazio = a cor do eixo direito)
+y2_linha_espessura_pt <- NULL     # grossura da linha do eixo (aparece com a moldura aberta)
+y2_mostrar_numeros <- NULL        # FALSE = esconde os números do eixo direito
+y2_numeros_tamanho_pt <- NULL     # tamanho dos números, pt. EX.: 10
+y2_numeros_negrito <- NULL        # TRUE = números em negrito
+y2_rotacao_numeros <- NULL        # gira os números, em graus. EX.: 45
+y2_titulo_tamanho_pt <- NULL      # tamanho do título do eixo direito, pt. EX.: 12
+y2_titulo_negrito <- NULL         # TRUE = título em negrito
+y2_titulo_italico <- NULL         # TRUE = título em itálico
 #  As cores de cada série (esquerda ou direita) também podem vir de cores_por_serie (bloco 8).
 
 # ---- 8. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
-cores_paleta        <- NULL   # "classico" (padrão tipo Origin) | "okabe_ito" | "tableau" | "viridis" | "cinza" |
-                              # "brewer_Set1"... (veja mostrar_paletas())
+cores_paleta        <- NULL   # "classico" (padrão tipo Origin) | "origin_basico" | "origin_pastel" | "marca" | "okabe_ito" |
+                              # "tableau" | "npg" | "seq_azul" | "div_espectro" | "viridis" | "cinza" | "brewer_Set1"...
+                              # (a lista completa, com as cores desenhadas: mostrar_paletas())
 cores_personalizadas <- NULL  # suas cores, na ordem das colunas Y. EX.: c("#000000", "#D62728", "#1F4E9E")
 cores_por_serie     <- NULL   # a cor de séries específicas (nome exato da coluna).
                               # EX.: c("WORLD" = "#000000", "LATAM" = "#C00000", "BRAZIL" = "#1F4E9E")
@@ -221,8 +243,9 @@ legenda_distancia_pt <- NULL  # com "dentro": distância até a borda da caixa, 
 legenda_ajustar_caixa <- NULL # TRUE (padrão) = se a legenda for maior que a caixa, é reduzida até caber | FALSE = como pedido
                            #   direita/esquerda: "topo" | "centro" | "base"; topo/base: "esquerda" | "centro" | "direita"
 #  Disposição dos itens
-legenda_direcao  <- NULL   # "vertical" (um embaixo do outro) | "horizontal" (lado a lado)
-legenda_n_colunas <- NULL  # número de colunas. EX.: 2
+legenda_direcao  <- NULL   # "vertical" (um embaixo do outro) | "horizontal" (lado a lado, numa linha)
+legenda_n_colunas <- NULL  # em quantas COLUNAS os itens se organizam. EX.: 2
+legenda_n_linhas  <- NULL  # em quantas LINHAS os itens se organizam. EX.: 2  (com "horizontal": 6 itens em 2 linhas de 3)
 legenda_inverter_ordem <- NULL  # TRUE = inverte a ordem dos itens
 legenda_tamanho_chave_pt <- NULL   # tamanho do quadradinho/linha de cada item. EX.: 18
 legenda_espacamento_pt   <- NULL   # espaço entre os itens. EX.: 4
@@ -248,6 +271,7 @@ ajustar_pagina <- NULL     # com caixa de tamanho fixo: TRUE (padrão) = a pági
                            #   FALSE = página sempre largura_cm x altura_cm (a caixa fica centralizada)
 dpi          <- NULL       # EX.: 600
 formatos     <- NULL       # EX.: c("png", "pdf")   (também "tiff", "svg", "jpeg", "emf")
+fundo_transparente <- NULL # TRUE = arquivo sem fundo branco (PNG, TIFF, SVG, PDF; o JPEG não tem transparência)
 nome_arquivo <- NULL       # EX.: "minha_figura"
 pasta_saida  <- NULL       # EX.: "C:/pasta/figuras"  (padrão: pasta saida/)
 

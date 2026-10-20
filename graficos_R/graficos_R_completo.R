@@ -216,10 +216,18 @@ cfg$grafico <- list(
 cfg$cores <- list(
   # paleta: cores atribuídas automaticamente às séries, em sequência
   #   (como o "incremento" de cor). Veja todas com mostrar_paletas().
-  #   OPÇÕES: "classico" | "okabe_ito" (segura p/ daltônicos) | "viridis" |
-  #           "magma" | "plasma" | "cividis" | "cinza" | "tableau" |
-  #           "brewer_Set1" | "brewer_Dark2" | "brewer_Paired" | (qualquer
-  #           "brewer_<nome>" do ColorBrewer) | "personalizada"
+  #   OPÇÕES (todas aparecem em mostrar_paletas()):
+  #     Estilo Origin ........ "classico" | "origin_basico" | "origin_vivo" | "origin_escuro" | "origin_pastel" |
+  #                            "origin_suave" | "origin_pares" | "origin_doce"
+  #     Marca ................ "marca"
+  #     Acessíveis ........... "okabe_ito" | "tol_brilhante" | "tol_vibrante" | "tol_suave" | "tol_contraste"
+  #     Revistas ............. "tableau" | "d3" | "npg" | "lancet" | "jco" | "nejm"
+  #     Degradês de uma cor .. "seq_azul" | "seq_verde" | "seq_laranja" | "seq_vermelho" | "seq_roxo" |
+  #                            "seq_azul_verde" | "seq_calor" | "seq_frio"
+  #     Divergentes .......... "div_vermelho_azul" | "div_espectro" | "div_marrom_verde" | "arco_iris"
+  #     Contínuas ............ "viridis" | "magma" | "plasma" | "cividis" | "inferno" | "turbo" | "cinza"
+  #     ColorBrewer .......... "brewer_<nome>" (ex.: "brewer_Set1", "brewer_Spectral"; precisa do pacote RColorBrewer)
+  #     Sua própria .......... "personalizada" (cores em cfg$cores$personalizada)
   #   EX.: cfg$cores$paleta <- "okabe_ito"
   paleta = "classico",
 
@@ -955,7 +963,7 @@ cfg$eixo_y <- list(
 # -----------------------------------------------------------------------------
 #  Para usar: cfg$eixo_y2$ativo <- TRUE e, no modo "independente", diga quais
 #  séries vão para ele:  cfg$series[["Pressão"]] <- list(eixo = "y2")
-#  Estilo dos ticks (direção, comprimento, espessura) segue o eixo_y.
+#  A aparência (ticks, números, título, linha) segue o eixo_y, salvo o que for preenchido aqui.
 cfg$eixo_y2 <- list(
   # ativo: liga o eixo Y secundário.  OPÇÕES: TRUE | FALSE
   ativo = FALSE,
@@ -1001,7 +1009,38 @@ cfg$eixo_y2 <- list(
 
   # cor_eixo: pinta números, título e ticks do eixo secundário.
   #   OPÇÕES: NULL (preto) | "serie" (cor da 1ª série do y2) | qualquer cor
-  cor_eixo = "serie"
+  cor_eixo = "serie",
+
+  # ---- Aparência: as MESMAS opções do eixo_y. NULL = igual ao eixo_y (o que vale é o do eixo_y); preencha só o que
+  #      quiser diferente no eixo da direita. (Início, fim, ticks, formato e distâncias estão acima.)
+  #   primeiro_tick: de onde começam os ticks do Y2.              margem_percentual: folga nas pontas do Y2 (%).
+  #   direcao_maiores / direcao_menores: "dentro" | "fora" | "ambos" | "nenhum".
+  #   comprimento_maiores_pt / comprimento_menores_pt / espessura_ticks_pt / cor_ticks: ticks.
+  #   mostrar_linha / espessura_linha_pt / cor_linha: a linha do eixo (aparece com a moldura aberta).
+  #   mostrar_rotulos / tamanho_rotulos_pt / cor_rotulos / negrito_rotulos / rotacao_rotulos: os números.
+  #   mostrar_titulo / tamanho_titulo_pt / cor_titulo / negrito_titulo / italico_titulo: o título.
+  #   EX.: cfg$eixo_y2$direcao_maiores <- "fora"; cfg$eixo_y2$tamanho_rotulos_pt <- 9
+  primeiro_tick = NULL,
+  margem_percentual = NULL,
+  direcao_maiores = NULL,
+  direcao_menores = NULL,
+  comprimento_maiores_pt = NULL,
+  comprimento_menores_pt = NULL,
+  espessura_ticks_pt = NULL,
+  cor_ticks = NULL,
+  mostrar_linha = NULL,
+  espessura_linha_pt = NULL,
+  cor_linha = NULL,
+  mostrar_rotulos = NULL,
+  tamanho_rotulos_pt = NULL,
+  cor_rotulos = NULL,
+  negrito_rotulos = NULL,
+  rotacao_rotulos = NULL,
+  mostrar_titulo = NULL,
+  tamanho_titulo_pt = NULL,
+  cor_titulo = NULL,
+  negrito_titulo = NULL,
+  italico_titulo = NULL
 )
 
 # -----------------------------------------------------------------------------
@@ -1114,8 +1153,10 @@ cfg$legenda <- list(
   # titulo: título da legenda. NULL = sem título.
   titulo = NULL,
 
-  # n_colunas: número de colunas de itens.  OPÇÕES: NULL | inteiro
+  # n_colunas / n_linhas: em quantas colunas ou linhas os itens se organizam.  OPÇÕES: NULL | inteiro
+  #   EX.: 4 itens em duas colunas: n_colunas <- 2.   Todos lado a lado em duas linhas: direcao "horizontal" e n_linhas <- 2.
   n_colunas = NULL,
+  n_linhas = NULL,
 
   # inverter_ordem: inverte a ordem dos itens.  OPÇÕES: TRUE | FALSE
   inverter_ordem = FALSE,
@@ -1125,7 +1166,8 @@ cfg$legenda <- list(
   #   OPÇÕES: NULL (centro) | os textos acima      EX.: cfg$legenda$alinhar <- "topo"
   alinhar = NULL,
 
-  # direcao: itens um embaixo do outro ou lado a lado.  OPÇÕES: NULL (automático) | "vertical" | "horizontal"
+  # direcao: itens um embaixo do outro ("vertical") ou lado a lado, numa linha só ("horizontal").
+  #   OPÇÕES: NULL (automático) | "vertical" | "horizontal"
   direcao = NULL,
 
   # moldura / cor_moldura / espessura_moldura_pt / tipo_moldura: borda da caixa da legenda.
@@ -1301,6 +1343,13 @@ cfg$quebra <- list(
   incremento_superior = NULL,
   y2_incremento_inferior = NULL,
   y2_incremento_superior = NULL,
+  # n_menores_inferior / n_menores_superior: ticks pequenos entre dois grandes em CADA parte do eixo Y da esquerda
+  #   (0 = sem). y2_n_menores_*: o mesmo para o eixo da direita. NULL = o valor do eixo (eixo_y$n_menores / eixo_y2$n_menores).
+  #   EX.: cfg$quebra$n_menores_inferior <- 4; cfg$quebra$n_menores_superior <- 1
+  n_menores_inferior = NULL,
+  n_menores_superior = NULL,
+  y2_n_menores_inferior = NULL,
+  y2_n_menores_superior = NULL,
   # proporcao_superior: fração da altura para a parte de cima.
   proporcao_superior = 0.35,
   # espaco_pt: espaço entre as duas partes. Aumente (ex.: 14) se os números das duas bordas da
@@ -1616,24 +1665,89 @@ suppressPackageStartupMessages({
   sum(c(0.299, 0.587, 0.114) * v)
 }
 
+# Paletas prontas. Cada uma tem um nome curto (o que se escreve em cfg$cores$paleta) e um rótulo para a tela.
+# "Estilo Origin": a sequência de cores básicas do Origin e conjuntos parecidos; as demais são paletas conhecidas
+# de publicações científicas e de visualização (ColorBrewer, Paul Tol, ggsci, Tableau, D3).
 .PALETAS <- list(
+  # ---- estilo Origin
   classico  = c("#000000", "#D62728", "#1F4E9E", "#2CA02C", "#8E44AD", "#FF7F0E",
                 "#17BECF", "#8C564B", "#E377C2", "#7F7F7F"),
+  origin_basico = c("#000000", "#FF0000", "#0000FF", "#008000", "#FF00FF", "#008080", "#000080", "#800000",
+                    "#800080", "#808000", "#FF8000", "#0080FF", "#8000FF", "#FF0080"),
+  origin_vivo   = c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFD700", "#A65628", "#F781BF", "#999999"),
+  origin_escuro = c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D", "#666666"),
+  origin_pastel = c("#FBB4AE", "#B3CDE3", "#CCEBC5", "#DECBE4", "#FED9A6", "#FFFFCC", "#E5D8BD", "#FDDAEC", "#CCCCCC"),
+  origin_suave  = c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3"),
+  origin_pares  = c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C", "#FDBF6F", "#FF7F00",
+                    "#CAB2D6", "#6A3D9A", "#FFFF99", "#B15928"),
+  origin_doce   = c("#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#FDB462", "#B3DE69", "#FCCDE5",
+                    "#D9D9D9", "#BC80BD", "#CCEBC5", "#FFED6F"),
+  # ---- marca
+  marca     = c("#1B3A8C", "#0E9F4B", "#0B6E78", "#8CC63F", "#0F4C81", "#2FB5A0", "#5B7DB1", "#6BBF59"),
+  # ---- acessíveis (daltonismo)
   okabe_ito = c("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9",
                 "#000000", "#F0E442"),
+  tol_brilhante = c("#4477AA", "#EE6677", "#228833", "#CCBB44", "#66CCEE", "#AA3377", "#BBBBBB"),
+  tol_vibrante  = c("#EE7733", "#0077BB", "#33BBEE", "#EE3377", "#CC3311", "#009988", "#BBBBBB"),
+  tol_suave     = c("#CC6677", "#332288", "#DDCC77", "#117733", "#88CCEE", "#882255", "#44AA99", "#999933", "#AA4499"),
+  tol_contraste = c("#004488", "#DDAA33", "#BB5566", "#000000"),
+  # ---- publicações e software
   tableau   = c("#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F", "#EDC948",
-                "#B07AA1", "#FF9DA7", "#9C755F", "#BAB0AC")
+                "#B07AA1", "#FF9DA7", "#9C755F", "#BAB0AC"),
+  d3        = c("#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#9467BD", "#8C564B", "#E377C2", "#7F7F7F", "#BCBD22", "#17BECF"),
+  npg       = c("#E64B35", "#4DBBD5", "#00A087", "#3C5488", "#F39B7F", "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85"),
+  lancet    = c("#00468B", "#ED0000", "#42B540", "#0099B4", "#925E9F", "#FDAF91", "#AD002A", "#ADB6B6", "#1B1919"),
+  jco       = c("#0073C2", "#EFC000", "#868686", "#CD534C", "#7AA6DC", "#003C67", "#8F7700", "#3B3B3B", "#A73030", "#4A6990"),
+  nejm      = c("#BC3C29", "#0072B5", "#E18727", "#20854E", "#7876B1", "#6F99AD", "#FFDC91", "#EE4C97"),
+  # ---- degradês de uma cor (sequenciais): as séries percorrem do claro ao escuro
+  seq_azul     = c("#C6DBEF", "#6BAED6", "#2171B5", "#08306B"),
+  seq_verde    = c("#C7E9C0", "#74C476", "#238B45", "#00441B"),
+  seq_laranja  = c("#FDD0A2", "#FD8D3C", "#D94801", "#7F2704"),
+  seq_vermelho = c("#FCBBA1", "#FB6A4A", "#CB181D", "#67000D"),
+  seq_roxo     = c("#DADAEB", "#9E9AC8", "#6A51A3", "#3F007D"),
+  seq_azul_verde = c("#FFFFCC", "#A1DAB4", "#41B6C4", "#2C7FB8", "#253494"),
+  seq_calor    = c("#FFFFB2", "#FECC5C", "#FD8D3C", "#F03B20", "#BD0026"),
+  seq_frio     = c("#E0F7FA", "#80DEEA", "#26C6DA", "#00838F", "#004D40"),
+  # ---- divergentes e arco-íris
+  div_vermelho_azul = c("#B2182B", "#EF8A62", "#F7F7F7", "#67A9CF", "#2166AC"),
+  div_espectro      = c("#D7191C", "#FDAE61", "#FFFFBF", "#ABDDA4", "#2B83BA"),
+  div_marrom_verde  = c("#8C510A", "#D8B365", "#F5F5F5", "#5AB4AC", "#01665E"),
+  arco_iris         = c("#9400D3", "#4B0082", "#0000FF", "#00AA00", "#FFD700", "#FF7F00", "#FF0000")
+)
+# As que percorrem um degradê (a n-ésima cor é interpolada ao longo da paleta inteira, não a n-ésima da lista).
+.PALETAS_RAMPA <- c("seq_azul", "seq_verde", "seq_laranja", "seq_vermelho", "seq_roxo", "seq_azul_verde", "seq_calor",
+                    "seq_frio", "div_vermelho_azul", "div_espectro", "div_marrom_verde", "arco_iris")
+
+# Para a tela e para mostrar_paletas(): grupo -> c(nome = "rótulo").
+.PALETAS_GRUPOS <- list(
+  "Estilo Origin" = c("Clássica (preto, vermelho, azul...)" = "classico", "Origin: cores básicas" = "origin_basico",
+                      "Origin: vivas" = "origin_vivo", "Origin: escuras" = "origin_escuro", "Origin: pastel" = "origin_pastel",
+                      "Origin: suaves" = "origin_suave", "Origin: em pares" = "origin_pares", "Origin: doces" = "origin_doce"),
+  "Marca" = c("Marca (azul e verde)" = "marca"),
+  "Acessíveis (daltonismo)" = c("Okabe-Ito" = "okabe_ito", "Paul Tol: brilhante" = "tol_brilhante", "Paul Tol: vibrante" = "tol_vibrante",
+                                "Paul Tol: suave" = "tol_suave", "Paul Tol: alto contraste" = "tol_contraste"),
+  "Revistas e programas" = c("Tableau" = "tableau", "D3 (Category10)" = "d3", "Nature (NPG)" = "npg", "The Lancet" = "lancet",
+                             "J. Clinical Oncology (JCO)" = "jco", "NEJM" = "nejm"),
+  "Degradês de uma cor" = c("Azul" = "seq_azul", "Verde" = "seq_verde", "Laranja" = "seq_laranja", "Vermelho" = "seq_vermelho",
+                            "Roxo" = "seq_roxo", "Amarelo → azul" = "seq_azul_verde", "Calor" = "seq_calor", "Frio" = "seq_frio"),
+  "Divergentes e arco-íris" = c("Vermelho ↔ azul" = "div_vermelho_azul", "Espectro" = "div_espectro",
+                                "Marrom ↔ verde" = "div_marrom_verde", "Arco-íris" = "arco_iris"),
+  "Contínuas (viridis)" = c("Viridis" = "viridis", "Magma" = "magma", "Plasma" = "plasma", "Cividis" = "cividis",
+                            "Inferno" = "inferno", "Turbo" = "turbo"),
+  "Cinza" = c("Tons de cinza" = "cinza")
 )
 
 # Entra: nome da paleta e n. Sai: vetor com n cores (interpola se a paleta for menor que n).
 .paleta <- function(nome, n, cfg_cores = NULL) {
   n <- max(n, 1)
   base <- if (nome %in% names(.PALETAS)) {
-    .PALETAS[[nome]]
-  } else if (nome %in% c("viridis", "magma", "plasma", "cividis", "inferno")) {
+    b <- .PALETAS[[nome]]
+    if (nome %in% .PALETAS_RAMPA) return(if (n == 1) b[length(b) - 1] else grDevices::colorRampPalette(b)(n))
+    b
+  } else if (nome %in% c("viridis", "magma", "plasma", "cividis", "inferno", "turbo")) {
     if (!.tem("viridisLite")) .erro("Paleta '", nome, "' precisa do pacote viridisLite.")
     fun <- getExportedValue("viridisLite", nome)
-    return(fun(n, end = if (nome == "viridis" || nome == "cividis") 0.92 else 0.88))
+    return(fun(n, end = if (nome %in% c("viridis", "cividis")) 0.92 else 0.88))
   } else if (nome == "cinza") {
     return(grDevices::grey.colors(n, start = 0, end = 0.75))
   } else if (startsWith(nome, "brewer_")) {
@@ -1647,8 +1761,8 @@ suppressPackageStartupMessages({
   } else if (nome == "personalizada") {
     vapply(cfg_cores$personalizada, .cor, character(1), onde = "cores$personalizada")
   } else {
-    .erro("Paleta '", nome, "' desconhecida. Opções: classico, okabe_ito, tableau, viridis, ",
-          "magma, plasma, cividis, cinza, brewer_<nome>, personalizada. Veja mostrar_paletas().")
+    .erro("Paleta '", nome, "' desconhecida. Opções: ", paste(c(names(.PALETAS), "viridis", "magma", "plasma", "cividis", "inferno", "turbo", "cinza"), collapse = ", "),
+          ", brewer_<nome>, personalizada. Veja mostrar_paletas().")
   }
   if (n <= length(base)) base[seq_len(n)] else grDevices::colorRampPalette(base)(n)
 }
@@ -2263,6 +2377,16 @@ colunas <- function(dados) {
   stats::setNames(out, itens)
 }
 
+# Guia da legenda: como os itens se organizam. direcao "horizontal" = lado a lado (uma linha, ou n_linhas /
+# n_colunas se dados); "vertical" = um embaixo do outro (uma coluna, ou n_colunas / n_linhas).
+.guia_legenda <- function(cfg, n_itens, ...) {
+  lg <- cfg$legenda
+  nc <- lg$n_colunas; nl <- lg$n_linhas
+  if (is.null(nc) && is.null(nl) && identical(lg$direcao, "horizontal")) nl <- 1
+  if (!is.null(nc) && !is.null(nl) && n_itens > 0 && nc * nl < n_itens) nl <- ceiling(n_itens / nc)   # não cabem: aumenta as linhas
+  guide_legend(ncol = nc, nrow = nl, byrow = TRUE, ...)
+}
+
 # Escalas manuais "fundidas" numa só legenda
 .escalas_legenda <- function(est, aes_usadas, cfg) {
   itens <- names(est)
@@ -2270,7 +2394,7 @@ colunas <- function(dados) {
   if (isTRUE(cfg$legenda$inverter_ordem)) quebras <- rev(quebras)
   rotulos <- .rotulos_legenda(vapply(est[quebras], function(e) as.character(e$rotulo), ""))
   nome <- if (is.null(cfg$legenda$titulo)) NULL else .texto(cfg$legenda$titulo)
-  guia <- guide_legend(ncol = cfg$legenda$n_colunas, byrow = TRUE)
+  guia <- .guia_legenda(cfg, length(quebras))
   valores <- list(
     colour    = function() stats::setNames(vapply(est, function(e) e$cor, ""), itens),
     fill      = function() stats::setNames(lapply(est, function(e) e$preench), itens),
@@ -2286,7 +2410,7 @@ colunas <- function(dados) {
   lapply(aes_usadas, function(a) {
     v <- valores[[a]]()
     if (a == "fill" && radial && length(quebras))
-      guia <- guide_legend(ncol = cfg$legenda$n_colunas, byrow = TRUE,
+      guia <- .guia_legenda(cfg, length(quebras),
                            override.aes = list(fill = unname(vapply(est[quebras], function(e) e$cor_solida, ""))))
     estetica <- if (a == "fill_simb") "fill" else a
     if (estetica == "fill" && !is.list(v)) v <- as.list(v)
@@ -2805,7 +2929,8 @@ colunas <- function(dados) {
 
 # Entra: cfg, config do eixo horizontal e do vertical (como aparecem na tela) e os lados com eixo.
 # Sai: tema ggplot2 completo.
-.tema <- function(cfg, eh, ev, lados, sem_eixos = FALSE, cor_y2 = NULL) {
+# ev2 / cor_y2: aparência e cores (lista com ticks, rotulos, titulo, linha) do eixo da direita, quando ele é um Y2 próprio.
+.tema <- function(cfg, eh, ev, lados, sem_eixos = FALSE, cor_y2 = NULL, ev2 = NULL) {
   # eh = config do eixo HORIZONTAL na tela; ev = do VERTICAL
   # lados = lista(hor = c("bottom", "top"?), ver = c("left", "right"?)), lado_principal
   tx <- cfg$texto; cx <- cfg$caixa; gr <- cfg$grade; lg <- cfg$legenda
@@ -2852,7 +2977,7 @@ colunas <- function(dados) {
       t <- t + theme(panel.border = element_blank(),
         axis.line.x.bottom = linha(eh, TRUE, ponta = "square"),
         axis.line.y.left   = linha(ev, TRUE, ponta = "square"),
-        axis.line.y.right  = linha(ev, "right" %in% lados$ver, cor = cor_y2),
+        axis.line.y.right  = linha(ev2 %||% ev, "right" %in% lados$ver, cor = cor_y2$linha),
         axis.line.x.top    = linha(eh, "top" %in% lados$hor))
     }
     # ticks
@@ -2862,7 +2987,9 @@ colunas <- function(dados) {
     for (lado in c("bottom", "top", "left", "right")) {
       e <- if (lado %in% c("bottom", "top")) eh else ev
       xy <- if (lado %in% c("bottom", "top")) "x" else "y"
-      cor_l <- if (lado == lados$lado_y2) cor_y2 else NULL
+      eh_y2 <- lado == lados$lado_y2
+      if (eh_y2 && !is.null(ev2)) e <- ev2
+      cor_l <- if (eh_y2) cor_y2$ticks else NULL
       el <- list()
       el[[paste0("axis.ticks.", xy, ".", lado)]] <- tk(e, cor_l)
       el[[paste0("axis.ticks.length.", xy, ".", lado)]] <- unit(.comp_tick(e$direcao_maiores, e$comprimento_maiores_pt),
@@ -2870,8 +2997,8 @@ colunas <- function(dados) {
       el[[paste0("axis.minor.ticks.", xy, ".", lado)]] <- tk(e, cor_l)
       el[[paste0("axis.minor.ticks.length.", xy, ".",
                  lado)]] <- unit(.comp_tick(e$direcao_menores, e$comprimento_menores_pt), "pt")
-      el[[paste0("axis.text.", xy, ".", lado)]] <- .elem_rotulo(e, cfg, lado, cor_l)
-      el[[paste0("axis.title.", xy, ".", lado)]] <- .elem_titulo(e, cfg, lado, cor_l)
+      el[[paste0("axis.text.", xy, ".", lado)]] <- .elem_rotulo(e, cfg, lado, if (eh_y2) cor_y2$rotulos)
+      el[[paste0("axis.title.", xy, ".", lado)]] <- .elem_titulo(e, cfg, lado, if (eh_y2) cor_y2$titulo)
       t <- t + do.call(theme, el)
     }
   }
@@ -2982,23 +3109,27 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   sort(ax$trans$inverse(r))
 }
 
-# Ticks menores do eixo Y2: o sec_axis() do ggplot2 não os desenha na escala própria do Y2, então
-# são traços no lado direito nas posições dos menores calculados para o Y2.
-# Entra: y2 (list(ax, para1, cor)), eixo Y1 calculado e a config do eixo vertical.
-.ticks_y2_menores <- function(y2, ax_y, ev, ax_x = NULL) {
-  menores <- y2$ax$menores
-  dir <- ev$direcao_menores %||% "dentro"
-  if (!length(menores) || identical(dir, "nenhum") || is.null(y2$para1)) return(NULL)
-  p <- .npc(y2$para1(menores), ax_y)
-  p <- p[p >= -1e-6 & p <= 1 + 1e-6]
-  if (!length(p)) return(NULL)
-  L <- unit(ev$comprimento_menores_pt, "pt")
-  gp <- gpar(col = .cor(y2$cor), lwd = .lw(ev$espessura_ticks_pt %||% 1) * ggplot2::.pt, lineend = "butt")
-  x0 <- unit(1, "npc"); y <- unit(p, "npc")
-  filhos <- switch(dir,
-    dentro = list(segmentsGrob(x0, y, x0 - L, y, gp = gp)),
-    fora   = list(segmentsGrob(x0, y, x0 + L, y, gp = gp)),
-    ambos  = list(segmentsGrob(x0, y, x0 - L, y, gp = gp), segmentsGrob(x0, y, x0 + L, y, gp = gp)))
+# Ticks do eixo Y2 que o ggplot2 não desenha na escala própria do Y2: os menores (o sec_axis() não os traça) e a metade
+# de dentro dos maiores quando a direção é "ambos". São traços no lado direito nas posições calculadas para o Y2.
+# Entra: y2 (list(ax, para1, cor)), eixo Y1 calculado, a aparência do eixo vertical do Y2 (.estilo_y2) e a cor dos traços.
+.ticks_y2_menores <- function(y2, ax_y, ev, ax_x = NULL, cor = NULL) {
+  if (is.null(y2$para1)) return(NULL)
+  filhos <- list()
+  grupo <- function(valores, dir, comp, so_dentro) {
+    if (!length(valores) || identical(dir, "nenhum") || (so_dentro && !identical(dir, "ambos"))) return()
+    p <- .npc(y2$para1(valores), ax_y); p <- p[p >= -1e-6 & p <= 1 + 1e-6]
+    if (!length(p)) return()
+    L <- unit(comp, "pt"); x0 <- unit(1, "npc"); y <- unit(p, "npc")
+    gp <- gpar(col = cor %||% .cor(y2$cor), lwd = .lw(ev$espessura_ticks_pt %||% 1) * ggplot2::.pt, lineend = "butt")
+    if (so_dentro) filhos[[length(filhos) + 1]] <<- segmentsGrob(x0, y, x0 - L, y, gp = gp)
+    else {
+      if (dir %in% c("dentro", "ambos")) filhos[[length(filhos) + 1]] <<- segmentsGrob(x0, y, x0 - L, y, gp = gp)
+      if (dir %in% c("fora", "ambos")) filhos[[length(filhos) + 1]] <<- segmentsGrob(x0, y, x0 + L, y, gp = gp)
+    }
+  }
+  grupo(y2$ax$menores, ev$direcao_menores %||% "dentro", ev$comprimento_menores_pt, FALSE)
+  grupo(y2$ax$maiores, ev$direcao_maiores %||% "dentro", ev$comprimento_maiores_pt, TRUE)    # maiores: só a metade de dentro
+  if (!length(filhos)) return(NULL)
   bx <- .borda_painel(ax_x); by <- .borda_painel(ax_y)
   annotation_custom(gTree(children = do.call(gList, filhos)), xmin = bx[1], xmax = bx[2], ymin = by[1], ymax = by[2])
 }
@@ -3104,13 +3235,37 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
 # =============================================================================
 
 # ---- Pontos / linhas / áreas --------------------------------------------------
+# Opções de aparência do eixo Y2 que, vazias (NULL), seguem o eixo Y.
+.Y2_ESTILO <- c("direcao_maiores", "direcao_menores", "comprimento_maiores_pt", "comprimento_menores_pt", "espessura_ticks_pt",
+                "cor_ticks", "mostrar_linha", "espessura_linha_pt", "cor_linha", "mostrar_rotulos", "tamanho_rotulos_pt",
+                "cor_rotulos", "negrito_rotulos", "rotacao_rotulos", "mostrar_titulo", "tamanho_titulo_pt", "cor_titulo",
+                "negrito_titulo", "italico_titulo", "distancia_rotulos_pt", "distancia_titulo_pt", "rotacao_titulo")
+
 # Config do eixo Y2: a do eixo Y com o que o eixo_y2 define por cima (limites, ticks, formato). O divisor
 # dos números (fator_divisao) é o do eixo_y2 se existir; senão herda o do eixo_y, como sempre foi.
+# Limites, ticks e formato vazios no Y2 significam "automático" (não herdam os do Y); a aparência e a folga vazias herdam.
 .eixo_y2_efetivo <- function(cfg) {
-  e2 <- utils::modifyList(cfg$eixo_y, cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))])
+  sobre <- cfg$eixo_y2[intersect(names(cfg$eixo_y2), names(cfg$eixo_y))]
+  herda <- names(sobre) %in% c(.Y2_ESTILO, "margem_percentual") & vapply(sobre, is.null, NA)
+  e2 <- utils::modifyList(cfg$eixo_y, sobre[!herda])
   e2$fator_divisao <- cfg$eixo_y2$fator_divisao %||% cfg$eixo_y$fator_divisao
   e2$escala <- "linear"; e2$inverter <- FALSE
   e2
+}
+# Aparência do eixo Y2 (ticks, linha, números, título): a do eixo vertical `ev` com o que o eixo_y2 preencher por cima.
+.estilo_y2 <- function(cfg, ev) {
+  sobre <- cfg$eixo_y2[intersect(.Y2_ESTILO, names(cfg$eixo_y2))]
+  sobre <- sobre[!vapply(sobre, is.null, NA)]
+  out <- utils::modifyList(ev, sobre)
+  out$mostrar_rotulos <- sobre$mostrar_rotulos %||% TRUE                       # sem pedir nada, o Y2 sempre mostra números e título
+  out$mostrar_titulo <- if (isTRUE(cfg$.interno$sem_titulo_y2)) FALSE else (sobre$mostrar_titulo %||% TRUE)
+  out
+}
+# Cores de cada parte do eixo Y2: a própria (cor_ticks, cor_rotulos...) ou, se vazia, a cor do eixo (cor_eixo / da série).
+.cores_y2 <- function(cfg, cor_eixo) {
+  e <- cfg$eixo_y2
+  list(ticks = .cor(e$cor_ticks) %||% cor_eixo, rotulos = .cor(e$cor_rotulos) %||% cor_eixo,
+       titulo = .cor(e$cor_titulo) %||% cor_eixo, linha = .cor(e$cor_linha) %||% cor_eixo)
 }
 # Avisa quantos pontos saem do gráfico por não existirem na escala do eixo (<= 0 em log, 0 em 1/x).
 .avisar_omitidos <- function(n, eixo, escala) {
@@ -4101,7 +4256,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   sec_x <- sec_dup(info$ax_x)
   sec_y <- if (!is.null(info$y2)) {
     a2 <- info$y2$ax
-    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo, .neg(cfg, cfg$eixo_y$negrito_titulo)), breaks = a2$maiores,
+    sec_axis(transform = info$y2$para2, name = .texto(info$y2$titulo, .neg(cfg, cfg$eixo_y2$negrito_titulo %||% cfg$eixo_y$negrito_titulo)), breaks = a2$maiores,
              labels = a2$rotulos)
   } else sec_dup(info$ax_y)
   g <- g + .escala_continua(info$ax_x, "x", sec_x, if (x_topo) "top") +
@@ -4131,18 +4286,10 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
                 grade_y_maior = if (isTRUE(info$flip)) cfg$grade$maior_x else cfg$grade$maior_y,
                 grade_x_menor = if (isTRUE(info$flip)) cfg$grade$menor_y else cfg$grade$menor_x,
                 grade_y_menor = if (isTRUE(info$flip)) cfg$grade$menor_x else cfg$grade$menor_y)
-  ev_y2 <- ev
   cfg <- .legenda_por_coordenadas(cfg, info)             # posição da legenda dada em unidades dos eixos (x_dados / y_dados)
-  g <- g + .tema(cfg, eh, ev, lados, cor_y2 = if (!is.null(info$y2)) .cor(info$y2$cor) else NULL)
-  if (!is.null(info$y2)) {
-    # estilo de rótulos do y2: casas/notação próprias já nos rótulos; mostra sempre
-    d2 <- Filter(Negate(is.null), cfg$eixo_y2[c("distancia_titulo_pt", "distancia_rotulos_pt", "rotacao_titulo")])   # só do Y2
-    g <- g + theme(axis.text.y.right = .elem_rotulo(utils::modifyList(ev, c(list(mostrar_rotulos = TRUE), d2)), cfg,
-                                                    "right",
-                                                    .cor(info$y2$cor)),
-                   axis.title.y.right = .elem_titulo(utils::modifyList(ev, c(list(mostrar_titulo = !isTRUE(cfg$.interno$sem_titulo_y2)), d2)), cfg, "right",
-                                                     .cor(info$y2$cor)))
-  }
+  ev2 <- if (!is.null(info$y2)) .estilo_y2(cfg, ev) else NULL
+  cor_y2 <- if (!is.null(info$y2)) .cores_y2(cfg, .cor(info$y2$cor)) else NULL
+  g <- g + .tema(cfg, eh, ev, lados, cor_y2 = cor_y2, ev2 = ev2)
   if (y_dir && espelhar) {
     g <- g + theme(axis.text.y.left = element_blank(), axis.title.y.left = element_blank(),
                    axis.text.y.right = .elem_rotulo(ev, cfg,
@@ -4151,7 +4298,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   ti <- .ticks_internos(axh, axv, lados, info$ax_x, info$ax_y)
   if (!is.null(ti)) g <- g + ti
   if (!is.null(info$y2)) {
-    tm <- .ticks_y2_menores(info$y2, info$ax_y, ev, info$ax_x)
+    tm <- .ticks_y2_menores(info$y2, info$ax_y, ev2, info$ax_x, cor_y2$ticks)
     if (!is.null(tm)) g <- g + tm
   }
   if (!mostrar_leg) g <- g + theme(legend.position = "none")
@@ -4299,6 +4446,8 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   cfg <- .completar_cfg(cfg)
   ys <- .colunas_y(dados, cfg, excluir = .coluna(dados, cfg$grafico$coluna_x, "cfg$grafico$coluna_x"))
+  if (isTRUE(cfg$eixo_y2$ativo) && identical(cfg$eixo_y2$modo, "independente"))   # as séries do eixo direito têm outra escala
+    ys <- setdiff(ys, names(Filter(function(x) identical(x$eixo, "y2"), cfg$series)))
   v <- sort(unique(unlist(lapply(ys, function(y) dados[[y]]))))
   v <- v[is.finite(v)]
   if (length(v) < 2) .erro("Preciso de pelo menos 2 valores Y diferentes para procurar um vazio.")
@@ -4364,6 +4513,9 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
     inc <- Q[[paste0("incremento_", parte)]]; inc2 <- Q[[paste0("y2_incremento_", parte)]]
     if (!is.null(inc)) { ck$eixo_y$ticks_modo <- "incremento"; ck$eixo_y$incremento <- inc }
     if (!is.null(inc2) && !is.null(y2)) { ck$eixo_y2$ticks_modo <- "incremento"; ck$eixo_y2$incremento <- inc2 }
+    nm <- Q[[paste0("n_menores_", parte)]]; nm2 <- Q[[paste0("y2_n_menores_", parte)]]      # ticks pequenos de cada parte
+    if (!is.null(nm)) ck$eixo_y$n_menores <- nm
+    if (!is.null(nm2) && !is.null(y2)) ck$eixo_y2$n_menores <- nm2
     ck$caixa$proporcao <- NULL                         # as alturas das partes seguem proporcao_superior
     if (isTRUE(cfg$exportacao$fundo_transparente)) { ck$caixa$fundo_pagina <- "transparente"; ck$caixa$fundo_painel <- "transparente" }
     if (continuo && parte == "inferior") ck$eixo_y$.ocultar_extremo <- "max"   # o número da divisa aparece só uma vez
@@ -4468,9 +4620,10 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   }
   if (isTRUE(cfg$eixo_y$mostrar_titulo) && !is.null(tit_y1) && !identical(tit_y1, ""))
     gt <- titulo_lateral(gt, tit_y1, cfg$eixo_y, "esq", NULL)
-  if (!is.null(y2) && isTRUE(cfg$eixo_y$mostrar_titulo) && !identical(y2$titulo, ""))
-    gt <- titulo_lateral(gt, y2$titulo, utils::modifyList(cfg$eixo_y, Filter(Negate(is.null),
-                         cfg$eixo_y2[c("distancia_titulo_pt", "rotacao_titulo")])), "dir", .cor(y2$cor))
+  if (!is.null(y2) && !identical(y2$titulo, "")) {
+    ev2 <- .estilo_y2(cfg, cfg$eixo_y)
+    if (isTRUE(ev2$mostrar_titulo)) gt <- titulo_lateral(gt, y2$titulo, ev2, "dir", .cores_y2(cfg, .cor(y2$cor))$titulo)
+  }
   m <- cfg$caixa$margens_cm                          # margem externa esquerda/direita (as partes ficam sem ela)
   gt <- gtable::gtable_add_cols(gt, unit(m[4], "cm"), pos = 0)
   gt <- gtable::gtable_add_cols(gt, unit(m[2], "cm"), pos = -1)
@@ -4954,6 +5107,10 @@ jsonlite_b64 <- function(txt) {
   quebra_y_intervalo_superior = c("quebra", "incremento_superior"),
   quebra_y2_intervalo_inferior = c("quebra", "y2_incremento_inferior"),
   quebra_y2_intervalo_superior = c("quebra", "y2_incremento_superior"),
+  quebra_y_ticks_menores_inferior = c("quebra", "n_menores_inferior"),
+  quebra_y_ticks_menores_superior = c("quebra", "n_menores_superior"),
+  quebra_y2_ticks_menores_inferior = c("quebra", "y2_n_menores_inferior"),
+  quebra_y2_ticks_menores_superior = c("quebra", "y2_n_menores_superior"),
   quebra_ligar_pontos = c("quebra", "ligar_atraves"), quebra_proporcao_superior = c("quebra", "proporcao_superior"),
   # cores, linhas e símbolos
   cores_paleta = c("cores", "paleta"), cores_gradiente_cor2 = c("cores", "gradiente_cor2"),
@@ -4978,6 +5135,15 @@ jsonlite_b64 <- function(txt) {
   legenda_negrito = c("legenda", "negrito_texto"), legenda_titulo_negrito = c("legenda", "negrito_titulo"),
   x_rotacao_titulo = c("eixo_x", "rotacao_titulo"), y_rotacao_titulo = c("eixo_y", "rotacao_titulo"),
   y2_rotacao_titulo = c("eixo_y2", "rotacao_titulo"),
+  y2_primeiro_tick = c("eixo_y2", "primeiro_tick"), y2_folga_pct = c("eixo_y2", "margem_percentual"),
+  y2_ticks_direcao = c("eixo_y2", "direcao_maiores"), y2_ticks_menores_direcao = c("eixo_y2", "direcao_menores"),
+  y2_ticks_comprimento_pt = c("eixo_y2", "comprimento_maiores_pt"),
+  y2_ticks_menores_comprimento_pt = c("eixo_y2", "comprimento_menores_pt"),
+  y2_ticks_espessura_pt = c("eixo_y2", "espessura_ticks_pt"), y2_ticks_cor = c("eixo_y2", "cor_ticks"),
+  y2_linha_espessura_pt = c("eixo_y2", "espessura_linha_pt"), y2_mostrar_numeros = c("eixo_y2", "mostrar_rotulos"),
+  y2_numeros_tamanho_pt = c("eixo_y2", "tamanho_rotulos_pt"), y2_numeros_negrito = c("eixo_y2", "negrito_rotulos"),
+  y2_rotacao_numeros = c("eixo_y2", "rotacao_rotulos"), y2_titulo_tamanho_pt = c("eixo_y2", "tamanho_titulo_pt"),
+  y2_titulo_negrito = c("eixo_y2", "negrito_titulo"), y2_titulo_italico = c("eixo_y2", "italico_titulo"),
   quebra_marcas = c("quebra", "marcas"), quebra_marca_largura_pt = c("quebra", "marca_largura_pt"),
   quebra_marca_altura_pt = c("quebra", "marca_altura_pt"),
   painel_fixo = c("caixa", "painel_fixo"),
@@ -4995,7 +5161,7 @@ jsonlite_b64 <- function(txt) {
   y2_distancia_titulo_pt = c("eixo_y2",
                              "distancia_titulo_pt"), y2_distancia_numeros_pt = c("eixo_y2", "distancia_rotulos_pt"),
   legenda_ancora = c("legenda", "ancora"), legenda_alinhar = c("legenda", "alinhar"),
-  legenda_direcao = c("legenda", "direcao"), legenda_n_colunas = c("legenda", "n_colunas"),
+  legenda_direcao = c("legenda", "direcao"), legenda_n_colunas = c("legenda", "n_colunas"), legenda_n_linhas = c("legenda", "n_linhas"),
   legenda_inverter_ordem = c("legenda", "inverter_ordem"), legenda_tamanho_chave_pt = c("legenda", "tamanho_chave_pt"),
   legenda_espacamento_pt = c("legenda",
                              "espacamento_pt"), legenda_margem_interna_pt = c("legenda", "margem_interna_pt"),
@@ -5007,6 +5173,7 @@ jsonlite_b64 <- function(txt) {
   legenda_sombra_deslocamento_pt = c("legenda", "sombra_deslocamento_pt"),
   caixa_fechada = c("caixa", "fechada"),
   # exportação
+  fundo_transparente = c("exportacao", "fundo_transparente"),
   largura_cm = c("exportacao", "largura"), altura_cm = c("exportacao", "altura"), dpi = c("exportacao", "dpi"),
   formatos = c("exportacao", "formatos"), nome_arquivo = c("exportacao", "nome_arquivo"),
   pasta_saida = c("exportacao", "pasta")
@@ -5015,7 +5182,11 @@ jsonlite_b64 <- function(txt) {
 # Variáveis do painel que mexem no eixo Y da direita (Y2).
 .Y2_VARIAVEIS <- c("y2_series", "y2_fator", "y2_deslocamento", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo",
                    "y2_ticks_manuais", "y2_ticks_menores", "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais",
-                   "y2_notacao", "y2_prefixo", "y2_sufixo", "y2_igual_y1", "y2_legenda_sufixo")
+                   "y2_notacao", "y2_prefixo", "y2_sufixo", "y2_igual_y1", "y2_legenda_sufixo", "y2_rotacao_titulo", "y2_distancia_titulo_pt",
+                   "y2_distancia_numeros_pt", "y2_primeiro_tick", "y2_folga_pct", "y2_ticks_direcao", "y2_ticks_menores_direcao",
+                   "y2_ticks_comprimento_pt", "y2_ticks_menores_comprimento_pt", "y2_ticks_espessura_pt", "y2_ticks_cor",
+                   "y2_linha_espessura_pt", "y2_mostrar_numeros", "y2_numeros_tamanho_pt", "y2_numeros_negrito",
+                   "y2_rotacao_numeros", "y2_titulo_tamanho_pt", "y2_titulo_negrito", "y2_titulo_italico")
 
 # Entra: cfg, o ambiente onde estão as variáveis do painel (padrão: o console/global) e, opcional, os
 # dados (para a quebra automática). Sai: o cfg com os ajustes do painel; imprime o que foi aplicado.
@@ -5080,6 +5251,8 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     cfg$eixo_y2$ativo <- TRUE
     if (!is.null(y2s)) {
       for (nm in y2s) cfg$series[[nm]] <- utils::modifyList(cfg$series[[nm]] %||% list(), list(eixo = "y2"))
+      cy <- cfg$grafico$colunas_y                  # marcar uma coluna para o eixo direito também a coloca no gráfico
+      if (is.character(cy) && is.character(y2s) && length(setdiff(y2s, cy))) cfg$grafico$colunas_y <- c(cy, setdiff(y2s, cy))
       marca("y2_series")
     } else if (!is.null(y2f) || !is.null(y2d)) cfg$eixo_y2$modo <- "transformado"   # o mesmo dado em outra unidade
     # séries do Y2: as de y2_series ou, se o Y2 já estava ligado, as que já têm eixo = "y2" no cfg
@@ -5538,9 +5711,7 @@ RECURSOS QUE VALEM PARA TODOS (exceto pizza): eixo_x, eixo_y, eixo_y2, caixa, gr
 }
 
 .grafico_paletas <- function(n = 8) {
-  nomes <- c("classico", "okabe_ito", "tableau", "viridis", "magma", "plasma", "cividis", "cinza",
-             "brewer_Set1", "brewer_Set2", "brewer_Dark2", "brewer_Paired", "brewer_Blues", "brewer_RdBu",
-             "personalizada")
+  nomes <- c(unlist(.PALETAS_GRUPOS, use.names = FALSE), "personalizada")
   cfg0 <- if (exists("cfg", envir = globalenv())) get("cfg", envir = globalenv())$cores else .cfg_ref$cores
   d <- do.call(rbind, lapply(nomes, function(p) {
     cores <- tryCatch(.paleta(p, n, cfg0), error = function(e) rep("grey90", n))
@@ -5551,7 +5722,7 @@ RECURSOS QUE VALEM PARA TODOS (exceto pizza): eixo_x, eixo_y, eixo_y2, caixa, gr
     geom_text(aes(label = i), size = 2.6, colour = "white") +
     scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
     labs(x = NULL, y = NULL, title = "Paletas  (cfg$cores$paleta <- \"nome\")") +
-    theme_minimal(11) + theme(panel.grid = element_blank(), axis.text.y = element_text(face = "bold"))
+    theme_minimal(11) + theme(panel.grid = element_blank(), axis.text.y = element_text(face = "bold", size = 8))
   g
 }
 
@@ -8707,6 +8878,10 @@ quebra_y_intervalo_inferior <- NULL   # intervalo entre os traços da parte de b
 quebra_y_intervalo_superior <- NULL   # ... e da parte de cima (começa no quebra_ate). EX.: 100
 quebra_y2_intervalo_inferior <- NULL  # o mesmo para o eixo direito (baixo)
 quebra_y2_intervalo_superior <- NULL  # ... (cima)
+quebra_y_ticks_menores_inferior <- NULL   # traços pequenos entre dois grandes na parte de baixo do eixo esquerdo (0 = sem). EX.: 4
+quebra_y_ticks_menores_superior <- NULL   # ... e na de cima
+quebra_y2_ticks_menores_inferior <- NULL  # o mesmo para o eixo direito
+quebra_y2_ticks_menores_superior <- NULL
 quebra_ligar_pontos      <- NULL   # FALSE = não liga os pontos através da quebra
 quebra_marcas    <- NULL   # FALSE = sem as barras "//" na quebra
 quebra_marca_largura_pt <- NULL    # largura de cada barra "//", em pt (padrão 2.5: curta, não encosta nos números). EX.: 4
@@ -8738,11 +8913,29 @@ y2_deslocamento <- NULL   #   EX. de °C para °F:  y2_fator <- 1.8;  y2_desloca
 y2_distancia_titulo_pt  <- NULL   # título do Y2 até os números. EX.: 6
 y2_distancia_numeros_pt <- NULL   # números do Y2 até o eixo. EX.: 3
 y2_rotacao_titulo <- NULL         # ângulo do título do eixo direito (padrão -90). EX.: 90
+#  Aparência do eixo direito: as MESMAS opções do Y1. Vazio = igual ao eixo esquerdo.
+y2_primeiro_tick <- NULL          # de onde começam os traços do Y2. EX.: 0
+y2_folga_pct     <- NULL          # folga nas pontas do Y2, em %. EX.: 4
+y2_ticks_direcao <- NULL          # traços grandes: "dentro" | "fora" | "ambos" | "nenhum"
+y2_ticks_menores_direcao <- NULL  # traços pequenos: "dentro" | "fora" | "ambos" | "nenhum"
+y2_ticks_comprimento_pt <- NULL   # comprimento do traço grande, pt. EX.: 5
+y2_ticks_menores_comprimento_pt <- NULL  # comprimento do traço pequeno, pt. EX.: 3
+y2_ticks_espessura_pt <- NULL     # grossura dos traços, pt (vazio = a do eixo esquerdo / moldura)
+y2_ticks_cor     <- NULL          # cor dos traços (vazio = a cor do eixo direito)
+y2_linha_espessura_pt <- NULL     # grossura da linha do eixo (aparece com a moldura aberta)
+y2_mostrar_numeros <- NULL        # FALSE = esconde os números do eixo direito
+y2_numeros_tamanho_pt <- NULL     # tamanho dos números, pt. EX.: 10
+y2_numeros_negrito <- NULL        # TRUE = números em negrito
+y2_rotacao_numeros <- NULL        # gira os números, em graus. EX.: 45
+y2_titulo_tamanho_pt <- NULL      # tamanho do título do eixo direito, pt. EX.: 12
+y2_titulo_negrito <- NULL         # TRUE = título em negrito
+y2_titulo_italico <- NULL         # TRUE = título em itálico
 #  As cores de cada série (esquerda ou direita) também podem vir de cores_por_serie (bloco 8).
 
 # ---- 8. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
-cores_paleta        <- NULL   # "classico" (padrão tipo Origin) | "okabe_ito" | "tableau" | "viridis" | "cinza" |
-                              # "brewer_Set1"... (veja mostrar_paletas())
+cores_paleta        <- NULL   # "classico" (padrão tipo Origin) | "origin_basico" | "origin_pastel" | "marca" | "okabe_ito" |
+                              # "tableau" | "npg" | "seq_azul" | "div_espectro" | "viridis" | "cinza" | "brewer_Set1"...
+                              # (a lista completa, com as cores desenhadas: mostrar_paletas())
 cores_personalizadas <- NULL  # suas cores, na ordem das colunas Y. EX.: c("#000000", "#D62728", "#1F4E9E")
 cores_por_serie     <- NULL   # a cor de séries específicas (nome exato da coluna).
                               # EX.: c("WORLD" = "#000000", "LATAM" = "#C00000", "BRAZIL" = "#1F4E9E")
@@ -8815,8 +9008,9 @@ legenda_distancia_pt <- NULL  # com "dentro": distância até a borda da caixa, 
 legenda_ajustar_caixa <- NULL # TRUE (padrão) = se a legenda for maior que a caixa, é reduzida até caber | FALSE = como pedido
                            #   direita/esquerda: "topo" | "centro" | "base"; topo/base: "esquerda" | "centro" | "direita"
 #  Disposição dos itens
-legenda_direcao  <- NULL   # "vertical" (um embaixo do outro) | "horizontal" (lado a lado)
-legenda_n_colunas <- NULL  # número de colunas. EX.: 2
+legenda_direcao  <- NULL   # "vertical" (um embaixo do outro) | "horizontal" (lado a lado, numa linha)
+legenda_n_colunas <- NULL  # em quantas COLUNAS os itens se organizam. EX.: 2
+legenda_n_linhas  <- NULL  # em quantas LINHAS os itens se organizam. EX.: 2  (com "horizontal": 6 itens em 2 linhas de 3)
 legenda_inverter_ordem <- NULL  # TRUE = inverte a ordem dos itens
 legenda_tamanho_chave_pt <- NULL   # tamanho do quadradinho/linha de cada item. EX.: 18
 legenda_espacamento_pt   <- NULL   # espaço entre os itens. EX.: 4
@@ -8842,6 +9036,7 @@ ajustar_pagina <- NULL     # com caixa de tamanho fixo: TRUE (padrão) = a pági
                            #   FALSE = página sempre largura_cm x altura_cm (a caixa fica centralizada)
 dpi          <- NULL       # EX.: 600
 formatos     <- NULL       # EX.: c("png", "pdf")   (também "tiff", "svg", "jpeg", "emf")
+fundo_transparente <- NULL # TRUE = arquivo sem fundo branco (PNG, TIFF, SVG, PDF; o JPEG não tem transparência)
 nome_arquivo <- NULL       # EX.: "minha_figura"
 pasta_saida  <- NULL       # EX.: "C:/pasta/figuras"  (padrão: pasta saida/)
 

@@ -16,10 +16,11 @@ atualizar_campo <- function(session, campo, valor, cfg0, colunas = NULL) {
   switch(campo$tipo,
     num = , int = updateNumericInput(session, id, value = if (is.null(valor) || length(valor) != 1) NA else valor),
     txt = , vec = updateTextInput(session, id, value = paste(valor, collapse = ", ")),
-    sel = , tri = updateSelectInput(session, id, selected = as.character(valor)),
+    sel = , tri = , selbusca = updateSelectInput(session, id, selected = as.character(valor)),
     chk = updateCheckboxInput(session, id, value = isTRUE(valor)),
     cor = session$sendCustomMessage("set_cor", list(id = id, valor = as.character(valor %||% ""))),
     selmulti = updateSelectInput(session, id, selected = as.character(valor)),
+    chkgrupo = updateCheckboxGroupInput(session, id, selected = as.character(valor)),
     colx = updateSelectInput(session, id, selected = as.character(valor %||% "")),
     colsy = , colsy2 = updateSelectInput(session, id, selected = as.character(valor)))
 }
@@ -34,7 +35,8 @@ servidor <- function(input, output, session) {
     if (isTRUE(getOption("gerador_encerrar_ao_fechar")))          # espera 6 s: recarregar a página não encerra o app
       later::later(function() if (.sessoes$n <= 0) shiny::stopApp(), 6)
   })
-  rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL, geo = NULL)
+  rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL, geo = NULL,
+                       paletas = list())
   dir_dados <- file.path(raiz, "dados")
 
   # ---- dados -------------------------------------------------------------------------------------------------
@@ -46,10 +48,18 @@ servidor <- function(input, output, session) {
     rv$dados <- d; rv$nome <- nome; rv$erro <- NULL
     cols <- names(d); num <- cols[vapply(d, is.numeric, NA)]
     updateSelectInput(session, "coluna_x", choices = c("(1ª coluna)" = "", stats::setNames(cols, cols)), selected = "")
-    updateSelectInput(session, "colunas_y", choices = stats::setNames(num, num), selected = character(0))
-    updateSelectInput(session, "y2_series", choices = stats::setNames(num, num), selected = character(0))
+    updateSelectizeInput(session, "colunas_y", choices = stats::setNames(setdiff(num, cols[1]), setdiff(num, cols[1])), selected = character(0))
+    updateSelectizeInput(session, "y2_series", choices = stats::setNames(setdiff(num, cols[1]), setdiff(num, cols[1])), selected = character(0))
     updateSelectInput(session, "simbolos_ordem", selected = character(0))
   }
+  # a coluna do eixo X não aparece nas listas de séries (Y e Y2)
+  observeEvent(input$coluna_x, {
+    d <- rv$dados; req(d)
+    x <- input$coluna_x; if (is.null(x) || !nzchar(x)) x <- names(d)[1]
+    num <- setdiff(names(d)[vapply(d, is.numeric, NA)], x)
+    for (id in c("colunas_y", "y2_series"))
+      updateSelectizeInput(session, id, choices = stats::setNames(num, num), selected = intersect(isolate(input[[id]]), num))
+  }, ignoreInit = TRUE)
   observeEvent(input$arquivo, { carregar(input$arquivo$datapath, input$arquivo$name); updateSelectInput(session, "exemplo", selected = "") })
   observeEvent(input$exemplo, { if (nzchar(input$exemplo)) carregar(file.path(dir_dados, input$exemplo), input$exemplo) })
 
@@ -63,6 +73,51 @@ servidor <- function(input, output, session) {
                    tags$tbody(lapply(seq_len(min(5, nrow(d))), function(i) tags$tr(lapply(d[i, ], function(x) tags$td(format(x, digits = 6))))))))
   })
 
+  # ---- paletas: desenho da escolhida, editor próprio, paletas guardadas (no navegador) ------------------------------------------
+  cores_da_paleta <- function(nome, n = 10) {
+    nome <- nome %||% "classico"
+    if (identical(nome, "propria")) return(ler_cores_texto(input$paleta_propria))
+    if (startsWith(nome, "salva:")) return(as.character(rv$paletas[[sub("^salva:", "", nome)]]))
+    tryCatch(.paleta(nome, n, CFG0$cores), error = function(e) character(0))
+  }
+  output$previa_paleta <- renderUI({
+    nome <- input$cores_paleta %||% "classico"
+    n <- if (!is.null(rv$dados)) min(max(length(series_nomes_seguro()), 3), 14) else 10
+    cores <- cores_da_paleta(nome, n)
+    if (!length(cores)) return(div(class = "paleta-previa vazio", "(sem cores: escreva os códigos no editor abaixo)"))
+    div(class = "paleta-previa", lapply(cores, function(h) span(class = "paleta-cor", style = paste0("background:", h), title = h)))
+  })
+  atualizar_lista_paletas <- function(escolher = NULL) {
+    updateSelectizeInput(session, "cores_paleta", choices = opcoes_paletas(names(rv$paletas)),
+                         selected = escolher %||% isolate(input$cores_paleta) %||% "classico")
+    session$sendCustomMessage("guardar_paletas", as.character(jsonlite::toJSON(rv$paletas, auto_unbox = FALSE)))
+  }
+  observeEvent(input$paletas_do_navegador, {            # o navegador envia o que estava guardado
+    p <- input$paletas_do_navegador
+    if (is.list(p) && length(p)) {
+      rv$paletas <- lapply(p, function(x) as.character(unlist(x)))
+      updateSelectizeInput(session, "cores_paleta", choices = opcoes_paletas(names(rv$paletas)), selected = isolate(input$cores_paleta) %||% "classico")
+    }
+  }, once = TRUE)
+  observeEvent(input$paleta_copiar, {
+    cores <- cores_da_paleta(input$cores_paleta, 8)
+    if (length(cores)) updateTextAreaInput(session, "paleta_propria", value = paste(cores, collapse = ", "))
+  })
+  observeEvent(input$paleta_salvar, {
+    nome <- trimws(input$paleta_nome %||% ""); cores <- ler_cores_texto(input$paleta_propria)
+    if (!nzchar(nome)) return(showNotification("Dê um nome para guardar a paleta.", type = "warning"))
+    if (!length(cores)) return(showNotification("Escreva pelo menos uma cor no editor.", type = "warning"))
+    rv$paletas[[nome]] <- cores
+    atualizar_lista_paletas(paste0("salva:", nome))
+    showNotification(paste0("Paleta \"", nome, "\" guardada."), type = "message")
+  })
+  observeEvent(input$paleta_excluir, {
+    sel <- input$cores_paleta %||% ""
+    if (!startsWith(sel, "salva:")) return(showNotification("Escolha, na lista de paletas, uma das suas paletas guardadas para excluir.", type = "warning"))
+    rv$paletas[[sub("^salva:", "", sel)]] <- NULL
+    atualizar_lista_paletas("classico")
+  })
+
   # ---- séries (tabela por série) ------------------------------------------------------------------------------
   series_nomes <- reactive({
     d <- rv$dados; req(d)
@@ -71,6 +126,7 @@ servidor <- function(input, output, session) {
     sel <- input$colunas_y
     if (length(sel)) sel else num
   })
+  series_nomes_seguro <- function() tryCatch(series_nomes(), error = function(e) character(0))
   output$tabela_series <- renderUI({
     d <- rv$dados
     if (is.null(d)) return(div(class = "vazio", "Carregue os dados para editar cada série."))
@@ -95,7 +151,8 @@ servidor <- function(input, output, session) {
 
   # ---- do que está na tela às variáveis do painel -------------------------------------------------------------------
   valores <- reactive({ v <- lapply(names(ESPEC_CAMPOS), function(id) input[[id]]); names(v) <- names(ESPEC_CAMPOS)
-                        v$simbolo_modo <- input$simbolo_modo; v })
+                        v$simbolo_modo <- input$simbolo_modo
+                        v$.paleta_propria <- input$paleta_propria; v$.paletas_salvas <- rv$paletas; v })
   vars_atual <- reactive({
     s <- if (!is.null(rv$dados)) tryCatch(series_df(), error = function(e) NULL) else NULL
     montar_variaveis(valores(), CFG0, s)
@@ -136,14 +193,18 @@ servidor <- function(input, output, session) {
         if (!is.null(r$cfg$caixa$painel_largura_cm)) span(class = "chip chip-verde", sprintf("Caixa fixa %.1f × %.1f cm", r$cfg$caixa$painel_largura_cm, r$cfg$caixa$painel_altura_cm %||% NA)),
         span(class = "chip", paste("Fonte:", r$cfg$texto$fonte)))
   })
-  rotulo_de <- function(id) { c <- ESPEC_CAMPOS[[id]]; if (is.null(c)) id else c$rotulo }
+  derivados <- c(cores_personalizadas = "Cores da minha paleta", legenda_sombra_deslocamento_pt = "Sombra da legenda: deslocamento",
+                 legenda_nomes = "Nomes na legenda", cores_por_serie = "Cores por série", simbolo_forma_por_serie = "Formas por série",
+                 simbolo_tamanho_por_serie = "Tamanho dos pontos por série", linha_espessura_por_serie = "Grossura das linhas por série",
+                 simbolo_borda_por_serie = "Contorno dos pontos por série")
+  rotulo_de <- function(id) { c <- ESPEC_CAMPOS[[id]]; if (!is.null(c)) c$rotulo else if (id %in% names(derivados)) derivados[[id]] else id }
   output$avisos <- renderUI({
     r <- rv$res
     tagList(
       if (!is.null(rv$erro)) div(class = "alerta alerta-erro", tags$b("Algo precisa de ajuste: "), rv$erro),
       if (!is.null(r) && length(r$avisos)) div(class = "alerta alerta-aviso", tags$b("Avisos"), tags$ul(lapply(r$avisos, tags$li))),
-      if (!is.null(r) && length(r$aplicado)) div(class = "mudou", tags$b("O que você mudou: "),
-                                                 lapply(r$aplicado, function(n) span(class = "chip chip-mudou", rotulo_de(n)))))
+      if (!is.null(r) && length(setdiff(r$aplicado, "formatos"))) div(class = "mudou", tags$b("O que você mudou: "),
+                                                 lapply(setdiff(r$aplicado, "formatos"), function(n) span(class = "chip chip-mudou", rotulo_de(n)))))
   })
 
   # ---- baixar ------------------------------------------------------------------------------------------------------------
@@ -162,7 +223,12 @@ servidor <- function(input, output, session) {
       arqs <- suppressMessages(suppressWarnings(salvar(r$g, cfg)))
       file.copy(arqs[1], file, overwrite = TRUE)
     })
-  for (ext in c("png", "tiff", "jpeg", "svg", "pdf")) local({ e <- ext; output[[paste0("baixar_", e)]] <- baixar(e) })
+  for (ext in unname(.FORMATOS)) local({ e <- ext; output[[paste0("baixar_", e)]] <- baixar(e) })
+  output$botoes_baixar <- renderUI({              # um botão para cada tipo de arquivo marcado no bloco 12
+    f <- input$formatos; if (!length(f)) f <- "png"
+    f <- intersect(unname(.FORMATOS), f)
+    div(class = "botoes-baixar", lapply(f, function(e) downloadButton(paste0("baixar_", e), paste("Baixar", toupper(e)), class = "btn-baixar")))
+  })
 
   # ---- código equivalente ----------------------------------------------------------------------------------------
   output$codigo <- renderText(gerar_codigo(vars_atual()))
@@ -172,15 +238,19 @@ servidor <- function(input, output, session) {
   # ---- salvar / carregar configuração -------------------------------------------------------------------------------
   output$salvar_cfg <- downloadHandler(filename = function() paste0(nome_base(), "_configuracao.json"),
     content = function(file) {
-      v <- valores(); v <- v[!vapply(v, is.null, NA)]
+      v <- valores(); v$paleta_propria <- input$paleta_propria %||% ""; v <- v[!vapply(v, is.null, NA)]
       s <- if (!is.null(rv$dados)) series_df() else NULL
-      writeLines(jsonlite::toJSON(list(versao = 1, dados = rv$nome, valores = v, series = s), auto_unbox = TRUE, null = "null", na = "null",
+      writeLines(jsonlite::toJSON(list(versao = 1, dados = rv$nome, valores = v[!startsWith(names(v), ".")], series = s, paletas = rv$paletas), auto_unbox = TRUE, null = "null", na = "null",
                                   pretty = TRUE), file, useBytes = TRUE)
     })
   observeEvent(input$carregar_cfg, {
     j <- tryCatch(jsonlite::fromJSON(input$carregar_cfg$datapath, simplifyVector = TRUE), error = function(e) NULL)
     if (is.null(j) || is.null(j$valores)) { showNotification("Arquivo de configuração inválido.", type = "error"); return() }
+    if (is.list(j$paletas) && length(j$paletas)) {
+      rv$paletas <- utils::modifyList(rv$paletas, lapply(j$paletas, function(x) as.character(unlist(x)))); atualizar_lista_paletas()
+    }
     for (id in names(ESPEC_CAMPOS)) if (!is.null(j$valores[[id]])) atualizar_campo(session, ESPEC_CAMPOS[[id]], j$valores[[id]], CFG0)
+    if (!is.null(j$valores$paleta_propria)) updateTextAreaInput(session, "paleta_propria", value = as.character(j$valores$paleta_propria))
     if (!is.null(j$valores$simbolo_modo)) updateSelectInput(session, "simbolo_modo", selected = j$valores$simbolo_modo)
     if (!is.null(j$series)) rv$pend_series <- as.data.frame(j$series)
     showNotification("Configuração carregada.", type = "message")
@@ -196,6 +266,19 @@ servidor <- function(input, output, session) {
       }
       rv$pend_series <- NULL
     })
+  })
+
+  # ---- quebra: sugerir o maior vazio -----------------------------------------------------------------------------------------------------
+  observeEvent(input$quebra_sugerir, {
+    req(rv$dados)
+    v <- vars_atual(); v$quebra_ativar <- NULL; v$quebra_de <- NULL; v$quebra_ate <- NULL
+    sug <- tryCatch({
+      cfg <- suppressMessages(aplicar_painel(CFG0, painel = list2env(v, parent = emptyenv()), dados = rv$dados))
+      utils::capture.output(r <- sugerir_quebra(rv$dados, cfg)); r
+    }, error = function(e) { showNotification(paste("Não consegui sugerir:", conditionMessage(e)), type = "error"); NULL })
+    if (is.null(sug)) return()
+    updateNumericInput(session, "quebra_de", value = signif(sug$de, 6)); updateNumericInput(session, "quebra_ate", value = signif(sug$ate, 6))
+    showNotification(sprintf("Maior vazio: de %s a %s.", format(signif(sug$de, 6), scientific = FALSE), format(signif(sug$ate, 6), scientific = FALSE)), type = "message")
   })
 
   # ---- legenda arrastada / redimensionada na prévia --------------------------------------------------------------------------

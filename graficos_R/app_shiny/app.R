@@ -28,7 +28,7 @@ EXEMPLOS <- EXEMPLOS[file.exists(file.path(raiz, "dados", EXEMPLOS))]
 
 ui <- fluidPage(
   title = "Gerador de gráficos",
-  tags$head(tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(src = "app.js"),
+  tags$head(tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(HTML(paste0("window.PALETAS = ", jsonlite::toJSON(paletas_js(), auto_unbox = TRUE), ";"))), tags$script(src = "app.js"),
             tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")),
   tags$header(class = "topo",
     div(class = "marca", div(class = "marca-ico", HTML("&#9650;")),
@@ -50,8 +50,11 @@ ui <- fluidPage(
       lapply(seq_along(ESPEC), function(i) {
         b <- ESPEC[[i]]
         ui_bloco(b, i, CFG0, aberto = i == 1,
-                 extra = if (b$id == "cores") div(class = "grupo", tags$h4("Série por série"),
-                          tags$p(class = "ajuda", "Só preencha o que quiser diferente da paleta e dos valores gerais acima."), uiOutput("tabela_series"))
+                 extra = if (b$id == "cores") tagList(ui_paleta_propria(), div(class = "grupo", tags$h4("Série por série"),
+                          tags$p(class = "ajuda", "Só preencha o que quiser diferente da paleta e dos valores gerais acima."), uiOutput("tabela_series")))
+                         else if (b$id == "quebra") conditionalPanel("input.quebra_ativar", div(class = "botoes-config",
+                          actionButton("quebra_sugerir", "Achar o maior vazio nos meus dados", class = "btn-verde"),
+                          tags$small(class = "ajuda", "Preenche \"de\" e \"até\" com o maior espaço vazio entre os valores do eixo esquerdo.")))
                          else if (b$id == "legenda") div(class = "grupo", tags$h4("Nomes na legenda"), tags$p(class = "ajuda", "Os nomes das séries são editados no bloco 8, em cada série."))
                          else if (b$id == "fonte") div(class = "grupo", tags$h4("Adicionar uma fonte de arquivo"),
                           tags$p(class = "ajuda", "Tem uma fonte em .ttf ou .otf que não está instalada? Escolha o arquivo (e, se quiser negrito/itálico de verdade, os arquivos -Bold, -Italic e -BoldItalic juntos). Ela entra na lista acima. Vale enquanto o app estiver aberto."),
@@ -73,11 +76,8 @@ ui <- fluidPage(
           uiOutput("avisos")),
       div(class = "cartao baixar-cartao",
           tags$h2("Baixar"),
-          div(class = "botoes-baixar",
-              downloadButton("baixar_png", "PNG", class = "btn-baixar"), downloadButton("baixar_tiff", "TIFF", class = "btn-baixar"),
-              downloadButton("baixar_jpeg", "JPEG", class = "btn-baixar"), downloadButton("baixar_svg", "SVG", class = "btn-baixar"),
-              downloadButton("baixar_pdf", "PDF", class = "btn-baixar")),
-          tags$p(class = "ajuda", "Resolução e tamanho: bloco 12. PNG, TIFF e SVG usam a Barlow direto; no PDF a fonte precisa estar instalada no computador."),
+          uiOutput("botoes_baixar"),
+          tags$p(class = "ajuda", tags$a(href = "#bloco-exportacao", "Escolher o tipo de arquivo, a resolução e o tamanho (bloco 12)"), ". PNG, TIFF e SVG usam a Barlow direto; no PDF a fonte precisa estar instalada no computador."),
           div(class = "botoes-config",
               downloadButton("salvar_cfg", "Salvar configuração", class = "btn-sec"),
               fileInput("carregar_cfg", NULL, accept = ".json", buttonLabel = "Carregar configuração...", placeholder = "", width = "230px"))),

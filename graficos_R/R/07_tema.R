@@ -50,7 +50,8 @@
 
 # Entra: cfg, config do eixo horizontal e do vertical (como aparecem na tela) e os lados com eixo.
 # Sai: tema ggplot2 completo.
-.tema <- function(cfg, eh, ev, lados, sem_eixos = FALSE, cor_y2 = NULL) {
+# ev2 / cor_y2: aparência e cores (lista com ticks, rotulos, titulo, linha) do eixo da direita, quando ele é um Y2 próprio.
+.tema <- function(cfg, eh, ev, lados, sem_eixos = FALSE, cor_y2 = NULL, ev2 = NULL) {
   # eh = config do eixo HORIZONTAL na tela; ev = do VERTICAL
   # lados = lista(hor = c("bottom", "top"?), ver = c("left", "right"?)), lado_principal
   tx <- cfg$texto; cx <- cfg$caixa; gr <- cfg$grade; lg <- cfg$legenda
@@ -97,7 +98,7 @@
       t <- t + theme(panel.border = element_blank(),
         axis.line.x.bottom = linha(eh, TRUE, ponta = "square"),
         axis.line.y.left   = linha(ev, TRUE, ponta = "square"),
-        axis.line.y.right  = linha(ev, "right" %in% lados$ver, cor = cor_y2),
+        axis.line.y.right  = linha(ev2 %||% ev, "right" %in% lados$ver, cor = cor_y2$linha),
         axis.line.x.top    = linha(eh, "top" %in% lados$hor))
     }
     # ticks
@@ -107,7 +108,9 @@
     for (lado in c("bottom", "top", "left", "right")) {
       e <- if (lado %in% c("bottom", "top")) eh else ev
       xy <- if (lado %in% c("bottom", "top")) "x" else "y"
-      cor_l <- if (lado == lados$lado_y2) cor_y2 else NULL
+      eh_y2 <- lado == lados$lado_y2
+      if (eh_y2 && !is.null(ev2)) e <- ev2
+      cor_l <- if (eh_y2) cor_y2$ticks else NULL
       el <- list()
       el[[paste0("axis.ticks.", xy, ".", lado)]] <- tk(e, cor_l)
       el[[paste0("axis.ticks.length.", xy, ".", lado)]] <- unit(.comp_tick(e$direcao_maiores, e$comprimento_maiores_pt),
@@ -115,8 +118,8 @@
       el[[paste0("axis.minor.ticks.", xy, ".", lado)]] <- tk(e, cor_l)
       el[[paste0("axis.minor.ticks.length.", xy, ".",
                  lado)]] <- unit(.comp_tick(e$direcao_menores, e$comprimento_menores_pt), "pt")
-      el[[paste0("axis.text.", xy, ".", lado)]] <- .elem_rotulo(e, cfg, lado, cor_l)
-      el[[paste0("axis.title.", xy, ".", lado)]] <- .elem_titulo(e, cfg, lado, cor_l)
+      el[[paste0("axis.text.", xy, ".", lado)]] <- .elem_rotulo(e, cfg, lado, if (eh_y2) cor_y2$rotulos)
+      el[[paste0("axis.title.", xy, ".", lado)]] <- .elem_titulo(e, cfg, lado, if (eh_y2) cor_y2$titulo)
       t <- t + do.call(theme, el)
     }
   }
@@ -227,23 +230,27 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   sort(ax$trans$inverse(r))
 }
 
-# Ticks menores do eixo Y2: o sec_axis() do ggplot2 não os desenha na escala própria do Y2, então
-# são traços no lado direito nas posições dos menores calculados para o Y2.
-# Entra: y2 (list(ax, para1, cor)), eixo Y1 calculado e a config do eixo vertical.
-.ticks_y2_menores <- function(y2, ax_y, ev, ax_x = NULL) {
-  menores <- y2$ax$menores
-  dir <- ev$direcao_menores %||% "dentro"
-  if (!length(menores) || identical(dir, "nenhum") || is.null(y2$para1)) return(NULL)
-  p <- .npc(y2$para1(menores), ax_y)
-  p <- p[p >= -1e-6 & p <= 1 + 1e-6]
-  if (!length(p)) return(NULL)
-  L <- unit(ev$comprimento_menores_pt, "pt")
-  gp <- gpar(col = .cor(y2$cor), lwd = .lw(ev$espessura_ticks_pt %||% 1) * ggplot2::.pt, lineend = "butt")
-  x0 <- unit(1, "npc"); y <- unit(p, "npc")
-  filhos <- switch(dir,
-    dentro = list(segmentsGrob(x0, y, x0 - L, y, gp = gp)),
-    fora   = list(segmentsGrob(x0, y, x0 + L, y, gp = gp)),
-    ambos  = list(segmentsGrob(x0, y, x0 - L, y, gp = gp), segmentsGrob(x0, y, x0 + L, y, gp = gp)))
+# Ticks do eixo Y2 que o ggplot2 não desenha na escala própria do Y2: os menores (o sec_axis() não os traça) e a metade
+# de dentro dos maiores quando a direção é "ambos". São traços no lado direito nas posições calculadas para o Y2.
+# Entra: y2 (list(ax, para1, cor)), eixo Y1 calculado, a aparência do eixo vertical do Y2 (.estilo_y2) e a cor dos traços.
+.ticks_y2_menores <- function(y2, ax_y, ev, ax_x = NULL, cor = NULL) {
+  if (is.null(y2$para1)) return(NULL)
+  filhos <- list()
+  grupo <- function(valores, dir, comp, so_dentro) {
+    if (!length(valores) || identical(dir, "nenhum") || (so_dentro && !identical(dir, "ambos"))) return()
+    p <- .npc(y2$para1(valores), ax_y); p <- p[p >= -1e-6 & p <= 1 + 1e-6]
+    if (!length(p)) return()
+    L <- unit(comp, "pt"); x0 <- unit(1, "npc"); y <- unit(p, "npc")
+    gp <- gpar(col = cor %||% .cor(y2$cor), lwd = .lw(ev$espessura_ticks_pt %||% 1) * ggplot2::.pt, lineend = "butt")
+    if (so_dentro) filhos[[length(filhos) + 1]] <<- segmentsGrob(x0, y, x0 - L, y, gp = gp)
+    else {
+      if (dir %in% c("dentro", "ambos")) filhos[[length(filhos) + 1]] <<- segmentsGrob(x0, y, x0 - L, y, gp = gp)
+      if (dir %in% c("fora", "ambos")) filhos[[length(filhos) + 1]] <<- segmentsGrob(x0, y, x0 + L, y, gp = gp)
+    }
+  }
+  grupo(y2$ax$menores, ev$direcao_menores %||% "dentro", ev$comprimento_menores_pt, FALSE)
+  grupo(y2$ax$maiores, ev$direcao_maiores %||% "dentro", ev$comprimento_maiores_pt, TRUE)    # maiores: só a metade de dentro
+  if (!length(filhos)) return(NULL)
   bx <- .borda_painel(ax_x); by <- .borda_painel(ax_y)
   annotation_custom(gTree(children = do.call(gList, filhos)), xmin = bx[1], xmax = bx[2], ymin = by[1], ymax = by[2])
 }

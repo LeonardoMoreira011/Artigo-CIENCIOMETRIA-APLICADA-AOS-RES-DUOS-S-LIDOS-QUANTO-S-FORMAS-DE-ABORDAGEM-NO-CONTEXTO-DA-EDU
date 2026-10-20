@@ -98,10 +98,18 @@ cfg$grafico <- list(
 cfg$cores <- list(
   # paleta: cores atribuídas automaticamente às séries, em sequência
   #   (como o "incremento" de cor). Veja todas com mostrar_paletas().
-  #   OPÇÕES: "classico" | "okabe_ito" (segura p/ daltônicos) | "viridis" |
-  #           "magma" | "plasma" | "cividis" | "cinza" | "tableau" |
-  #           "brewer_Set1" | "brewer_Dark2" | "brewer_Paired" | (qualquer
-  #           "brewer_<nome>" do ColorBrewer) | "personalizada"
+  #   OPÇÕES (todas aparecem em mostrar_paletas()):
+  #     Estilo Origin ........ "classico" | "origin_basico" | "origin_vivo" | "origin_escuro" | "origin_pastel" |
+  #                            "origin_suave" | "origin_pares" | "origin_doce"
+  #     Marca ................ "marca"
+  #     Acessíveis ........... "okabe_ito" | "tol_brilhante" | "tol_vibrante" | "tol_suave" | "tol_contraste"
+  #     Revistas ............. "tableau" | "d3" | "npg" | "lancet" | "jco" | "nejm"
+  #     Degradês de uma cor .. "seq_azul" | "seq_verde" | "seq_laranja" | "seq_vermelho" | "seq_roxo" |
+  #                            "seq_azul_verde" | "seq_calor" | "seq_frio"
+  #     Divergentes .......... "div_vermelho_azul" | "div_espectro" | "div_marrom_verde" | "arco_iris"
+  #     Contínuas ............ "viridis" | "magma" | "plasma" | "cividis" | "inferno" | "turbo" | "cinza"
+  #     ColorBrewer .......... "brewer_<nome>" (ex.: "brewer_Set1", "brewer_Spectral"; precisa do pacote RColorBrewer)
+  #     Sua própria .......... "personalizada" (cores em cfg$cores$personalizada)
   #   EX.: cfg$cores$paleta <- "okabe_ito"
   paleta = "classico",
 
@@ -837,7 +845,7 @@ cfg$eixo_y <- list(
 # -----------------------------------------------------------------------------
 #  Para usar: cfg$eixo_y2$ativo <- TRUE e, no modo "independente", diga quais
 #  séries vão para ele:  cfg$series[["Pressão"]] <- list(eixo = "y2")
-#  Estilo dos ticks (direção, comprimento, espessura) segue o eixo_y.
+#  A aparência (ticks, números, título, linha) segue o eixo_y, salvo o que for preenchido aqui.
 cfg$eixo_y2 <- list(
   # ativo: liga o eixo Y secundário.  OPÇÕES: TRUE | FALSE
   ativo = FALSE,
@@ -883,7 +891,38 @@ cfg$eixo_y2 <- list(
 
   # cor_eixo: pinta números, título e ticks do eixo secundário.
   #   OPÇÕES: NULL (preto) | "serie" (cor da 1ª série do y2) | qualquer cor
-  cor_eixo = "serie"
+  cor_eixo = "serie",
+
+  # ---- Aparência: as MESMAS opções do eixo_y. NULL = igual ao eixo_y (o que vale é o do eixo_y); preencha só o que
+  #      quiser diferente no eixo da direita. (Início, fim, ticks, formato e distâncias estão acima.)
+  #   primeiro_tick: de onde começam os ticks do Y2.              margem_percentual: folga nas pontas do Y2 (%).
+  #   direcao_maiores / direcao_menores: "dentro" | "fora" | "ambos" | "nenhum".
+  #   comprimento_maiores_pt / comprimento_menores_pt / espessura_ticks_pt / cor_ticks: ticks.
+  #   mostrar_linha / espessura_linha_pt / cor_linha: a linha do eixo (aparece com a moldura aberta).
+  #   mostrar_rotulos / tamanho_rotulos_pt / cor_rotulos / negrito_rotulos / rotacao_rotulos: os números.
+  #   mostrar_titulo / tamanho_titulo_pt / cor_titulo / negrito_titulo / italico_titulo: o título.
+  #   EX.: cfg$eixo_y2$direcao_maiores <- "fora"; cfg$eixo_y2$tamanho_rotulos_pt <- 9
+  primeiro_tick = NULL,
+  margem_percentual = NULL,
+  direcao_maiores = NULL,
+  direcao_menores = NULL,
+  comprimento_maiores_pt = NULL,
+  comprimento_menores_pt = NULL,
+  espessura_ticks_pt = NULL,
+  cor_ticks = NULL,
+  mostrar_linha = NULL,
+  espessura_linha_pt = NULL,
+  cor_linha = NULL,
+  mostrar_rotulos = NULL,
+  tamanho_rotulos_pt = NULL,
+  cor_rotulos = NULL,
+  negrito_rotulos = NULL,
+  rotacao_rotulos = NULL,
+  mostrar_titulo = NULL,
+  tamanho_titulo_pt = NULL,
+  cor_titulo = NULL,
+  negrito_titulo = NULL,
+  italico_titulo = NULL
 )
 
 # -----------------------------------------------------------------------------
@@ -996,8 +1035,10 @@ cfg$legenda <- list(
   # titulo: título da legenda. NULL = sem título.
   titulo = NULL,
 
-  # n_colunas: número de colunas de itens.  OPÇÕES: NULL | inteiro
+  # n_colunas / n_linhas: em quantas colunas ou linhas os itens se organizam.  OPÇÕES: NULL | inteiro
+  #   EX.: 4 itens em duas colunas: n_colunas <- 2.   Todos lado a lado em duas linhas: direcao "horizontal" e n_linhas <- 2.
   n_colunas = NULL,
+  n_linhas = NULL,
 
   # inverter_ordem: inverte a ordem dos itens.  OPÇÕES: TRUE | FALSE
   inverter_ordem = FALSE,
@@ -1007,7 +1048,8 @@ cfg$legenda <- list(
   #   OPÇÕES: NULL (centro) | os textos acima      EX.: cfg$legenda$alinhar <- "topo"
   alinhar = NULL,
 
-  # direcao: itens um embaixo do outro ou lado a lado.  OPÇÕES: NULL (automático) | "vertical" | "horizontal"
+  # direcao: itens um embaixo do outro ("vertical") ou lado a lado, numa linha só ("horizontal").
+  #   OPÇÕES: NULL (automático) | "vertical" | "horizontal"
   direcao = NULL,
 
   # moldura / cor_moldura / espessura_moldura_pt / tipo_moldura: borda da caixa da legenda.
@@ -1183,6 +1225,13 @@ cfg$quebra <- list(
   incremento_superior = NULL,
   y2_incremento_inferior = NULL,
   y2_incremento_superior = NULL,
+  # n_menores_inferior / n_menores_superior: ticks pequenos entre dois grandes em CADA parte do eixo Y da esquerda
+  #   (0 = sem). y2_n_menores_*: o mesmo para o eixo da direita. NULL = o valor do eixo (eixo_y$n_menores / eixo_y2$n_menores).
+  #   EX.: cfg$quebra$n_menores_inferior <- 4; cfg$quebra$n_menores_superior <- 1
+  n_menores_inferior = NULL,
+  n_menores_superior = NULL,
+  y2_n_menores_inferior = NULL,
+  y2_n_menores_superior = NULL,
   # proporcao_superior: fração da altura para a parte de cima.
   proporcao_superior = 0.35,
   # espaco_pt: espaço entre as duas partes. Aumente (ex.: 14) se os números das duas bordas da
