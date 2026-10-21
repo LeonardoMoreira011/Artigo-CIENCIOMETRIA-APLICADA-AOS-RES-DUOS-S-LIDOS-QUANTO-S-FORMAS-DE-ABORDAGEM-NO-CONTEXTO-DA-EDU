@@ -1,5 +1,9 @@
 # Template de gráficos científicos em R — alternativa ao Origin
 
+![Cinabro](logo/cinabro_horizontal.png)
+
+**Cinabro** é o nome do laboratório de gráficos (o app e este template). Cinábrio é o pigmento vermelho de pintores e alquimistas, a cor da curva de ajuste do logo. Os arquivos do logo estão em `logo/` (ícone, versão horizontal, sinete e ícone pequeno, em SVG e PNG; o texto usa a fonte Barlow, de `fontes/`).
+
 Entrada: arquivos **CSV**. Saída: figuras **PNG, TIFF, JPEG, PDF, SVG ou EMF** com controle fino de eixos, ticks, moldura, cores, legendas e painéis.
 Testado em R 4.3/4.4 com **ggplot2 4.0.3** e **ggplot2 3.5.2** (Linux). **Não foi testado em Windows:** rode `07_verificar_windows.R` uma vez (seção 8).
 
@@ -7,7 +11,7 @@ Testado em R 4.3/4.4 com **ggplot2 4.0.3** e **ggplot2 3.5.2** (Linux). **Não f
 
 ## Aplicativo no navegador (sem editar script)
 
-Para quem não quer mexer em código: abra o **gerador de gráficos** no navegador, carregue o CSV e ajuste tudo com cliques.
+Para quem não quer mexer em código: abra o **Cinabro** (laboratório de gráficos) no navegador, carregue o CSV e ajuste tudo com cliques.
 
 - **Como abrir:** dois cliques em **`abrir_app.bat`** (Windows), ou no RStudio abra `abrir_app.R` e rode (ou `shiny::runApp("app_shiny")`). Na primeira vez ele instala o pacote *shiny*. O `.bat` procura o R sozinho (PATH, registro do Windows, `Program Files`, `AppData\Local\Programs\R`); se não achar, pergunta o caminho do `Rscript.exe` uma vez e guarda em `caminho_do_R.txt`.
 - **O que tem:** os mesmos 12 blocos do `painel_de_ajustes.R` (dados, intervalos, escala, números e títulos, grade, quebra do eixo, eixo Y direito, cores/linhas/símbolos série por série, fonte, moldura e tamanho fixo da caixa, legenda, exportação), cada um com explicação e dicas, prévia que se atualiza sozinha, avisos em português, e botões para baixar **PNG, TIFF, JPEG, SVG e PDF**.
@@ -36,9 +40,9 @@ Para quem não quer mexer em código: abra o **gerador de gráficos** no navegad
 
 ## Atalho com ícone, sem janela de comando, e endereço bonito
 
-- **Atalho com ícone:** um `.bat` não pode ter ícone no Windows; o jeito é um **atalho**. **Extraia o ZIP inteiro** (não rode de dentro do ZIP) e dê dois cliques em **`Criar_atalho_na_area_de_trabalho.bat`** (uma vez). Ele usa um VBScript (`criar_atalho.vbs`, sem PowerShell); se o computador bloquear, tenta o PowerShell e, por último, deixa um `Gerador de graficos.cmd` na área de trabalho (sem ícone): ele cria "Gerador de gráficos" na área de trabalho e no menu Iniciar, com o ícone do projeto (`app_shiny/www/icone.ico`). Pode fixar na barra de tarefas pelo menu de contexto do atalho.
+- **Atalho com ícone:** um `.bat` não pode ter ícone no Windows; o jeito é um **atalho**. **Extraia o ZIP inteiro** (não rode de dentro do ZIP) e dê dois cliques em **`Criar_atalho_na_area_de_trabalho.bat`** (uma vez). Ele usa um VBScript (`criar_atalho.vbs`, sem PowerShell); se o computador bloquear, tenta o PowerShell e, por último, deixa um `Cinabro.cmd` na área de trabalho (sem ícone). O atalho "Cinabro" aparece na área de trabalho e no menu Iniciar, com o ícone do projeto (`app_shiny/www/icone.ico`). Pode fixar na barra de tarefas pelo menu de contexto do atalho.
 - **Sem janela de comando:** o atalho abre o app por `iniciar_gerador_oculto.vbs` (R escondido). O R **fecha sozinho** poucos segundos depois que você fecha a aba do navegador (e também se o navegador nunca chegar a conectar, após 3 minutos); recarregar a página não encerra. Com o `abrir_app.bat` a janela preta também fecha sozinha ao terminar (só pede uma tecla se o R terminar com erro). A primeira vez (ou se o R não for achado) abre o `abrir_app.bat` com janela, que instala o que falta.
-- **Endereço:** `http://gerador.localhost:8421` (porta fixa; se estiver ocupada o app escolhe outra e mostra o endereço). O navegador entende `*.localhost` sozinho, sem editar nada no Windows.
+- **Endereço:** `http://cinabro.localhost:8421` (porta fixa; se estiver ocupada o app escolhe outra e mostra o endereço). O navegador entende `*.localhost` sozinho, sem editar nada no Windows.
 - **No R:** `source("app_shiny/iniciar.R"); iniciar_gerador()` (com `encerrar_ao_fechar = TRUE` o R fecha junto com a aba). A prévia do `visualizar()` agora grava `previa_do_grafico.html` (nome fixo, não números aleatórios).
 
 ## Legenda como caixa ajustável

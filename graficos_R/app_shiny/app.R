@@ -1,5 +1,5 @@
 # =============================================================================
-#  GERADOR DE GRÁFICOS — aplicativo Shiny (abre no navegador, sem editar script)
+#  CINABRO — laboratório de gráficos (aplicativo Shiny (abre no navegador, sem editar script)
 # =============================================================================
 #  Como abrir:  no RStudio, abra este arquivo e clique em "Run App"; ou dê dois cliques em abrir_app.bat
 #  (Windows); ou, no R:  shiny::runApp("app_shiny").  A pasta graficos_R precisa estar inteira (o app usa o motor
@@ -27,12 +27,12 @@ EXEMPLOS <- c("Dois eixos + quebra de eixo (Y esquerdo e direito)" = "exemplo_do
 EXEMPLOS <- EXEMPLOS[file.exists(file.path(raiz, "dados", EXEMPLOS))]
 
 ui <- fluidPage(
-  title = "Gerador de gráficos",
+  title = "Cinabro — laboratório de gráficos",
   tags$head(tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(HTML(paste0("window.PALETAS = ", jsonlite::toJSON(paletas_js(), auto_unbox = TRUE), ";"))), tags$script(src = "app.js"),
             tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")),
   tags$header(class = "topo",
-    div(class = "marca", div(class = "marca-ico", HTML("&#9650;")),
-        div(tags$h1("Gerador de gráficos"), tags$p("Monte, ajuste e baixe seus gráficos sem escrever código"))),
+    div(class = "marca", tags$img(class = "marca-logo", src = "cinabro_icone.png", alt = "Cinabro"),
+        div(tags$h1("Cinabro"), tags$p("Laboratório de gráficos: monte, ajuste e baixe sem escrever código"))),
     div(class = "topo-acoes",
         selectInput("estilo", NULL, choices = c("Estilos prontos..." = "", "Padrão do template" = "padrao", "Publicação (artigo)" = "publicacao",
                                                "Apresentação (slides)" = "apresentacao"), selectize = FALSE, width = "190px"),

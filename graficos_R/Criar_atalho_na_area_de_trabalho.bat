@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 chcp 65001 >nul
 rem ============================================================================
-rem  Cria o atalho "Gerador de graficos" (com icone) na area de trabalho e no menu Iniciar.
+rem  Cria o atalho "Cinabro" (com icone) na area de trabalho e no menu Iniciar.
 rem  O atalho abre o gerador SEM janela de comando. Rode este arquivo uma vez.
 rem  Antes, de dois cliques em abrir_app.bat uma vez (ele instala o que falta).
 rem  IMPORTANTE: extraia o ZIP inteiro numa pasta (nao rode de dentro do ZIP).
@@ -34,12 +34,12 @@ if not defined OK (
   if not defined DESK if defined OneDrive if exist "%OneDrive%\Desktop" set "DESK=%OneDrive%\Desktop"
   if not defined DESK if exist "%USERPROFILE%\Desktop" set "DESK=%USERPROFILE%\Desktop"
   if defined DESK (
-    > "%DESK%\Gerador de graficos.cmd" echo @echo off
-    >> "%DESK%\Gerador de graficos.cmd" echo call "%~dp0abrir_app.bat"
-    if exist "%DESK%\Gerador de graficos.cmd" (
+    > "%DESK%\Cinabro.cmd" echo @echo off
+    >> "%DESK%\Cinabro.cmd" echo call "%~dp0abrir_app.bat"
+    if exist "%DESK%\Cinabro.cmd" (
       echo.
       echo O Windows bloqueou a criacao do atalho com icone. Criei no lugar o arquivo
-      echo "%DESK%\Gerador de graficos.cmd" ^(abre o gerador; sem icone, com janela de comando^).
+      echo "%DESK%\Cinabro.cmd" ^(abre o Cinabro; sem icone, com janela de comando^).
       set "OK=1"
     )
   )
@@ -47,7 +47,7 @@ if not defined OK (
 
 if defined OK (
   echo.
-  echo Pronto! Procure "Gerador de graficos" na area de trabalho ^(ou no menu Iniciar^).
+  echo Pronto! Procure "Cinabro" na area de trabalho ^(ou no menu Iniciar^).
 ) else (
   echo.
   echo Nao consegui criar o atalho automaticamente ^(talvez o computador bloqueie scripts^). Faca assim: clique com o

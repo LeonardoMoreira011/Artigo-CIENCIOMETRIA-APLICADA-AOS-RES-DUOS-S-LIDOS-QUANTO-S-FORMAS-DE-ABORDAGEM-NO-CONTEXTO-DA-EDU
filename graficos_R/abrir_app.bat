@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 chcp 65001 >nul
 rem ============================================================================
-rem  Abre o GERADOR DE GRAFICOS no navegador (dois cliques neste arquivo).
+rem  Abre o CINABRO (laboratorio de graficos) no navegador (dois cliques neste arquivo).
 rem  Procura o R sozinho (PATH, registro do Windows e as pastas de instalacao mais comuns).
 rem  Se nao achar, pergunta o caminho do Rscript.exe uma vez e guarda em caminho_do_R.txt.
 rem  Na primeira vez instala os pacotes necessarios (precisa de internet).
@@ -64,7 +64,7 @@ exit /b 1
 :rodar
 echo.
 echo R encontrado: %RS%
-echo Abrindo o gerador de graficos no navegador (http://gerador.localhost:8421)...
+echo Abrindo o Cinabro no navegador (http://cinabro.localhost:8421)...
 echo Esta janela fecha sozinha uns segundos depois que voce fechar a aba do navegador. Para nao ver a janela, use Criar_atalho_na_area_de_trabalho.bat.
 "%RS%" -e "options(repos=c(CRAN='https://cloud.r-project.org')); for (p in c('shiny','ggplot2','scales','patchwork','ragg','systemfonts')) if (!requireNamespace(p, quietly=TRUE)) install.packages(p); file.create('app_shiny/.pronto'); source('app_shiny/iniciar.R', encoding='UTF-8'); iniciar_gerador(encerrar_ao_fechar = TRUE)"
 if errorlevel 1 (

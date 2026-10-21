@@ -1,5 +1,5 @@
 ' ============================================================================
-'  Abre o GERADOR DE GRAFICOS no navegador SEM janela de comando.
+'  Abre o CINABRO (laboratorio de graficos) no navegador SEM janela de comando.
 '  Use pelo atalho da area de trabalho (veja Criar_atalho_na_area_de_trabalho.bat).
 '  O R fecha sozinho alguns segundos depois que voce fecha a aba do navegador.
 ' ============================================================================

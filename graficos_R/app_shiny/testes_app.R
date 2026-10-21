@@ -129,8 +129,8 @@ teste("o ícone é um .ico válido e os lançadores (bat, vbs, ps1, iniciar.R) e
       identical(ico[1:4], as.raw(c(0, 0, 1, 0))) && ico[5] >= as.raw(4) &&
       all(file.exists(file.path(raiz, c("abrir_app.bat", "iniciar_gerador_oculto.vbs", "criar_atalho.ps1", "criar_atalho.vbs", "Criar_atalho_na_area_de_trabalho.bat", "abrir_app.R"))),
           file.exists("iniciar.R")))
-teste("iniciar_gerador() existe e usa o endereço bonito gerador.localhost", { source("iniciar.R"); is.function(iniciar_gerador) &&
-      grepl("gerador.localhost", paste(deparse(iniciar_gerador), collapse = "")) })
+teste("iniciar_gerador() existe e usa o endereço bonito cinabro.localhost", { source("iniciar.R"); is.function(iniciar_gerador) &&
+      grepl("cinabro.localhost", paste(deparse(iniciar_gerador), collapse = "")) })
 teste("o .vbs e os .bat têm quebras de linha do Windows (CRLF)",
       all(vapply(file.path(raiz, c("abrir_app.bat", "iniciar_gerador_oculto.vbs", "criar_atalho.vbs", "Criar_atalho_na_area_de_trabalho.bat")),
                  function(f) { b <- readBin(f, "raw", file.size(f)); any(b[-length(b)] == as.raw(13) & b[-1] == as.raw(10)) }, NA)))

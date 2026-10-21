@@ -1,5 +1,5 @@
 ' ============================================================================
-'  Cria o atalho "Gerador de graficos" (com icone) na area de trabalho e no menu Iniciar.
+'  Cria o atalho "Cinabro" (com icone) na area de trabalho e no menu Iniciar.
 '  Chamado por Criar_atalho_na_area_de_trabalho.bat (nao precisa do PowerShell).
 ' ============================================================================
 Option Explicit
@@ -20,12 +20,12 @@ For i = 0 To 1
   If d <> "" Then
     If fso.FolderExists(d) Then
       On Error Resume Next
-      Set lnk = sh.CreateShortcut(d & "\Gerador de graficos.lnk")
+      Set lnk = sh.CreateShortcut(d & "\Cinabro.lnk")
       lnk.TargetPath = sh.ExpandEnvironmentStrings("%WINDIR%") & "\System32\wscript.exe"
       lnk.Arguments = """" & vbs & """"
       lnk.WorkingDirectory = pasta
       If fso.FileExists(icone) Then lnk.IconLocation = icone & ",0"
-      lnk.Description = "Gerador de graficos (abre no navegador)"
+      lnk.Description = "Cinabro - laboratorio de graficos (abre no navegador)"
       lnk.Save
       If Err.Number = 0 Then
         n = n + 1
