@@ -4483,15 +4483,23 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   if (!is.null(y2)) {
     lim2 <- y2$ax$limites
     de2 <- Q$y2_de %||% y2$para2(Q$de); ate2 <- Q$y2_ate %||% y2$para2(Q$ate)
-    if (is.null(Q$y2_de) && is.null(Q$y2_ate)) {     # divisa derivada do Y1: arredonda para números "redondos" (sem 0.373714286)
+    dado <- !is.null(Q$y2_de) || !is.null(Q$y2_ate)
+    if (dado && (de2 >= ate2 || de2 <= lim2[1] || ate2 >= lim2[2])) {
+      # y2_de / y2_ate são valores do eixo da DIREITA (outra escala): se não cabem nele, usa a posição do eixo esquerdo
+      .aviso("cfg$quebra: o trecho omitido do eixo Y da direita (", format(de2, scientific = FALSE), " a ", format(ate2, scientific = FALSE),
+             ") não cabe no eixo direito (", format(lim2[1], scientific = FALSE), " a ", format(lim2[2], scientific = FALSE),
+             "; y2_de e y2_ate são valores DESTE eixo, não do esquerdo). Usei a mesma posição do trecho do eixo esquerdo.")
+      Q$y2_de <- NULL; Q$y2_ate <- NULL; dado <- FALSE
+      de2 <- y2$para2(Q$de); ate2 <- y2$para2(Q$ate)
+    }
+    if (!dado) {                                      # divisa derivada do Y1: arredonda para números "redondos" (sem 0.373714286)
       passo <- .passo_bonito(diff(lim2) / 25)
       d3 <- ceiling(de2 / passo - 1e-9) * passo; a3 <- floor(ate2 / passo + 1e-9) * passo
       if (d3 < a3 && d3 > lim2[1] && a3 < lim2[2]) { de2 <- d3; ate2 <- a3 }
     }
-    if (de2 >= ate2) .erro("cfg$quebra: no eixo Y da direita defina y2_de < y2_ate (ex.: y2_de = 2000, y2_ate = 6000).")
-    if (de2 <= lim2[1] || ate2 >= lim2[2]) .erro("cfg$quebra: o trecho omitido do eixo Y da direita (", de2, " a ",
-                                                 ate2,
-                                                 ") precisa estar dentro do eixo (", lim2[1], " a ", lim2[2], ").")
+    if (de2 >= ate2 || de2 <= lim2[1] || ate2 >= lim2[2])
+      .erro("cfg$quebra: não consegui derivar o trecho omitido do eixo Y da direita (eixo de ", lim2[1], " a ", lim2[2],
+            "). Defina y2_de < y2_ate dentro desse eixo (ex.: y2_de = 2000, y2_ate = 6000).")
     inferior$eixo_y2$inicio <- lim2[1]; inferior$eixo_y2$fim <- de2
     superior$eixo_y2$inicio <- ate2; superior$eixo_y2$fim <- lim2[2]
   } else if (!is.null(Q$y2_de) || !is.null(Q$y2_ate))

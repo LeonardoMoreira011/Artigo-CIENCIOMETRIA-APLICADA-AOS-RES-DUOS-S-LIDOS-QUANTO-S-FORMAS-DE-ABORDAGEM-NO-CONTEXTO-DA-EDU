@@ -479,10 +479,12 @@ teste("quebra + Y2: a divisa do Y2 derivada do Y1 cai em números redondos (sem 
         pt <- attr(suppressWarnings(plotar(aq, cs)), "partes")
         l1 <- attr(pt[[2]], "info")$y2$ax$limites; l2 <- attr(pt[[1]], "info")$y2$ax$limites
         signif(l1[2], 2) == l1[2] && signif(l2[1], 2) == l2[1] && l1[2] < l2[1] })
-teste("quebra + Y2: y2_de >= y2_ate e trecho fora do eixo dão erro claro",
+teste("quebra + Y2: y2_de >= y2_ate ou trecho fora do eixo direito (ex.: valores do Y1 digitados no Y2) viram AVISO e usam a posição do eixo esquerdo",
       { cb <- cq2; cb$quebra$y2_de <- 6000; cb$quebra$y2_ate <- 5000
-        cf <- cq2; cf$quebra$y2_de <- 100000; cf$quebra$y2_ate <- 200000
-        da_erro(plotar(aq, cb), "y2_de < y2_ate") && da_erro(plotar(aq, cf), "dentro do eixo") })
+        cf <- cq2; cf$quebra$y2_de <- 100000; cf$quebra$y2_ate <- 2500000
+        ok_b <- da_aviso(g1 <- plotar(aq, cb), "não cabe no eixo direito"); ok_f <- da_aviso(g2 <- plotar(aq, cf), "valores DESTE eixo")
+        ok_b && ok_f && isTRUE(attr(suppressWarnings(plotar(aq, cf)), "quebra_gtable")) &&
+        identical(renderiza(suppressWarnings(plotar(aq, cf))), renderiza(suppressWarnings({ cs <- cq2; cs$quebra$y2_de <- NULL; cs$quebra$y2_ate <- NULL; plotar(aq, cs) }))) })
 cr <- cq2; cr$quebra$ativo <- FALSE
 cr$.interno <- list(recortar_y = c(0, 80000), recortar_y2 = c(500, 2500))
 gr <- suppressWarnings(plotar(aq, cr))

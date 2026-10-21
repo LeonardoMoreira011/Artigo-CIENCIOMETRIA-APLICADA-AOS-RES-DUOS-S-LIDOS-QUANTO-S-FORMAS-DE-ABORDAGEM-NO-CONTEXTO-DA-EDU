@@ -215,8 +215,8 @@ ESPEC <- list(
             campo("quebra_y_ticks_menores_inferior", "int", "Parte de baixo: traços pequenos", "Entre dois traços grandes. 0 = sem.", min = 0, max = 20),
             campo("quebra_y_ticks_menores_superior", "int", "Parte de cima: traços pequenos", NULL, min = 0, max = 20))),
           list(titulo = "Eixo direito (Y2): trecho omitido e cada parte", se = .SE_QUEBRA_Y2, campos = list(
-            campo("quebra_y2_de", "num", "Omitido de", "Vazio = acompanha a posição do eixo esquerdo."),
-            campo("quebra_y2_ate", "num", "Omitido até"),
+            campo("quebra_y2_de", "num", "Omitido de (valor do eixo DIREITO)", "Use números da escala do eixo direito (não os do esquerdo). Vazio = acompanha a posição do eixo esquerdo."),
+            campo("quebra_y2_ate", "num", "Omitido até (valor do eixo DIREITO)"),
             campo("quebra_y2_intervalo_inferior", "num", "Parte de baixo: distância entre os traços"),
             campo("quebra_y2_intervalo_superior", "num", "Parte de cima: distância entre os traços"),
             campo("quebra_y2_ticks_menores_inferior", "int", "Parte de baixo: traços pequenos", NULL, min = 0, max = 20),
