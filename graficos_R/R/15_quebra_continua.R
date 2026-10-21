@@ -1,5 +1,5 @@
 # =============================================================================
-#  R/15_quebra_continua.R — quebra de eixo CONTÍNUA (estilo Origin): uma moldura só
+#  R/15_quebra_continua.R — quebra de eixo CONTÍNUA: uma moldura só
 # =============================================================================
 #  As duas partes ficam coladas dentro de UMA moldura. Nas bordas esquerda e direita, no ponto da
 #  quebra, a linha é interrompida e aparecem duas barras "//". É montada com o gtable (que já vem

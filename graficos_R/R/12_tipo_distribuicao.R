@@ -18,7 +18,7 @@
   }
   ycols <- .colunas_y(dados, cfg, excluir = NULL)
   am <- lapply(ycols, function(y) { v <- dados[[y]]; v[!is.na(v)] })
-  list(am = stats::setNames(am, ycols), nome_valor = if (length(ycols) == 1) ycols else "Valor", nome_grupo = NULL)
+  list(am = stats::setNames(am, ycols), nome_valor = if (length(ycols) == 1) ycols else .rot("Valor"), nome_grupo = NULL)
 }
 
 # Histograma, densidade e ECDF. Entra: dados e cfg. Sai: list(camadas, info).
@@ -65,8 +65,8 @@
                           colour = if (is.na(D$contorno_cor)) NA else .cor(D$contorno_cor),
                           linewidth = .lw(D$contorno_espessura_pt))
     aes_leg <- "fill"; faixa_y <- c(0, ret$ymax); faixa_x <- range(quebras)
-    tit_y <- switch(D$medida, contagem = "Contagem", frequencia = "Frequência relativa",
-                    percentual = "Frequência (%)", densidade = "Densidade")
+    tit_y <- switch(D$medida, contagem = .rot("Contagem"), frequencia = .rot("Frequência relativa"),
+                    percentual = .rot("Frequência (%)"), densidade = .rot("Densidade"))
     curvas <- list()
     for (i in itens) {
       x <- am[[i]]; n <- length(x); w <- diff(quebras)[1]
@@ -107,7 +107,7 @@
     cam[[length(cam) + 1]] <- geom_line(data = dd, aes(x = x, y = y, colour = serie, linetype = serie,
                                                        linewidth = serie, alpha = serie))
     aes_leg <- c("colour", "linetype", "linewidth", "alpha")
-    faixa_y <- c(0, dd$y); faixa_x <- range(dd$x); tit_y <- "Densidade"
+    faixa_y <- c(0, dd$y); faixa_x <- range(dd$x); tit_y <- .rot("Densidade")
   } else {
     ec <- do.call(rbind, lapply(itens, function(i) {
       x <- sort(am[[i]]); n <- length(x)
@@ -118,7 +118,7 @@
                                          alpha = serie),
                           direction = "hv")
     aes_leg <- c("colour", "linetype", "linewidth", "alpha")
-    faixa_y <- c(0, 1); faixa_x <- range(ec$x); tit_y <- "Probabilidade acumulada"
+    faixa_y <- c(0, 1); faixa_x <- range(ec$x); tit_y <- .rot("Probabilidade acumulada")
   }
   if (isTRUE(D$marcas_rug)) {
     escura <- vapply(itens, function(i) grDevices::colorRampPalette(c(est[[i]]$cor, "black"))(3)[2], "")

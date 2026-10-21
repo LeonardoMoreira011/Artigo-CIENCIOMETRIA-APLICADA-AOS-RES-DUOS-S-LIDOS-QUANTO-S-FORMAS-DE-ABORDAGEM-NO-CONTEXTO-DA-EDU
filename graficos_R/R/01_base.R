@@ -66,5 +66,23 @@ suppressPackageStartupMessages({
 }
 
 # Emite um aviso (warning) em português, sem mostrar a chamada interna.
-.aviso <- function(...) warning(paste0(...), call. = FALSE, immediate. = TRUE)
-.erro  <- function(...) stop(paste0(...), call. = FALSE)
+# Idioma das mensagens e dos textos que o motor escreve sozinho: options(cinabro.idioma = "pt" | "en" | "es")
+# (no painel: idioma <- "en"). As mensagens são escritas em português e traduzidas pelo dicionário de R/02_traducoes_motor.R.
+.idioma <- function() { i <- getOption("cinabro.idioma", "pt"); if (i %in% c("pt", "en", "es")) i else "pt" }
+.traduzir_msg <- function(msg) {
+  i <- .idioma()
+  if (i == "pt" || !exists(".TRAD_MOTOR", inherits = TRUE)) return(msg)
+  d <- .TRAD_MOTOR[[i]]; if (is.null(d) || !length(d)) return(msg)
+  chaves <- names(d)[order(-nchar(names(d)))]                       # as mais longas primeiro; uma passada só (não retraduz o que já traduziu)
+  pad <- paste(gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", chaves), collapse = "|")
+  m <- gregexpr(pad, msg, perl = TRUE)
+  if (m[[1]][1] != -1) regmatches(msg, m) <- list(unname(d[regmatches(msg, m)[[1]]]))
+  msg
+}
+# Texto padrão que aparece dentro do gráfico (títulos de eixo automáticos), no idioma escolhido.
+.rot <- function(x) {
+  i <- .idioma(); if (i == "pt" || !exists(".ROTULOS_IDIOMA", inherits = TRUE)) return(x)
+  r <- .ROTULOS_IDIOMA[[i]][x]; ifelse(is.na(r), x, r)
+}
+.aviso <- function(...) warning(.traduzir_msg(paste0(...)), call. = FALSE, immediate. = TRUE)
+.erro  <- function(...) stop(.traduzir_msg(paste0(...)), call. = FALSE)

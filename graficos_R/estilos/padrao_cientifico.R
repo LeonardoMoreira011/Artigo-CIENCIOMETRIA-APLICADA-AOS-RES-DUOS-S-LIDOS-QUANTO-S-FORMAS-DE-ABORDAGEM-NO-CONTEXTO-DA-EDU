@@ -3,7 +3,7 @@
 # Carregue com: cfg <- carregar_estilo("padrao_cientifico", cfg)
 list(
   texto = list(fonte = "Arial", tamanho_base_pt = 12),
-  cores = list(paleta = "classico", incrementar_simbolo = TRUE),
+  cores = list(paleta = "cinabro", incrementar_simbolo = TRUE),
   serie_padrao = list(tamanho_simbolo_pt = 7, espessura_borda_pt = 1, linha_espessura_pt = 1.5),
   caixa = list(fechada = TRUE, espessura_pt = 1.5, ticks_espelhados = TRUE, rotulos_espelhados = FALSE),
   eixo_x = list(direcao_maiores = "dentro", direcao_menores = "dentro", comprimento_maiores_pt = 6,

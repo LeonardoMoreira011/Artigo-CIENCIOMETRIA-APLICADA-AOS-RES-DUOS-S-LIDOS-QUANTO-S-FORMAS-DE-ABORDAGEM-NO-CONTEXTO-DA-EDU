@@ -13,7 +13,8 @@ suppressPackageStartupMessages(library(shiny))
 raiz <- normalizePath("..", winslash = "/")
 source(file.path(raiz, "01_config.R"), encoding = "UTF-8"); suppressMessages(source(file.path(raiz, "02_motor.R"), encoding = "UTF-8"))
 CFG0 <- .completar_cfg(cfg)
-for (a in c("espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8")
+for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8")
+carregar_dicionarios("idiomas")
 
 # ---- cobertura: tudo o que o painel tem, o app tem -------------------------------------------------------------------
 L <- readLines(file.path(raiz, "painel_de_ajustes.R"), encoding = "UTF-8")
@@ -24,7 +25,7 @@ tratadas_a_parte <- c("fonte_pasta",                                    # arquiv
                       "cores_personalizadas", "cores_por_serie", "legenda_nomes", "linha_espessura_por_serie",
                       "simbolo_tamanho_por_serie", "simbolo_borda_por_serie", "simbolo_forma_por_serie",   # tabela de séries
                       "simbolo_variar", "legenda_sombra_deslocamento_pt", "legenda_ancora",
-                      "pasta_saida")                                  # a pasta: o navegador é que baixa o arquivo
+                      "pasta_saida", "idioma")                                  # a pasta: o navegador é que baixa o arquivo
 teste("o app tem um campo para cada variável do painel_de_ajustes.R (as exceções estão listadas e são tratadas à parte)",
       length(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte))) == 0)
 if (length(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte)))) print(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte)))
@@ -67,7 +68,7 @@ vss <- montar_variaveis(vs2, CFG0)
 teste("paleta própria (do editor ou guardada) vira cores_personalizadas; paleta pronta vira cores_paleta",
       identical(vpp$cores_personalizadas, c("#112233", "#445566")) && is.null(vpp$cores_paleta) &&
       identical(vss$cores_personalizadas, c("#AA0000", "#00AA00")) &&
-      identical({ vq <- v0; vq$cores_paleta <- "npg"; montar_variaveis(vq, CFG0)$cores_paleta }, "npg"))
+      identical({ vq <- v0; vq$cores_paleta <- "tol_suave"; montar_variaveis(vq, CFG0)$cores_paleta }, "tol_suave"))
 teste("a lista de paletas da tela tem todos os grupos do motor + 'Minhas paletas' (com as guardadas)", {
   o <- opcoes_paletas("Minha"); all(names(.PALETAS_GRUPOS) %in% names(o)) && identical(unname(o[["Minhas paletas"]][2]), "salva:Minha") })
 vf <- v0; vf$formatos <- c("tiff", "svg"); vf$fundo_transparente <- TRUE
@@ -92,6 +93,50 @@ for (id in names(ESPEC_CAMPOS)) {
 }
 if (length(erros_campos)) print(erros_campos)
 teste("todos os campos do app, alterados um a um, viram variáveis e o painel aplica sem erro", length(erros_campos) == 0)
+
+# ---- idiomas: português (BR), inglês e espanhol -------------------------------------------------------------------------------
+teste("os dicionários de inglês e espanhol carregam (mais de 650 textos cada)", all(c("en", "es") %in% names(.i18n$dic)) &&
+      all(vapply(.i18n$dic, length, 1L) > 650))
+textos_espec <- local({
+  out <- character(0); add <- function(x) { x <- unlist(x, use.names = FALSE); out <<- c(out, x[!is.na(x) & nzchar(x)]) }
+  nomes_rec <- function(x) { if (is.list(x)) { add(names(x)); for (e in x) nomes_rec(e) } else if (!is.null(names(x))) add(names(x)) }
+  for (b in ESPEC) { add(c(b$titulo, b$resumo, b$dica)); for (g in b$grupos) add(g$titulo)
+    for (c in c(b$campos, unlist(lapply(b$grupos, function(g) g$campos), recursive = FALSE))) { add(c(c$rotulo, c$ajuda)); if (!is.null(c$opcoes)) nomes_rec(c$opcoes) } }
+  nomes_rec(.PALETAS_GRUPOS); unique(out) })
+textos_codigo <- local({            # textos entre aspas dentro de T(), TF(), tr() e trf() nos arquivos do app
+  out <- character(0)
+  for (arq in c("codigo/servidor.R", "codigo/ui_blocos.R")) {
+    walk <- function(e) if (is.call(e)) {
+      if (is.symbol(e[[1]]) && as.character(e[[1]]) %in% c("T", "TF", "tr", "trf") && length(e) > 1 && is.character(e[[2]])) out <<- c(out, e[[2]])
+      for (i in seq_along(e)) if (!identical(e[[i]], quote(expr = ))) walk(e[[i]]) }
+    for (e in parse(arq, keep.source = FALSE, encoding = "UTF-8")) walk(e) }
+  unique(out) })
+for (lg in c("en", "es"))
+  teste(paste0("todo texto do app tem tradução em ", lg, " (", length(textos_espec) + length(textos_codigo), " textos conferidos)"),
+        { f <- setdiff(c(textos_espec, textos_codigo), names(.i18n$dic[[lg]])); if (length(f)) print(head(f, 10)); length(f) == 0 })
+teste("tr(), tr_nomes() e trf() traduzem; texto sem tradução volta igual; em português nada muda",
+      identical(tr("Mais opções", "en"), "More options") && identical(tr("Mais opções", "pt"), "Mais opções") && identical(tr("texto que não existe", "es"), "texto que não existe") &&
+      identical(names(tr_nomes(c("Limpar" = "a", "Sem chave" = "b"), "en")), c("Clear", "Sem chave")) && identical(trf("Maior vazio: de %s a %s.", 1, 2, idioma = "es"), "Mayor vacío: de 1 a 2."))
+tg <- tags$div(class = "x", tags$label("Limpar"), tags$input(placeholder = "Nenhum arquivo", value = "Limpar"), HTML("Limpar"))
+th <- as.character(traduzir_html(tg, "en"))
+teste("traduzir_html troca o texto e o placeholder, mas não o value nem o HTML cru", grepl(">Clear<", th, fixed = TRUE) && grepl('placeholder="No file"', th, fixed = TRUE) &&
+      grepl('value="Limpar"', th, fixed = TRUE) && grepl("Limpar\n</div>", th, fixed = TRUE))
+teste("a tela inteira monta em inglês e em espanhol, sem restos do texto-chave em português nos títulos dos blocos", {
+  tudo_ok <- TRUE
+  for (lg in c("en", "es")) { .i18n$idioma <- lg; h <- paste(as.character(traduzir_html(ui_bloco(ESPEC[[2]], 2, CFG0, aberto = TRUE), lg)), collapse = "")
+    tudo_ok <- tudo_ok && !grepl("Intervalos dos eixos", h, fixed = TRUE) && grepl(tr("Intervalos dos eixos", lg), h, fixed = TRUE) }
+  .i18n$idioma <- "pt"; tudo_ok })
+teste("o idioma vem do endereço (?idioma=en | es); valor estranho vira português", identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=en")), "en") &&
+      identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=es")), "es") && identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=xx")), "pt") && identical(idioma_do_pedido(list(QUERY_STRING = "")), "pt"))
+re_en <- construir_grafico(d <- ler_csv(file.path(raiz, "dados", "exemplo_dois_eixos_e_quebra.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE))),
+                           list(quebra_ativar = TRUE, quebra_de = 10, quebra_ate = 5), CFG0, idioma = "en")
+re_es <- construir_grafico(d, list(quebra_ativar = TRUE, quebra_de = 10, quebra_ate = 5), CFG0, idioma = "es")
+re_pt <- construir_grafico(d, list(quebra_ativar = TRUE, quebra_de = 10, quebra_ate = 5), CFG0)
+teste("as mensagens do motor chegam ao app no idioma da tela (e o idioma do motor volta ao português depois)",
+      grepl("set de < ate", re_en$erro, fixed = TRUE) && grepl("define de < ate", re_es$erro, fixed = TRUE) && grepl("defina", re_pt$erro) && identical(getOption("cinabro.idioma", "pt"), "pt"))
+vi <- montar_variaveis(v0, CFG0); vi$idioma <- "en"
+teste("o idioma entra no código equivalente (idioma <- \"en\") e a variável idioma é aceita pelo painel", grepl('idioma +<- "en"', gerar_codigo(vi)) &&
+      { r <- construir_grafico(d, vi, CFG0, idioma = "en"); is.null(r$erro) })
 
 # ---- gráfico de verdade -----------------------------------------------------------------------------------------------
 d <- ler_csv(file.path(raiz, "dados", "exemplo_dois_eixos_e_quebra.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE)))
@@ -163,6 +208,11 @@ testServer(servidor, {
         !is.null(rv$geo) && all(rv$geo$legenda[1:2] >= rv$geo$painel[1:2] - 1e-6) && rv$geo$legenda[3] < rv$geo$painel[3])
   session$setInputs(legenda_arrastada = list(esq = 0.25, base = 0.5, t = 1), legenda_redimensionada = list(largura = 0.3, t = 1))
   teste("servidor: arrastar e redimensionar a legenda na prévia roda sem erro", is.null(rv$erro))
+  session$setInputs(idioma_pagina = "en")
+  teste("servidor: com idioma_pagina = en, a tela do servidor (avisos e resumo dos dados) sai em inglês", {
+    session$setInputs(quebra_ativar = TRUE, quebra_de = 450000, quebra_ate = 100000, atualizar = 20)
+    h <- paste(as.character(output$avisos$html), collapse = ""); grepl("Something needs adjusting", h, fixed = TRUE) && !grepl("Algo precisa", h, fixed = TRUE) })
+  session$setInputs(quebra_ativar = FALSE, idioma_pagina = "pt")
   session$setInputs(paleta_propria = "#112233, #445566, #778899", paleta_nome = "Teste", paleta_salvar = 1)
   teste("servidor: guardar a paleta própria cria 'salva:Teste' na lista e fica nos valores", identical(names(rv$paletas), "Teste") &&
         identical(rv$paletas$Teste, c("#112233", "#445566", "#778899")))
@@ -170,7 +220,7 @@ testServer(servidor, {
   teste("servidor: usar a paleta guardada monta o gráfico com as cores dela", is.null(rv$erro) && identical(rv$res$cfg$cores$personalizada, c("#112233", "#445566", "#778899")))
   session$setInputs(paleta_excluir = 1)
   teste("servidor: excluir a paleta guardada selecionada", length(rv$paletas) == 0)
-  session$setInputs(cores_paleta = "classico", quebra_ativar = TRUE, quebra_sugerir = 1)
+  session$setInputs(cores_paleta = "cinabro", quebra_ativar = TRUE, quebra_sugerir = 1)
   teste("servidor: 'Achar o maior vazio' funciona sem erro (o resultado vai para os campos de/até)", is.null(rv$erro))
   session$setInputs(quebra_ativar = TRUE, quebra_de = 100000, quebra_ate = 450000, quebra_estilo = "continuo", atualizar = 2)
   teste("servidor: ligar a quebra muda o gráfico e aparece em 'o que você mudou'", "quebra_ativar" %in% rv$res$aplicado && is.null(rv$erro))

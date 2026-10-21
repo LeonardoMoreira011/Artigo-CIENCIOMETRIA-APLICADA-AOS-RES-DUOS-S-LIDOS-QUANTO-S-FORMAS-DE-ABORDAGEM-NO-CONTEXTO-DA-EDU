@@ -229,7 +229,7 @@ exportar_lote <- function(pasta = "dados", cfg = get("cfg", envir = globalenv())
   reg <- tolower(fonte) %in% tolower(systemfonts::registry_fonts()$family)
   if (reg && !instalada && !isTRUE(.fontes_cache$.avisou_pdf))
     { .fontes_cache$.avisou_pdf <- TRUE
-      .aviso("O ", toupper(formato), " usa as fontes instaladas no Windows e a '", fonte, "' só está carregada pelo template: ",
+      .aviso("O formato ", toupper(formato), " usa as fontes instaladas no Windows e a '", fonte, "' só está carregada pelo template: ",
              "o texto sairá em outra fonte. Instale-a (abra os arquivos .ttf de fontes/Barlow e clique em Instalar) ",
              "ou exporte em PNG, TIFF ou SVG, que usam a Barlow direto.") }
   invisible()

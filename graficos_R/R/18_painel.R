@@ -298,6 +298,11 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
       cfg$quebra$de <- s$de; cfg$quebra$ate <- s$ate
     }
   }
+  idm <- pega("idioma")                  # idioma das mensagens e dos textos automáticos do gráfico: "pt" | "en" | "es"
+  if (!is.null(idm)) {
+    if (!idm %in% c("pt", "en", "es")) .erro("idioma precisa ser \"pt\", \"en\" ou \"es\".")
+    options(cinabro.idioma = idm); marca("idioma")
+  }
   if (length(aplicados)) message("Painel de ajustes aplicado: ", paste(aplicados, collapse = ", "))
   else message("Painel de ajustes: nenhum ajuste ativo (tudo NULL = padrão do template).")
   cfg

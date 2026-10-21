@@ -116,19 +116,19 @@ montar_variaveis <- function(v, cfg0, series = NULL) {
 }
 
 # Aplica as variáveis ao cfg base e monta o gráfico. Sai: list(g, cfg, aplicado, avisos) ou list(erro = "...").
-construir_grafico <- function(dados, vars, cfg0, preview = TRUE) {
+construir_grafico <- function(dados, vars, cfg0, preview = TRUE, idioma = "pt") {
   avisos <- character(0); aplicado <- character(0)
   env <- list2env(vars, parent = emptyenv())
-  res <- tryCatch(withCallingHandlers({
+  res <- tryCatch(withCallingHandlers(com_idioma(idioma, {
     cfg <- aplicar_painel(cfg0, painel = env, dados = dados)
     if (preview) cfg$exportacao$formatos <- "png"
     g <- plotar(dados, cfg)
     list(g = g, cfg = cfg)
-  }, warning = function(w) { avisos <<- c(avisos, conditionMessage(w)); invokeRestart("muffleWarning") },
+  }), warning = function(w) { avisos <<- c(avisos, conditionMessage(w)); invokeRestart("muffleWarning") },
      message = function(m) {
        t <- conditionMessage(m)
        if (grepl("^Painel de ajustes aplicado", t)) aplicado <<- trimws(strsplit(sub("^Painel de ajustes aplicado: ", "", t), ",")[[1]])
-       else if (grepl("^Legenda reduzida", t)) avisos <<- c(avisos, trimws(t))
+       else if (grepl("^(Legenda reduzida|Legend reduced|Leyenda reducida)", t)) avisos <<- c(avisos, trimws(t))
        invokeRestart("muffleMessage") }),
     error = function(e) list(erro = conditionMessage(e)))
   res$avisos <- unique(avisos); res$aplicado <- aplicado

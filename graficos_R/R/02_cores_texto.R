@@ -28,103 +28,92 @@
 }
 
 # Paletas prontas. Cada uma tem um nome curto (o que se escreve em cfg$cores$paleta) e um rótulo para a tela.
-# "Estilo Origin": a sequência de cores básicas do Origin e conjuntos parecidos; as demais são paletas conhecidas
-# de publicações científicas e de visualização (ColorBrewer, Paul Tol, ggsci, Tableau, D3).
-.PALETAS <- list(
-  # ---- estilo Origin
-  classico  = c("#000000", "#D62728", "#1F4E9E", "#2CA02C", "#8E44AD", "#FF7F0E",
-                "#17BECF", "#8C564B", "#E377C2", "#7F7F7F"),
-  origin_basico = c("#000000", "#FF0000", "#0000FF", "#008000", "#FF00FF", "#008080", "#000080", "#800000",
-                    "#800080", "#808000", "#FF8000", "#0080FF", "#8000FF", "#FF0080"),
-  origin_vivo   = c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFD700", "#A65628", "#F781BF", "#999999"),
-  origin_escuro = c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D", "#666666"),
-  origin_pastel = c("#FBB4AE", "#B3CDE3", "#CCEBC5", "#DECBE4", "#FED9A6", "#FFFFCC", "#E5D8BD", "#FDDAEC", "#CCCCCC"),
-  origin_suave  = c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3"),
-  origin_pares  = c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C", "#FDBF6F", "#FF7F00",
-                    "#CAB2D6", "#6A3D9A", "#FFFF99", "#B15928"),
-  origin_doce   = c("#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#FDB462", "#B3DE69", "#FCCDE5",
-                    "#D9D9D9", "#BC80BD", "#CCEBC5", "#FFED6F"),
-  # ---- marca
+# As do Cinabro são originais (cinabro, marca); okabe_ito é uma paleta publicada para daltonismo; as demais vêm de
+# trabalhos com licença livre (cores em R/02_paletas_dados.R, avisos em NOTICE.md).
+.PALETAS_PROPRIAS <- list(
+  # a paleta padrão do Cinabro: preto, vermelho-cinábrio, azul-marinho, azul-céu, ardósia, ocre, violeta, siena, verde, verde-petróleo.
+  # A ordem foi escolhida para que as primeiras cores sejam bem diferentes entre si, também para quem tem daltonismo.
+  cinabro   = c("#000000", "#E34234", "#1B3A8C", "#2FA7D6", "#6B7B8C", "#E0A526", "#7B4FA3", "#8A4B2A", "#0E9F4B", "#0B6E78"),
   marca     = c("#1B3A8C", "#0E9F4B", "#0B6E78", "#8CC63F", "#0F4C81", "#2FB5A0", "#5B7DB1", "#6BBF59"),
-  # ---- acessíveis (daltonismo)
-  okabe_ito = c("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9",
-                "#000000", "#F0E442"),
-  tol_brilhante = c("#4477AA", "#EE6677", "#228833", "#CCBB44", "#66CCEE", "#AA3377", "#BBBBBB"),
-  tol_vibrante  = c("#EE7733", "#0077BB", "#33BBEE", "#EE3377", "#CC3311", "#009988", "#BBBBBB"),
-  tol_suave     = c("#CC6677", "#332288", "#DDCC77", "#117733", "#88CCEE", "#882255", "#44AA99", "#999933", "#AA4499"),
-  tol_contraste = c("#004488", "#DDAA33", "#BB5566", "#000000"),
-  # ---- publicações e software
-  tableau   = c("#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F", "#EDC948",
-                "#B07AA1", "#FF9DA7", "#9C755F", "#BAB0AC"),
-  d3        = c("#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#9467BD", "#8C564B", "#E377C2", "#7F7F7F", "#BCBD22", "#17BECF"),
-  npg       = c("#E64B35", "#4DBBD5", "#00A087", "#3C5488", "#F39B7F", "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85"),
-  lancet    = c("#00468B", "#ED0000", "#42B540", "#0099B4", "#925E9F", "#FDAF91", "#AD002A", "#ADB6B6", "#1B1919"),
-  jco       = c("#0073C2", "#EFC000", "#868686", "#CD534C", "#7AA6DC", "#003C67", "#8F7700", "#3B3B3B", "#A73030", "#4A6990"),
-  nejm      = c("#BC3C29", "#0072B5", "#E18727", "#20854E", "#7876B1", "#6F99AD", "#FFDC91", "#EE4C97"),
-  # ---- degradês de uma cor (sequenciais): as séries percorrem do claro ao escuro
-  seq_azul     = c("#C6DBEF", "#6BAED6", "#2171B5", "#08306B"),
-  seq_verde    = c("#C7E9C0", "#74C476", "#238B45", "#00441B"),
-  seq_laranja  = c("#FDD0A2", "#FD8D3C", "#D94801", "#7F2704"),
-  seq_vermelho = c("#FCBBA1", "#FB6A4A", "#CB181D", "#67000D"),
-  seq_roxo     = c("#DADAEB", "#9E9AC8", "#6A51A3", "#3F007D"),
-  seq_azul_verde = c("#FFFFCC", "#A1DAB4", "#41B6C4", "#2C7FB8", "#253494"),
-  seq_calor    = c("#FFFFB2", "#FECC5C", "#FD8D3C", "#F03B20", "#BD0026"),
-  seq_frio     = c("#E0F7FA", "#80DEEA", "#26C6DA", "#00838F", "#004D40"),
-  # ---- divergentes e arco-íris
-  div_vermelho_azul = c("#B2182B", "#EF8A62", "#F7F7F7", "#67A9CF", "#2166AC"),
-  div_espectro      = c("#D7191C", "#FDAE61", "#FFFFBF", "#ABDDA4", "#2B83BA"),
-  div_marrom_verde  = c("#8C510A", "#D8B365", "#F5F5F5", "#5AB4AC", "#01665E"),
-  arco_iris         = c("#9400D3", "#4B0082", "#0000FF", "#00AA00", "#FFD700", "#FF7F00", "#FF0000")
+  okabe_ito = c("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#000000", "#F0E442")
 )
+.PALETAS <- c(.PALETAS_PROPRIAS, .PALETAS_DADOS)
 # As que percorrem um degradê (a n-ésima cor é interpolada ao longo da paleta inteira, não a n-ésima da lista).
-.PALETAS_RAMPA <- c("seq_azul", "seq_verde", "seq_laranja", "seq_vermelho", "seq_roxo", "seq_azul_verde", "seq_calor",
-                    "seq_frio", "div_vermelho_azul", "div_espectro", "div_marrom_verde", "arco_iris")
+.PALETAS_RAMPA <- c(grep("^brewer_(Blues|Greens|Oranges|Reds|Purples|YlGnBu|YlOrRd|RdYlGn|Spectral|RdYlBu|RdBu|BrBG|PiYG|PRGn)$", names(.PALETAS), value = TRUE),
+                    "tol_por_do_sol", "tol_iridescente", "tol_BuRd", grep("^(cmo|crameri)_", names(.PALETAS), value = TRUE))
+.PALETAS_VIRIDIS <- c("viridis", "magma", "plasma", "cividis", "inferno", "turbo", "mako", "rocket")   # do pacote viridisLite
 
-# Para a tela e para mostrar_paletas(): grupo -> c(nome = "rótulo").
+# Para a tela e para mostrar_paletas(): grupo -> c(rótulo = nome).
 .PALETAS_GRUPOS <- list(
-  "Estilo Origin" = c("Clássica (preto, vermelho, azul...)" = "classico", "Origin: cores básicas" = "origin_basico",
-                      "Origin: vivas" = "origin_vivo", "Origin: escuras" = "origin_escuro", "Origin: pastel" = "origin_pastel",
-                      "Origin: suaves" = "origin_suave", "Origin: em pares" = "origin_pares", "Origin: doces" = "origin_doce"),
-  "Marca" = c("Marca (azul e verde)" = "marca"),
-  "Acessíveis (daltonismo)" = c("Okabe-Ito" = "okabe_ito", "Paul Tol: brilhante" = "tol_brilhante", "Paul Tol: vibrante" = "tol_vibrante",
-                                "Paul Tol: suave" = "tol_suave", "Paul Tol: alto contraste" = "tol_contraste"),
-  "Revistas e programas" = c("Tableau" = "tableau", "D3 (Category10)" = "d3", "Nature (NPG)" = "npg", "The Lancet" = "lancet",
-                             "J. Clinical Oncology (JCO)" = "jco", "NEJM" = "nejm"),
-  "Degradês de uma cor" = c("Azul" = "seq_azul", "Verde" = "seq_verde", "Laranja" = "seq_laranja", "Vermelho" = "seq_vermelho",
-                            "Roxo" = "seq_roxo", "Amarelo → azul" = "seq_azul_verde", "Calor" = "seq_calor", "Frio" = "seq_frio"),
-  "Divergentes e arco-íris" = c("Vermelho ↔ azul" = "div_vermelho_azul", "Espectro" = "div_espectro",
-                                "Marrom ↔ verde" = "div_marrom_verde", "Arco-íris" = "arco_iris"),
+  "Do Cinabro" = c("Cinabro (padrão)" = "cinabro", "Marca (azul e verde)" = "marca"),
+  "Acessíveis (daltonismo)" = c("Okabe-Ito" = "okabe_ito", "Tol: brilhante" = "tol_brilhante", "Tol: vibrante" = "tol_vibrante",
+                                "Tol: suave" = "tol_suave", "Tol: alto contraste" = "tol_alto_contraste",
+                                "Tol: contraste médio" = "tol_medio_contraste", "Tol: claro" = "tol_claro",
+                                "Tol: escuro" = "tol_escuro", "Tol: pálido" = "tol_palido"),
+  "Qualitativas (Brewer)" = c("Vivas (Set1)" = "brewer_Set1", "Suaves (Set2)" = "brewer_Set2", "Escuras (Dark2)" = "brewer_Dark2",
+                              "Em pares (Paired)" = "brewer_Paired", "Destaque (Accent)" = "brewer_Accent",
+                              "Pastel 1" = "brewer_Pastel1", "Pastel 2" = "brewer_Pastel2", "Doces (Set3)" = "brewer_Set3"),
+  "Degradês de uma cor (Brewer)" = c("Azuis" = "brewer_Blues", "Verdes" = "brewer_Greens", "Laranjas" = "brewer_Oranges",
+                                     "Vermelhos" = "brewer_Reds", "Roxos" = "brewer_Purples", "Amarelo → azul" = "brewer_YlGnBu",
+                                     "Amarelo → vermelho" = "brewer_YlOrRd"),
+  "Divergentes (Brewer)" = c("Vermelho-escuro → verde" = "brewer_RdYlGn", "Espectro (vermelho → violeta)" = "brewer_Spectral",
+                             "Vermelho → azul, com amarelo" = "brewer_RdYlBu", "Vermelho ↔ azul" = "brewer_RdBu",
+                             "Marrom ↔ verde-azulado" = "brewer_BrBG", "Rosa ↔ verde" = "brewer_PiYG", "Roxo ↔ verde" = "brewer_PRGn"),
   "Contínuas (viridis)" = c("Viridis" = "viridis", "Magma" = "magma", "Plasma" = "plasma", "Cividis" = "cividis",
-                            "Inferno" = "inferno", "Turbo" = "turbo"),
+                            "Inferno" = "inferno", "Turbo" = "turbo", "Mako" = "mako", "Rocket" = "rocket"),
+  "Contínuas (cmocean)" = c("Térmica" = "cmo_thermal", "Salinidade" = "cmo_haline", "Algas" = "cmo_algae", "Matéria" = "cmo_matter",
+                            "Profundidade" = "cmo_deep", "Balanço" = "cmo_balance", "Delta" = "cmo_delta", "Curl" = "cmo_curl"),
+  "Contínuas (Crameri)" = c("Batlow" = "crameri_batlow", "Roma (vermelho-marrom → azul)" = "crameri_roma",
+                            "Bam (magenta → verde)" = "crameri_bam", "Vik" = "crameri_vik", "Lajolla" = "crameri_lajolla",
+                            "Bilbao" = "crameri_bilbao", "Oslo" = "crameri_oslo", "La Paz" = "crameri_lapaz",
+                            "Havaí" = "crameri_hawaii", "Tóquio" = "crameri_tokyo", "Berlim" = "crameri_berlin"),
+  "Contínuas (Tol)" = c("Pôr do sol" = "tol_por_do_sol", "Iridescente" = "tol_iridescente", "Azul ↔ vermelho" = "tol_BuRd"),
   "Cinza" = c("Tons de cinza" = "cinza")
 )
+
+# Nomes de paletas que existiram antes e foram retiradas (paletas ligadas a programas, revistas ou marcas): quem ainda os usa recebe
+# uma paleta livre parecida e um aviso, em vez de um erro.
+.PALETAS_ANTIGAS <- c(classico = "cinabro", tableau = "okabe_ito", d3 = "okabe_ito", npg = "okabe_ito", lancet = "okabe_ito", jco = "okabe_ito",
+                      nejm = "okabe_ito", origin_basico = "okabe_ito", origin_vivo = "brewer_Set1", origin_escuro = "brewer_Dark2",
+                      origin_pastel = "brewer_Pastel1", origin_suave = "brewer_Set2", origin_pares = "brewer_Paired", origin_doce = "brewer_Set3",
+                      seq_azul = "brewer_Blues", seq_verde = "brewer_Greens", seq_laranja = "brewer_Oranges", seq_vermelho = "brewer_Reds",
+                      seq_roxo = "brewer_Purples", seq_azul_verde = "brewer_YlGnBu", seq_calor = "brewer_YlOrRd", seq_frio = "brewer_Blues",
+                      div_vermelho_azul = "brewer_RdBu", div_espectro = "brewer_Spectral", div_marrom_verde = "brewer_BrBG",
+                      arco_iris = "brewer_Spectral", tol_contraste = "tol_alto_contraste")
 
 # Entra: nome da paleta e n. Sai: vetor com n cores (interpola se a paleta for menor que n).
 .paleta <- function(nome, n, cfg_cores = NULL) {
   n <- max(n, 1)
+  if (nome %in% names(.PALETAS_ANTIGAS)) {                    # nome antigo: usa a paleta livre equivalente
+    novo <- .PALETAS_ANTIGAS[[nome]]
+    if (nome != "classico") .aviso("A paleta '", nome, "' foi retirada do Cinabro (só ficam paletas de licença livre); usei '", novo, "'. Veja mostrar_paletas().")
+    nome <- novo
+  }
   base <- if (nome %in% names(.PALETAS)) {
     b <- .PALETAS[[nome]]
     if (nome %in% .PALETAS_RAMPA) return(if (n == 1) b[length(b) - 1] else grDevices::colorRampPalette(b)(n))
     b
-  } else if (nome %in% c("viridis", "magma", "plasma", "cividis", "inferno", "turbo")) {
+  } else if (nome %in% .PALETAS_VIRIDIS) {
     if (!.tem("viridisLite")) .erro("Paleta '", nome, "' precisa do pacote viridisLite.")
     fun <- getExportedValue("viridisLite", nome)
     return(fun(n, end = if (nome %in% c("viridis", "cividis")) 0.92 else 0.88))
   } else if (nome == "cinza") {
     return(grDevices::grey.colors(n, start = 0, end = 0.75))
-  } else if (startsWith(nome, "brewer_")) {
+  } else if (startsWith(nome, "brewer_")) {                    # as demais do ColorBrewer, pelo pacote RColorBrewer
     if (!.tem("RColorBrewer")) .erro("Paletas brewer_ precisam do pacote RColorBrewer.")
     pal <- sub("^brewer_", "", nome)
     info <- RColorBrewer::brewer.pal.info
     if (!pal %in% rownames(info))
       .erro("Paleta ColorBrewer '", pal, "' não existe. Opções: ",
             paste(rownames(info), collapse = ", "))
-    RColorBrewer::brewer.pal(info[pal, "maxcolors"], pal)
+    b <- RColorBrewer::brewer.pal(info[pal, "maxcolors"], pal)
+    if (info[pal, "category"] != "qual") return(if (n == 1) b[length(b) - 1] else grDevices::colorRampPalette(b)(n))
+    b
   } else if (nome == "personalizada") {
     vapply(cfg_cores$personalizada, .cor, character(1), onde = "cores$personalizada")
   } else {
-    .erro("Paleta '", nome, "' desconhecida. Opções: ", paste(c(names(.PALETAS), "viridis", "magma", "plasma", "cividis", "inferno", "turbo", "cinza"), collapse = ", "),
-          ", brewer_<nome>, personalizada. Veja mostrar_paletas().")
+    .erro("Paleta '", nome, "' desconhecida. Opções: ", paste(c(names(.PALETAS), .PALETAS_VIRIDIS, "cinza"), collapse = ", "),
+          ", personalizada. Veja mostrar_paletas().")
   }
   if (n <= length(base)) base[seq_len(n)] else grDevices::colorRampPalette(base)(n)
 }

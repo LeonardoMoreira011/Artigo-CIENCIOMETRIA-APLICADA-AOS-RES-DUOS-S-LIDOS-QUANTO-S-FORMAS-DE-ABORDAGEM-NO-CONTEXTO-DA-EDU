@@ -30,23 +30,24 @@ OPC_SELECTIZE_MULTI <- list(dropdownParent = "body", maxOptions = 2000, plugins 
 
 ui_campo <- function(campo, cfg0) {
   id <- campo$id; ini <- valor_inicial(campo, cfg0)
+  opc <- tr_nomes(campo$opcoes)                       # os nomes das opções, no idioma da tela (os valores não mudam)
   rot <- campo$rotulo
   ctrl <- switch(campo$tipo,
     num = numero_vazio_ok(numericInput(id, rot, value = ini, min = campo$min, max = campo$max, step = campo$passo), ini),
     int = numero_vazio_ok(numericInput(id, rot, value = ini, min = campo$min, max = campo$max, step = 1), ini),
     txt = textInput(id, rot, value = ini),
     vec = textInput(id, rot, value = ""),
-    sel = , tri = selectInput(id, rot, choices = campo$opcoes, selected = ini, selectize = FALSE),
-    selbusca = selectizeInput(id, rot, choices = campo$opcoes, selected = ini,
+    sel = , tri = selectInput(id, rot, choices = opc, selected = ini, selectize = FALSE),
+    selbusca = selectizeInput(id, rot, choices = opc, selected = ini,
                               options = if (id == "cores_paleta") c(OPC_SELECTIZE, list(render = I("window.renderPaleta"))) else OPC_SELECTIZE),
     chk = checkboxInput(id, rot, value = ini),
-    chkgrupo = checkboxGroupInput(id, rot, choices = campo$opcoes, selected = ini, inline = TRUE),
+    chkgrupo = checkboxGroupInput(id, rot, choices = opc, selected = ini, inline = TRUE),
     cor = cor_input(id, rot, hex_de(padrao_do_campo(campo, cfg0))),
-    selmulti = selectizeInput(id, rot, choices = campo$opcoes, selected = NULL, multiple = TRUE, options = OPC_SELECTIZE_MULTI),
-    colx = selectInput(id, rot, choices = c("(1ª coluna)" = ""), selectize = FALSE),
+    selmulti = selectizeInput(id, rot, choices = opc, selected = NULL, multiple = TRUE, options = OPC_SELECTIZE_MULTI),
+    colx = selectInput(id, rot, choices = stats::setNames("", tr("(1ª coluna)")), selectize = FALSE),
     colsy = , colsy2 = tagList(
       selectizeInput(id, rot, choices = character(0), multiple = TRUE,
-                     options = c(OPC_SELECTIZE_MULTI, list(placeholder = if (campo$tipo == "colsy") "Vazio = todas as colunas numéricas" else "Clique para escolher..."))),
+                     options = c(OPC_SELECTIZE_MULTI, list(placeholder = tr(if (campo$tipo == "colsy") "Vazio = todas as colunas numéricas" else "Clique para escolher...")))),
       div(class = "sel-atalhos", tags$a(href = "#", `data-sel-todas` = id, "Selecionar todas"), tags$a(href = "#", `data-sel-limpar` = id, "Limpar"))))
   if (id == "cores_paleta") ctrl <- tagList(ctrl, uiOutput("previa_paleta"))          # as cores da paleta escolhida, desenhadas
   caixa <- div(class = paste0("campo campo-", campo$tipo, if (campo$largura >= 12) " span2" else ""),
@@ -83,7 +84,7 @@ ui_serie <- function(i, nome) {
       div(class = "serie-nome", span(class = "bolinha"), nome),
       div(class = "campos",
           cor_input(paste0("ser_cor_", i), "Cor (vazio = da paleta)", NULL),
-          div(class = "campo", selectInput(paste0("ser_forma_", i), "Forma", choices = c("(padrão)" = "", .FORMAS), selectize = FALSE)),
+          div(class = "campo", selectInput(paste0("ser_forma_", i), "Forma", choices = tr_nomes(c("(padrão)" = "", .FORMAS)), selectize = FALSE)),
           div(class = "campo", numero_vazio_ok(numericInput(paste0("ser_tamanho_", i), "Tamanho do ponto (pt)", value = NA, min = 0, step = 0.5), NA)),
           div(class = "campo", numero_vazio_ok(numericInput(paste0("ser_linha_", i), "Grossura da linha (pt)", value = NA, min = 0, step = 0.25), NA)),
           div(class = "campo", numero_vazio_ok(numericInput(paste0("ser_borda_", i), "Contorno do ponto (pt)", value = NA, min = 0, step = 0.25), NA)),
@@ -111,7 +112,7 @@ guia_rapido <- function() {
 ui_paleta_propria <- function() {
   div(class = "grupo", id = "paleta-editor",
       tags$h4("Criar a minha paleta"),
-      tags$p(class = "ajuda", "Cole os códigos das cores (por exemplo os que você copiou do Origin ou do site coolors.co), separados por vírgula, espaço ou linha. Os quadradinhos abaixo podem ser clicados para trocar a cor. As séries usam as cores nesta ordem. Para usar, escolha \"A que estou criando\" na lista de paletas, em cima."),
+      tags$p(class = "ajuda", "Cole os códigos das cores (por exemplo os de uma paleta que você gostou, de um site de paletas ou do manual da sua empresa), separados por vírgula, espaço ou linha. Os quadradinhos abaixo podem ser clicados para trocar a cor. As séries usam as cores nesta ordem. Para usar, escolha \"A que estou criando\" na lista de paletas, em cima."),
       textAreaInput("paleta_propria", NULL, value = "", rows = 3, width = "100%", placeholder = "#1B3A8C, #0E9F4B, #0B6E78, #8CC63F"),
       div(id = "paleta-chips", class = "paleta-chips"),
       div(class = "botoes-config",

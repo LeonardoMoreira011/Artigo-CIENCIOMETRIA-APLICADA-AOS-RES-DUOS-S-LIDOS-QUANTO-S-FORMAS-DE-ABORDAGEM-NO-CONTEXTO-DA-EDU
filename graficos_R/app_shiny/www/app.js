@@ -14,11 +14,15 @@
     if (m.valor) { $c.find('.cor-seletor').val(m.valor); marcar($c.find('.cor-seletor')[0], m.valor); } else { marcar($c.find('.cor-seletor')[0], ''); }
   });
   $(document).on('click', '#copiar-codigo', function () {
-    var t = $('#codigo-txt').text(), b = this;
+    var t = $('#codigo-txt').text(), b = this, ok = $(b).data('copiado') || 'Copiado!', orig = b.textContent;
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).catch(function () {
       var a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); document.body.removeChild(a);
-    }).then(function () { b.textContent = 'Copiado!'; setTimeout(function () { b.textContent = 'Copiar'; }, 1600); });
+    }).then(function () { b.textContent = ok; setTimeout(function () { b.textContent = orig; }, 1600); });
   });
+  // idioma: o seletor do cabeçalho recarrega a página com ?idioma=xx (lembra a escolha neste navegador)
+  $(document).on('change', '#idioma_sel', function () { try { localStorage.setItem('cinabro_idioma', this.value); } catch (e) {} location.search = '?idioma=' + this.value; });
+  try { var salvo = localStorage.getItem('cinabro_idioma');
+        if (salvo && salvo !== 'pt' && location.search.indexOf('idioma=') < 0) location.search = '?idioma=' + salvo; } catch (e) {}
   // "Selecionar todas" / "Limpar" nas listas de colunas
   function seletor(id) { var el = document.getElementById(id); return el && el.selectize; }
   $(document).on('click', '[data-sel-todas]', function (e) {

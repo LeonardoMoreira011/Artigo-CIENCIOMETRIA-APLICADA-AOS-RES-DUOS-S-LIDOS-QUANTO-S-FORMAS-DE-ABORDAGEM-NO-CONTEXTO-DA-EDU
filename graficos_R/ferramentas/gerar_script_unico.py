@@ -95,7 +95,7 @@ catalogo = sem_arquivos(catalogo)
 CAB = '''# =============================================================================
 #  graficos_R_completo.R  —  TEMPLATE DE GRÁFICOS CIENTÍFICOS EM R (ARQUIVO ÚNICO)
 # =============================================================================
-#  Alternativa ao Origin: pontos, linhas, áreas, barras, pizza, histograma, densidade,
+#  Cinabro: pontos, linhas, áreas, barras, pizza, histograma, densidade,
 #  ECDF e boxplot, com controle fino de eixos, ticks, moldura, cores, gradientes,
 #  legenda, painéis empilhados, quebra de eixo, eixo de datas e exportação
 #  (PNG, TIFF, JPEG, PDF, SVG, EMF). Tudo em um único arquivo.

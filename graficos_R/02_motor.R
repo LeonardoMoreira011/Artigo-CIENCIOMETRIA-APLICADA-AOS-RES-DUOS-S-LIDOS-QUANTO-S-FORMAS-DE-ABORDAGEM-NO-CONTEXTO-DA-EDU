@@ -45,7 +45,7 @@
 }
 .motor_pasta <- .achar_pasta_motor()
 
-.MOTOR_ARQUIVOS <- c("01_base.R", "02_cores_texto.R", "03_leitura.R", "04_validacao.R",
+.MOTOR_ARQUIVOS <- c("01_base.R", "02_paletas_dados.R", "02_cores_texto.R", "02_traducoes_motor.R", "03_leitura.R", "04_validacao.R",
                      "05_series.R", "06_eixos.R", "06_eixos_tempo.R", "07_tema.R", "08_tipos_comum.R",
                      "09_tipo_xy.R", "10_tipo_barras.R", "11_tipo_pizza.R",
                      "12_tipo_distribuicao.R", "13_tipo_boxplot.R", "14_montagem.R",

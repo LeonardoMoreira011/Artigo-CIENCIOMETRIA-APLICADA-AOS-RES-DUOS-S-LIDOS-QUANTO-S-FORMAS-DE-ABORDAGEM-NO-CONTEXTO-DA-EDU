@@ -1,6 +1,6 @@
-# Template de gráficos científicos em R — alternativa ao Origin
+# Cinabro — laboratório de gráficos científicos em R
 
-**Cinabro** é o nome do laboratório de gráficos (o app e este template). Cinábrio é o pigmento vermelho de pintores e alquimistas. O logo ainda está em definição.
+Este template em R e o app no navegador formam o **Cinabro**. Cinábrio é o pigmento vermelho de pintores e alquimistas. O logo ainda está em definição.
 
 Entrada: arquivos **CSV**. Saída: figuras **PNG, TIFF, JPEG, PDF, SVG ou EMF** com controle fino de eixos, ticks, moldura, cores, legendas e painéis.
 Testado em R 4.3/4.4 com **ggplot2 4.0.3** e **ggplot2 3.5.2** (Linux). **Não foi testado em Windows:** rode `07_verificar_windows.R` uma vez (seção 8).
@@ -15,7 +15,7 @@ Para quem não quer mexer em código: abra o **Cinabro** (laboratório de gráfi
 - **O que tem:** os mesmos 12 blocos do `painel_de_ajustes.R` (dados, intervalos, escala, números e títulos, grade, quebra do eixo, eixo Y direito, cores/linhas/símbolos série por série, fonte, moldura e tamanho fixo da caixa, legenda, exportação), cada um com explicação e dicas, prévia que se atualiza sozinha, avisos em português, e botões para baixar **PNG, TIFF, JPEG, SVG e PDF**.
 - **Repetir depois:** *Salvar configuração* (arquivo .json) e *Carregar configuração*; *Código equivalente* mostra as linhas do painel e baixa um script `.R` pronto — a ponte entre o app e o script.
 - **Para o time:** basta compartilhar a pasta `graficos_R` inteira (o app usa o motor da pasta de cima e a fonte de `fontes/`).
-- **Testes do app:** `Rscript app_shiny/testes_app.R` (39 testes).
+- **Testes do app:** `Rscript app_shiny/testes_app.R` (49 testes).
 
 ## Refinos de aparência (atualização)
 
@@ -27,12 +27,24 @@ Para quem não quer mexer em código: abra o **Cinabro** (laboratório de gráfi
 - **Grade:** nos traços grandes (`grade_x`, `grade_y`) e nos pequenos (`grade_menor_x`, `grade_menor_y`), cada grupo com tipo, cor, grossura e opacidade; a menor precisa de traços pequenos (`x_ticks_menores` ≥ 1).
 - **Fontes:** o app lista **todas as fontes do computador (systemfonts)**, com busca, e aceita uma fonte de arquivo `.ttf`/`.otf`. No script: `listar_fontes()` e `fonte <- "Nome da fonte"`.
 
+## Idiomas: português (BR), inglês e espanhol
+
+- **No app:** o seletor no canto superior direito troca a tela inteira (textos, dicas, listas, avisos e mensagens de erro) entre **Português (BR)**, **English** e **Español**; a escolha fica lembrada no navegador. Também vale abrir `http://cinabro.localhost:8421/?idioma=en` (ou `es`, `pt`).
+- **No script:** `idioma <- "en"` (ou `"es"`) no `painel_de_ajustes.R` traduz as mensagens do motor e os textos automáticos dentro do gráfico (por exemplo, "Densidade" vira "Density" no histograma).
+- **Como funciona:** os textos do app são escritos em português e traduzidos por dicionários (`app_shiny/idiomas/en.json` e `es.json`, as mensagens do motor em `R/02_traducoes_motor.R`); texto sem tradução aparece em português. Para acrescentar um texto novo, escreva em português no código e acrescente uma linha nos dicionários (o teste `Rscript app_shiny/testes_app.R` avisa se faltar).
+- **O que continua só em português:** os comentários do `01_config.R` e do `painel_de_ajustes.R`, este LEIAME (há versões curtas em `README_EN.md` e `README_ES.md`) e as mensagens do R/ggplot2 que não são do Cinabro.
+- A tradução foi feita com apoio de ferramenta e revisada só por testes e pela leitura da tela; vale uma revisão por falantes nativos antes de divulgar.
+
+## Paletas e licenças
+
+Só entram paletas de trabalhos com licença livre; os créditos e avisos estão em **`NOTICE.md`**. Foram retiradas paletas associadas a programas, revistas e marcas, e a paleta padrão agora é a `cinabro` (original, com as cores ordenadas para serem bem distintas, também para daltonismo). Nomes antigos continuam valendo (`"classico"` = `"cinabro"`).
+
 ## Segunda rodada de ajustes (app e motor)
 
 - **Listas de colunas (Y e Y2):** a lista suspensa não é mais cortada pelo bloco; tem **"Selecionar todas"** e **"Limpar"**, e a coluna do eixo X não aparece como série.
 - **Tipo de arquivo (bloco 12):** marque PNG, TIFF, JPEG, SVG, PDF (e EMF, se o pacote *devEMF* estiver instalado): o cartão *Baixar* mostra um botão para cada tipo marcado. Novo: `fundo_transparente <- TRUE`.
 - **Legenda:** `legenda_direcao` ("vertical" = um embaixo do outro, "horizontal" = lado a lado numa linha), `legenda_n_colunas` e novo `legenda_n_linhas` (ex.: horizontal em 2 linhas).
-- **Paletas:** 39 paletas prontas, agrupadas — *Estilo Origin* (cores básicas, vivas, escuras, pastel...), *Marca*, *Acessíveis* (Okabe-Ito, Paul Tol), *Revistas* (Tableau, D3, Nature, Lancet, JCO, NEJM), degradês de uma cor, divergentes, viridis e cinza (`mostrar_paletas()` desenha todas). As "Estilo Origin" são inspiradas na sequência de cores básicas do Origin e em conjuntos parecidos — **não são cópias exatas das paletas do Origin** (não consegui acessar a documentação deles). **Criar a minha paleta:** no app, cole códigos de cor (ex.: copiados do Origin), edite os quadradinhos, inverta a ordem e **guarde com um nome** (fica no navegador e vai junto na configuração salva). No script: `cores_personalizadas <- c("#...", "#...")`.
+- **Paletas:** 64 paletas prontas, agrupadas e com as cores desenhadas na lista: **Do Cinabro** (a padrão `cinabro` e a `marca`), **Acessíveis** (Okabe-Ito e Paul Tol), **Qualitativas, degradês e divergentes de Brewer** (inclui `brewer_RdYlGn`, do vermelho-escuro ao verde), **contínuas** (viridis, cmocean, Crameri, Tol) e cinza. Só entram paletas de trabalhos com licença livre (créditos em `NOTICE.md`); nomes de programas, revistas ou marcas ficaram de fora. **Criar a minha paleta:** no app, cole códigos de cor, edite os quadradinhos, inverta a ordem e **guarde com um nome** (fica no navegador e vai junto na configuração salva). No script: `cores_personalizadas <- c("#...", "#...")`.
 - **Eixo Y direito (Y2) completo:** as mesmas opções do Y1 — traços (direção, comprimento, grossura, cor, primeiro traço), linha do eixo, números (tamanho, negrito, giro, mostrar), título (tamanho, negrito, itálico, giro) e folga. Vazio = igual ao eixo esquerdo (`y2_ticks_direcao`, `y2_numeros_tamanho_pt`, `y2_titulo_negrito`...).
 - **Quebra do eixo Y completa:** botão **"Achar o maior vazio nos meus dados"**; traços pequenos e intervalo **de cada parte** (`quebra_y_ticks_menores_inferior`/`_superior`, e `quebra_y2_...` para o eixo direito); as opções do eixo direito aparecem sozinhas quando há séries no Y2.
 
@@ -156,10 +168,10 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | Moldura na legenda | `cfg$legenda$moldura <- TRUE; cfg$legenda$fundo <- "white"` |
 | Fundo, borda e sombra da legenda | `cfg$legenda$fundo <- "white"; cfg$legenda$fundo_opacidade <- 0.8; cfg$legenda$sombra <- TRUE` (no painel: bloco 11, `legenda_canto`, `legenda_sombra_*`) |
 | Legenda dentro da caixa, maior/menor, distância da borda | `cfg$legenda$escala <- 0.8; cfg$legenda$distancia_pt <- 8` (a legenda "dentro" que passa da caixa é reduzida sozinha; `ajustar_caixa <- FALSE` desliga). Painel: `legenda_escala`, `legenda_canto`, `legenda_distancia_pt` |
-| Gráfico em tamanho padrão (como o layer do Origin) | `cfg$caixa$painel_largura_cm <- 9; cfg$caixa$painel_altura_cm <- 6.5` — a caixa tem sempre esse tamanho e a página se ajusta ao conteúdo (`exportacao$ajustar_pagina`) |
+| Gráfico em tamanho padrão | `cfg$caixa$painel_largura_cm <- 9; cfg$caixa$painel_altura_cm <- 6.5` — a caixa tem sempre esse tamanho e a página se ajusta ao conteúdo (`exportacao$ajustar_pagina`) |
 | Distância entre título e números dos eixos | `cfg$eixo_y$distancia_titulo_pt <- 8` (também `eixo_x`, `eixo_y2`; no painel `y_distancia_titulo_pt`...) |
 | Todos os pontos quadrados / formas à escolha | `cfg$cores$incrementar_simbolo <- FALSE; cfg$serie_padrao$simbolo <- "quadrado"` ou `cfg$cores$simbolos_ordem <- c("quadrado", "circulo")`. Painel: `simbolo_forma <- "quadrado"` |
-| Bolinha 3D (esfera, estilo Origin) | `cfg$series[["A"]] <- list(simbolo = "esfera")`; luz em `cfg$serie_padrao$esfera_luz`. Painel: `simbolo_forma_por_serie <- c("A" = "esfera")` |
+| Bolinha 3D (esfera) | `cfg$series[["A"]] <- list(simbolo = "esfera")`; luz em `cfg$serie_padrao$esfera_luz`. Painel: `simbolo_forma_por_serie <- c("A" = "esfera")` |
 | Grade | `cfg$grade$maior_y <- TRUE` |
 | Grade com tipo, cor e transparência | `cfg$grade$maior_x <- TRUE; tipo_maior <- "dashed"; cor_maior <- "#1F4E9E"; opacidade_maior <- 0.4` |
 | Linha de referência | `cfg$referencias <- list(list(eixo = "y", valor = 0, tipo = "dashed"))` |
@@ -167,7 +179,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | Eixo Y à direita pelo painel (bloco 7) | `y2_series <- "Temperatura"; y2_inicio <- 0; y2_fim <- 40; y2_intervalo <- 5; y2_cor <- "#C00000"; y2_titulo <- "Temperatura (°C)"` |
 | Eixo Y à direita | `cfg$eixo_y2$ativo <- TRUE` + `cfg$series[["B"]] <- list(eixo = "y2")` (com ticks menores: `cfg$eixo_y2$n_menores`) |
 | Eixo X como datas / horas | automático; `cfg$eixo_x$incremento <- "1 mes"`, `inicio <- "01/01/2024"`, `formato_rotulo_data <- "%d/%m/%Y"` (seção 3.1) |
-| Ligar os pontos da esquerda para a direita | `cfg$linhas$ordenar_x <- TRUE` (padrão: segue a ordem das linhas do CSV, como o Origin) |
+| Ligar os pontos da esquerda para a direita | `cfg$linhas$ordenar_x <- TRUE` (padrão: segue a ordem das linhas do CSV) |
 | Rótulos da pizza sobrepostos | já são afastados sozinhos; para desligar: `cfg$pizza$rotulos_afastar <- FALSE` |
 | Ajuste fino da pizza (raio dos rótulos, linha guia) | `cfg$pizza$rotulos_raio_dentro`, `rotulos_raio_borda`, `linha_guia_espessura_pt`, `linha_guia_recuo`, `rotulos_margem` |
 | Pontos do boxplot (enxame), bordas, tamanho do "n =" | `cfg$boxplot$enxame_resolucao`, `pontos_borda_pt`, `outliers_borda_pt`, `media_borda_pt`, `n_tamanho_pt` |
@@ -175,32 +187,32 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | Tamanho dos traços "//" da quebra de eixo | `cfg$quebra$marca_largura_pt`, `marca_altura_pt` |
 | Tamanho dos tracinhos do rug | `cfg$distribuicao$rug_comprimento_pt`, `rug_espessura_pt` |
 | Gráficos empilhados com X fixo | `cfg$paineis$ativo <- TRUE` + `cfg$paineis$lista` (ver exemplos 25 e 26) |
-| Quebra no eixo Y | `cfg$quebra$ativo <- TRUE; de <- 20; ate <- 80`; estilo Origin (uma moldura só, com `//` nas bordas): `cfg$quebra$estilo <- "continuo"` (padrão: `"separado"`) — não sabe qual trecho? `sugerir_quebra(dados)` acha o maior vazio e imprime as linhas prontas. Não ligar os pontos através da quebra: `cfg$quebra$ligar_atraves <- FALSE`; números das bordas se sobrepondo: `cfg$quebra$espaco_pt <- 14` |
+| Quebra no eixo Y | `cfg$quebra$ativo <- TRUE; de <- 20; ate <- 80`; estilo contínuo (uma moldura só, com `//` nas bordas): `cfg$quebra$estilo <- "continuo"` (padrão: `"separado"`) — não sabe qual trecho? `sugerir_quebra(dados)` acha o maior vazio e imprime as linhas prontas. Não ligar os pontos através da quebra: `cfg$quebra$ligar_atraves <- FALSE`; números das bordas se sobrepondo: `cfg$quebra$espaco_pt <- 14` |
 | Fonte | `cfg$texto$fonte <- "Arial"; cfg$texto$tamanho_base_pt <- 10` |
 | Tamanho e formato do arquivo | `cfg$exportacao$largura <- 8.5; altura <- 6; formatos <- c("tiff","pdf"); dpi <- 600` |
 | Reaproveitar o visual | `salvar_estilo(cfg, "meu")` e depois `cfg <- carregar_estilo("meu", cfg)` |
 | Mesmo gráfico para vários CSVs | `exportar_lote("dados", cfg)` |
 | Voltar tudo ao padrão | `resetar_cfg()` |
 
-## 5. Correspondência com o Origin
+## 5. Onde achar cada recurso
 
-| No Origin | Aqui |
+| Recurso | Aqui |
 |---|---|
-| Plot Details › Symbol / Line / Pattern | `cfg$serie_padrao` (todas) e `cfg$series[["nome"]]` (uma) |
-| Plot Details › Pattern › Gradient Fill (Two Colors) | `cfg$cores$preenchimento = "gradiente"`, `gradiente_cor2`, `gradiente_direcao` |
-| Increment (cor/símbolo automáticos) | `cfg$cores$paleta`, `incrementar_simbolo`, `incrementar_tipo_linha` |
-| Axis › Scale (From, To, Type, Increment, Minor Ticks, First Tick) | `cfg$eixo_x$inicio`, `fim`, `escala`, `incremento`, `n_menores`, `primeiro_tick` |
-| Axis › Line and Ticks (In/Out/In&Out, Length, Thickness) | `direcao_maiores`, `direcao_menores`, `comprimento_*_pt`, `espessura_ticks_pt` |
-| Axis › Tick Labels (Decimal Places, Divide by, Prefix/Suffix, Rotation) | `casas_decimais`, `fator_divisao`, `prefixo`, `sufixo`, `rotacao_rotulos` |
-| Axis › Title, Grid Lines, Reference Lines, Breaks | `titulo`, `cfg$grade`, `cfg$referencias`, `cfg$quebra` |
-| Layer frame (caixa fechada) | `cfg$caixa` |
-| Double-Y | `cfg$eixo_y2` |
-| Stack Panels / Merge Graph | `cfg$paineis` |
-| Box Chart (Box, Whisker, Percentile, Outliers, Notch, Half box, Violin) | `cfg$boxplot` |
-| Pie (Explode, Doughnut, Start Azimuth, Labels, Combine small wedges) | `cfg$pizza` |
-| Histogram (Bin size, Normal/Kernel curve) | `cfg$distribuicao` |
-| Theme / Graph template | `salvar_estilo()` / `carregar_estilo()` em `estilos/` |
-| Export Graphs (size, DPI, format) | `cfg$exportacao` |
+| Símbolo, linha e preenchimento | `cfg$serie_padrao` (todas as séries) e `cfg$series[["nome"]]` (uma) |
+| Preenchimento em degradê de 2 cores | `cfg$cores$preenchimento = "gradiente"`, `gradiente_cor2`, `gradiente_direcao` |
+| Cor e símbolo automáticos por série | `cfg$cores$paleta`, `incrementar_simbolo`, `incrementar_tipo_linha` |
+| Escala do eixo (início, fim, tipo, intervalo, traços pequenos, primeiro traço) | `cfg$eixo_x$inicio`, `fim`, `escala`, `incremento`, `n_menores`, `primeiro_tick` |
+| Linha e traços do eixo (para dentro/fora/ambos, comprimento, grossura) | `direcao_maiores`, `direcao_menores`, `comprimento_*_pt`, `espessura_ticks_pt` |
+| Números do eixo (casas decimais, dividir por, prefixo/sufixo, rotação) | `casas_decimais`, `fator_divisao`, `prefixo`, `sufixo`, `rotacao_rotulos` |
+| Título, grade, linhas de referência, quebra do eixo | `titulo`, `cfg$grade`, `cfg$referencias`, `cfg$quebra` |
+| Moldura fechada | `cfg$caixa` |
+| Dois eixos Y | `cfg$eixo_y2` |
+| Gráficos empilhados / combinados | `cfg$paineis` |
+| Boxplot (caixa, bigodes, percentis, outliers, entalhe, meia caixa, violino) | `cfg$boxplot` |
+| Pizza (destacar fatia, rosca, ângulo inicial, rótulos, agrupar fatias pequenas) | `cfg$pizza` |
+| Histograma (largura da barra, curva normal/kernel) | `cfg$distribuicao` |
+| Estilo salvo / modelo | `salvar_estilo()` / `carregar_estilo()` em `estilos/` |
+| Exportação (tamanho, DPI, formato) | `cfg$exportacao` |
 
 ## 6. Arquivos
 
@@ -213,7 +225,7 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
 | `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
-| `06_testes.R` | 206 testes automáticos — rode depois de qualquer alteração no motor |
+| `06_testes.R` | 208 testes automáticos — rode depois de qualquer alteração no motor |
 | `painel_de_ajustes.R` | **o painel**: variáveis simples por categoria (escala, ticks, grade, quebra, cores...). Veja a seção 2.1 |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |
 | `estilos/` | estilos salvos: `publicacao_classico`, `apresentacao`, `padrao_cientifico` |

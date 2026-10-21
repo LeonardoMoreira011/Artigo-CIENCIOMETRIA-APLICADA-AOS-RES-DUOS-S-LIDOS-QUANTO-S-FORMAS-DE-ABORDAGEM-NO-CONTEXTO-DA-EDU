@@ -34,7 +34,7 @@ cfg$eixo_y$titulo <- "Temperatura (°C)"
 # cfg$eixo_y$escala <- "log10"
 
 # ---- 5. Séries (cores, símbolos, legenda, barras de erro) --------------------
-cfg$cores$paleta <- "classico"
+cfg$cores$paleta <- "cinabro"
 cfg$series[["Amostra A"]] <- list(coluna_erro = "Desvio A", nome_legenda = "Amostra A (± DP)")
 # cfg$series[["Amostra B"]] <- list(cor = "#D62728", simbolo = 22)
 # cfg$series[["Amostra C"]] <- list(mostrar_na_legenda = FALSE)

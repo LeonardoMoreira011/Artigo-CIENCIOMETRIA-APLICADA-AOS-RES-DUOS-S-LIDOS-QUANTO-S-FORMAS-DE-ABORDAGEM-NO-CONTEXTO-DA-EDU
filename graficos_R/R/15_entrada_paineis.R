@@ -192,7 +192,7 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
     superior$eixo_y2$inicio <- ate2; superior$eixo_y2$fim <- lim2[2]
   } else if (!is.null(Q$y2_de) || !is.null(Q$y2_ate))
     .aviso("cfg$quebra$y2_de/y2_ate ignorados: não há eixo Y da direita com séries próprias (eixo_y2).")
-  continuo <- identical(Q$estilo, "continuo")       # TRUE: uma moldura só, partes coladas (estilo Origin)
+  continuo <- identical(Q$estilo, "continuo")       # TRUE: uma moldura só, partes coladas (estilo contínuo)
   m <- cfg$caixa$margens_cm; esp <- if (continuo) 0 else Q$espaco_pt / 2 / 72 * 2.54
   # a parte de cima fica sem números/título do X; a de baixo sem legenda, títulos e letra
   sem_ligar <- isFALSE(Q$ligar_atraves) && cfg$grafico$tipo %in% c("pontos", "linha", "linha_pontos")

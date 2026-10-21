@@ -41,16 +41,21 @@ servidor <- function(input, output, session) {
   rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL, geo = NULL,
                        paletas = list())
   dir_dados <- file.path(raiz, "dados")
+  # idioma da página (vem do endereço, ?idioma=en) e atalhos para traduzir o que o servidor escreve na tela
+  idioma <- reactive(input$idioma_pagina %||% "pt")
+  T <- function(x) tr(x, idioma())                         # um texto
+  TF <- function(molde, ...) trf(molde, ..., idioma = idioma())   # um molde com %s / %.1f
+  UI <- function(x) traduzir_html(x, idioma())             # um pedaço de tela
 
   # ---- dados -------------------------------------------------------------------------------------------------
   carregar <- function(caminho, nome) {
     op <- utils::modifyList(CFG0$dados, list(relatorio = FALSE))
-    d <- tryCatch(suppressWarnings(ler_csv(caminho, op)), error = function(e) {
-      rv$erro <- paste0("Não consegui ler o arquivo: ", conditionMessage(e)); NULL })
+    d <- tryCatch(suppressWarnings(com_idioma(idioma(), ler_csv(caminho, op))), error = function(e) {
+      rv$erro <- paste0(T("Não consegui ler o arquivo: "), conditionMessage(e)); NULL })
     if (is.null(d)) return(invisible())
     rv$dados <- d; rv$nome <- nome; rv$erro <- NULL
     cols <- names(d); num <- cols[vapply(d, is.numeric, NA)]
-    updateSelectInput(session, "coluna_x", choices = c("(1ª coluna)" = "", stats::setNames(cols, cols)), selected = "")
+    updateSelectInput(session, "coluna_x", choices = stats::setNames(c("", cols), c(T("(1ª coluna)"), cols)), selected = "")
     updateSelectizeInput(session, "colunas_y", choices = stats::setNames(setdiff(num, cols[1]), setdiff(num, cols[1])), selected = character(0))
     updateSelectizeInput(session, "y2_series", choices = stats::setNames(setdiff(num, cols[1]), setdiff(num, cols[1])), selected = character(0))
     updateSelectInput(session, "simbolos_ordem", selected = character(0))
@@ -68,38 +73,37 @@ servidor <- function(input, output, session) {
 
   output$resumo_dados <- renderUI({
     d <- rv$dados
-    if (is.null(d)) return(div(class = "vazio", "Nenhum dado carregado ainda."))
-    tipos <- vapply(d, function(v) if (is.numeric(v)) "número" else "texto", "")
+    if (is.null(d)) return(UI(div(class = "vazio", "Nenhum dado carregado ainda.")))
     div(class = "resumo-dados",
-        div(class = "chips", span(class = "chip chip-verde", rv$nome), span(class = "chip", paste(nrow(d), "linhas")), span(class = "chip", paste(ncol(d), "colunas"))),
+        div(class = "chips", span(class = "chip chip-verde", rv$nome), span(class = "chip", paste(nrow(d), T("linhas"))), span(class = "chip", paste(ncol(d), T("colunas")))),
         tags$table(class = "mini", tags$thead(tags$tr(lapply(names(d), function(n) tags$th(n)))),
                    tags$tbody(lapply(seq_len(min(5, nrow(d))), function(i) tags$tr(lapply(d[i, ], function(x) tags$td(format(x, digits = 6))))))))
   })
 
   # ---- paletas: desenho da escolhida, editor próprio, paletas guardadas (no navegador) ------------------------------------------
   cores_da_paleta <- function(nome, n = 10) {
-    nome <- nome %||% "classico"
+    nome <- nome %||% "cinabro"
     if (identical(nome, "propria")) return(ler_cores_texto(input$paleta_propria))
     if (startsWith(nome, "salva:")) return(as.character(rv$paletas[[sub("^salva:", "", nome)]]))
     tryCatch(.paleta(nome, n, CFG0$cores), error = function(e) character(0))
   }
   output$previa_paleta <- renderUI({
-    nome <- input$cores_paleta %||% "classico"
+    nome <- input$cores_paleta %||% "cinabro"
     n <- if (!is.null(rv$dados)) min(max(length(series_nomes_seguro()), 3), 14) else 10
     cores <- cores_da_paleta(nome, n)
-    if (!length(cores)) return(div(class = "paleta-previa vazio", "(sem cores: escreva os códigos no editor abaixo)"))
+    if (!length(cores)) return(UI(div(class = "paleta-previa vazio", "(sem cores: escreva os códigos no editor abaixo)")))
     div(class = "paleta-previa", lapply(cores, function(h) span(class = "paleta-cor", style = paste0("background:", h), title = h)))
   })
   atualizar_lista_paletas <- function(escolher = NULL) {
-    updateSelectizeInput(session, "cores_paleta", choices = opcoes_paletas(names(rv$paletas)),
-                         selected = escolher %||% isolate(input$cores_paleta) %||% "classico")
+    updateSelectizeInput(session, "cores_paleta", choices = tr_nomes(opcoes_paletas(names(rv$paletas)), idioma()),
+                         selected = escolher %||% isolate(input$cores_paleta) %||% "cinabro")
     session$sendCustomMessage("guardar_paletas", as.character(jsonlite::toJSON(rv$paletas, auto_unbox = FALSE)))
   }
   observeEvent(input$paletas_do_navegador, {            # o navegador envia o que estava guardado
     p <- input$paletas_do_navegador
     if (is.list(p) && length(p)) {
       rv$paletas <- lapply(p, function(x) as.character(unlist(x)))
-      updateSelectizeInput(session, "cores_paleta", choices = opcoes_paletas(names(rv$paletas)), selected = isolate(input$cores_paleta) %||% "classico")
+      updateSelectizeInput(session, "cores_paleta", choices = tr_nomes(opcoes_paletas(names(rv$paletas)), idioma()), selected = isolate(input$cores_paleta) %||% "cinabro")
     }
   }, once = TRUE)
   observeEvent(input$paleta_copiar, {
@@ -108,17 +112,17 @@ servidor <- function(input, output, session) {
   })
   observeEvent(input$paleta_salvar, {
     nome <- trimws(input$paleta_nome %||% ""); cores <- ler_cores_texto(input$paleta_propria)
-    if (!nzchar(nome)) return(showNotification("Dê um nome para guardar a paleta.", type = "warning"))
-    if (!length(cores)) return(showNotification("Escreva pelo menos uma cor no editor.", type = "warning"))
+    if (!nzchar(nome)) return(showNotification(T("Dê um nome para guardar a paleta."), type = "warning"))
+    if (!length(cores)) return(showNotification(T("Escreva pelo menos uma cor no editor."), type = "warning"))
     rv$paletas[[nome]] <- cores
     atualizar_lista_paletas(paste0("salva:", nome))
-    showNotification(paste0("Paleta \"", nome, "\" guardada."), type = "message")
+    showNotification(TF("Paleta \"%s\" guardada.", nome), type = "message")
   })
   observeEvent(input$paleta_excluir, {
     sel <- input$cores_paleta %||% ""
-    if (!startsWith(sel, "salva:")) return(showNotification("Escolha, na lista de paletas, uma das suas paletas guardadas para excluir.", type = "warning"))
+    if (!startsWith(sel, "salva:")) return(showNotification(T("Escolha, na lista de paletas, uma das suas paletas guardadas para excluir."), type = "warning"))
     rv$paletas[[sub("^salva:", "", sel)]] <- NULL
-    atualizar_lista_paletas("classico")
+    atualizar_lista_paletas("cinabro")
   })
 
   # ---- séries (tabela por série) ------------------------------------------------------------------------------
@@ -132,12 +136,12 @@ servidor <- function(input, output, session) {
   series_nomes_seguro <- function() tryCatch(series_nomes(), error = function(e) character(0))
   output$tabela_series <- renderUI({
     d <- rv$dados
-    if (is.null(d)) return(div(class = "vazio", "Carregue os dados para editar cada série."))
+    if (is.null(d)) return(UI(div(class = "vazio", "Carregue os dados para editar cada série.")))
     tp <- input$tipo_grafico %||% "linha_pontos"
     if (!tp %in% c("pontos", "linha", "linha_pontos", "area", "area_empilhada"))
-      return(div(class = "vazio", "A edição série por série vale para gráficos de linha, pontos e área."))
+      return(UI(div(class = "vazio", "A edição série por série vale para gráficos de linha, pontos e área.")))
     nomes <- isolate(series_nomes())
-    div(class = "series", lapply(seq_along(nomes), function(i) ui_serie(i, nomes[i])))
+    UI(div(class = "series", lapply(seq_along(nomes), function(i) ui_serie(i, nomes[i]))))
   })
   series_df <- reactive({
     nomes <- series_nomes(); n <- length(nomes)
@@ -158,14 +162,16 @@ servidor <- function(input, output, session) {
                         v$.paleta_propria <- input$paleta_propria; v$.paletas_salvas <- rv$paletas; v })
   vars_atual <- reactive({
     s <- if (!is.null(rv$dados)) tryCatch(series_df(), error = function(e) NULL) else NULL
-    montar_variaveis(valores(), CFG0, s)
+    v <- montar_variaveis(valores(), CFG0, s)
+    if (idioma() != "pt") v$idioma <- idioma()               # o idioma entra no código equivalente (idioma <- "en")
+    v
   })
   vars_deb <- debounce(vars_atual, 700)
 
   calcular <- function() {
     if (is.null(rv$dados)) { rv$erro <- NULL; return(invisible()) }
-    withProgress(message = "Montando o gráfico...", value = 0.4, {
-      r <- construir_grafico(rv$dados, vars_atual(), CFG0)
+    withProgress(message = T("Montando o gráfico..."), value = 0.4, {
+      r <- construir_grafico(rv$dados, vars_atual(), CFG0, idioma = idioma())
       if (!is.null(r$erro)) { rv$erro <- r$erro; rv$res <- r; return(invisible()) }
       incProgress(0.3)
       p <- tryCatch(desenhar_previa(r$g, r$cfg, dpi = 130), error = function(e) { rv$erro <- conditionMessage(e); NULL })
@@ -185,16 +191,16 @@ servidor <- function(input, output, session) {
   # ---- prévia, avisos ------------------------------------------------------------------------------------------------
   output$previa <- renderImage({
     p <- rv$previa; req(p)
-    list(src = p$arquivo, contentType = "image/png", alt = "Prévia do gráfico")
+    list(src = p$arquivo, contentType = "image/png", alt = T("Prévia do gráfico"))
   }, deleteFile = FALSE)
   output$estado <- renderUI({
-    if (is.null(rv$dados)) div(class = "vazio grande", tags$b("Comece pelos dados."), tags$p("Envie um CSV ou escolha um exemplo no bloco \"Seus dados\"; o gráfico aparece aqui."))
+    if (is.null(rv$dados)) UI(div(class = "vazio grande", tags$b("Comece pelos dados."), tags$p("Envie um CSV ou escolha um exemplo no bloco \"Seus dados\"; o gráfico aparece aqui.")))
   })
   output$info_previa <- renderUI({
     r <- rv$res; p <- rv$previa; if (is.null(r) || is.null(r$cfg) || is.null(p)) return(NULL)
-    div(class = "chips", span(class = "chip", sprintf("Página %.1f × %.1f cm", p$larg_px / 130 * 2.54, p$alt_px / 130 * 2.54)),
-        if (!is.null(r$cfg$caixa$painel_largura_cm)) span(class = "chip chip-verde", sprintf("Caixa fixa %.1f × %.1f cm", r$cfg$caixa$painel_largura_cm, r$cfg$caixa$painel_altura_cm %||% NA)),
-        span(class = "chip", paste("Fonte:", r$cfg$texto$fonte)))
+    div(class = "chips", span(class = "chip", TF("Página %.1f × %.1f cm", p$larg_px / 130 * 2.54, p$alt_px / 130 * 2.54)),
+        if (!is.null(r$cfg$caixa$painel_largura_cm)) span(class = "chip chip-verde", TF("Caixa fixa %.1f × %.1f cm", r$cfg$caixa$painel_largura_cm, r$cfg$caixa$painel_altura_cm %||% NA)),
+        span(class = "chip", paste(T("Fonte:"), r$cfg$texto$fonte)))
   })
   derivados <- c(cores_personalizadas = "Cores da minha paleta", legenda_sombra_deslocamento_pt = "Sombra da legenda: deslocamento",
                  legenda_nomes = "Nomes na legenda", cores_por_serie = "Cores por série", simbolo_forma_por_serie = "Formas por série",
@@ -203,11 +209,11 @@ servidor <- function(input, output, session) {
   rotulo_de <- function(id) { c <- ESPEC_CAMPOS[[id]]; if (!is.null(c)) c$rotulo else if (id %in% names(derivados)) derivados[[id]] else id }
   output$avisos <- renderUI({
     r <- rv$res
-    tagList(
-      if (!is.null(rv$erro)) div(class = "alerta alerta-erro", tags$b("Algo precisa de ajuste: "), rv$erro),
+    UI(tagList(
+      if (!is.null(rv$erro)) div(class = "alerta alerta-erro", tags$b("Algo precisa de ajuste: "), tags$span(rv$erro)),
       if (!is.null(r) && length(r$avisos)) div(class = "alerta alerta-aviso", tags$b("Avisos"), tags$ul(lapply(r$avisos, tags$li))),
-      if (!is.null(r) && length(setdiff(r$aplicado, "formatos"))) div(class = "mudou", tags$b("O que você mudou: "),
-                                                 lapply(setdiff(r$aplicado, "formatos"), function(n) span(class = "chip chip-mudou", rotulo_de(n)))))
+      if (!is.null(r) && length(setdiff(r$aplicado, c("formatos", "idioma")))) div(class = "mudou", tags$b("O que você mudou: "),
+                                                 lapply(setdiff(r$aplicado, c("formatos", "idioma")), function(n) span(class = "chip chip-mudou", rotulo_de(n))))))
   })
 
   # ---- baixar ------------------------------------------------------------------------------------------------------------
@@ -218,8 +224,8 @@ servidor <- function(input, output, session) {
   baixar <- function(ext) downloadHandler(
     filename = function() paste0(nome_base(), ".", if (ext == "jpeg") "jpg" else ext),
     content = function(file) {
-      validate(need(!is.null(rv$dados), "Carregue os dados primeiro."))
-      r <- construir_grafico(rv$dados, vars_atual(), CFG0, preview = FALSE)
+      validate(need(!is.null(rv$dados), T("Carregue os dados primeiro.")))
+      r <- construir_grafico(rv$dados, vars_atual(), CFG0, preview = FALSE, idioma = idioma())
       if (!is.null(r$erro)) stop(r$erro)
       cfg <- r$cfg; cfg$exportacao$pasta <- tempfile("saida_"); cfg$exportacao$formatos <- ext
       cfg$exportacao$nome_arquivo <- "grafico_app"; cfg$exportacao$carimbo_data <- FALSE; cfg$exportacao$sobrescrever <- TRUE
@@ -230,7 +236,7 @@ servidor <- function(input, output, session) {
   output$botoes_baixar <- renderUI({              # um botão para cada tipo de arquivo marcado no bloco 12
     f <- input$formatos; if (!length(f)) f <- "png"
     f <- intersect(unname(.FORMATOS), f)
-    div(class = "botoes-baixar", lapply(f, function(e) downloadButton(paste0("baixar_", e), paste("Baixar", toupper(e)), class = "btn-baixar")))
+    div(class = "botoes-baixar", lapply(f, function(e) downloadButton(paste0("baixar_", e), paste(T("Baixar"), toupper(e)), class = "btn-baixar")))
   })
 
   # ---- código equivalente ----------------------------------------------------------------------------------------
@@ -248,7 +254,7 @@ servidor <- function(input, output, session) {
     })
   observeEvent(input$carregar_cfg, {
     j <- tryCatch(jsonlite::fromJSON(input$carregar_cfg$datapath, simplifyVector = TRUE), error = function(e) NULL)
-    if (is.null(j) || is.null(j$valores)) { showNotification("Arquivo de configuração inválido.", type = "error"); return() }
+    if (is.null(j) || is.null(j$valores)) { showNotification(T("Arquivo de configuração inválido."), type = "error"); return() }
     if (is.list(j$paletas) && length(j$paletas)) {
       rv$paletas <- utils::modifyList(rv$paletas, lapply(j$paletas, function(x) as.character(unlist(x)))); atualizar_lista_paletas()
     }
@@ -256,7 +262,7 @@ servidor <- function(input, output, session) {
     if (!is.null(j$valores$paleta_propria)) updateTextAreaInput(session, "paleta_propria", value = as.character(j$valores$paleta_propria))
     if (!is.null(j$valores$simbolo_modo)) updateSelectInput(session, "simbolo_modo", selected = j$valores$simbolo_modo)
     if (!is.null(j$series)) rv$pend_series <- as.data.frame(j$series)
-    showNotification("Configuração carregada.", type = "message")
+    showNotification(T("Configuração carregada."), type = "message")
   })
   observe({                         # séries salvas: aplica quando a tabela da tela já existir
     ps <- rv$pend_series; req(ps, !is.null(input$ser_legenda_1))
@@ -278,10 +284,10 @@ servidor <- function(input, output, session) {
     sug <- tryCatch({
       cfg <- suppressMessages(aplicar_painel(CFG0, painel = list2env(v, parent = emptyenv()), dados = rv$dados))
       utils::capture.output(r <- sugerir_quebra(rv$dados, cfg)); r
-    }, error = function(e) { showNotification(paste("Não consegui sugerir:", conditionMessage(e)), type = "error"); NULL })
+    }, error = function(e) { showNotification(paste(T("Não consegui sugerir:"), conditionMessage(e)), type = "error"); NULL })
     if (is.null(sug)) return()
     updateNumericInput(session, "quebra_de", value = signif(sug$de, 6)); updateNumericInput(session, "quebra_ate", value = signif(sug$ate, 6))
-    showNotification(sprintf("Maior vazio: de %s a %s.", format(signif(sug$de, 6), scientific = FALSE), format(signif(sug$ate, 6), scientific = FALSE)), type = "message")
+    showNotification(TF("Maior vazio: de %s a %s.", format(signif(sug$de, 6), scientific = FALSE), format(signif(sug$ate, 6), scientific = FALSE)), type = "message")
   })
 
   # ---- legenda arrastada / redimensionada na prévia --------------------------------------------------------------------------
@@ -315,10 +321,10 @@ servidor <- function(input, output, session) {
     arq <- c(regular = pega(!neg & !ita), bold = pega(neg & !ita), italic = pega(!neg & ita), bolditalic = pega(neg & ita))
     if (is.na(arq[["regular"]])) arq[["regular"]] <- destino[1]
     ok <- tryCatch({ registrar_fonte(familia, arquivos = arq, silencioso = TRUE); TRUE },
-                   error = function(e) { showNotification(paste("Não consegui adicionar a fonte:", conditionMessage(e)), type = "error"); FALSE })
+                   error = function(e) { showNotification(paste(T("Não consegui adicionar a fonte:"), conditionMessage(e)), type = "error"); FALSE })
     if (ok) {
-      updateSelectizeInput(session, "fonte", choices = opcoes_fontes(), selected = familia, server = FALSE)
-      showNotification(paste0("Fonte \"", familia, "\" adicionada e selecionada."), type = "message")
+      updateSelectizeInput(session, "fonte", choices = tr_nomes(opcoes_fontes(), idioma()), selected = familia, server = FALSE)
+      showNotification(TF("Fonte \"%s\" adicionada e selecionada.", familia), type = "message")
     }
   })
 
@@ -327,13 +333,13 @@ servidor <- function(input, output, session) {
     for (id in names(ESPEC_CAMPOS)) if (!ESPEC_CAMPOS[[id]]$tipo %in% c("colx", "colsy", "colsy2")) atualizar_campo(session, ESPEC_CAMPOS[[id]], NULL, CFG0)
     updateSelectInput(session, "simbolo_modo", selected = "variar")
   }
-  observeEvent(input$restaurar, { restaurar_campos(); updateSelectInput(session, "estilo", selected = ""); showNotification("Tudo voltou ao padrão do template.") })
+  observeEvent(input$restaurar, { restaurar_campos(); updateSelectInput(session, "estilo", selected = ""); showNotification(T("Tudo voltou ao padrão do template.")) })
   observeEvent(input$estilo, {
     if (!nzchar(input$estilo)) return()
     restaurar_campos()
     p <- PRESETS[[input$estilo]]
     for (id in names(p)) if (!is.null(ESPEC_CAMPOS[[id]])) atualizar_campo(session, ESPEC_CAMPOS[[id]], p[[id]], CFG0)
   }, ignoreInit = TRUE)
-  observeEvent(input$guia, showModal(guia_rapido()))
-  observeEvent(TRUE, { if (!isTRUE(getOption("gerador_sem_guia"))) showModal(guia_rapido()) }, once = TRUE)
+  observeEvent(input$guia, showModal(UI(guia_rapido())))
+  observeEvent(input$idioma_pagina, { if (!isTRUE(getOption("gerador_sem_guia"))) showModal(UI(guia_rapido())) }, once = TRUE)
 }

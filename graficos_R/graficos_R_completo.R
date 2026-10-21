@@ -1,7 +1,7 @@
 # =============================================================================
 #  graficos_R_completo.R  —  TEMPLATE DE GRÁFICOS CIENTÍFICOS EM R (ARQUIVO ÚNICO)
 # =============================================================================
-#  Alternativa ao Origin: pontos, linhas, áreas, barras, pizza, histograma, densidade,
+#  Cinabro: pontos, linhas, áreas, barras, pizza, histograma, densidade,
 #  ECDF e boxplot, com controle fino de eixos, ticks, moldura, cores, gradientes,
 #  legenda, painéis empilhados, quebra de eixo, eixo de datas e exportação
 #  (PNG, TIFF, JPEG, PDF, SVG, EMF). Tudo em um único arquivo.
@@ -127,7 +127,7 @@ instalar_pacotes <- function() {
 #                  ajuda("eixo_x")    -> mostra todos os parâmetros do bloco
 #                  galeria()          -> PDF visual com símbolos, linhas, paletas
 #   - Unidades: espessuras, tamanhos de texto, símbolos e ticks em PONTOS (pt),
-#     como no Origin (1 pt = 1/72 polegada). Tamanho da figura em cm.
+#     (1 pt = 1/72 polegada). Tamanho da figura em cm.
 #   - Números: ponto decimal SEMPRE (1.5). Nunca vírgula.
 #   - NULL significa "automático".
 # =============================================================================
@@ -216,20 +216,27 @@ cfg$grafico <- list(
 cfg$cores <- list(
   # paleta: cores atribuídas automaticamente às séries, em sequência
   #   (como o "incremento" de cor). Veja todas com mostrar_paletas().
-  #   OPÇÕES (todas aparecem em mostrar_paletas()):
-  #     Estilo Origin ........ "classico" | "origin_basico" | "origin_vivo" | "origin_escuro" | "origin_pastel" |
-  #                            "origin_suave" | "origin_pares" | "origin_doce"
-  #     Marca ................ "marca"
-  #     Acessíveis ........... "okabe_ito" | "tol_brilhante" | "tol_vibrante" | "tol_suave" | "tol_contraste"
-  #     Revistas ............. "tableau" | "d3" | "npg" | "lancet" | "jco" | "nejm"
-  #     Degradês de uma cor .. "seq_azul" | "seq_verde" | "seq_laranja" | "seq_vermelho" | "seq_roxo" |
-  #                            "seq_azul_verde" | "seq_calor" | "seq_frio"
-  #     Divergentes .......... "div_vermelho_azul" | "div_espectro" | "div_marrom_verde" | "arco_iris"
-  #     Contínuas ............ "viridis" | "magma" | "plasma" | "cividis" | "inferno" | "turbo" | "cinza"
-  #     ColorBrewer .......... "brewer_<nome>" (ex.: "brewer_Set1", "brewer_Spectral"; precisa do pacote RColorBrewer)
+  #   OPÇÕES (todas aparecem, desenhadas, em mostrar_paletas()):
+  #     Do Cinabro ........... "cinabro" (padrão) | "marca" (azul e verde)
+  #     Acessíveis ........... "okabe_ito" | "tol_brilhante" | "tol_vibrante" | "tol_suave" | "tol_alto_contraste" |
+  #                            "tol_medio_contraste" | "tol_claro" | "tol_escuro" | "tol_palido"
+  #     Qualitativas (Brewer)  "brewer_Set1" | "brewer_Set2" | "brewer_Dark2" | "brewer_Paired" | "brewer_Accent" |
+  #                            "brewer_Pastel1" | "brewer_Pastel2" | "brewer_Set3"
+  #     Degradês (Brewer) .... "brewer_Blues" | "brewer_Greens" | "brewer_Oranges" | "brewer_Reds" | "brewer_Purples" |
+  #                            "brewer_YlGnBu" | "brewer_YlOrRd"
+  #     Divergentes (Brewer) . "brewer_RdYlGn" (vermelho-escuro -> verde) | "brewer_Spectral" | "brewer_RdYlBu" |
+  #                            "brewer_RdBu" | "brewer_BrBG" | "brewer_PiYG" | "brewer_PRGn"
+  #     Contínuas ............ "viridis" | "magma" | "plasma" | "cividis" | "inferno" | "turbo" | "mako" | "rocket"
+  #                            (pacote viridisLite) | "cmo_thermal" | "cmo_haline" | "cmo_algae" | "cmo_matter" |
+  #                            "cmo_deep" | "cmo_balance" | "cmo_delta" | "cmo_curl" | "crameri_batlow" | "crameri_roma" |
+  #                            "crameri_bam" | "crameri_vik" | "crameri_lajolla" | "crameri_bilbao" | "crameri_oslo" |
+  #                            "crameri_lapaz" | "crameri_hawaii" | "crameri_tokyo" | "crameri_berlin" |
+  #                            "tol_por_do_sol" | "tol_iridescente" | "tol_BuRd" | "cinza"
+  #     Outras do ColorBrewer  "brewer_<nome>" (precisa do pacote RColorBrewer)
   #     Sua própria .......... "personalizada" (cores em cfg$cores$personalizada)
+  #   As cores vêm de trabalhos com licença livre; os créditos estão em NOTICE.md.
   #   EX.: cfg$cores$paleta <- "okabe_ito"
-  paleta = "classico",
+  paleta = "cinabro",
 
   # personalizada: suas cores, usadas quando paleta = "personalizada".
   #   OPÇÕES: vetor de cores (nome, "#RRGGBB", "#RRGGBBAA" ou rgb(…))
@@ -307,7 +314,7 @@ cfg$serie_padrao <- list(
   #   EX.: cfg$serie_padrao$simbolo <- 22
   simbolo = 21,
   # (aceita também o nome: "circulo", "quadrado", "losango", "triangulo", "triangulo_invertido", "estrela", "esfera"...
-  #  "esfera" = bolinha com volume (sombreado e brilho), no estilo do Origin; use com preenchimento "serie".)
+  #  "esfera" = bolinha com volume (sombreado e brilho), com sombreado e brilho; use com preenchimento "serie".)
 
   # tamanho_simbolo_pt: tamanho do símbolo em pt.
   #   OPÇÕES: número > 0      EX.: cfg$serie_padrao$tamanho_simbolo_pt <- 8
@@ -379,7 +386,7 @@ cfg$linhas <- list(
   ligacao = "reta",
 
   # ordenar_x: ordena os pontos de cada série por X antes de ligá-los. Com FALSE (padrão,
-  #   como no Origin) a linha segue a ORDEM DAS LINHAS DO CSV, o que permite curvas que
+  #   como padrão) a linha segue a ORDEM DAS LINHAS DO CSV, o que permite curvas que
   #   voltam (laços, histerese, trajetórias). Use TRUE se o CSV está fora de ordem e você
   #   quer a linha sempre da esquerda para a direita.
   #   OPÇÕES: TRUE | FALSE
@@ -1070,7 +1077,7 @@ cfg$caixa <- list(
   #   OPÇÕES: NULL | número (1 = quadrado; 0.75 = 4:3)
   proporcao = NULL,
 
-  # painel_fixo: a caixa do gráfico (a área dentro dos eixos) tem SEMPRE o mesmo tamanho, como o layer do Origin:
+  # painel_fixo: a caixa do gráfico (a área dentro dos eixos) tem SEMPRE o mesmo tamanho, como uma área de plotagem de tamanho fixo:
   #   mexer em números, títulos, distâncias ou legenda move esses textos, não o gráfico, e a página do arquivo se
   #   ajusta para caber tudo (veja exportacao$ajustar_pagina). Vale para linha, pontos, barras, boxplot, histograma...
   #   (não para pizza nem painéis empilhados). FALSE = a caixa ocupa o que sobra da página (largura x altura).
@@ -1321,7 +1328,7 @@ cfg$quebra <- list(
 
   # estilo: como as duas partes aparecem.
   #   "separado" (padrão): dois gráficos, cada um com a sua moldura, com um espaço entre eles.
-  #   "continuo": estilo Origin: as partes coladas dentro de UMA moldura só, com duas barras "//"
+  #   "continuo": estilo contínuo: as partes coladas dentro de UMA moldura só, com duas barras "//"
   #               nas bordas esquerda e direita no ponto da quebra (espaco_pt não é usado).
   #   OPÇÕES: "separado" | "continuo"      EX.: cfg$quebra$estilo <- "continuo"
   estilo = "separado",
@@ -1514,7 +1521,7 @@ cfg$exportacao <- list(
   # Carregue com: cfg <- carregar_estilo("apresentacao", cfg)
   list(
     texto = list(fonte = "sans", tamanho_base_pt = 16),
-    cores = list(paleta = "tableau", incrementar_simbolo = FALSE),
+    cores = list(paleta = "okabe_ito", incrementar_simbolo = FALSE),
     serie_padrao = list(simbolo = 21, tamanho_simbolo_pt = 9, espessura_borda_pt = 1.2,
                         linha_espessura_pt = 3, preenchimento_simbolo = "serie"),
     caixa = list(fechada = FALSE, ticks_espelhados = FALSE, margens_cm = c(0.5, 0.8, 0.5, 0.5)),
@@ -1534,7 +1541,7 @@ cfg$exportacao <- list(
   # Carregue com: cfg <- carregar_estilo("padrao_cientifico", cfg)
   list(
     texto = list(fonte = "Arial", tamanho_base_pt = 12),
-    cores = list(paleta = "classico", incrementar_simbolo = TRUE),
+    cores = list(paleta = "cinabro", incrementar_simbolo = TRUE),
     serie_padrao = list(tamanho_simbolo_pt = 7, espessura_borda_pt = 1, linha_espessura_pt = 1.5),
     caixa = list(fechada = TRUE, espessura_pt = 1.5, ticks_espelhados = TRUE, rotulos_espelhados = FALSE),
     eixo_x = list(direcao_maiores = "dentro", direcao_menores = "dentro", comprimento_maiores_pt = 6,
@@ -1630,8 +1637,99 @@ suppressPackageStartupMessages({
 }
 
 # Emite um aviso (warning) em português, sem mostrar a chamada interna.
-.aviso <- function(...) warning(paste0(...), call. = FALSE, immediate. = TRUE)
-.erro  <- function(...) stop(paste0(...), call. = FALSE)
+# Idioma das mensagens e dos textos que o motor escreve sozinho: options(cinabro.idioma = "pt" | "en" | "es")
+# (no painel: idioma <- "en"). As mensagens são escritas em português e traduzidas pelo dicionário de R/02_traducoes_motor.R.
+.idioma <- function() { i <- getOption("cinabro.idioma", "pt"); if (i %in% c("pt", "en", "es")) i else "pt" }
+.traduzir_msg <- function(msg) {
+  i <- .idioma()
+  if (i == "pt" || !exists(".TRAD_MOTOR", inherits = TRUE)) return(msg)
+  d <- .TRAD_MOTOR[[i]]; if (is.null(d) || !length(d)) return(msg)
+  chaves <- names(d)[order(-nchar(names(d)))]                       # as mais longas primeiro; uma passada só (não retraduz o que já traduziu)
+  pad <- paste(gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", chaves), collapse = "|")
+  m <- gregexpr(pad, msg, perl = TRUE)
+  if (m[[1]][1] != -1) regmatches(msg, m) <- list(unname(d[regmatches(msg, m)[[1]]]))
+  msg
+}
+# Texto padrão que aparece dentro do gráfico (títulos de eixo automáticos), no idioma escolhido.
+.rot <- function(x) {
+  i <- .idioma(); if (i == "pt" || !exists(".ROTULOS_IDIOMA", inherits = TRUE)) return(x)
+  r <- .ROTULOS_IDIOMA[[i]][x]; ifelse(is.na(r), x, r)
+}
+.aviso <- function(...) warning(.traduzir_msg(paste0(...)), call. = FALSE, immediate. = TRUE)
+.erro  <- function(...) stop(.traduzir_msg(paste0(...)), call. = FALSE)
+
+# -----------------------------------------------------------------------------
+#  02_paletas_dados.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/02_paletas_dados.R — cores das paletas prontas (dados) e as licenças de cada fonte
+# =============================================================================
+#  Estas listas de cores vêm de trabalhos publicados com licença livre (veja também o arquivo NOTICE.md, na pasta
+#  do projeto, que traz os avisos de cada licença):
+#    brewer_*     ColorBrewer — Cynthia A. Brewer, Mark Harrower e The Pennsylvania State University (licença estilo Apache,
+#                 http://colorbrewer.org). Mantenha o aviso de autoria ao redistribuir.
+#    tol_*        Paul Tol, "Colour Schemes", SRON (https://personal.sron.nl/~pault/), licença BSD de 3 cláusulas.
+#    cmo_*        cmocean — Kristen M. Thyng et al., 2016 (licença MIT).
+#    crameri_*    Scientific Colour Maps — Fabio Crameri (licença MIT; https://doi.org/10.5281/zenodo.1243862).
+#    Okabe-Ito    Masataka Okabe e Kei Ito, "Color Universal Design" (2002/2008): paleta publicada para daltonismo.
+#    viridis etc. (viridis, magma, plasma, cividis, inferno, turbo, mako, rocket) vêm do pacote viridisLite (MIT/CC0), quando instalado.
+#  As cores de degradê (brewer sequenciais/divergentes, tol_por_do_sol..., cmo_*, crameri_*) são os pontos de apoio da
+#  paleta original: o motor interpola entre eles para dar quantas cores forem pedidas.
+# =============================================================================
+.PALETAS_DADOS <- list(
+  brewer_Set1 = c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999"),
+  brewer_Set2 = c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3"),
+  brewer_Dark2 = c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D", "#666666"),
+  brewer_Paired = c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C", "#FDBF6F", "#FF7F00", "#CAB2D6", "#6A3D9A", "#FFFF99", "#B15928"),
+  brewer_Accent = c("#7FC97F", "#BEAED4", "#FDC086", "#FFFF99", "#386CB0", "#F0027F", "#BF5B17", "#666666"),
+  brewer_Pastel1 = c("#FBB4AE", "#B3CDE3", "#CCEBC5", "#DECBE4", "#FED9A6", "#FFFFCC", "#E5D8BD", "#FDDAEC", "#F2F2F2"),
+  brewer_Pastel2 = c("#B3E2CD", "#FDCDAC", "#CBD5E8", "#F4CAE4", "#E6F5C9", "#FFF2AE", "#F1E2CC", "#CCCCCC"),
+  brewer_Set3 = c("#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#FDB462", "#B3DE69", "#FCCDE5", "#D9D9D9", "#BC80BD", "#CCEBC5", "#FFED6F"),
+  brewer_Blues = c("#F7FBFF", "#DEEBF7", "#C6DBEF", "#9ECAE1", "#6BAED6", "#4292C6", "#2171B5", "#08519C", "#08306B"),
+  brewer_Greens = c("#F7FCF5", "#E5F5E0", "#C7E9C0", "#A1D99B", "#74C476", "#41AB5D", "#238B45", "#006D2C", "#00441B"),
+  brewer_Oranges = c("#FFF5EB", "#FEE6CE", "#FDD0A2", "#FDAE6B", "#FD8D3C", "#F16913", "#D94801", "#A63603", "#7F2704"),
+  brewer_Reds = c("#FFF5F0", "#FEE0D2", "#FCBBA1", "#FC9272", "#FB6A4A", "#EF3B2C", "#CB181D", "#A50F15", "#67000D"),
+  brewer_Purples = c("#FCFBFD", "#EFEDF5", "#DADAEB", "#BCBDDC", "#9E9AC8", "#807DBA", "#6A51A3", "#54278F", "#3F007D"),
+  brewer_YlGnBu = c("#FFFFD9", "#EDF8B1", "#C7E9B4", "#7FCDBB", "#41B6C4", "#1D91C0", "#225EA8", "#253494", "#081D58"),
+  brewer_YlOrRd = c("#FFFFCC", "#FFEDA0", "#FED976", "#FEB24C", "#FD8D3C", "#FC4E2A", "#E31A1C", "#BD0026", "#800026"),
+  brewer_RdYlGn = c("#A50026", "#D73027", "#F46D43", "#FDAE61", "#FEE08B", "#FFFFBF", "#D9EF8B", "#A6D96A", "#66BD63", "#1A9850", "#006837"),
+  brewer_Spectral = c("#9E0142", "#D53E4F", "#F46D43", "#FDAE61", "#FEE08B", "#FFFFBF", "#E6F598", "#ABDDA4", "#66C2A5", "#3288BD", "#5E4FA2"),
+  brewer_RdYlBu = c("#A50026", "#D73027", "#F46D43", "#FDAE61", "#FEE090", "#FFFFBF", "#E0F3F8", "#ABD9E9", "#74ADD1", "#4575B4", "#313695"),
+  brewer_RdBu = c("#67001F", "#B2182B", "#D6604D", "#F4A582", "#FDDBC7", "#F7F7F7", "#D1E5F0", "#92C5DE", "#4393C3", "#2166AC", "#053061"),
+  brewer_BrBG = c("#543005", "#8C510A", "#BF812D", "#DFC27D", "#F6E8C3", "#F5F5F5", "#C7EAE5", "#80CDC1", "#35978F", "#01665E", "#003C30"),
+  brewer_PiYG = c("#8E0152", "#C51B7D", "#DE77AE", "#F1B6DA", "#FDE0EF", "#F7F7F7", "#E6F5D0", "#B8E186", "#7FBC41", "#4D9221", "#276419"),
+  brewer_PRGn = c("#40004B", "#762A83", "#9970AB", "#C2A5CF", "#E7D4E8", "#F7F7F7", "#D9F0D3", "#A6DBA0", "#5AAE61", "#1B7837", "#00441B"),
+  tol_brilhante = c("#4477AA", "#EE6677", "#228833", "#CCBB44", "#66CCEE", "#AA3377", "#BBBBBB"),
+  tol_alto_contraste = c("#004488", "#BB5566", "#DDAA33"),
+  tol_vibrante = c("#EE7733", "#0077BB", "#33BBEE", "#EE3377", "#CC3311", "#009988", "#BBBBBB"),
+  tol_suave = c("#CC6677", "#332288", "#DDCC77", "#117733", "#88CCEE", "#882255", "#44AA99", "#999933", "#AA4499"),
+  tol_medio_contraste = c("#6699CC", "#004488", "#EECC66", "#997700", "#EE99AA", "#994455"),
+  tol_claro = c("#77AADD", "#EE8866", "#EEDD88", "#FFAABB", "#99DDFF", "#44BB99", "#BBCC33", "#AAAA00", "#DDDDDD"),
+  tol_escuro = c("#222255", "#663333", "#225522", "#666633", "#225555", "#555555"),
+  tol_palido = c("#BBCCEE", "#FFCCCC", "#CCDDAA", "#EEEEBB", "#CCEEFF", "#DDDDDD"),
+  tol_por_do_sol = c("#364B9A", "#5386BD", "#83B8D7", "#B8DEEC", "#EAECCB", "#FECF81", "#F99758", "#E24B33", "#A50026"),
+  tol_iridescente = c("#FEFBE9", "#EDF1B8", "#C9E5CE", "#A4D6DD", "#81C4E7", "#86A8DE", "#9C83BA", "#8B5F80", "#46353A"),
+  tol_BuRd = c("#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F6", "#FDDAC6", "#F3A381", "#D55E4C", "#B2182B"),
+  cmo_thermal = c("#042333", "#19337C", "#563B9C", "#83508F", "#B15F82", "#DF7064", "#F99341", "#F9C641", "#E8FA5B"),
+  cmo_haline = c("#2A186C", "#2034A2", "#0F5B90", "#297789", "#3C9387", "#50B07E", "#7ACB67", "#C4DD65", "#FDEF9A"),
+  cmo_algae = c("#D7F9D0", "#AFDDA2", "#84C47A", "#50AD59", "#129450", "#0D7748", "#185B3B", "#193F29", "#122414"),
+  cmo_matter = c("#FEEDB0", "#F9C187", "#F29567", "#E66A54", "#CE4356", "#AB2960", "#821C63", "#571756", "#2F0F3E"),
+  cmo_deep = c("#FDFECC", "#BBE6AC", "#78CEA3", "#55AEA3", "#488E9E", "#3F6E97", "#404C8B", "#3B315A", "#281A2C"),
+  cmo_balance = c("#181C43", "#2548B0", "#3888BA", "#98BAC5", "#F1ECEB", "#D7A290", "#BF573A", "#8D1029", "#3C0912"),
+  cmo_delta = c("#112040", "#1C529D", "#3391A9", "#97C5BE", "#FFFCCC", "#C8BA43", "#5E910D", "#0B5E2D", "#172313"),
+  cmo_curl = c("#151D44", "#1B5968", "#2D9580", "#A3C2A3", "#FDF5F4", "#E2A68E", "#C35861", "#841F60", "#340D35"),
+  crameri_batlow = c("#011959", "#114360", "#226061", "#4D734D", "#828231", "#C09036", "#F29D6D", "#FDB4B6", "#FACCFA"),
+  crameri_roma = c("#7E1700", "#9D5818", "#B68C32", "#D0CA72", "#C0EAC3", "#76D1D7", "#389CC6", "#2269B0", "#033198"),
+  crameri_bam = c("#65024B", "#A5438C", "#D17FBC", "#ECC6E2", "#F6F1F0", "#D6E7BF", "#8AB363", "#4B7F2E", "#0D4C00"),
+  crameri_vik = c("#001261", "#034481", "#307DA6", "#94BED2", "#ECE5E0", "#DBAA8D", "#C27041", "#912D06", "#590008"),
+  crameri_lajolla = c("#191900", "#372411", "#67342A", "#A64644", "#D9604E", "#E58851", "#EDAE54", "#F7DA74", "#FFFECB"),
+  crameri_bilbao = c("#4C0001", "#78292F", "#994E51", "#A36B59", "#A9825E", "#B19C67", "#BFB999", "#CFCEC9", "#FFFFFF"),
+  crameri_oslo = c("#010101", "#0E1E2E", "#15395B", "#26578C", "#507BBC", "#7D99CA", "#A3B1CA", "#CFD2D8", "#FFFFFF"),
+  crameri_lapaz = c("#1A0C64", "#24327E", "#2D5393", "#3D71A0", "#5C8CA3", "#869E9B", "#B5AD96", "#EBCFBB", "#FEF2F3"),
+  crameri_hawaii = c("#8C0273", "#922E55", "#974E3E", "#9B6F28", "#9C961C", "#89BD4A", "#6BD48E", "#67E9D5", "#B3F2FD"),
+  crameri_tokyo = c("#1C0E34", "#512446", "#6C4750", "#715D52", "#747053", "#798D57", "#87B867", "#BAEAA4", "#EFFCDD"),
+  crameri_berlin = c("#9EB0FF", "#519FD3", "#286886", "#14303E", "#190C09", "#411201", "#7D341E", "#BE6F63", "#FFADAD")
+)
 
 # -----------------------------------------------------------------------------
 #  02_cores_texto.R
@@ -1666,103 +1764,92 @@ suppressPackageStartupMessages({
 }
 
 # Paletas prontas. Cada uma tem um nome curto (o que se escreve em cfg$cores$paleta) e um rótulo para a tela.
-# "Estilo Origin": a sequência de cores básicas do Origin e conjuntos parecidos; as demais são paletas conhecidas
-# de publicações científicas e de visualização (ColorBrewer, Paul Tol, ggsci, Tableau, D3).
-.PALETAS <- list(
-  # ---- estilo Origin
-  classico  = c("#000000", "#D62728", "#1F4E9E", "#2CA02C", "#8E44AD", "#FF7F0E",
-                "#17BECF", "#8C564B", "#E377C2", "#7F7F7F"),
-  origin_basico = c("#000000", "#FF0000", "#0000FF", "#008000", "#FF00FF", "#008080", "#000080", "#800000",
-                    "#800080", "#808000", "#FF8000", "#0080FF", "#8000FF", "#FF0080"),
-  origin_vivo   = c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3", "#FF7F00", "#FFD700", "#A65628", "#F781BF", "#999999"),
-  origin_escuro = c("#1B9E77", "#D95F02", "#7570B3", "#E7298A", "#66A61E", "#E6AB02", "#A6761D", "#666666"),
-  origin_pastel = c("#FBB4AE", "#B3CDE3", "#CCEBC5", "#DECBE4", "#FED9A6", "#FFFFCC", "#E5D8BD", "#FDDAEC", "#CCCCCC"),
-  origin_suave  = c("#66C2A5", "#FC8D62", "#8DA0CB", "#E78AC3", "#A6D854", "#FFD92F", "#E5C494", "#B3B3B3"),
-  origin_pares  = c("#A6CEE3", "#1F78B4", "#B2DF8A", "#33A02C", "#FB9A99", "#E31A1C", "#FDBF6F", "#FF7F00",
-                    "#CAB2D6", "#6A3D9A", "#FFFF99", "#B15928"),
-  origin_doce   = c("#8DD3C7", "#FFFFB3", "#BEBADA", "#FB8072", "#80B1D3", "#FDB462", "#B3DE69", "#FCCDE5",
-                    "#D9D9D9", "#BC80BD", "#CCEBC5", "#FFED6F"),
-  # ---- marca
+# As do Cinabro são originais (cinabro, marca); okabe_ito é uma paleta publicada para daltonismo; as demais vêm de
+# trabalhos com licença livre (cores em R/02_paletas_dados.R, avisos em NOTICE.md).
+.PALETAS_PROPRIAS <- list(
+  # a paleta padrão do Cinabro: preto, vermelho-cinábrio, azul-marinho, azul-céu, ardósia, ocre, violeta, siena, verde, verde-petróleo.
+  # A ordem foi escolhida para que as primeiras cores sejam bem diferentes entre si, também para quem tem daltonismo.
+  cinabro   = c("#000000", "#E34234", "#1B3A8C", "#2FA7D6", "#6B7B8C", "#E0A526", "#7B4FA3", "#8A4B2A", "#0E9F4B", "#0B6E78"),
   marca     = c("#1B3A8C", "#0E9F4B", "#0B6E78", "#8CC63F", "#0F4C81", "#2FB5A0", "#5B7DB1", "#6BBF59"),
-  # ---- acessíveis (daltonismo)
-  okabe_ito = c("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9",
-                "#000000", "#F0E442"),
-  tol_brilhante = c("#4477AA", "#EE6677", "#228833", "#CCBB44", "#66CCEE", "#AA3377", "#BBBBBB"),
-  tol_vibrante  = c("#EE7733", "#0077BB", "#33BBEE", "#EE3377", "#CC3311", "#009988", "#BBBBBB"),
-  tol_suave     = c("#CC6677", "#332288", "#DDCC77", "#117733", "#88CCEE", "#882255", "#44AA99", "#999933", "#AA4499"),
-  tol_contraste = c("#004488", "#DDAA33", "#BB5566", "#000000"),
-  # ---- publicações e software
-  tableau   = c("#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F", "#EDC948",
-                "#B07AA1", "#FF9DA7", "#9C755F", "#BAB0AC"),
-  d3        = c("#1F77B4", "#FF7F0E", "#2CA02C", "#D62728", "#9467BD", "#8C564B", "#E377C2", "#7F7F7F", "#BCBD22", "#17BECF"),
-  npg       = c("#E64B35", "#4DBBD5", "#00A087", "#3C5488", "#F39B7F", "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85"),
-  lancet    = c("#00468B", "#ED0000", "#42B540", "#0099B4", "#925E9F", "#FDAF91", "#AD002A", "#ADB6B6", "#1B1919"),
-  jco       = c("#0073C2", "#EFC000", "#868686", "#CD534C", "#7AA6DC", "#003C67", "#8F7700", "#3B3B3B", "#A73030", "#4A6990"),
-  nejm      = c("#BC3C29", "#0072B5", "#E18727", "#20854E", "#7876B1", "#6F99AD", "#FFDC91", "#EE4C97"),
-  # ---- degradês de uma cor (sequenciais): as séries percorrem do claro ao escuro
-  seq_azul     = c("#C6DBEF", "#6BAED6", "#2171B5", "#08306B"),
-  seq_verde    = c("#C7E9C0", "#74C476", "#238B45", "#00441B"),
-  seq_laranja  = c("#FDD0A2", "#FD8D3C", "#D94801", "#7F2704"),
-  seq_vermelho = c("#FCBBA1", "#FB6A4A", "#CB181D", "#67000D"),
-  seq_roxo     = c("#DADAEB", "#9E9AC8", "#6A51A3", "#3F007D"),
-  seq_azul_verde = c("#FFFFCC", "#A1DAB4", "#41B6C4", "#2C7FB8", "#253494"),
-  seq_calor    = c("#FFFFB2", "#FECC5C", "#FD8D3C", "#F03B20", "#BD0026"),
-  seq_frio     = c("#E0F7FA", "#80DEEA", "#26C6DA", "#00838F", "#004D40"),
-  # ---- divergentes e arco-íris
-  div_vermelho_azul = c("#B2182B", "#EF8A62", "#F7F7F7", "#67A9CF", "#2166AC"),
-  div_espectro      = c("#D7191C", "#FDAE61", "#FFFFBF", "#ABDDA4", "#2B83BA"),
-  div_marrom_verde  = c("#8C510A", "#D8B365", "#F5F5F5", "#5AB4AC", "#01665E"),
-  arco_iris         = c("#9400D3", "#4B0082", "#0000FF", "#00AA00", "#FFD700", "#FF7F00", "#FF0000")
+  okabe_ito = c("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#000000", "#F0E442")
 )
+.PALETAS <- c(.PALETAS_PROPRIAS, .PALETAS_DADOS)
 # As que percorrem um degradê (a n-ésima cor é interpolada ao longo da paleta inteira, não a n-ésima da lista).
-.PALETAS_RAMPA <- c("seq_azul", "seq_verde", "seq_laranja", "seq_vermelho", "seq_roxo", "seq_azul_verde", "seq_calor",
-                    "seq_frio", "div_vermelho_azul", "div_espectro", "div_marrom_verde", "arco_iris")
+.PALETAS_RAMPA <- c(grep("^brewer_(Blues|Greens|Oranges|Reds|Purples|YlGnBu|YlOrRd|RdYlGn|Spectral|RdYlBu|RdBu|BrBG|PiYG|PRGn)$", names(.PALETAS), value = TRUE),
+                    "tol_por_do_sol", "tol_iridescente", "tol_BuRd", grep("^(cmo|crameri)_", names(.PALETAS), value = TRUE))
+.PALETAS_VIRIDIS <- c("viridis", "magma", "plasma", "cividis", "inferno", "turbo", "mako", "rocket")   # do pacote viridisLite
 
-# Para a tela e para mostrar_paletas(): grupo -> c(nome = "rótulo").
+# Para a tela e para mostrar_paletas(): grupo -> c(rótulo = nome).
 .PALETAS_GRUPOS <- list(
-  "Estilo Origin" = c("Clássica (preto, vermelho, azul...)" = "classico", "Origin: cores básicas" = "origin_basico",
-                      "Origin: vivas" = "origin_vivo", "Origin: escuras" = "origin_escuro", "Origin: pastel" = "origin_pastel",
-                      "Origin: suaves" = "origin_suave", "Origin: em pares" = "origin_pares", "Origin: doces" = "origin_doce"),
-  "Marca" = c("Marca (azul e verde)" = "marca"),
-  "Acessíveis (daltonismo)" = c("Okabe-Ito" = "okabe_ito", "Paul Tol: brilhante" = "tol_brilhante", "Paul Tol: vibrante" = "tol_vibrante",
-                                "Paul Tol: suave" = "tol_suave", "Paul Tol: alto contraste" = "tol_contraste"),
-  "Revistas e programas" = c("Tableau" = "tableau", "D3 (Category10)" = "d3", "Nature (NPG)" = "npg", "The Lancet" = "lancet",
-                             "J. Clinical Oncology (JCO)" = "jco", "NEJM" = "nejm"),
-  "Degradês de uma cor" = c("Azul" = "seq_azul", "Verde" = "seq_verde", "Laranja" = "seq_laranja", "Vermelho" = "seq_vermelho",
-                            "Roxo" = "seq_roxo", "Amarelo → azul" = "seq_azul_verde", "Calor" = "seq_calor", "Frio" = "seq_frio"),
-  "Divergentes e arco-íris" = c("Vermelho ↔ azul" = "div_vermelho_azul", "Espectro" = "div_espectro",
-                                "Marrom ↔ verde" = "div_marrom_verde", "Arco-íris" = "arco_iris"),
+  "Do Cinabro" = c("Cinabro (padrão)" = "cinabro", "Marca (azul e verde)" = "marca"),
+  "Acessíveis (daltonismo)" = c("Okabe-Ito" = "okabe_ito", "Tol: brilhante" = "tol_brilhante", "Tol: vibrante" = "tol_vibrante",
+                                "Tol: suave" = "tol_suave", "Tol: alto contraste" = "tol_alto_contraste",
+                                "Tol: contraste médio" = "tol_medio_contraste", "Tol: claro" = "tol_claro",
+                                "Tol: escuro" = "tol_escuro", "Tol: pálido" = "tol_palido"),
+  "Qualitativas (Brewer)" = c("Vivas (Set1)" = "brewer_Set1", "Suaves (Set2)" = "brewer_Set2", "Escuras (Dark2)" = "brewer_Dark2",
+                              "Em pares (Paired)" = "brewer_Paired", "Destaque (Accent)" = "brewer_Accent",
+                              "Pastel 1" = "brewer_Pastel1", "Pastel 2" = "brewer_Pastel2", "Doces (Set3)" = "brewer_Set3"),
+  "Degradês de uma cor (Brewer)" = c("Azuis" = "brewer_Blues", "Verdes" = "brewer_Greens", "Laranjas" = "brewer_Oranges",
+                                     "Vermelhos" = "brewer_Reds", "Roxos" = "brewer_Purples", "Amarelo → azul" = "brewer_YlGnBu",
+                                     "Amarelo → vermelho" = "brewer_YlOrRd"),
+  "Divergentes (Brewer)" = c("Vermelho-escuro → verde" = "brewer_RdYlGn", "Espectro (vermelho → violeta)" = "brewer_Spectral",
+                             "Vermelho → azul, com amarelo" = "brewer_RdYlBu", "Vermelho ↔ azul" = "brewer_RdBu",
+                             "Marrom ↔ verde-azulado" = "brewer_BrBG", "Rosa ↔ verde" = "brewer_PiYG", "Roxo ↔ verde" = "brewer_PRGn"),
   "Contínuas (viridis)" = c("Viridis" = "viridis", "Magma" = "magma", "Plasma" = "plasma", "Cividis" = "cividis",
-                            "Inferno" = "inferno", "Turbo" = "turbo"),
+                            "Inferno" = "inferno", "Turbo" = "turbo", "Mako" = "mako", "Rocket" = "rocket"),
+  "Contínuas (cmocean)" = c("Térmica" = "cmo_thermal", "Salinidade" = "cmo_haline", "Algas" = "cmo_algae", "Matéria" = "cmo_matter",
+                            "Profundidade" = "cmo_deep", "Balanço" = "cmo_balance", "Delta" = "cmo_delta", "Curl" = "cmo_curl"),
+  "Contínuas (Crameri)" = c("Batlow" = "crameri_batlow", "Roma (vermelho-marrom → azul)" = "crameri_roma",
+                            "Bam (magenta → verde)" = "crameri_bam", "Vik" = "crameri_vik", "Lajolla" = "crameri_lajolla",
+                            "Bilbao" = "crameri_bilbao", "Oslo" = "crameri_oslo", "La Paz" = "crameri_lapaz",
+                            "Havaí" = "crameri_hawaii", "Tóquio" = "crameri_tokyo", "Berlim" = "crameri_berlin"),
+  "Contínuas (Tol)" = c("Pôr do sol" = "tol_por_do_sol", "Iridescente" = "tol_iridescente", "Azul ↔ vermelho" = "tol_BuRd"),
   "Cinza" = c("Tons de cinza" = "cinza")
 )
+
+# Nomes de paletas que existiram antes e foram retiradas (paletas ligadas a programas, revistas ou marcas): quem ainda os usa recebe
+# uma paleta livre parecida e um aviso, em vez de um erro.
+.PALETAS_ANTIGAS <- c(classico = "cinabro", tableau = "okabe_ito", d3 = "okabe_ito", npg = "okabe_ito", lancet = "okabe_ito", jco = "okabe_ito",
+                      nejm = "okabe_ito", origin_basico = "okabe_ito", origin_vivo = "brewer_Set1", origin_escuro = "brewer_Dark2",
+                      origin_pastel = "brewer_Pastel1", origin_suave = "brewer_Set2", origin_pares = "brewer_Paired", origin_doce = "brewer_Set3",
+                      seq_azul = "brewer_Blues", seq_verde = "brewer_Greens", seq_laranja = "brewer_Oranges", seq_vermelho = "brewer_Reds",
+                      seq_roxo = "brewer_Purples", seq_azul_verde = "brewer_YlGnBu", seq_calor = "brewer_YlOrRd", seq_frio = "brewer_Blues",
+                      div_vermelho_azul = "brewer_RdBu", div_espectro = "brewer_Spectral", div_marrom_verde = "brewer_BrBG",
+                      arco_iris = "brewer_Spectral", tol_contraste = "tol_alto_contraste")
 
 # Entra: nome da paleta e n. Sai: vetor com n cores (interpola se a paleta for menor que n).
 .paleta <- function(nome, n, cfg_cores = NULL) {
   n <- max(n, 1)
+  if (nome %in% names(.PALETAS_ANTIGAS)) {                    # nome antigo: usa a paleta livre equivalente
+    novo <- .PALETAS_ANTIGAS[[nome]]
+    if (nome != "classico") .aviso("A paleta '", nome, "' foi retirada do Cinabro (só ficam paletas de licença livre); usei '", novo, "'. Veja mostrar_paletas().")
+    nome <- novo
+  }
   base <- if (nome %in% names(.PALETAS)) {
     b <- .PALETAS[[nome]]
     if (nome %in% .PALETAS_RAMPA) return(if (n == 1) b[length(b) - 1] else grDevices::colorRampPalette(b)(n))
     b
-  } else if (nome %in% c("viridis", "magma", "plasma", "cividis", "inferno", "turbo")) {
+  } else if (nome %in% .PALETAS_VIRIDIS) {
     if (!.tem("viridisLite")) .erro("Paleta '", nome, "' precisa do pacote viridisLite.")
     fun <- getExportedValue("viridisLite", nome)
     return(fun(n, end = if (nome %in% c("viridis", "cividis")) 0.92 else 0.88))
   } else if (nome == "cinza") {
     return(grDevices::grey.colors(n, start = 0, end = 0.75))
-  } else if (startsWith(nome, "brewer_")) {
+  } else if (startsWith(nome, "brewer_")) {                    # as demais do ColorBrewer, pelo pacote RColorBrewer
     if (!.tem("RColorBrewer")) .erro("Paletas brewer_ precisam do pacote RColorBrewer.")
     pal <- sub("^brewer_", "", nome)
     info <- RColorBrewer::brewer.pal.info
     if (!pal %in% rownames(info))
       .erro("Paleta ColorBrewer '", pal, "' não existe. Opções: ",
             paste(rownames(info), collapse = ", "))
-    RColorBrewer::brewer.pal(info[pal, "maxcolors"], pal)
+    b <- RColorBrewer::brewer.pal(info[pal, "maxcolors"], pal)
+    if (info[pal, "category"] != "qual") return(if (n == 1) b[length(b) - 1] else grDevices::colorRampPalette(b)(n))
+    b
   } else if (nome == "personalizada") {
     vapply(cfg_cores$personalizada, .cor, character(1), onde = "cores$personalizada")
   } else {
-    .erro("Paleta '", nome, "' desconhecida. Opções: ", paste(c(names(.PALETAS), "viridis", "magma", "plasma", "cividis", "inferno", "turbo", "cinza"), collapse = ", "),
-          ", brewer_<nome>, personalizada. Veja mostrar_paletas().")
+    .erro("Paleta '", nome, "' desconhecida. Opções: ", paste(c(names(.PALETAS), .PALETAS_VIRIDIS, "cinza"), collapse = ", "),
+          ", personalizada. Veja mostrar_paletas().")
   }
   if (n <= length(base)) base[seq_len(n)] else grDevices::colorRampPalette(base)(n)
 }
@@ -1841,6 +1928,425 @@ suppressPackageStartupMessages({
   }
   base
 }
+
+# -----------------------------------------------------------------------------
+#  02_traducoes_motor.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/02_traducoes_motor.R — dicionário das mensagens do motor (en, es) e dos títulos automáticos do gráfico
+# =============================================================================
+#  As mensagens do motor são escritas em português; options(cinabro.idioma = "en") (ou idioma <- "en" no painel) troca cada pedaço fixo
+#  pelo texto daqui (veja .traduzir_msg em R/01_base.R). Pedaço sem tradução fica em português.
+#  Gerado a partir de tradução assistida; revise com calma antes de publicar.
+# =============================================================================
+.TRAD_MOTOR <- list(
+  en = c(
+    "Cor inválida em " = "Invalid color in ",
+    "'. Use nome (\"red\"), \"#RRGGBB\" ou c(R,G,B)." = "'. Use a name (\"red\"), \"#RRGGBB\", or c(R,G,B).",
+    "Paleta '" = "Palette '",
+    "' precisa do pacote viridisLite." = "' needs the viridisLite package.",
+    "Paletas brewer_ precisam do pacote RColorBrewer." = "brewer_ palettes need the RColorBrewer package.",
+    "Paleta ColorBrewer '" = "ColorBrewer palette '",
+    "' não existe. Opções: " = "' does not exist. Options: ",
+    "' desconhecida. Opções: " = "' is unknown. Options: ",
+    ", personalizada. Veja mostrar_paletas()." = ", custom. See mostrar_paletas().",
+    "' inválida." = "' is invalid.",
+    "Não consegui decodificar '" = "Could not decode '",
+    "' como " = "' as ",
+    ". Salve como CSV UTF-8 ou defina cfg$dados$codificacao." = ". Save as UTF-8 CSV or set cfg$dados$codificacao.",
+    "Não consegui ler '" = "Could not read '",
+    "' com separador '" = "' with separator '",
+    "\n  Tente definir cfg$dados$separador manualmente." = "\n  Try setting cfg$dados$separador manually.",
+    "Arquivo não encontrado: '" = "File not found: '",
+    "'.\n  Pasta atual: " = "'.\n  Current folder: ",
+    "\n  Dica: use o caminho completo do arquivo (ex.: 'C:/pasta/dados.csv') ou confira a pasta de trabalho com getwd()." = "\n  Tip: open the project through the graficos_R.Rproj file or use the full path.",
+    "O arquivo '" = "The file '",
+    "' está vazio." = "' is empty.",
+    "Nenhuma linha com dados em '" = "No rows with data in '",
+    "Leitura de '" = "Reading '",
+    ": coluna número " = ": column number ",
+    " não existe (o arquivo tem " = " does not exist (the file has ",
+    " colunas)." = " columns).",
+    ": coluna '" = ": column '",
+    "' não encontrada." = "' not found.",
+    "\n  Colunas disponíveis: " = "\n  Available columns: ",
+    "' não é válido." = "' is not valid.",
+    "\n  OPÇÕES: " = "\n  OPTIONS: ",
+    "Bloco cfg$" = "Block cfg$",
+    " não existe e será ignorado." = " does not exist and will be ignored.",
+    "Parâmetro cfg$" = "Parameter cfg$",
+    "$tempo deve ser \"auto\", TRUE ou FALSE." = "$tempo must be \"auto\", TRUE, or FALSE.",
+    "$inicio e $fim devem ser números (use ponto decimal: 2.5)." = "$inicio and $fim must be numbers (use a decimal point: 2.5).",
+    ") deve ser menor que cfg$" = ") must be less than cfg$",
+    "). Para inverter o eixo use cfg$" = "). To reverse the axis use cfg$",
+    "$ticks_modo = \"incremento\" exige cfg$" = "$ticks_modo = \"incremento\" requires cfg$",
+    "$incremento (ex.: 10)." = "$incremento (e.g.: 10).",
+    "$incremento deve ser um número > 0 (ou, em eixo de datas, um passo como \"1 mes\")." = "$incremento must be a number > 0 (or, on a date axis, a step like \"1 mes\").",
+    "$ticks_modo = \"quantidade\" exige cfg$" = "$ticks_modo = \"quantidade\" requires cfg$",
+    "$quantidade (ex.: 5)." = "$quantidade (e.g.: 5).",
+    "$ticks_modo = \"manual\" exige cfg$" = "$ticks_modo = \"manual\" requires cfg$",
+    "$ticks_manuais (ex.: c(0, 5, 10))." = "$ticks_manuais (e.g.: c(0, 5, 10)).",
+    "$rotulos_manuais tem " = "$rotulos_manuais has ",
+    " textos mas ticks_manuais tem " = " texts but ticks_manuais has ",
+    " posições." = " positions.",
+    "cfg$legenda$dentro_x e dentro_y devem estar entre 0 e 1." = "cfg$legenda$dentro_x and dentro_y must be between 0 and 1.",
+    " deve ser um número entre 0 e 1." = " must be a number between 0 and 1.",
+    " deve ser um número maior que 0 (cm)." = " must be a number greater than 0 (cm).",
+    "cfg$legenda$escala deve ser um número maior que 0 (ex.: 0.8)." = "cfg$legenda$escala must be a number greater than 0 (e.g.: 0.8).",
+    " deve ser um número maior que 0 (pt)." = " must be a number greater than 0 (pt).",
+    "cfg$legenda$espaco_chave_texto_pt deve ser um número >= 0 (pt)." = "cfg$legenda$espaco_chave_texto_pt must be a number >= 0 (pt).",
+    "cfg$legenda$distancia_pt deve ser um número >= 0 ou c(horizontal, vertical), em pt." = "cfg$legenda$distancia_pt must be a number >= 0 or c(horizontal, vertical), in pt.",
+    "\" não serve para a legenda em \"" = "\" does not work for a legend at \"",
+    "\". OPÇÕES: " = "\". OPTIONS: ",
+    "cfg$legenda$sombra_deslocamento_pt deve ser um número ou c(direita, baixo), em pt." = "cfg$legenda$sombra_deslocamento_pt must be a number or c(right, down), in pt.",
+    "cfg$pizza$raio_furo deve estar entre 0 e 0.9." = "cfg$pizza$raio_furo must be between 0 and 0.9.",
+    "cfg$legenda$mostrar deve ser \"auto\", TRUE ou FALSE." = "cfg$legenda$mostrar must be \"auto\", TRUE, or FALSE.",
+    "\"]] não corresponde a nenhuma série/categoria deste gráfico. " = "\"]] does not match any series/category in this plot. ",
+    "Disponíveis: " = "Available: ",
+    " não existe." = " does not exist.",
+    ": não entendi a data '" = ": could not parse the date '",
+    "'. Use \"2024-03-15\", \"15/03/2024\" ou \"15/03/2024 14:30\"." = "'. Use \"2024-03-15\", \"15/03/2024\", or \"15/03/2024 14:30\".",
+    "O eixo tem só datas (sem hora): use passos de dia, semana, mês ou ano em vez de '" = "The axis has dates only (no time): use steps of day, week, month, or year instead of '",
+    "O passo '" = "The step '",
+    "' geraria mais de 2000 ticks no eixo. Use um passo maior." = "' would generate more than 2000 ticks on the axis. Use a larger step.",
+    "' não é um passo de tempo válido. " = "' is not a valid time step. ",
+    "Exemplos: \"1 day\", \"2 semanas\", \"1 mes\", \"6 horas\", \"30 min\"." = "Examples: \"1 day\", \"2 semanas\", \"1 mes\", \"6 horas\", \"30 min\".",
+    "Escala logarítmica precisa de valores > 0." = "Log scale needs values > 0.",
+    "Eixo de datas/horas exige escala linear (cfg$eixo_x$escala = \"linear\")." = "A date/time axis requires a linear scale (cfg$eixo_x$escala = \"linear\").",
+    "Escala " = "Scale ",
+    " valor(es) <= 0 não podem ser desenhados e serão omitidos." = " value(s) <= 0 cannot be drawn and will be omitted.",
+    "Escala recíproca: valores iguais a 0 (1/0 = infinito) serão omitidos." = "Reciprocal scale: values equal to 0 (1/0 = infinity) will be omitted.",
+    "cfg$eixo_x$inicio deve ser anterior a cfg$eixo_x$fim." = "cfg$eixo_x$inicio must be before cfg$eixo_x$fim.",
+    "Escala logarítmica: o início do eixo deve ser > 0 (atual: " = "Log scale: the axis start must be > 0 (current: ",
+    "Escala recíproca não pode incluir o zero (" = "Reciprocal scale cannot include zero (",
+    "Escala raiz: o início do eixo deve ser >= 0." = "Square-root scale: the axis start must be >= 0.",
+    "incremento muito pequeno: geraria " = "increment too small: it would generate ",
+    "O intervalo " = "The interval ",
+    " gera " = " generates ",
+    " traços entre " = " ticks between ",
+    " (os números ficariam um sobre o outro); usando " = " (the numbers would overlap); using ",
+    " neste eixo. " = " on this axis. ",
+    "Com quebra de eixo, defina o intervalo de cada parte (quebra_y_intervalo_* / quebra_y2_intervalo_*)." = "With an axis break, set the interval for each part (quebra_y_intervalo_* / quebra_y2_intervalo_*).",
+    "Fonte '" = "Font '",
+    "' não encontrada" = "' not found",
+    "; usando 'sans'. Veja listar_fontes()." = "; using 'sans'. See listar_fontes().",
+    "Coluna de erro '" = "Error column '",
+    "' não é numérica." = "' is not numeric.",
+    "Nenhuma coluna Y numérica encontrada. Defina cfg$grafico$colunas_y." = "No numeric Y column found. Set cfg$grafico$colunas_y.",
+    "A coluna '" = "Column '",
+    "' não é numérica (veja o relatório de leitura). " = "' is not numeric (see the reading report). ",
+    "Se o arquivo usa vírgula decimal, defina cfg$dados$decimal_virgula <- TRUE." = "If the file uses a decimal comma, set cfg$dados$decimal_virgula <- TRUE.",
+    "Eixo " = "Axis ",
+    " em escala " = " on scale ",
+    " ponto(s) com valor " = " point(s) with value ",
+    " não existe(m) nessa escala e foi(ram) omitido(s) do gráfico." = " cannot exist on that scale and were omitted from the plot.",
+    "cfg$eixo_x$tempo = TRUE, mas a coluna X não é reconhecida como data. " = "cfg$eixo_x$tempo = TRUE, but the X column is not recognized as a date. ",
+    "Defina cfg$eixo_x$formato_data (ex.: \"%d/%m/%Y %H:%M\")." = "Set cfg$eixo_x$formato_data (e.g.: \"%d/%m/%Y %H:%M\").",
+    "cfg$cores$mapear_coluna: a coluna '" = "cfg$cores$mapear_coluna: the column '",
+    "' precisa ser numérica." = "' must be numeric.",
+    "eixo_y2 ativo no modo \"independente\", mas nenhuma série tem eixo = \"y2\".\n" = "eixo_y2 is active in \"independente\" mode, but no series has eixo = \"y2\".\n",
+    "  Ex.: cfg$series[[\"" = "  E.g.: cfg$series[[\"",
+    "area_empilhada não combina com eixo_y2." = "area_empilhada does not combine with eixo_y2.",
+    "eixo_y2 \"independente\" exige eixo_y linear." = "eixo_y2 \"independente\" requires a linear eixo_y.",
+    "cfg$grafico$ordem_itens: não existe(m) a(s) categoria(s) " = "cfg$grafico$ordem_itens: these categories do not exist: ",
+    ". A ordem foi ignorada. Categorias: " = ". The order was ignored. Categories: ",
+    "Pizza: valores negativos em '" = "Pie: negative values in '",
+    "' foram ignorados." = "' were ignored.",
+    "cfg$pizza$explodir: não existe(m) a(s) categoria(s) " = "cfg$pizza$explodir: these categories do not exist: ",
+    ". Categorias: " = ". Categories: ",
+    "Distribuição: a(s) série(s) " = "Distribution: series ",
+    " tem(têm) menos de 2 valores." = " have fewer than 2 values.",
+    ") é maior que o menor dado (" = ") is greater than the smallest data value (",
+    "Boxplot: série(s) sem dados: " = "Boxplot: series with no data: ",
+    "Violino: o grupo '" = "Violin: the group '",
+    "' tem " = "' has ",
+    " valor; são precisos pelo menos 2 para " = " value; at least 2 are needed to ",
+    "estimar a densidade. O violino desse grupo não foi desenhado." = "estimate the density. The violin for that group was not drawn.",
+    "cfg$referencias: cada linha precisa de 'valor'." = "cfg$referencias: each row needs a 'valor'.",
+    "eixo_y2 \"transformado\" não é suportado em barras/caixas horizontais." = "eixo_y2 \"transformado\" is not supported in horizontal bars/boxplots.",
+    "eixo_y2 \"transformado\" exige eixo_y linear." = "eixo_y2 \"transformado\" requires a linear eixo_y.",
+    "cfg$eixo_y2$fator não pode ser 0." = "cfg$eixo_y2$fator cannot be 0.",
+    "eixo_y2 \"transformado\": os limites seguem o eixo_y (" = "eixo_y2 \"transformado\": the limits follow eixo_y (",
+    "); inicio/fim do y2 ignorados." = "); the y2 inicio/fim are ignored.",
+    "plotar(dados, cfg): 'dados' deve ser o resultado de ler_csv()." = "plotar(dados, cfg): 'dados' must be the result of ler_csv().",
+    "cfg$paineis$ativo = TRUE, mas cfg$paineis$lista está vazia. Veja o exemplo na PARTE 1 deste script." = "cfg$paineis$ativo = TRUE, but cfg$paineis$lista is empty. See the example in 01_config.R.",
+    "Painel " = "Panel ",
+    ": ajustes em " = ": settings in ",
+    " são ignorados — o " = " are ignored — the ",
+    " é comum a todos os painéis." = " is shared by all panels.",
+    "Pizza não pode ser usada em painéis com eixo comum." = "Pie cannot be used in panels with a shared axis.",
+    "\"]] não corresponde a nenhuma coluna/categoria dos dados." = "\"]] does not match any column/category in the data.",
+    "cfg$paineis$tamanhos deve ter " = "cfg$paineis$tamanhos must have ",
+    " valores (um por painel)." = " values (one per panel).",
+    "Preciso de pelo menos 2 valores Y diferentes para procurar um vazio." = "At least 2 different Y values are needed to look for a gap.",
+    "cfg$quebra: defina de < ate (ex.: de = 20, ate = 80)." = "cfg$quebra: set de < ate (e.g.: de = 20, ate = 80).",
+    "Quebra de eixo não se aplica a pizza." = "Axis break does not apply to pie plots.",
+    "cfg$quebra: o trecho omitido (" = "cfg$quebra: the omitted range (",
+    ") precisa estar dentro do eixo Y (" = ") must be within the Y axis (",
+    "cfg$quebra: o trecho omitido do eixo Y da direita (" = "cfg$quebra: the omitted range of the right Y axis (",
+    ") não cabe no eixo direito (" = ") does not fit on the right axis (",
+    "; y2_de e y2_ate são valores DESTE eixo, não do esquerdo). Usei a mesma posição do trecho do eixo esquerdo." = "; y2_de and y2_ate are values of THIS axis, not of the left one). The same position as the left axis range was used.",
+    "cfg$quebra: não consegui derivar o trecho omitido do eixo Y da direita (eixo de " = "cfg$quebra: could not derive the omitted range of the right Y axis (axis from ",
+    "). Defina y2_de < y2_ate dentro desse eixo (ex.: y2_de = 2000, y2_ate = 6000)." = "). Set y2_de < y2_ate within that axis (e.g.: y2_de = 2000, y2_ate = 6000).",
+    "cfg$quebra$y2_de/y2_ate ignorados: não há eixo Y da direita com séries próprias (eixo_y2)." = "cfg$quebra$y2_de/y2_ate ignored: there is no right Y axis with its own series (eixo_y2).",
+    "A quebra de eixo precisa do pacote gtable (vem com o ggplot2)." = "The axis break needs the gtable package (it comes with ggplot2).",
+    "Quebra de eixo: as duas partes ficaram com colunas diferentes. " = "Axis break: the two parts ended up with different columns. ",
+    "Tente cfg$legenda$posicao <- \"dentro\"." = "Try cfg$legenda$posicao <- \"dentro\".",
+    "Formato emf precisa do pacote devEMF (rode 00_instalar_pacotes.R)." = "The emf format needs the devEMF package (run 00_instalar_pacotes.R).",
+    "Formato '" = "Format '",
+    "' desconhecido. OPÇÕES: png, tiff, jpeg, pdf, svg, emf" = "' is unknown. OPTIONS: png, tiff, jpeg, pdf, svg, emf",
+    "O gráfico (caixa de tamanho fixo + números, títulos e legenda) tem " = "The plot (fixed-size plot box + numbers, titles, and legend) measures ",
+    " cm e não cabe na página de " = " cm and does not fit on the page of ",
+    " cm: parte será cortada. Aumente a página ou use exportacao$ajustar_pagina <- TRUE." = " cm: part of it will be cut off. Enlarge the page or use exportacao$ajustar_pagina <- TRUE.",
+    "O formato '" = "The format '",
+    "' não suporta gradiente; usando cor sólida neste arquivo " = "' does not support gradients; using a solid color in this file ",
+    "(o gráfico é refeito a partir do cfg: ajustes feitos depois com + theme() ou " = "(the plot is rebuilt from the cfg: adjustments made afterward with + theme() or ",
+    "+ camadas não entram nele)." = "+ layers are not included in it).",
+    "Nenhum CSV em '" = "No CSV in '",
+    " usa as fontes instaladas no Windows e a '" = " uses the fonts installed on Windows, and '",
+    "' só está carregada pelo template: " = "' is only loaded by the template: ",
+    "o texto sairá em outra fonte. Instale-a (abra os arquivos .ttf de fontes/Barlow e clique em Instalar) " = "the text will come out in another font. Install it (open the .ttf files in fontes/Barlow and click Install) ",
+    "ou exporte em PNG, TIFF ou SVG, que usam a Barlow direto." = "or export to PNG, TIFF, or SVG, which use Barlow directly.",
+    "Estilo '" = "Style '",
+    "' não encontrado. Disponíveis: " = "' not found. Available: ",
+    "registrar_fonte() precisa do pacote systemfonts (vem com ragg)." = "registrar_fonte() needs the systemfonts package (it comes with ragg).",
+    "registrar_fonte(nome): informe o nome da fonte, ex.: \"Barlow\"." = "registrar_fonte(nome): provide the font name, e.g.: \"Barlow\".",
+    "registrar_fonte: a pasta '" = "registrar_fonte: the folder '",
+    "' não existe. " = "' does not exist. ",
+    "Use o caminho da pasta com os .ttf, ex.: \"C:/Users/voce/Downloads/Barlow\"." = "Use the path of the folder with the .ttf files, e.g.: \"C:/Users/voce/Downloads/Barlow\".",
+    "registrar_fonte: não achei o arquivo \"" = "registrar_fonte: could not find the file \"",
+    "-Regular.ttf\" em '" = "-Regular.ttf\" in '",
+    "  Arquivos .ttf/.otf encontrados lá: " = "  .ttf/.otf files found there: ",
+    "\n  Use os arquivos estáticos (Barlow-Regular.ttf...), não o arquivo de fonte variável (com colchetes no nome)." = "\n  Use the static files (Barlow-Regular.ttf...), not the variable font file (with brackets in the name).",
+    "fonte_pasta precisa de 'fonte' (o nome), ex.: fonte <- \"Barlow\"." = "fonte_pasta needs 'fonte' (the name), e.g.: fonte <- \"Barlow\".",
+    "' não é válido. OPÇÕES: " = "' is not valid. OPTIONS: ",
+    "O painel tem " = "The panel has ",
+    " preenchido(s), mas o eixo direito (Y2) não está ativo — " = " filled in, but the right axis (Y2) is not active — ",
+    "ajuste ignorado. Preencha y2_series (ex.: y2_series <- \"Temperatura\") para ligar o Y2." = "the setting is ignored. Fill in y2_series (e.g.: y2_series <- \"Temperatura\") to turn on Y2.",
+    "cores_por_serie precisa de nomes: c(\"WORLD\" = \"#000000\", \"BRAZIL\" = \"#1F4E9E\")." = "cores_por_serie needs names: c(\"WORLD\" = \"#000000\", \"BRAZIL\" = \"#1F4E9E\").",
+    "legenda_nomes precisa de nomes: c(\"WORLD\" = \"Mundo\", \"BRAZIL\" = \"Brasil\")." = "legenda_nomes needs names: c(\"WORLD\" = \"Mundo\", \"BRAZIL\" = \"Brasil\").",
+    "idioma precisa ser \"pt\", \"en\" ou \"es\"." = "idioma must be \"pt\", \"en\", or \"es\".",
+    "' não é um símbolo válido. OPÇÕES: um número de 0 a 25 ou " = "' is not a valid marker. OPTIONS: a number from 0 to 25 or ",
+    "A largura pedida para a legenda (" = "The requested legend width (",
+    " pt) é maior que a caixa do gráfico." = " pt) is greater than the plot box.",
+    ": este eixo é de categorias; use dentro_x / dentro_y (de 0 a 1)." = ": this axis is categorical; use dentro_x / dentro_y (from 0 to 1).",
+    " não existe neste eixo." = " does not exist on this axis.",
+    " fica fora do eixo (" = " is outside the axis (",
+    "); a legenda foi colocada na borda." = "); the legend was placed at the edge.",
+    "Legenda reduzida para " = "Legend reduced to ",
+    "% para caber dentro da caixa " = "% to fit inside the box ",
+    "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam)." = "(cfg$legenda$ajustar_caixa <- FALSE turns this off; legenda$escala, or fewer series/columns, also help).",
+    " Você quis dizer '" = " Did you mean '",
+    " Você quis dizer cfg$" = " Did you mean cfg$",
+    " a " = " to ",
+    " e " = " and ",
+    " (pasta fontes/Barlow ausente)" = " (fontes/Barlow folder missing)",
+    " no sistema" = " on this system",
+    "igual a 0" = "equal to 0",
+    " precisa de números com o nome da série: c(\"WORLD\" = 1, \"BRAZIL\" = 3)." = " needs numbers named after the series: c(\"WORLD\" = 1, \"BRAZIL\" = 3).",
+    "O formato " = "The format "
+  ),
+  es = c(
+    "Cor inválida em " = "Color no válido en ",
+    "'. Use nome (\"red\"), \"#RRGGBB\" ou c(R,G,B)." = "'. Usa un nombre (\"red\"), \"#RRGGBB\" o c(R,G,B).",
+    "' precisa do pacote viridisLite." = "' necesita el paquete viridisLite.",
+    "Paletas brewer_ precisam do pacote RColorBrewer." = "Las paletas brewer_ necesitan el paquete RColorBrewer.",
+    "' não existe. Opções: " = "' no existe. Opciones: ",
+    "' desconhecida. Opções: " = "' desconocida. Opciones: ",
+    ", personalizada. Veja mostrar_paletas()." = ", personalizada. Consulta mostrar_paletas().",
+    "' inválida." = "' no es válida.",
+    "Não consegui decodificar '" = "No pude decodificar '",
+    ". Salve como CSV UTF-8 ou defina cfg$dados$codificacao." = ". Guárdalo como CSV UTF-8 o define cfg$dados$codificacao.",
+    "Não consegui ler '" = "No pude leer '",
+    "' com separador '" = "' con separador '",
+    "\n  Tente definir cfg$dados$separador manualmente." = "\n  Intenta definir cfg$dados$separador manualmente.",
+    "Arquivo não encontrado: '" = "Archivo no encontrado: '",
+    "'.\n  Pasta atual: " = "'.\n  Carpeta actual: ",
+    "\n  Dica: use o caminho completo do arquivo (ex.: 'C:/pasta/dados.csv') ou confira a pasta de trabalho com getwd()." = "\n  Consejo: abre el proyecto desde el archivo graficos_R.Rproj o usa la ruta completa.",
+    "O arquivo '" = "El archivo '",
+    "' está vazio." = "' está vacío.",
+    "Nenhuma linha com dados em '" = "No hay ninguna fila con datos en '",
+    "Leitura de '" = "Lectura de '",
+    ": coluna número " = ": columna número ",
+    " não existe (o arquivo tem " = " no existe (el archivo tiene ",
+    " colunas)." = " columnas).",
+    ": coluna '" = ": columna '",
+    "' não encontrada." = "' no encontrada.",
+    "\n  Colunas disponíveis: " = "\n  Columnas disponibles: ",
+    "' não é válido." = "' no es válido.",
+    "\n  OPÇÕES: " = "\n  OPCIONES: ",
+    "Bloco cfg$" = "Bloque cfg$",
+    " não existe e será ignorado." = " no existe y se ignorará.",
+    "Parâmetro cfg$" = "Parámetro cfg$",
+    "$tempo deve ser \"auto\", TRUE ou FALSE." = "$tempo debe ser \"auto\", TRUE o FALSE.",
+    "$inicio e $fim devem ser números (use ponto decimal: 2.5)." = "$inicio y $fim deben ser números (usa punto decimal: 2.5).",
+    ") deve ser menor que cfg$" = ") debe ser menor que cfg$",
+    "). Para inverter o eixo use cfg$" = "). Para invertir el eje usa cfg$",
+    "$incremento (ex.: 10)." = "$incremento (ej.: 10).",
+    "$incremento deve ser um número > 0 (ou, em eixo de datas, um passo como \"1 mes\")." = "$incremento debe ser un número > 0 (o, en un eje de fechas, un paso como \"1 mes\").",
+    "$quantidade (ex.: 5)." = "$quantidade (ej.: 5).",
+    "$ticks_manuais (ex.: c(0, 5, 10))." = "$ticks_manuais (ej.: c(0, 5, 10)).",
+    "$rotulos_manuais tem " = "$rotulos_manuais tiene ",
+    " textos mas ticks_manuais tem " = " textos pero ticks_manuais tiene ",
+    " posições." = " posiciones.",
+    "cfg$legenda$dentro_x e dentro_y devem estar entre 0 e 1." = "cfg$legenda$dentro_x y dentro_y deben estar entre 0 y 1.",
+    " deve ser um número entre 0 e 1." = " debe ser un número entre 0 y 1.",
+    " deve ser um número maior que 0 (cm)." = " debe ser un número mayor que 0 (cm).",
+    "cfg$legenda$escala deve ser um número maior que 0 (ex.: 0.8)." = "cfg$legenda$escala debe ser un número mayor que 0 (ej.: 0.8).",
+    " deve ser um número maior que 0 (pt)." = " debe ser un número mayor que 0 (pt).",
+    "cfg$legenda$espaco_chave_texto_pt deve ser um número >= 0 (pt)." = "cfg$legenda$espaco_chave_texto_pt debe ser un número >= 0 (pt).",
+    "cfg$legenda$distancia_pt deve ser um número >= 0 ou c(horizontal, vertical), em pt." = "cfg$legenda$distancia_pt debe ser un número >= 0 o c(horizontal, vertical), en pt.",
+    "\" não serve para a legenda em \"" = "\" no sirve para la leyenda en \"",
+    "\". OPÇÕES: " = "\". OPCIONES: ",
+    "cfg$legenda$sombra_deslocamento_pt deve ser um número ou c(direita, baixo), em pt." = "cfg$legenda$sombra_deslocamento_pt debe ser un número o c(derecha, abajo), en pt.",
+    "cfg$pizza$raio_furo deve estar entre 0 e 0.9." = "cfg$pizza$raio_furo debe estar entre 0 y 0.9.",
+    "cfg$legenda$mostrar deve ser \"auto\", TRUE ou FALSE." = "cfg$legenda$mostrar debe ser \"auto\", TRUE o FALSE.",
+    "\"]] não corresponde a nenhuma série/categoria deste gráfico. " = "\"]] no corresponde a ninguna serie/categoría de este gráfico. ",
+    "Disponíveis: " = "Disponibles: ",
+    " não existe." = " no existe.",
+    ": não entendi a data '" = ": no entendí la fecha '",
+    "'. Use \"2024-03-15\", \"15/03/2024\" ou \"15/03/2024 14:30\"." = "'. Usa \"2024-03-15\", \"15/03/2024\" o \"15/03/2024 14:30\".",
+    "O eixo tem só datas (sem hora): use passos de dia, semana, mês ou ano em vez de '" = "El eje tiene solo fechas (sin hora): usa pasos de día, semana, mes o año en vez de '",
+    "O passo '" = "El paso '",
+    "' geraria mais de 2000 ticks no eixo. Use um passo maior." = "' generaría más de 2000 marcas en el eje. Usa un paso mayor.",
+    "' não é um passo de tempo válido. " = "' no es un paso de tiempo válido. ",
+    "Exemplos: \"1 day\", \"2 semanas\", \"1 mes\", \"6 horas\", \"30 min\"." = "Ejemplos: \"1 day\", \"2 semanas\", \"1 mes\", \"6 horas\", \"30 min\".",
+    "Escala logarítmica precisa de valores > 0." = "La escala logarítmica necesita valores > 0.",
+    "Eixo de datas/horas exige escala linear (cfg$eixo_x$escala = \"linear\")." = "El eje de fechas/horas exige escala lineal (cfg$eixo_x$escala = \"linear\").",
+    " valor(es) <= 0 não podem ser desenhados e serão omitidos." = " valor(es) <= 0 no se pueden dibujar y se omitirán.",
+    "Escala recíproca: valores iguais a 0 (1/0 = infinito) serão omitidos." = "Escala recíproca: los valores iguales a 0 (1/0 = infinito) se omitirán.",
+    "cfg$eixo_x$inicio deve ser anterior a cfg$eixo_x$fim." = "cfg$eixo_x$inicio debe ser anterior a cfg$eixo_x$fim.",
+    "Escala logarítmica: o início do eixo deve ser > 0 (atual: " = "Escala logarítmica: el inicio del eje debe ser > 0 (actual: ",
+    "Escala recíproca não pode incluir o zero (" = "La escala recíproca no puede incluir el cero (",
+    "Escala raiz: o início do eixo deve ser >= 0." = "Escala raíz: el inicio del eje debe ser >= 0.",
+    "incremento muito pequeno: geraria " = "incremento muy pequeño: generaría ",
+    " ticks." = " marcas.",
+    "O intervalo " = "El intervalo ",
+    " gera " = " genera ",
+    " traços entre " = " marcas entre ",
+    " (os números ficariam um sobre o outro); usando " = " (los números quedarían uno sobre otro); usando ",
+    " neste eixo. " = " en este eje. ",
+    "Com quebra de eixo, defina o intervalo de cada parte (quebra_y_intervalo_* / quebra_y2_intervalo_*)." = "Con interrupción del eje, define el intervalo de cada parte (quebra_y_intervalo_* / quebra_y2_intervalo_*).",
+    "Fonte '" = "Fuente '",
+    "' não encontrada" = "' no encontrada",
+    "; usando 'sans'. Veja listar_fontes()." = "; usando 'sans'. Consulta listar_fontes().",
+    "Coluna de erro '" = "Columna de error '",
+    "' não é numérica." = "' no es numérica.",
+    "Nenhuma coluna Y numérica encontrada. Defina cfg$grafico$colunas_y." = "No se encontró ninguna columna Y numérica. Define cfg$grafico$colunas_y.",
+    "A coluna '" = "La columna '",
+    "' não é numérica (veja o relatório de leitura). " = "' no es numérica (consulta el informe de lectura). ",
+    "Se o arquivo usa vírgula decimal, defina cfg$dados$decimal_virgula <- TRUE." = "Si el archivo usa coma decimal, define cfg$dados$decimal_virgula <- TRUE.",
+    "Eixo " = "Eje ",
+    " em escala " = " en escala ",
+    " ponto(s) com valor " = " punto(s) con valor ",
+    " não existe(m) nessa escala e foi(ram) omitido(s) do gráfico." = " no existe(n) en esa escala y fue(ron) omitido(s) del gráfico.",
+    "cfg$eixo_x$tempo = TRUE, mas a coluna X não é reconhecida como data. " = "cfg$eixo_x$tempo = TRUE, pero la columna X no se reconoce como fecha. ",
+    "Defina cfg$eixo_x$formato_data (ex.: \"%d/%m/%Y %H:%M\")." = "Define cfg$eixo_x$formato_data (ej.: \"%d/%m/%Y %H:%M\").",
+    "cfg$cores$mapear_coluna: a coluna '" = "cfg$cores$mapear_coluna: la columna '",
+    "' precisa ser numérica." = "' debe ser numérica.",
+    "eixo_y2 ativo no modo \"independente\", mas nenhuma série tem eixo = \"y2\".\n" = "eixo_y2 activo en el modo \"independente\", pero ninguna serie tiene eixo = \"y2\".\n",
+    "  Ex.: cfg$series[[\"" = "  Ej.: cfg$series[[\"",
+    "area_empilhada não combina com eixo_y2." = "area_empilhada no se combina con eixo_y2.",
+    "eixo_y2 \"independente\" exige eixo_y linear." = "eixo_y2 \"independente\" exige eixo_y lineal.",
+    "cfg$grafico$ordem_itens: não existe(m) a(s) categoria(s) " = "cfg$grafico$ordem_itens: no existe(n) la(s) categoría(s) ",
+    ". A ordem foi ignorada. Categorias: " = ". Se ignoró el orden. Categorías: ",
+    "Pizza: valores negativos em '" = "Pastel: los valores negativos en '",
+    "' foram ignorados." = "' se ignoraron.",
+    "cfg$pizza$explodir: não existe(m) a(s) categoria(s) " = "cfg$pizza$explodir: no existe(n) la(s) categoría(s) ",
+    ". Categorias: " = ". Categorías: ",
+    "Distribuição: a(s) série(s) " = "Distribución: la(s) serie(s) ",
+    " tem(têm) menos de 2 valores." = " tiene(n) menos de 2 valores.",
+    ") é maior que o menor dado (" = ") es mayor que el menor dato (",
+    "Boxplot: série(s) sem dados: " = "Boxplot: serie(s) sin datos: ",
+    "Violino: o grupo '" = "Violín: el grupo '",
+    "' tem " = "' tiene ",
+    " valor; são precisos pelo menos 2 para " = " valor; se necesitan al menos 2 para ",
+    "estimar a densidade. O violino desse grupo não foi desenhado." = "estimar la densidad. El violín de ese grupo no se dibujó.",
+    "cfg$referencias: cada linha precisa de 'valor'." = "cfg$referencias: cada fila necesita 'valor'.",
+    "eixo_y2 \"transformado\" não é suportado em barras/caixas horizontais." = "eixo_y2 \"transformado\" no es compatible con barras/cajas horizontales.",
+    "eixo_y2 \"transformado\" exige eixo_y linear." = "eixo_y2 \"transformado\" exige eixo_y lineal.",
+    "cfg$eixo_y2$fator não pode ser 0." = "cfg$eixo_y2$fator no puede ser 0.",
+    "eixo_y2 \"transformado\": os limites seguem o eixo_y (" = "eixo_y2 \"transformado\": los límites siguen a eixo_y (",
+    "); inicio/fim do y2 ignorados." = "); inicio/fim del y2 ignorados.",
+    "plotar(dados, cfg): 'dados' deve ser o resultado de ler_csv()." = "plotar(dados, cfg): 'dados' debe ser el resultado de ler_csv().",
+    "cfg$paineis$ativo = TRUE, mas cfg$paineis$lista está vazia. Veja o exemplo na PARTE 1 deste script." = "cfg$paineis$ativo = TRUE, pero cfg$paineis$lista está vacía. Consulta el ejemplo en 01_config.R.",
+    "Painel " = "Panel ",
+    ": ajustes em " = ": los ajustes en ",
+    " são ignorados — o " = " se ignoran — el ",
+    " é comum a todos os painéis." = " es común a todos los paneles.",
+    "Pizza não pode ser usada em painéis com eixo comum." = "El gráfico de pastel no puede usarse en paneles con eje común.",
+    "\"]] não corresponde a nenhuma coluna/categoria dos dados." = "\"]] no corresponde a ninguna columna/categoría de los datos.",
+    "cfg$paineis$tamanhos deve ter " = "cfg$paineis$tamanhos debe tener ",
+    " valores (um por painel)." = " valores (uno por panel).",
+    "Preciso de pelo menos 2 valores Y diferentes para procurar um vazio." = "Necesito al menos 2 valores Y diferentes para buscar un vacío.",
+    "cfg$quebra: defina de < ate (ex.: de = 20, ate = 80)." = "cfg$quebra: define de < ate (ej.: de = 20, ate = 80).",
+    "Quebra de eixo não se aplica a pizza." = "La interrupción del eje no se aplica al gráfico de pastel.",
+    "cfg$quebra: o trecho omitido (" = "cfg$quebra: el tramo omitido (",
+    ") precisa estar dentro do eixo Y (" = ") debe estar dentro del eje Y (",
+    "cfg$quebra: o trecho omitido do eixo Y da direita (" = "cfg$quebra: el tramo omitido del eje Y derecho (",
+    ") não cabe no eixo direito (" = ") no cabe en el eje derecho (",
+    "; y2_de e y2_ate são valores DESTE eixo, não do esquerdo). Usei a mesma posição do trecho do eixo esquerdo." = "; y2_de y y2_ate son valores de ESTE eje, no del izquierdo). Usé la misma posición del tramo del eje izquierdo.",
+    "cfg$quebra: não consegui derivar o trecho omitido do eixo Y da direita (eixo de " = "cfg$quebra: no pude derivar el tramo omitido del eje Y derecho (eje de ",
+    "). Defina y2_de < y2_ate dentro desse eixo (ex.: y2_de = 2000, y2_ate = 6000)." = "). Define y2_de < y2_ate dentro de ese eje (ej.: y2_de = 2000, y2_ate = 6000).",
+    "cfg$quebra$y2_de/y2_ate ignorados: não há eixo Y da direita com séries próprias (eixo_y2)." = "cfg$quebra$y2_de/y2_ate se ignoraron: no hay eje Y derecho con series propias (eixo_y2).",
+    "A quebra de eixo precisa do pacote gtable (vem com o ggplot2)." = "La interrupción del eje necesita el paquete gtable (viene con ggplot2).",
+    "Quebra de eixo: as duas partes ficaram com colunas diferentes. " = "Interrupción del eje: las dos partes quedaron con columnas diferentes. ",
+    "Tente cfg$legenda$posicao <- \"dentro\"." = "Prueba cfg$legenda$posicao <- \"dentro\".",
+    "Formato emf precisa do pacote devEMF (rode 00_instalar_pacotes.R)." = "El formato emf necesita el paquete devEMF (ejecuta 00_instalar_pacotes.R).",
+    "' desconhecido. OPÇÕES: png, tiff, jpeg, pdf, svg, emf" = "' desconocido. OPCIONES: png, tiff, jpeg, pdf, svg, emf",
+    "O gráfico (caixa de tamanho fixo + números, títulos e legenda) tem " = "El gráfico (área de tamaño fijo + números, títulos y leyenda) mide ",
+    " cm e não cabe na página de " = " cm y no cabe en la página de ",
+    " cm: parte será cortada. Aumente a página ou use exportacao$ajustar_pagina <- TRUE." = " cm: una parte se cortará. Aumenta la página o usa exportacao$ajustar_pagina <- TRUE.",
+    "O formato '" = "El formato '",
+    "' não suporta gradiente; usando cor sólida neste arquivo " = "' no admite degradado; se usa color sólido en este archivo ",
+    "(o gráfico é refeito a partir do cfg: ajustes feitos depois com + theme() ou " = "(el gráfico se rehace a partir de cfg: los ajustes hechos después con + theme() o ",
+    "+ camadas não entram nele)." = "+ capas no entran en él).",
+    "Nenhum CSV em '" = "No hay ningún CSV en '",
+    " usa as fontes instaladas no Windows e a '" = " usa las fuentes instaladas en Windows y '",
+    "' só está carregada pelo template: " = "' solo está cargada por la plantilla: ",
+    "o texto sairá em outra fonte. Instale-a (abra os arquivos .ttf de fontes/Barlow e clique em Instalar) " = "el texto saldrá en otra fuente. Instálala (abre los archivos .ttf de fontes/Barlow y haz clic en Instalar) ",
+    "ou exporte em PNG, TIFF ou SVG, que usam a Barlow direto." = "o exporta en PNG, TIFF o SVG, que usan Barlow directamente.",
+    "' não encontrado. Disponíveis: " = "' no encontrado. Disponibles: ",
+    "registrar_fonte() precisa do pacote systemfonts (vem com ragg)." = "registrar_fonte() necesita el paquete systemfonts (viene con ragg).",
+    "registrar_fonte(nome): informe o nome da fonte, ex.: \"Barlow\"." = "registrar_fonte(nome): indica el nombre de la fuente, ej.: \"Barlow\".",
+    "registrar_fonte: a pasta '" = "registrar_fonte: la carpeta '",
+    "' não existe. " = "' no existe. ",
+    "Use o caminho da pasta com os .ttf, ex.: \"C:/Users/voce/Downloads/Barlow\"." = "Usa la ruta de la carpeta con los .ttf, ej.: \"C:/Users/voce/Downloads/Barlow\".",
+    "registrar_fonte: não achei o arquivo \"" = "registrar_fonte: no encontré el archivo \"",
+    "-Regular.ttf\" em '" = "-Regular.ttf\" en '",
+    "  Arquivos .ttf/.otf encontrados lá: " = "  Archivos .ttf/.otf encontrados allí: ",
+    "\n  Use os arquivos estáticos (Barlow-Regular.ttf...), não o arquivo de fonte variável (com colchetes no nome)." = "\n  Usa los archivos estáticos (Barlow-Regular.ttf...), no el archivo de fuente variable (con corchetes en el nombre).",
+    "fonte_pasta precisa de 'fonte' (o nome), ex.: fonte <- \"Barlow\"." = "fonte_pasta necesita 'fonte' (el nombre), ej.: fonte <- \"Barlow\".",
+    "' não é válido. OPÇÕES: " = "' no es válido. OPCIONES: ",
+    "O painel tem " = "El panel tiene ",
+    " preenchido(s), mas o eixo direito (Y2) não está ativo — " = " rellenado(s), pero el eje derecho (Y2) no está activo — ",
+    "ajuste ignorado. Preencha y2_series (ex.: y2_series <- \"Temperatura\") para ligar o Y2." = "ajuste ignorado. Completa y2_series (ej.: y2_series <- \"Temperatura\") para activar el Y2.",
+    "cores_por_serie precisa de nomes: c(\"WORLD\" = \"#000000\", \"BRAZIL\" = \"#1F4E9E\")." = "cores_por_serie necesita nombres: c(\"WORLD\" = \"#000000\", \"BRAZIL\" = \"#1F4E9E\").",
+    "legenda_nomes precisa de nomes: c(\"WORLD\" = \"Mundo\", \"BRAZIL\" = \"Brasil\")." = "legenda_nomes necesita nombres: c(\"WORLD\" = \"Mundo\", \"BRAZIL\" = \"Brasil\").",
+    "idioma precisa ser \"pt\", \"en\" ou \"es\"." = "idioma debe ser \"pt\", \"en\" o \"es\".",
+    "' não é um símbolo válido. OPÇÕES: um número de 0 a 25 ou " = "' no es un marcador válido. OPCIONES: un número de 0 a 25 o ",
+    "A largura pedida para a legenda (" = "El ancho pedido para la leyenda (",
+    " pt) é maior que a caixa do gráfico." = " pt) es mayor que el área del gráfico.",
+    ": este eixo é de categorias; use dentro_x / dentro_y (de 0 a 1)." = ": este eje es de categorías; usa dentro_x / dentro_y (de 0 a 1).",
+    " não existe neste eixo." = " no existe en este eje.",
+    " fica fora do eixo (" = " queda fuera del eje (",
+    "); a legenda foi colocada na borda." = "); la leyenda se colocó en el borde.",
+    "Legenda reduzida para " = "Leyenda reducida a ",
+    "% para caber dentro da caixa " = "% para que quepa dentro del área ",
+    "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam)." = "(cfg$legenda$ajustar_caixa <- FALSE lo desactiva; legenda$escala, o menos series/columnas, también ayudan).",
+    " Você quis dizer '" = " ¿Quisiste decir '",
+    " Você quis dizer cfg$" = " ¿Quisiste decir cfg$",
+    " e " = " y ",
+    " (pasta fontes/Barlow ausente)" = " (falta la carpeta fontes/Barlow)",
+    " no sistema" = " en el sistema",
+    " precisa de números com o nome da série: c(\"WORLD\" = 1, \"BRAZIL\" = 3)." = " necesita números con el nombre de la serie: c(\"WORLD\" = 1, \"BRAZIL\" = 3).",
+    "O formato " = "El formato "
+  )
+)
+.ROTULOS_IDIOMA <- list(
+  en = c("Percentual (%)" = "Percentage (%)", "Valor" = "Value", "Contagem" = "Count", "Frequência relativa" = "Relative frequency", "Frequência (%)" = "Frequency (%)", "Densidade" = "Density", "Probabilidade acumulada" = "Cumulative probability"),
+  es = c("Percentual (%)" = "Porcentaje (%)", "Valor" = "Valor", "Contagem" = "Conteo", "Frequência relativa" = "Frecuencia relativa", "Frequência (%)" = "Frecuencia (%)", "Densidade" = "Densidad", "Probabilidade acumulada" = "Probabilidad acumulada")
+)
 
 # -----------------------------------------------------------------------------
 #  03_leitura.R
@@ -3668,7 +4174,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   }
   ax_y <- .calc_eixo(cfg$eixo_y, faixa_y, forcar = cfg$.interno$forcar_y)
   tit_y <- cfg$eixo_y$titulo %||%
-    (if (B$arranjo == "empilhado_100") "Percentual (%)" else if (n == 1) ycols else "Valor")
+    (if (B$arranjo == "empilhado_100") .rot("Percentual (%)") else if (n == 1) ycols else .rot("Valor"))
   list(camadas = c(cam, .escalas_legenda(est, aes_leg, cfg)),
        info = list(ax_x = ax_x, ax_y = ax_y, flip = flip, titulo_x = cfg$eixo_x$titulo %||% xcol,
                    titulo_y = tit_y, legenda_auto = TRUE, faixa_x = c(r$xmin, r$xmax), faixa_y = faixa_y))
@@ -3819,7 +4325,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   }
   ycols <- .colunas_y(dados, cfg, excluir = NULL)
   am <- lapply(ycols, function(y) { v <- dados[[y]]; v[!is.na(v)] })
-  list(am = stats::setNames(am, ycols), nome_valor = if (length(ycols) == 1) ycols else "Valor", nome_grupo = NULL)
+  list(am = stats::setNames(am, ycols), nome_valor = if (length(ycols) == 1) ycols else .rot("Valor"), nome_grupo = NULL)
 }
 
 # Histograma, densidade e ECDF. Entra: dados e cfg. Sai: list(camadas, info).
@@ -3866,8 +4372,8 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
                           colour = if (is.na(D$contorno_cor)) NA else .cor(D$contorno_cor),
                           linewidth = .lw(D$contorno_espessura_pt))
     aes_leg <- "fill"; faixa_y <- c(0, ret$ymax); faixa_x <- range(quebras)
-    tit_y <- switch(D$medida, contagem = "Contagem", frequencia = "Frequência relativa",
-                    percentual = "Frequência (%)", densidade = "Densidade")
+    tit_y <- switch(D$medida, contagem = .rot("Contagem"), frequencia = .rot("Frequência relativa"),
+                    percentual = .rot("Frequência (%)"), densidade = .rot("Densidade"))
     curvas <- list()
     for (i in itens) {
       x <- am[[i]]; n <- length(x); w <- diff(quebras)[1]
@@ -3908,7 +4414,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
     cam[[length(cam) + 1]] <- geom_line(data = dd, aes(x = x, y = y, colour = serie, linetype = serie,
                                                        linewidth = serie, alpha = serie))
     aes_leg <- c("colour", "linetype", "linewidth", "alpha")
-    faixa_y <- c(0, dd$y); faixa_x <- range(dd$x); tit_y <- "Densidade"
+    faixa_y <- c(0, dd$y); faixa_x <- range(dd$x); tit_y <- .rot("Densidade")
   } else {
     ec <- do.call(rbind, lapply(itens, function(i) {
       x <- sort(am[[i]]); n <- length(x)
@@ -3919,7 +4425,7 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
                                          alpha = serie),
                           direction = "hv")
     aes_leg <- c("colour", "linetype", "linewidth", "alpha")
-    faixa_y <- c(0, 1); faixa_x <- range(ec$x); tit_y <- "Probabilidade acumulada"
+    faixa_y <- c(0, 1); faixa_x <- range(ec$x); tit_y <- .rot("Probabilidade acumulada")
   }
   if (isTRUE(D$marcas_rug)) {
     escura <- vapply(itens, function(i) grDevices::colorRampPalette(c(est[[i]]$cor, "black"))(3)[2], "")
@@ -4504,7 +5010,7 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
     superior$eixo_y2$inicio <- ate2; superior$eixo_y2$fim <- lim2[2]
   } else if (!is.null(Q$y2_de) || !is.null(Q$y2_ate))
     .aviso("cfg$quebra$y2_de/y2_ate ignorados: não há eixo Y da direita com séries próprias (eixo_y2).")
-  continuo <- identical(Q$estilo, "continuo")       # TRUE: uma moldura só, partes coladas (estilo Origin)
+  continuo <- identical(Q$estilo, "continuo")       # TRUE: uma moldura só, partes coladas (estilo contínuo)
   m <- cfg$caixa$margens_cm; esp <- if (continuo) 0 else Q$espaco_pt / 2 / 72 * 2.54
   # a parte de cima fica sem números/título do X; a de baixo sem legenda, títulos e letra
   sem_ligar <- isFALSE(Q$ligar_atraves) && cfg$grafico$tipo %in% c("pontos", "linha", "linha_pontos")
@@ -4561,7 +5067,7 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
 #  15_quebra_continua.R
 # -----------------------------------------------------------------------------
 # =============================================================================
-#  R/15_quebra_continua.R — quebra de eixo CONTÍNUA (estilo Origin): uma moldura só
+#  R/15_quebra_continua.R — quebra de eixo CONTÍNUA: uma moldura só
 # =============================================================================
 #  As duas partes ficam coladas dentro de UMA moldura. Nas bordas esquerda e direita, no ponto da
 #  quebra, a linha é interrompida e aparecem duas barras "//". É montada com o gtable (que já vem
@@ -4901,7 +5407,7 @@ exportar_lote <- function(pasta = "dados", cfg = get("cfg", envir = globalenv())
   reg <- tolower(fonte) %in% tolower(systemfonts::registry_fonts()$family)
   if (reg && !instalada && !isTRUE(.fontes_cache$.avisou_pdf))
     { .fontes_cache$.avisou_pdf <- TRUE
-      .aviso("O ", toupper(formato), " usa as fontes instaladas no Windows e a '", fonte, "' só está carregada pelo template: ",
+      .aviso("O formato ", toupper(formato), " usa as fontes instaladas no Windows e a '", fonte, "' só está carregada pelo template: ",
              "o texto sairá em outra fonte. Instale-a (abra os arquivos .ttf de fontes/Barlow e clique em Instalar) ",
              "ou exporte em PNG, TIFF ou SVG, que usam a Barlow direto.") }
   invisible()
@@ -5360,6 +5866,11 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
       cfg$quebra$de <- s$de; cfg$quebra$ate <- s$ate
     }
   }
+  idm <- pega("idioma")                  # idioma das mensagens e dos textos automáticos do gráfico: "pt" | "en" | "es"
+  if (!is.null(idm)) {
+    if (!idm %in% c("pt", "en", "es")) .erro("idioma precisa ser \"pt\", \"en\" ou \"es\".")
+    options(cinabro.idioma = idm); marca("idioma")
+  }
   if (length(aplicados)) message("Painel de ajustes aplicado: ", paste(aplicados, collapse = ", "))
   else message("Painel de ajustes: nenhum ajuste ativo (tudo NULL = padrão do template).")
   cfg
@@ -5561,8 +6072,8 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
     if (!is.null(m) && identical(lg$posicao, "dentro") && m$legenda[1] > (if (length(fixo) == 2) fixo[1] * 72 / 2.54 else m$painel[1]))
       .aviso("A largura pedida para a legenda (", lg$largura_pt, " pt) é maior que a caixa do gráfico.")
   } else if (esc < esc0 * 0.995)
-    message("Legenda reduzida para ", round(100 * esc / esc0), "% para caber dentro da caixa ",
-            "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam).")
+    message(.traduzir_msg(paste0("Legenda reduzida para ", round(100 * esc / esc0), "% para caber dentro da caixa ",
+            "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam).")))
   g
 }
 
@@ -5802,30 +6313,30 @@ galeria <- function(arquivo = "saida/galeria_referencia.pdf") {
     mini(xy, list(grafico = list(tipo = "area_empilhada"), cores = list(paleta = "okabe_ito")), "\"area_empilhada\""),
     mini(xy, list(grafico = list(tipo = "linha"), linhas = list(ligacao = "degrau_hv")),
          "linhas$ligacao = \"degrau_hv\""),
-    mini(cat_, list(grafico = list(tipo = "barras"), cores = list(paleta = "tableau")), "\"barras\" agrupado"),
+    mini(cat_, list(grafico = list(tipo = "barras"), cores = list(paleta = "okabe_ito")), "\"barras\" agrupado"),
     mini(cat_, list(grafico = list(tipo = "barras"), barras = list(arranjo = "empilhado"),
-                    cores = list(paleta = "tableau")), "barras empilhado"),
+                    cores = list(paleta = "okabe_ito")), "barras empilhado"),
     mini(cat_, list(grafico = list(tipo = "barras"), barras = list(orientacao = "horizontal"),
-                    cores = list(paleta = "tableau")), "barras horizontal"),
-    mini(cat_, list(grafico = list(tipo = "pizza", colunas_y = "Grupo 1"), cores = list(paleta = "tableau"),
+                    cores = list(paleta = "okabe_ito")), "barras horizontal"),
+    mini(cat_, list(grafico = list(tipo = "pizza", colunas_y = "Grupo 1"), cores = list(paleta = "okabe_ito"),
                     pizza = list(explodir = "B", rotulos_tamanho_pt = 7)), "\"pizza\""),
-    mini(cat_, list(grafico = list(tipo = "pizza", colunas_y = "Grupo 1"), cores = list(paleta = "tableau"),
+    mini(cat_, list(grafico = list(tipo = "pizza", colunas_y = "Grupo 1"), cores = list(paleta = "okabe_ito"),
                     pizza = list(raio_furo = 0.5, rotulos_tamanho_pt = 7)), "pizza raio_furo = 0.5"),
     mini(am, list(grafico = list(tipo = "histograma", colunas_y = "G1"), distribuicao = list(curva_normal = TRUE),
                   legenda = list(mostrar = FALSE)), "\"histograma\""),
     mini(am, list(grafico = list(tipo = "densidade"), cores = list(paleta = "viridis")), "\"densidade\""),
     mini(am, list(grafico = list(tipo = "ecdf"), cores = list(paleta = "okabe_ito")), "\"ecdf\""),
-    mini(am, list(grafico = list(tipo = "boxplot"), cores = list(paleta = "tableau")), "boxplot \"box\""),
+    mini(am, list(grafico = list(tipo = "boxplot"), cores = list(paleta = "okabe_ito")), "boxplot \"box\""),
     mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "box_pontos"),
-                  cores = list(paleta = "tableau")), "\"box_pontos\""),
+                  cores = list(paleta = "okabe_ito")), "\"box_pontos\""),
     mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "meio_box"),
-                  cores = list(paleta = "tableau")), "\"meio_box\""),
+                  cores = list(paleta = "okabe_ito")), "\"meio_box\""),
     mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "violino_box"),
-                  cores = list(paleta = "tableau")), "\"violino_box\""),
+                  cores = list(paleta = "okabe_ito")), "\"violino_box\""),
     mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "violino"),
-                  cores = list(paleta = "tableau")), "\"violino\""),
+                  cores = list(paleta = "okabe_ito")), "\"violino\""),
     mini(am, list(grafico = list(tipo = "boxplot"), boxplot = list(variacao = "media_erro"),
-                  cores = list(paleta = "tableau")), "\"media_erro\"")
+                  cores = list(paleta = "okabe_ito")), "\"media_erro\"")
   )
   pag[[5]] <- patchwork::wrap_plots(lapply(tipos, function(g) patchwork::wrap_elements(full = g)), ncol = 4) +
     patchwork::plot_annotation(
@@ -8876,7 +9387,7 @@ grade_menor_opacidade    <- NULL
 
 # ---- 6. QUEBRA DO EIXO Y (intervalo grande entre os dados) -------------------------------------
 quebra_ativar    <- NULL   # TRUE liga. Sem quebra_de/quebra_ate, o script ACHA o maior vazio entre os dados
-quebra_estilo    <- NULL   # "separado" (dois gráficos com espaço) | "continuo" (uma moldura só, estilo Origin)
+quebra_estilo    <- NULL   # "separado" (dois gráficos com espaço) | "continuo" (uma moldura só, com as barras //)
 quebra_de        <- NULL   # início do trecho omitido. EX.: 5000
 quebra_ate       <- NULL   # fim do trecho omitido.    EX.: 80000
 quebra_espaco_pt <- NULL   # espaço entre as duas partes (aumente se os números se sobrepuserem). EX.: 14
@@ -8941,8 +9452,8 @@ y2_titulo_italico <- NULL         # TRUE = título em itálico
 #  As cores de cada série (esquerda ou direita) também podem vir de cores_por_serie (bloco 8).
 
 # ---- 8. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
-cores_paleta        <- NULL   # "classico" (padrão tipo Origin) | "origin_basico" | "origin_pastel" | "marca" | "okabe_ito" |
-                              # "tableau" | "npg" | "seq_azul" | "div_espectro" | "viridis" | "cinza" | "brewer_Set1"...
+cores_paleta        <- NULL   # "cinabro" (padrão) | "marca" | "okabe_ito" | "tol_brilhante" | "brewer_Set1" | "brewer_RdYlGn"
+                              # (vermelho-escuro -> verde) | "viridis" | "cmo_thermal" | "crameri_batlow" | "cinza"...
                               # (a lista completa, com as cores desenhadas: mostrar_paletas())
 cores_personalizadas <- NULL  # suas cores, na ordem das colunas Y. EX.: c("#000000", "#D62728", "#1F4E9E")
 cores_por_serie     <- NULL   # a cor de séries específicas (nome exato da coluna).
@@ -9036,6 +9547,9 @@ legenda_sombra   <- NULL   # TRUE = sombra atrás da caixa (com fundo "transpare
 legenda_sombra_cor <- NULL # EX.: "black" | "grey30"
 legenda_sombra_opacidade <- NULL    # 0 a 1. EX.: 0.35
 legenda_sombra_deslocamento_pt <- NULL  # c(para a direita, para baixo) em pt. EX.: c(3, 3)  |  c(5, 2)
+
+# ---- IDIOMA -----------------------------------------------------------------------------------------
+idioma           <- NULL   # idioma das mensagens e dos textos automáticos do gráfico: "pt" (português do Brasil) | "en" | "es"
 
 # ---- 12. EXPORTAÇÃO ------------------------------------------------------------------------------------
 largura_cm   <- NULL       # EX.: 14   (só vale com painel_fixo <- FALSE ou ajustar_pagina <- FALSE; senão a página se ajusta sozinha)

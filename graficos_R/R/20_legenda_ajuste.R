@@ -85,8 +85,8 @@
     if (!is.null(m) && identical(lg$posicao, "dentro") && m$legenda[1] > (if (length(fixo) == 2) fixo[1] * 72 / 2.54 else m$painel[1]))
       .aviso("A largura pedida para a legenda (", lg$largura_pt, " pt) é maior que a caixa do gráfico.")
   } else if (esc < esc0 * 0.995)
-    message("Legenda reduzida para ", round(100 * esc / esc0), "% para caber dentro da caixa ",
-            "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam).")
+    message(.traduzir_msg(paste0("Legenda reduzida para ", round(100 * esc / esc0), "% para caber dentro da caixa ",
+            "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam).")))
   g
 }
 

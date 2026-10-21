@@ -354,7 +354,7 @@ cq2 <- c0; cq2$grafico <- utils::modifyList(cq2$grafico, list(tipo = "linha_pont
 cq2$quebra <- utils::modifyList(cq2$quebra, list(ativo = TRUE, de = 110000, ate = 440000, ligar_atraves = FALSE))
 cq2$eixo_y$mostrar_titulo <- FALSE; cq2$legenda$posicao <- "dentro"
 teste("quebra sem ligar pontos: a legenda da parte de cima mostra TODAS as séries (chave vermelha da LATAM)",
-      any(grepl("^#D62728", renderiza(attr(plotar(an, cq2), "partes")[[1]]))))
+      any(grepl("^#E34234", renderiza(attr(plotar(an, cq2), "partes")[[1]]))))
 pg <- list2env(list(x_ticks_espessura_pt = 2.5, y_ticks_espessura_pt = 0.5, x_linha_espessura_pt = 2,
                     moldura_espessura_pt = 3,
                     x_ticks_cor = "red", x_intervalo = 2, x_primeiro_tick = 2016, x_inicio = 2015, x_fim = 2026))
@@ -390,12 +390,12 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
                     "y2_series", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo", "y2_ticks_manuais", "y2_ticks_menores",
                     "y2_cor", "y2_cor_eixo", "y2_dividir_por", "y2_casas_decimais", "y2_notacao", "y2_prefixo", "y2_sufixo",
                     "y2_fator", "y2_deslocamento", "linha_espessura_por_serie", "simbolo_tamanho_por_serie",
-                    "simbolo_borda_por_serie", "y2_igual_y1", "y2_legenda_sufixo", "legenda_canto", "fonte_pasta", "simbolo_forma_por_serie", "legenda_nomes")
+                    "simbolo_borda_por_serie", "y2_igual_y1", "y2_legenda_sufixo", "legenda_canto", "fonte_pasta", "simbolo_forma_por_serie", "legenda_nomes", "idioma")
         all(v %in% c(names(.PAINEL_MAPA), extras)) })
 teste("painel: cores_por_serie sem nomes dá erro claro",
       da_erro(aplicar_painel(c0, list2env(list(cores_por_serie = c("#000000", "#FF0000")))), "nomes"))
 
-cat("\n--- Quebra de eixo contínua (estilo Origin) ---\n")
+cat("\n--- Quebra de eixo contínua ---\n")
 qd <- data.frame(x = 1:20, y = c(seq(10, 100, length.out = 10), seq(5000, 5900, length.out = 10)))
 cqc <- c0; cqc$grafico <- utils::modifyList(cqc$grafico, list(tipo = "linha", coluna_x = 1, colunas_y = "y"))
 cqc$legenda$mostrar <- FALSE; cqc$eixo_y$mostrar_titulo <- FALSE; cqc$caixa$ticks_espelhados <- FALSE
@@ -927,12 +927,15 @@ ids_pal <- unlist(.PALETAS_GRUPOS, use.names = FALSE)
 teste("paletas: todas as do catálogo (grupos da tela) existem e entregam n cores válidas (n = 1, 3 e 12)",
       length(ids_pal) >= 35 && all(vapply(ids_pal, function(i) all(vapply(c(1, 3, 12), function(n) {
         x <- .paleta(i, n, c0$cores); length(x) == n && !anyNA(x) && is.matrix(grDevices::col2rgb(x)) }, NA)), NA)))
-teste("paletas: 'marca' (azul e verde) é uma paleta do motor e o painel a aceita",
+teste("paletas: 'marca' (azul e verde) é uma paleta do motor e o painel a aceita; 'classico' (nome antigo) vale como 'cinabro'",
       identical(.paleta("marca", 2, c0$cores), c("#1B3A8C", "#0E9F4B")) &&
       suppressMessages(aplicar_painel(c0, list2env(list(cores_paleta = "marca"))))$cores$paleta == "marca")
 teste("paletas: de uma cor só (seq_azul) vão do claro ao escuro e as demais (qualitativas) ficam na ordem da lista", {
-  a <- .paleta("seq_azul", 5, c0$cores); l <- function(x) sum(grDevices::col2rgb(x)) / 3
-  l(a[1]) > l(a[5]) && identical(.paleta("origin_basico", 3, c0$cores), c("#000000", "#FF0000", "#0000FF")) })
+  a <- .paleta("brewer_Blues", 5, c0$cores); l <- function(x) sum(grDevices::col2rgb(x)) / 3
+  l(a[1]) > l(a[5]) && identical(.paleta("okabe_ito", 3, c0$cores), c("#0072B2", "#D55E00", "#009E73")) })
+teste("paletas retiradas (tableau, d3, npg, origin_*...) ainda funcionam com um aviso e uma paleta livre equivalente; 'classico' vale como 'cinabro' sem aviso",
+      da_aviso(.paleta("tableau", 3, c0$cores), "foi retirada") && identical(suppressWarnings(.paleta("tableau", 3, c0$cores)), .paleta("okabe_ito", 3, c0$cores)) &&
+      length(avisos_de(.paleta("classico", 3, c0$cores))) == 0 && identical(.paleta("classico", 4, c0$cores), .paleta("cinabro", 4, c0$cores)))
 teste("paleta desconhecida dá erro com a lista de opções", da_erro(.paleta("nao_existe", 3, c0$cores), "Opções:"))
 teste("paletas: mostrar_paletas() desenha todas sem erro", { g <- .grafico_paletas(6); inherits(g, "gg") && monta(g) })
 
@@ -964,6 +967,8 @@ teste("png/pdf/svg/tiff gravados e não vazios", all(file.exists(arqs)) && all(f
 teste("nenhum dispositivo gráfico ficou aberto", is.null(grDevices::dev.list()))
 c1 <- c0; c1$texto$tamanho_base_pt <- 14
 salvar_estilo(c1, "tmp_teste", pasta = tmp)
+teste("todos os estilos embutidos e da pasta estilos/ carregam e a paleta de cada um existe (sem aviso de paleta retirada)",
+      all(vapply(listar_estilos(), function(e) { ce <- carregar_estilo(e, c0); length(avisos_de(.paleta(ce$cores$paleta, 3, ce$cores))) == 0 }, NA)))
 teste("estilo: salvar e carregar de volta", carregar_estilo("tmp_teste", c0, pasta = tmp)$texto$tamanho_base_pt == 14)
 
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", .res["passou"], .res["falhou"]))

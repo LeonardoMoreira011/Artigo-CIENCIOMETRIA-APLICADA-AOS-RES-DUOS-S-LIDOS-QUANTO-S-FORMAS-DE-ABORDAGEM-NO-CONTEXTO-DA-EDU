@@ -1,0 +1,37 @@
+# Cinabro — a chart laboratory for scientific figures in R
+
+*A punctis ad curvam: ubi data colorem accipiunt.* (From the points to the curve: where data take on color.)
+
+Cinabro turns a CSV file into publication-ready figures (PNG, TIFF, JPEG, SVG, PDF, EMF) with fine control of axes, ticks, frame, colors, legends, panels, a second Y axis and axis breaks. It has two faces that share the same engine:
+
+- **The app** (in the browser, no code): open it, load a CSV and adjust everything with clicks.
+- **The script** (`painel_de_ajustes.R` / `graficos_R_completo.R`): the same settings as plain variables, for repeatable work.
+
+> This file is a short guide. The complete reference (every setting, with examples) is `LEIAME.md`, which is written in Portuguese. Comments inside `01_config.R` and `painel_de_ajustes.R` are also in Portuguese.
+
+## Languages
+The app speaks **Português (BR)**, **English** and **Español**. Pick the language in the selector at the top right (it reloads the page and remembers your choice), or open `http://cinabro.localhost:8421/?idioma=en` (`es`, `pt`). In scripts, use `idioma <- "en"` in the adjustments panel (it affects messages and the automatic texts inside the chart). Messages written by the engine are translated by a dictionary; a message that is not in the dictionary appears in Portuguese.
+
+## Running the app
+1. Install R (https://cran.r-project.org). RStudio is optional.
+2. Extract the **whole** ZIP into a folder (do not run files from inside the ZIP).
+3. Windows: double-click `abrir_app.bat` (first run installs the packages and needs internet). To get a desktop shortcut without a console window, double-click `Criar_atalho_na_area_de_trabalho.bat` once.
+4. Other systems, or inside R: `shiny::runApp("app_shiny")` from the project folder.
+
+The page opens at `http://cinabro.localhost:8421`. The R process closes a few seconds after you close the browser tab.
+
+## What you can do
+- **Chart types:** line, line with points, scatter, area, stacked area, bars, pie/donut, histogram, density, cumulative distribution, boxplot.
+- **Axes:** start/end, tick spacing, minor ticks, first tick, manual ticks, log and other scales, number format, rotation, a divide-by factor, titles with exponents and subscripts (`m^{2}`, `CO_{2}`).
+- **Right Y axis (Y2):** same options as the left axis, with its own scale, color and intervals.
+- **Axis break:** two styles (separate or continuous frame), per-part tick spacing and minor ticks, a button that finds the largest gap in your data.
+- **Colors:** 64 ready palettes (see below), your own palette (paste color codes, edit the swatches, save it with a name), color/shape/size per series.
+- **Legend:** inside or outside, vertical or horizontal, columns and rows, drag it on the preview, background, border, shadow, exact width.
+- **Plot box:** fixed size (like a plot area), so every figure has the same box; the page adjusts to fit numbers, titles and legend.
+- **Export:** choose one or more file types; transparent background; resolution; save/load settings (JSON); "equivalent code" for the script.
+
+## Palettes and licenses
+Only palettes from freely licensed work are included — no palettes named after programs, brands or journals: the original `cinabro` (default) and `marca`, Okabe-Ito, Paul Tol, Brewer (qualitative, sequential, diverging; includes `brewer_RdYlGn`, dark red to green), viridis family, cmocean and Crameri's scientific colour maps. Credits and license notices are in `NOTICE.md`. The font is Barlow (SIL Open Font License; `fontes/Barlow/OFL.txt`).
+
+## Tests
+`Rscript 06_testes.R` (engine) and `Rscript app_shiny/testes_app.R` (app). Tested on Linux with ggplot2 3.5.2 and 4.0.3; **not tested on Windows** — run `07_verificar_windows.R` once.

@@ -9,7 +9,7 @@
 #                  ajuda("eixo_x")    -> mostra todos os parâmetros do bloco
 #                  galeria()          -> PDF visual com símbolos, linhas, paletas
 #   - Unidades: espessuras, tamanhos de texto, símbolos e ticks em PONTOS (pt),
-#     como no Origin (1 pt = 1/72 polegada). Tamanho da figura em cm.
+#     (1 pt = 1/72 polegada). Tamanho da figura em cm.
 #   - Números: ponto decimal SEMPRE (1.5). Nunca vírgula.
 #   - NULL significa "automático".
 # =============================================================================
@@ -98,20 +98,27 @@ cfg$grafico <- list(
 cfg$cores <- list(
   # paleta: cores atribuídas automaticamente às séries, em sequência
   #   (como o "incremento" de cor). Veja todas com mostrar_paletas().
-  #   OPÇÕES (todas aparecem em mostrar_paletas()):
-  #     Estilo Origin ........ "classico" | "origin_basico" | "origin_vivo" | "origin_escuro" | "origin_pastel" |
-  #                            "origin_suave" | "origin_pares" | "origin_doce"
-  #     Marca ................ "marca"
-  #     Acessíveis ........... "okabe_ito" | "tol_brilhante" | "tol_vibrante" | "tol_suave" | "tol_contraste"
-  #     Revistas ............. "tableau" | "d3" | "npg" | "lancet" | "jco" | "nejm"
-  #     Degradês de uma cor .. "seq_azul" | "seq_verde" | "seq_laranja" | "seq_vermelho" | "seq_roxo" |
-  #                            "seq_azul_verde" | "seq_calor" | "seq_frio"
-  #     Divergentes .......... "div_vermelho_azul" | "div_espectro" | "div_marrom_verde" | "arco_iris"
-  #     Contínuas ............ "viridis" | "magma" | "plasma" | "cividis" | "inferno" | "turbo" | "cinza"
-  #     ColorBrewer .......... "brewer_<nome>" (ex.: "brewer_Set1", "brewer_Spectral"; precisa do pacote RColorBrewer)
+  #   OPÇÕES (todas aparecem, desenhadas, em mostrar_paletas()):
+  #     Do Cinabro ........... "cinabro" (padrão) | "marca" (azul e verde)
+  #     Acessíveis ........... "okabe_ito" | "tol_brilhante" | "tol_vibrante" | "tol_suave" | "tol_alto_contraste" |
+  #                            "tol_medio_contraste" | "tol_claro" | "tol_escuro" | "tol_palido"
+  #     Qualitativas (Brewer)  "brewer_Set1" | "brewer_Set2" | "brewer_Dark2" | "brewer_Paired" | "brewer_Accent" |
+  #                            "brewer_Pastel1" | "brewer_Pastel2" | "brewer_Set3"
+  #     Degradês (Brewer) .... "brewer_Blues" | "brewer_Greens" | "brewer_Oranges" | "brewer_Reds" | "brewer_Purples" |
+  #                            "brewer_YlGnBu" | "brewer_YlOrRd"
+  #     Divergentes (Brewer) . "brewer_RdYlGn" (vermelho-escuro -> verde) | "brewer_Spectral" | "brewer_RdYlBu" |
+  #                            "brewer_RdBu" | "brewer_BrBG" | "brewer_PiYG" | "brewer_PRGn"
+  #     Contínuas ............ "viridis" | "magma" | "plasma" | "cividis" | "inferno" | "turbo" | "mako" | "rocket"
+  #                            (pacote viridisLite) | "cmo_thermal" | "cmo_haline" | "cmo_algae" | "cmo_matter" |
+  #                            "cmo_deep" | "cmo_balance" | "cmo_delta" | "cmo_curl" | "crameri_batlow" | "crameri_roma" |
+  #                            "crameri_bam" | "crameri_vik" | "crameri_lajolla" | "crameri_bilbao" | "crameri_oslo" |
+  #                            "crameri_lapaz" | "crameri_hawaii" | "crameri_tokyo" | "crameri_berlin" |
+  #                            "tol_por_do_sol" | "tol_iridescente" | "tol_BuRd" | "cinza"
+  #     Outras do ColorBrewer  "brewer_<nome>" (precisa do pacote RColorBrewer)
   #     Sua própria .......... "personalizada" (cores em cfg$cores$personalizada)
+  #   As cores vêm de trabalhos com licença livre; os créditos estão em NOTICE.md.
   #   EX.: cfg$cores$paleta <- "okabe_ito"
-  paleta = "classico",
+  paleta = "cinabro",
 
   # personalizada: suas cores, usadas quando paleta = "personalizada".
   #   OPÇÕES: vetor de cores (nome, "#RRGGBB", "#RRGGBBAA" ou rgb(…))
@@ -189,7 +196,7 @@ cfg$serie_padrao <- list(
   #   EX.: cfg$serie_padrao$simbolo <- 22
   simbolo = 21,
   # (aceita também o nome: "circulo", "quadrado", "losango", "triangulo", "triangulo_invertido", "estrela", "esfera"...
-  #  "esfera" = bolinha com volume (sombreado e brilho), no estilo do Origin; use com preenchimento "serie".)
+  #  "esfera" = bolinha com volume (sombreado e brilho), com sombreado e brilho; use com preenchimento "serie".)
 
   # tamanho_simbolo_pt: tamanho do símbolo em pt.
   #   OPÇÕES: número > 0      EX.: cfg$serie_padrao$tamanho_simbolo_pt <- 8
@@ -261,7 +268,7 @@ cfg$linhas <- list(
   ligacao = "reta",
 
   # ordenar_x: ordena os pontos de cada série por X antes de ligá-los. Com FALSE (padrão,
-  #   como no Origin) a linha segue a ORDEM DAS LINHAS DO CSV, o que permite curvas que
+  #   como padrão) a linha segue a ORDEM DAS LINHAS DO CSV, o que permite curvas que
   #   voltam (laços, histerese, trajetórias). Use TRUE se o CSV está fora de ordem e você
   #   quer a linha sempre da esquerda para a direita.
   #   OPÇÕES: TRUE | FALSE
@@ -952,7 +959,7 @@ cfg$caixa <- list(
   #   OPÇÕES: NULL | número (1 = quadrado; 0.75 = 4:3)
   proporcao = NULL,
 
-  # painel_fixo: a caixa do gráfico (a área dentro dos eixos) tem SEMPRE o mesmo tamanho, como o layer do Origin:
+  # painel_fixo: a caixa do gráfico (a área dentro dos eixos) tem SEMPRE o mesmo tamanho, como uma área de plotagem de tamanho fixo:
   #   mexer em números, títulos, distâncias ou legenda move esses textos, não o gráfico, e a página do arquivo se
   #   ajusta para caber tudo (veja exportacao$ajustar_pagina). Vale para linha, pontos, barras, boxplot, histograma...
   #   (não para pizza nem painéis empilhados). FALSE = a caixa ocupa o que sobra da página (largura x altura).
@@ -1203,7 +1210,7 @@ cfg$quebra <- list(
 
   # estilo: como as duas partes aparecem.
   #   "separado" (padrão): dois gráficos, cada um com a sua moldura, com um espaço entre eles.
-  #   "continuo": estilo Origin: as partes coladas dentro de UMA moldura só, com duas barras "//"
+  #   "continuo": estilo contínuo: as partes coladas dentro de UMA moldura só, com duas barras "//"
   #               nas bordas esquerda e direita no ponto da quebra (espaco_pt não é usado).
   #   OPÇÕES: "separado" | "continuo"      EX.: cfg$quebra$estilo <- "continuo"
   estilo = "separado",

@@ -15,7 +15,9 @@ suppressMessages(source(file.path(raiz, "02_motor.R"), encoding = "UTF-8"))
 CFG0 <- .completar_cfg(cfg)
 assign("raiz", raiz, envir = globalenv()); assign("CFG0", CFG0, envir = globalenv())   # usados pelos arquivos de R/
 addResourcePath("fontes", file.path(raiz, "fontes"))
-for (a in c("espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8", local = FALSE)
+for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8", local = FALSE)
+
+carregar_dicionarios(file.path("idiomas"))
 
 EXEMPLOS <- c("Dois eixos + quebra de eixo (Y esquerdo e direito)" = "exemplo_dois_eixos_e_quebra.csv",
               "Série temporal (eixo de datas)" = "serie_temporal.csv",
@@ -26,16 +28,17 @@ EXEMPLOS <- c("Dois eixos + quebra de eixo (Y esquerdo e direito)" = "exemplo_do
               "Replicatas (boxplot)" = "replicatas.csv", "Vários sinais" = "multissinal.csv")
 EXEMPLOS <- EXEMPLOS[file.exists(file.path(raiz, "dados", EXEMPLOS))]
 
-ui <- fluidPage(
+construir_ui <- function(idioma) fluidPage(
   title = "Cinabro — laboratório de gráficos",
-  tags$head(tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(HTML(paste0("window.PALETAS = ", jsonlite::toJSON(paletas_js(), auto_unbox = TRUE), ";"))), tags$script(src = "app.js"),
+  tags$head(tags$script(HTML(sprintf("window.IDIOMA = '%s'; $(document).on('shiny:connected', function () { Shiny.setInputValue('idioma_pagina', window.IDIOMA); });", idioma))), tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(HTML(paste0("window.PALETAS = ", jsonlite::toJSON(paletas_js(), auto_unbox = TRUE), ";"))), tags$script(src = "app.js"),
             tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")),
   tags$header(class = "topo",
     div(class = "marca", div(class = "marca-ico", HTML("&#9650;")),
-        div(tags$h1("Cinabro"), tags$p("Dos pontos à curva: onde os dados ganham cor."))),
+        div(tags$h1("Cinabro"), tags$p("A punctis ad curvam: ubi data colorem accipiunt."))),
     div(class = "topo-acoes",
-        selectInput("estilo", NULL, choices = c("Estilos prontos..." = "", "Padrão do template" = "padrao", "Publicação (artigo)" = "publicacao",
-                                               "Apresentação (slides)" = "apresentacao"), selectize = FALSE, width = "190px"),
+        selectInput("idioma_sel", NULL, choices = IDIOMAS, selected = idioma, selectize = FALSE, width = "140px"),
+        selectInput("estilo", NULL, choices = tr_nomes(c("Estilos prontos..." = "", "Padrão do template" = "padrao", "Publicação (artigo)" = "publicacao",
+                                               "Apresentação (slides)" = "apresentacao")), selectize = FALSE, width = "190px"),
         actionButton("restaurar", "Restaurar tudo", class = "btn-topo"),
         actionButton("guia", "Como usar", class = "btn-topo btn-topo-forte"))),
   div(class = "area",
@@ -45,7 +48,7 @@ ui <- fluidPage(
           tags$h2(span(class = "num", "0"), "Seus dados"),
           tags$p(class = "ajuda", "Envie um CSV ou escolha um exemplo para ver o gráfico funcionando."),
           fileInput("arquivo", NULL, accept = c(".csv", ".txt", ".tsv"), buttonLabel = "Escolher arquivo...", placeholder = "Nenhum arquivo", width = "100%"),
-          selectInput("exemplo", NULL, choices = c("...ou use um exemplo" = "", EXEMPLOS), selectize = FALSE, width = "100%"),
+          selectInput("exemplo", NULL, choices = tr_nomes(c("...ou use um exemplo" = "", EXEMPLOS)), selectize = FALSE, width = "100%"),
           uiOutput("resumo_dados")),
       lapply(seq_along(ESPEC), function(i) {
         b <- ESPEC[[i]]
@@ -85,7 +88,14 @@ ui <- fluidPage(
           tags$details(tags$summary(tags$h2("Código equivalente (para usar no script)")),
             tags$p(class = "ajuda", "Estas linhas fazem o mesmo no painel_de_ajustes.R. Copie e cole, ou baixe o script pronto."),
             tags$pre(id = "codigo-txt", textOutput("codigo", inline = TRUE)),
-            div(class = "botoes-config", tags$button(type = "button", class = "btn-sec", id = "copiar-codigo", "Copiar"),
+            div(class = "botoes-config", tags$button(type = "button", class = "btn-sec", id = "copiar-codigo", `data-copiado` = "Copiado!", "Copiar"),
                 downloadButton("baixar_codigo", "Baixar script (.R)", class = "btn-sec")))))))
+
+# A tela é montada em português e traduzida para o idioma pedido no endereço (?idioma=en | es).
+ui <- function(request) {
+  idioma <- idioma_do_pedido(request)
+  .i18n$idioma <- idioma
+  traduzir_html(construir_ui(idioma), idioma)
+}
 
 shinyApp(ui, servidor)

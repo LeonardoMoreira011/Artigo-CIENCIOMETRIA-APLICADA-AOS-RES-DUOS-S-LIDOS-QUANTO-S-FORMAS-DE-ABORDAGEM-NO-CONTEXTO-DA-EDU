@@ -103,7 +103,7 @@ grade_menor_opacidade    <- NULL
 
 # ---- 6. QUEBRA DO EIXO Y (intervalo grande entre os dados) -------------------------------------
 quebra_ativar    <- NULL   # TRUE liga. Sem quebra_de/quebra_ate, o script ACHA o maior vazio entre os dados
-quebra_estilo    <- NULL   # "separado" (dois gráficos com espaço) | "continuo" (uma moldura só, estilo Origin)
+quebra_estilo    <- NULL   # "separado" (dois gráficos com espaço) | "continuo" (uma moldura só, com as barras //)
 quebra_de        <- NULL   # início do trecho omitido. EX.: 5000
 quebra_ate       <- NULL   # fim do trecho omitido.    EX.: 80000
 quebra_espaco_pt <- NULL   # espaço entre as duas partes (aumente se os números se sobrepuserem). EX.: 14
@@ -168,8 +168,8 @@ y2_titulo_italico <- NULL         # TRUE = título em itálico
 #  As cores de cada série (esquerda ou direita) também podem vir de cores_por_serie (bloco 8).
 
 # ---- 8. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
-cores_paleta        <- NULL   # "classico" (padrão tipo Origin) | "origin_basico" | "origin_pastel" | "marca" | "okabe_ito" |
-                              # "tableau" | "npg" | "seq_azul" | "div_espectro" | "viridis" | "cinza" | "brewer_Set1"...
+cores_paleta        <- NULL   # "cinabro" (padrão) | "marca" | "okabe_ito" | "tol_brilhante" | "brewer_Set1" | "brewer_RdYlGn"
+                              # (vermelho-escuro -> verde) | "viridis" | "cmo_thermal" | "crameri_batlow" | "cinza"...
                               # (a lista completa, com as cores desenhadas: mostrar_paletas())
 cores_personalizadas <- NULL  # suas cores, na ordem das colunas Y. EX.: c("#000000", "#D62728", "#1F4E9E")
 cores_por_serie     <- NULL   # a cor de séries específicas (nome exato da coluna).
@@ -263,6 +263,9 @@ legenda_sombra   <- NULL   # TRUE = sombra atrás da caixa (com fundo "transpare
 legenda_sombra_cor <- NULL # EX.: "black" | "grey30"
 legenda_sombra_opacidade <- NULL    # 0 a 1. EX.: 0.35
 legenda_sombra_deslocamento_pt <- NULL  # c(para a direita, para baixo) em pt. EX.: c(3, 3)  |  c(5, 2)
+
+# ---- IDIOMA -----------------------------------------------------------------------------------------
+idioma           <- NULL   # idioma das mensagens e dos textos automáticos do gráfico: "pt" (português do Brasil) | "en" | "es"
 
 # ---- 12. EXPORTAÇÃO ------------------------------------------------------------------------------------
 largura_cm   <- NULL       # EX.: 14   (só vale com painel_fixo <- FALSE ou ajustar_pagina <- FALSE; senão a página se ajusta sozinha)

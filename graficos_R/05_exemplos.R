@@ -132,7 +132,7 @@ cfg <- novo_cfg("10_barras_agrupadas")
 cfg$grafico$tipo <- "barras"
 cfg$grafico$colunas_y <- c("Ensaio 1", "Ensaio 2", "Ensaio 3")
 cfg$series[["Ensaio 1"]] <- list(coluna_erro = "Erro 1")
-cfg$cores$paleta <- "tableau"
+cfg$cores$paleta <- "okabe_ito"
 cfg$eixo_y$titulo <- "Resistência (MPa)"
 cfg$eixo_y$inicio <- 0; cfg$eixo_y$fim <- 1000
 cfg$eixo_y$ticks_modo <- "incremento"; cfg$eixo_y$incremento <- 200
@@ -172,7 +172,7 @@ cfg <- novo_cfg("13_pizza")
 cfg$grafico$tipo <- "pizza"
 cfg$pizza$explodir <- "Cromo"
 cfg$pizza$agrupar_abaixo <- 1
-cfg$cores$paleta <- "tableau"
+cfg$cores$paleta <- "okabe_ito"
 cfg$exportacao$largura <- 14; cfg$exportacao$altura <- 11
 gerar(liga, cfg)
 
@@ -225,7 +225,7 @@ gerar(rep_, cfg)
 # --- 19 Boxplot padrão (Tukey, média, outliers) ------------------------------
 cfg <- novo_cfg("19_boxplot")
 cfg$grafico$tipo <- "boxplot"
-cfg$cores$paleta <- "tableau"
+cfg$cores$paleta <- "okabe_ito"
 cfg$serie_padrao$opacidade_preenchimento <- 0.8
 cfg$eixo_y$titulo <- "Resposta (u.a.)"
 gerar(rep_, cfg)
@@ -272,7 +272,7 @@ cfg <- novo_cfg("24_boxplot_horizontal")
 cfg$grafico$tipo <- "boxplot"
 cfg$boxplot$orientacao <- "horizontal"
 cfg$boxplot$variacao <- "box_pontos"; cfg$boxplot$pontos_disposicao <- "jitter"
-cfg$cores$paleta <- "tableau"
+cfg$cores$paleta <- "okabe_ito"
 gerar(rep_, cfg)
 
 # --- 25 PAINÉIS empilhados com X comum (3 painéis) ---------------------------

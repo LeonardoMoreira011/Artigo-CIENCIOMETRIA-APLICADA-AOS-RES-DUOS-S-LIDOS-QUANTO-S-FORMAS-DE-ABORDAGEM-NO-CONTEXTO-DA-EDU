@@ -38,7 +38,7 @@ Severidade: **crítico** = resultado errado silencioso; **alto** = trava ou perd
 | R12 | médio | `.plotar_um` | Eixo Y2 sem ticks menores no lado direito | imagem | **Corrigido** (desenho próprio, pois `sec_axis` não tem como). *Bug encontrado no meio:* o `annotation_custom` lê limites em espaços diferentes no ggplot2 3.5 e 4.0, e com X em log os ticks sumiam no 3.5 (ver R18); coberto por teste de **renderização** |
 | R13 | médio | `.construir_pizza` | Rótulos "fora" de fatias pequenas vizinhas se sobrepõem | imagem | **Corrigido** (`rotulos_afastar`; só move os que colidem) |
 | R14 | baixo | `.calc_eixo` | Tolerância absoluta de 1e-9·max gruda ticks em eixo log de ≥ 10 décadas (tick duplicado em 1e-10, o 1e-9 some) | S8 | **Corrigido** (tolerância relativa em log) |
-| R15 | baixo | `.construir_xy` | Linha segue a ordem do CSV (como o Origin), sem opção de ordenar | S18 | **Implementado** `linhas$ordenar_x` (padrão `FALSE`) |
+| R15 | baixo | `.construir_xy` | Linha segue a ordem do CSV , sem opção de ordenar | S18 | **Implementado** `linhas$ordenar_x` (padrão `FALSE`) |
 | R16 | médio | validação | Chave digitada errado dentro de `referencias` e `anotacoes$textos/setas/faixas` era ignorada em silêncio | teste | **Corrigido** (aviso com sugestão) |
 | R17 | baixo | barras/pizza | `grafico$ordem_itens` com categoria inexistente e `pizza$explodir` inexistente: ignorados em silêncio | leitura | **Corrigido** (aviso) |
 | R18 | médio | `.ticks_internos` (+ novo) | `annotation_custom(-Inf, Inf)` em escala log gera `NaN` + aviso no ggplot2 4.0; no 3.5 as bordas finitas quebram o desenho | exemplo 07 | **Corrigido**, dependente da versão (`.borda_painel`) |

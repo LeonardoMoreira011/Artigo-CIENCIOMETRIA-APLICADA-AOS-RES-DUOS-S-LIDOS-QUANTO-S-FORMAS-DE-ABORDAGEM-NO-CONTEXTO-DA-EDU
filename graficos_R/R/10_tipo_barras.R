@@ -114,7 +114,7 @@
   }
   ax_y <- .calc_eixo(cfg$eixo_y, faixa_y, forcar = cfg$.interno$forcar_y)
   tit_y <- cfg$eixo_y$titulo %||%
-    (if (B$arranjo == "empilhado_100") "Percentual (%)" else if (n == 1) ycols else "Valor")
+    (if (B$arranjo == "empilhado_100") .rot("Percentual (%)") else if (n == 1) ycols else .rot("Valor"))
   list(camadas = c(cam, .escalas_legenda(est, aes_leg, cfg)),
        info = list(ax_x = ax_x, ax_y = ax_y, flip = flip, titulo_x = cfg$eixo_x$titulo %||% xcol,
                    titulo_y = tit_y, legenda_auto = TRUE, faixa_x = c(r$xmin, r$xmax), faixa_y = faixa_y))
