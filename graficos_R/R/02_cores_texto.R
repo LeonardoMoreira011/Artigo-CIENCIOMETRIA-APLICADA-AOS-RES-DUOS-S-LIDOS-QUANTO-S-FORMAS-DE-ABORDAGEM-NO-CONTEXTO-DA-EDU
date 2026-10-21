@@ -74,12 +74,10 @@
 # Nomes de paletas que existiram antes e foram retiradas (paletas ligadas a programas, revistas ou marcas): quem ainda os usa recebe
 # uma paleta livre parecida e um aviso, em vez de um erro.
 .PALETAS_ANTIGAS <- c(classico = "cinabro", tableau = "okabe_ito", d3 = "okabe_ito", npg = "okabe_ito", lancet = "okabe_ito", jco = "okabe_ito",
-                      nejm = "okabe_ito", origin_basico = "okabe_ito", origin_vivo = "brewer_Set1", origin_escuro = "brewer_Dark2",
-                      origin_pastel = "brewer_Pastel1", origin_suave = "brewer_Set2", origin_pares = "brewer_Paired", origin_doce = "brewer_Set3",
-                      seq_azul = "brewer_Blues", seq_verde = "brewer_Greens", seq_laranja = "brewer_Oranges", seq_vermelho = "brewer_Reds",
-                      seq_roxo = "brewer_Purples", seq_azul_verde = "brewer_YlGnBu", seq_calor = "brewer_YlOrRd", seq_frio = "brewer_Blues",
-                      div_vermelho_azul = "brewer_RdBu", div_espectro = "brewer_Spectral", div_marrom_verde = "brewer_BrBG",
-                      arco_iris = "brewer_Spectral", tol_contraste = "tol_alto_contraste")
+                      nejm = "okabe_ito", seq_azul = "brewer_Blues", seq_verde = "brewer_Greens", seq_laranja = "brewer_Oranges",
+                      seq_vermelho = "brewer_Reds", seq_roxo = "brewer_Purples", seq_azul_verde = "brewer_YlGnBu", seq_calor = "brewer_YlOrRd",
+                      seq_frio = "brewer_Blues", div_vermelho_azul = "brewer_RdBu", div_espectro = "brewer_Spectral",
+                      div_marrom_verde = "brewer_BrBG", arco_iris = "brewer_Spectral", tol_contraste = "tol_alto_contraste")
 
 # Entra: nome da paleta e n. Sai: vetor com n cores (interpola se a paleta for menor que n).
 .paleta <- function(nome, n, cfg_cores = NULL) {

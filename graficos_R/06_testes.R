@@ -933,7 +933,7 @@ teste("paletas: 'marca' (azul e verde) é uma paleta do motor e o painel a aceit
 teste("paletas: de uma cor só (seq_azul) vão do claro ao escuro e as demais (qualitativas) ficam na ordem da lista", {
   a <- .paleta("brewer_Blues", 5, c0$cores); l <- function(x) sum(grDevices::col2rgb(x)) / 3
   l(a[1]) > l(a[5]) && identical(.paleta("okabe_ito", 3, c0$cores), c("#0072B2", "#D55E00", "#009E73")) })
-teste("paletas retiradas (tableau, d3, npg, origin_*...) ainda funcionam com um aviso e uma paleta livre equivalente; 'classico' vale como 'cinabro' sem aviso",
+teste("paletas retiradas (tableau, d3, npg...) ainda funcionam com um aviso e uma paleta livre equivalente; 'classico' vale como 'cinabro' sem aviso",
       da_aviso(.paleta("tableau", 3, c0$cores), "foi retirada") && identical(suppressWarnings(.paleta("tableau", 3, c0$cores)), .paleta("okabe_ito", 3, c0$cores)) &&
       length(avisos_de(.paleta("classico", 3, c0$cores))) == 0 && identical(.paleta("classico", 4, c0$cores), .paleta("cinabro", 4, c0$cores)))
 teste("paleta desconhecida dá erro com a lista de opções", da_erro(.paleta("nao_existe", 3, c0$cores), "Opções:"))
