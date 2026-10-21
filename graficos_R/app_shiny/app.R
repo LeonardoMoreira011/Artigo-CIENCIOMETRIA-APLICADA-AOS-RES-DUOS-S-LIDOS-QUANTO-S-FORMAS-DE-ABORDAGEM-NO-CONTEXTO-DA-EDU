@@ -31,8 +31,8 @@ ui <- fluidPage(
   tags$head(tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(HTML(paste0("window.PALETAS = ", jsonlite::toJSON(paletas_js(), auto_unbox = TRUE), ";"))), tags$script(src = "app.js"),
             tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")),
   tags$header(class = "topo",
-    div(class = "marca", tags$img(class = "marca-logo", src = "cinabro_icone.png", alt = "Cinabro"),
-        div(tags$h1("Cinabro"), tags$p("Laboratório de gráficos: monte, ajuste e baixe sem escrever código"))),
+    div(class = "marca", div(class = "marca-ico", HTML("&#9650;")),
+        div(tags$h1("Cinabro"), tags$p("Dos pontos à curva: onde os dados ganham cor."))),
     div(class = "topo-acoes",
         selectInput("estilo", NULL, choices = c("Estilos prontos..." = "", "Padrão do template" = "padrao", "Publicação (artigo)" = "publicacao",
                                                "Apresentação (slides)" = "apresentacao"), selectize = FALSE, width = "190px"),
@@ -62,7 +62,7 @@ ui <- fluidPage(
                           fileInput("fonte_arquivo", NULL, multiple = TRUE, accept = c(".ttf", ".otf"), buttonLabel = "Escolher arquivo(s)...", placeholder = "Nenhum arquivo", width = "100%"))
                          )
       }),
-      div(class = "rodape", "Fonte oficial: Barlow (SIL Open Font License).")),
+      NULL),
     tags$main(class = "dir",
       div(class = "cartao previa-cartao",
           div(class = "previa-barra",
