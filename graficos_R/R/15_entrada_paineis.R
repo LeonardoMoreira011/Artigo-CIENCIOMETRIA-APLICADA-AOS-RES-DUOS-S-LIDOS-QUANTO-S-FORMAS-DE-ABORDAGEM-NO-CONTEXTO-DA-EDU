@@ -197,7 +197,7 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
   # a parte de cima fica sem números/título do X; a de baixo sem legenda, títulos e letra
   sem_ligar <- isFALSE(Q$ligar_atraves) && cfg$grafico$tipo %in% c("pontos", "linha", "linha_pontos")
   ajustar_parte <- function(ck, parte, faixa) {
-    ck$.interno <- list(forcar_x = inf$ax_x$limites)      # as duas partes compartilham o mesmo eixo X
+    ck$.interno <- list(forcar_x = inf$ax_x$limites, parte = parte)      # as duas partes compartilham o mesmo eixo X
     if (sem_ligar) {
       ck$.interno$recortar_y <- faixa
       if (!is.null(y2)) ck$.interno$recortar_y2 <- c(ck$eixo_y2$inicio, ck$eixo_y2$fim)

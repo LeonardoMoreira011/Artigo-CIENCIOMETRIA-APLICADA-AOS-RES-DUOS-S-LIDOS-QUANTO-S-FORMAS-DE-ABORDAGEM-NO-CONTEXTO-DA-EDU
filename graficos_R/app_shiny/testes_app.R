@@ -27,12 +27,12 @@ tratadas_a_parte <- c("fonte_pasta",                                    # arquiv
                       "simbolo_variar", "legenda_sombra_deslocamento_pt", "legenda_ancora",
                       "pasta_saida", "idioma")                                  # a pasta: o navegador é que baixa o arquivo
 teste("o app tem um campo para cada variável do painel_de_ajustes.R (as exceções estão listadas e são tratadas à parte)",
-      length(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte))) == 0)
-if (length(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte)))) print(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte)))
+      length(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte, names(SLOTS)))) == 0)
+if (length(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte, names(SLOTS))))) print(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte, names(SLOTS))))
 teste("todo campo do app vira uma variável do painel (ou é um dos auxiliares conhecidos)",
-      all(names(ESPEC_CAMPOS) %in% c(vars_painel, "simbolo_modo", "legenda_sombra_dx", "legenda_sombra_dy")))
+      all(names(ESPEC_CAMPOS) %in% c(vars_painel, "simbolo_modo", "legenda_sombra_dx", "legenda_sombra_dy", IDS_SLOT)))
 teste("cada bloco do app tem número, título, resumo e pelo menos um campo", all(vapply(ESPEC, function(b)
-  nzchar(b$titulo) && nzchar(b$resumo) && (length(b$campos) + length(b$grupos)) > 0, NA)) && length(ESPEC) == 12)
+  nzchar(b$titulo) && nzchar(b$resumo) && (length(b$campos) + length(b$grupos)) > 0, NA)) && length(ESPEC) == 14)
 
 # ---- tela -> variáveis ------------------------------------------------------------------------------------------------
 v0 <- lapply(ESPEC_CAMPOS, valor_inicial, cfg0 = CFG0)
@@ -197,6 +197,31 @@ teste("negrito geral, rotação do título, marca da quebra, caixa fixa desligad
 rn <- construir_grafico(d, vnn, CFG0)
 teste("o gráfico com esses ajustes monta sem erro", is.null(rn$erro) && !is.null(rn$g))
 
+# ---- blocos 13 e 14: os cartões viram listas do painel ----------------------------------------------------------------------------
+vs <- lapply(ESPEC_CAMPOS, valor_inicial, cfg0 = CFG0)
+teste("cartões desligados não geram nada; ligados geram só o que difere do padrão (e a lista certa)", {
+  length(montar_variaveis(vs, CFG0)[names(SLOTS)]) == 4 && all(vapply(montar_variaveis(vs, CFG0)[names(SLOTS)], is.null, NA)) && {
+    v1 <- vs; v1$aj1_ativo <- TRUE; v1$aj1_tipo <- "formula"; v1$aj1_formula <- "a*exp(-b*x)+c"; v1$aj1_inicio <- "a=5, b=0.1, c=0"; v1$fm1_ativo <- TRUE; v1$fm1_sem_fundo <- TRUE; v1$fm1_tipo <- "elipse"
+    r <- montar_variaveis(v1, CFG0)
+    identical(r$ajustes[[1]], list(tipo = "formula", formula = "a*exp(-b*x)+c", inicio = c(a = 5, b = 0.1, c = 0))) && identical(r$formas[[1]], list(tipo = "elipse", fundo = NA)) } })
+erros_slot <- character(0)
+for (id in IDS_SLOT[!grepl("_ativo$", IDS_SLOT)]) {                  # cada campo de cada cartão, com o cartão ligado
+  vc <- vs; for (a in grep("_ativo$", IDS_SLOT, value = TRUE)) vc[[a]] <- TRUE
+  vc[[id]] <- alt_campo(ESPEC_CAMPOS[[id]], vs[[id]])
+  r <- tryCatch({ vars <- montar_variaveis(vc, CFG0); suppressMessages(suppressWarnings(aplicar_painel(CFG0, list2env(vars, parent = emptyenv()), dados = NULL))); "" },
+                error = function(e) paste0(id, ": ", conditionMessage(e)))
+  if (nzchar(r)) erros_slot <- c(erros_slot, r)
+}
+if (length(erros_slot)) print(erros_slot)
+teste("todos os campos dos cartões (com todos os cartões ligados), alterados um a um, viram variáveis e o painel aplica sem erro", length(erros_slot) == 0)
+teste("os 4 cartões de ajuste, 3 de traços, 3 de caixas e 6 de formas existem, e o 2º só aparece com o 1º ligado", {
+  g <- ESPEC[[13]]$grupos; any(vapply(g, function(x) identical(x$ativo, "aj2_ativo") && identical(x$se, "input.aj1_ativo"), NA)) &&
+    sum(vapply(c(ESPEC[[13]]$grupos, ESPEC[[14]]$grupos), function(x) !is.null(x$ativo), NA)) == 16 })
+teste("cada bloco tem o tic 'Congelar' no cabeçalho", all(vapply(seq_along(ESPEC), function(i) grepl(paste0("cong_", ESPEC[[i]]$id), paste(as.character(ui_bloco(ESPEC[[i]], i, CFG0)), collapse = ""), fixed = TRUE), NA)))
+re_slot <- construir_grafico(ler_csv(file.path(raiz, "dados", "ensaio_temperatura.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE))),
+  list(tipo_grafico = "pontos", ajustes = list(list(tipo = "linear", banda = TRUE)), caixas_estatisticas = list(list(itens = c("media", "r2"))), formas = list(list(tipo = "texto", texto = "oi"))), CFG0)
+teste("o gráfico monta com os ajustes, a caixa e a forma vindos dos cartões", is.null(re_slot$erro) && !is.null(re_slot$g))
+
 # ---- servidor (testServer) -------------------------------------------------------------------------------------------
 options(gerador_sem_guia = TRUE)
 testServer(servidor, {
@@ -226,6 +251,36 @@ testServer(servidor, {
   teste("servidor: ligar a quebra muda o gráfico e aparece em 'o que você mudou'", "quebra_ativar" %in% rv$res$aplicado && is.null(rv$erro))
   session$setInputs(quebra_de = 450000, quebra_ate = 100000, atualizar = 3)
   teste("servidor: configuração impossível mostra o erro em português sem derrubar o app", !is.null(rv$erro) && grepl("de < ate", rv$erro))
+
+  # ---- blocos 13 e 14, congelar, modelo e abas ----------------------------------------------------------------------------------
+  session$setInputs(quebra_ativar = FALSE, exemplo = "ensaio_temperatura.csv"); session$setInputs(tipo_grafico = "pontos", colunas_y = c("Amostra A", "Amostra B"))
+  session$setInputs(aj1_ativo = TRUE, aj1_serie = "Amostra A", aj1_tipo = "polinomial", aj1_grau = 3, aj1_banda = TRUE,
+                    mk1_ativo = TRUE, mk1_serie = "Amostra B", mk1_preencher = TRUE,
+                    cx1_ativo = TRUE, cx1_itens = c("media", "dp", "equacao", "r2", "anova"), cx1_sombra = TRUE,
+                    fm1_ativo = TRUE, fm1_tipo = "poligono", fm1_vertices = "0.6,0.1; 0.9,0.1; 0.75,0.3", fm2_ativo = TRUE, fm2_texto = "m^{2}", atualizar = 30)
+  teste("servidor: ajuste, traços, caixa de estatística e formas ligados na tela chegam ao gráfico sem erro", is.null(rv$erro) && length(rv$res$cfg$ajustes) == 1 &&
+        length(rv$res$cfg$marcas_estatisticas) == 1 && length(rv$res$cfg$caixas_estatisticas) == 1 && length(rv$res$cfg$formas) == 2 && "formas" %in% rv$res$aplicado)
+  session$setInputs(estat_testes = c("shapiro", "pearson"), estat_calcular = 1)
+  teste("servidor: a tabela de resultados traz o resumo, o ajuste, os parâmetros e os testes", {
+    r <- tabelas_estat(); nrow(r$descritiva) == 2 && nrow(r$ajustes) == 1 && nrow(r$parametros) == 4 && nrow(r$testes) == 4 })
+  teste("servidor: a tabela de resultados é desenhada na tela", { h <- paste(as.character(output$estat_tabelas$html), collapse = ""); grepl("<table", h, fixed = TRUE) && grepl("Amostra A", h, fixed = TRUE) })
+  session$setInputs(cong_cores = TRUE, cores_paleta = "okabe_ito", cong_legenda = FALSE)
+  teste("servidor: o tic 'Congelar' vale para os campos do bloco (e só dele)", "cores_paleta" %in% ids_congelados() && !"tipo_grafico" %in% ids_congelados() && identical(congelados(), "cores"))
+  txt <- modelo_json(); j <- ler_modelo(txt)
+  teste("servidor: o modelo copiado é um JSON com valores, séries, paletas e blocos congelados, e dá para ler de volta", !is.null(j) && identical(j$valores$aj1_tipo, "polinomial") &&
+        identical(j$congelados, "cores") && !is.null(j$series) && is.null(ler_modelo("isto não é um modelo")))
+  teste("servidor: aplicar_config devolve quantos blocos congelados manteve e não falha", aplicar_config(j, respeitar = TRUE) == 1)
+  session$setInputs(aba_nova = 1)
+  teste("servidor: aba nova começa sem dados e mantém só o que estava congelado", length(rv$abas) == 2 && rv$aba == 2 && is.null(rv$dados) && is.null(rv$abas[[2]]$snap$valores$aj1_ativo) &&
+        identical(rv$abas[[2]]$snap$valores$cores_paleta, "okabe_ito") && identical(rv$abas[[2]]$snap$cong, "cores"))
+  session$setInputs(aba_ir = 1)
+  teste("servidor: voltar à aba 1 devolve os dados e a configuração dela", rv$aba == 1 && !is.null(rv$dados) && nrow(rv$dados) == 13 && identical(rv$abas[[2]]$snap$cong, "cores"))
+  session$setInputs(aba_duplicar = 1)
+  teste("servidor: duplicar a aba copia dados e configuração, com o nome '(cópia)'", length(rv$abas) == 3 && rv$aba == 3 && grepl("cópia", nome_aba(3)) && nrow(rv$dados) == 13)
+  session$setInputs(aba_fechar = 3)
+  teste("servidor: fechar a aba ativa volta para a anterior", length(rv$abas) == 2 && rv$aba == 2)
+  session$setInputs(aba_nome_novo = "Meu gráfico", aba_nome_ok = 1)
+  teste("servidor: renomear a aba", identical(nome_aba(rv$aba), "Meu gráfico"))
 })
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", ok, falhas))
 if (falhas) quit(status = 1)

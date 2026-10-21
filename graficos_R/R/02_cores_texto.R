@@ -34,7 +34,9 @@
   # a paleta padrão do Cinabro: preto, vermelho-cinábrio, azul-marinho, azul-céu, ardósia, ocre, violeta, siena, verde, verde-petróleo.
   # A ordem foi escolhida para que as primeiras cores sejam bem diferentes entre si, também para quem tem daltonismo.
   cinabro   = c("#000000", "#E34234", "#1B3A8C", "#2FA7D6", "#6B7B8C", "#E0A526", "#7B4FA3", "#8A4B2A", "#0E9F4B", "#0B6E78"),
-  marca     = c("#1B3A8C", "#0E9F4B", "#0B6E78", "#8CC63F", "#0F4C81", "#2FB5A0", "#5B7DB1", "#6BBF59"),
+  # as cores da marca (azul e verde), numa ordem pensada: as 4 primeiras são bem distintas entre si (inclusive para daltonismo);
+  # a 5ª em diante se parecem mais (tons de azul e de verde). Com muitas séries, combine com formas e tipos de linha diferentes.
+  marca     = c("#1B3A8C", "#0E9F4B", "#8CC63F", "#0B6E78", "#2FB5A0", "#5B7DB1", "#6BBF59", "#0F4C81"),
   okabe_ito = c("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#000000", "#F0E442")
 )
 .PALETAS <- c(.PALETAS_PROPRIAS, .PALETAS_DADOS)

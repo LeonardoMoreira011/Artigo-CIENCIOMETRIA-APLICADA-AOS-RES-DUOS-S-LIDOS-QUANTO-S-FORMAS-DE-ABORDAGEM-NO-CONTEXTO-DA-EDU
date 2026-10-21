@@ -68,16 +68,67 @@ ler_valor <- function(campo, v, cfg0) {
   out
 }
 
+# ---- cartões dos blocos 13 e 14 (ajustes, marcas, caixas de estatística, formas): da tela para a lista do painel ----------------
+# Valor de um campo de cartão. NULL = "não mexer" (vale o padrão do motor).
+ler_valor_slot <- function(campo, v) {
+  d <- campo$padrao
+  switch(campo$tipo,
+    num = , int = { if (is.null(v) || length(v) != 1 || is.na(v)) NULL else if (!is.null(d) && isTRUE(all.equal(as.numeric(v), as.numeric(d)))) NULL
+                    else if (campo$tipo == "int") as.integer(round(v)) else as.numeric(v) },
+    txt = { v <- trimws(v %||% ""); if (!nzchar(v)) NULL else v },
+    sel = { v <- as.character(v %||% ""); if (!nzchar(v) || (!is.null(d) && identical(v, as.character(d)))) NULL else v },
+    cor = { v <- as.character(v %||% ""); if (!nzchar(v)) NULL else v },
+    chk = { if (is.null(v)) NULL else if (isTRUE(v) != isTRUE(d)) isTRUE(v) else NULL },
+    vec = { p <- strsplit(gsub(",", ".", trimws(v %||% "")), "[;[:space:]]+")[[1]]; p <- p[nzchar(p)]
+            n <- suppressWarnings(as.numeric(p)); if (!length(n) || anyNA(n)) NULL else n },
+    selmulti = if (length(v)) as.character(v) else NULL,
+    NULL)
+}
+# "a=5, b=0.1" -> c(a = 5, b = 0.1)
+ler_inicio <- function(txt) {
+  p <- trimws(strsplit(txt, "[,;[:space:]]+(?=[A-Za-z])", perl = TRUE)[[1]]); p <- p[nzchar(p)]
+  m <- Filter(length, regmatches(p, regexec("^([A-Za-z][A-Za-z0-9_]*)[[:space:]]*=[[:space:]]*(-?[0-9.]+([eE][-+]?[0-9]+)?)$", p)))
+  if (!length(m)) return(NULL)
+  stats::setNames(as.numeric(vapply(m, `[`, "", 3)), vapply(m, `[`, "", 2))
+}
+IDS_SLOT <- local({ ids <- names(ESPEC_CAMPOS); ids[vapply(ESPEC_CAMPOS, function(c) !is.null(c$chave), NA)] })
+montar_slots <- function(v) {
+  out <- list()
+  for (g in names(SLOTS)) {
+    itens <- list(); pref <- SLOTS[[g]]$pref
+    for (k in seq_len(SLOTS[[g]]$n)) {
+      if (!isTRUE(v[[paste0(pref, k, "_ativo")]])) next
+      it <- list()
+      for (c in SLOT_CAMPOS[[g]][[k]]) {
+        if (c$chave == "ativo") next
+        val <- ler_valor_slot(c, v[[c$id]])
+        if (!is.null(val)) it[[c$chave]] <- val
+      }
+      if (!is.null(it$inicio)) { ini <- ler_inicio(it$inicio); it$inicio <- NULL; if (!is.null(ini)) it$inicio <- ini }
+      if (isTRUE(it$sem_fundo)) it$fundo <- NA
+      it$sem_fundo <- NULL
+      if (identical(it$serie, "todas")) it$serie <- NULL
+      if (!is.null(it$tipo) && identical(it$tipo, "poligono")) { it$x <- NULL; it$y <- NULL; it$largura <- NULL; it$altura <- NULL; it$ancora <- NULL }
+      itens[[length(itens) + 1]] <- it
+    }
+    if (length(itens)) out[[g]] <- itens
+  }
+  out
+}
+SLOT_CAMPOS <- lapply(names(SLOTS), function(g) lapply(seq_len(SLOTS[[g]]$n), function(k) Filter(function(c) !is.null(c$chave) && startsWith(c$id, paste0(SLOTS[[g]]$pref, k, "_")), ESPEC_CAMPOS)))
+names(SLOT_CAMPOS) <- names(SLOTS)
+
 # Todas as variáveis do painel a partir dos valores da tela.
 #   v: lista id -> valor (a tela); series: data.frame com uma linha por série (nome, cor, forma, tamanho, linha, borda, legenda)
 montar_variaveis <- function(v, cfg0, series = NULL) {
   vars <- list()
   for (id in names(ESPEC_CAMPOS)) {
     campo <- ESPEC_CAMPOS[[id]]
-    if (id %in% c("simbolo_modo", "legenda_sombra_dx", "legenda_sombra_dy")) next
+    if (id %in% c("simbolo_modo", "legenda_sombra_dx", "legenda_sombra_dy") || id %in% IDS_SLOT) next
     val <- ler_valor(campo, v[[id]], cfg0)
     if (!is.null(val)) vars[[id]] <- val
   }
+  vars <- c(vars, montar_slots(v))                   # ajustes, marcas, caixas de estatística e formas
   # paleta própria (a do editor ou uma guardada) = cores personalizadas
   pal <- vars$cores_paleta
   if (identical(pal, "propria") || (is.character(pal) && startsWith(pal, "salva:"))) {

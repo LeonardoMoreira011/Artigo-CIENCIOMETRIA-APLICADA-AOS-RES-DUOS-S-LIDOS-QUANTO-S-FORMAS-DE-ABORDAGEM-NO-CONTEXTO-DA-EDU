@@ -19,6 +19,18 @@
       var a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); document.body.removeChild(a);
     }).then(function () { b.textContent = ok; setTimeout(function () { b.textContent = orig; }, 1600); });
   });
+  // copiar o modelo (texto da configuração) para a área de transferência
+  function copiarTexto(t, cb) {
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).catch(function () {
+      var a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select();
+      try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(a);
+    }).then(function () { if (cb) cb(); });
+  }
+  Shiny.addCustomMessageHandler('copiar_texto', function (t) { copiarTexto(t); });
+  $(document).on('click', '#copiar-modelo', function () {
+    var b = this, orig = b.textContent, ok = $(b).data('copiado') || 'Copiado!', t = $('#modelo-saida').val();
+    copiarTexto(t, function () { b.textContent = ok; setTimeout(function () { b.textContent = orig; }, 1600); });
+  });
   // idioma: o seletor do cabeçalho recarrega a página com ?idioma=xx (lembra a escolha neste navegador)
   $(document).on('change', '#idioma_sel', function () { try { localStorage.setItem('cinabro_idioma', this.value); } catch (e) {} location.search = '?idioma=' + this.value; });
   try { var salvo = localStorage.getItem('cinabro_idioma');

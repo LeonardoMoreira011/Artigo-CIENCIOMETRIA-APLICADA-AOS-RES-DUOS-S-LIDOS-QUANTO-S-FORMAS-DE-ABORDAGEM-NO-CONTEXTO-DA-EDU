@@ -24,8 +24,8 @@
   for (fx in an$faixas) {
     cor <- .cor(fx$cor %||% "grey60"); op <- fx$opacidade %||% 0.25
     antes[[length(antes) + 1]] <- if ((fx$eixo %||% "x") == "x")
-      annotate("rect", xmin = fx$de, xmax = fx$ate, ymin = -Inf, ymax = Inf, fill = cor, alpha = op)
-      else annotate("rect", ymin = fx$de, ymax = fx$ate, xmin = -Inf, xmax = Inf, fill = cor, alpha = op)
+      annotate("rect", xmin = fx$de, xmax = fx$ate, ymin = .janela(info$ax_y)[1], ymax = .janela(info$ax_y)[2], fill = cor, alpha = op)
+      else annotate("rect", ymin = fx$de, ymax = fx$ate, xmin = .janela(info$ax_x)[1], xmax = .janela(info$ax_x)[2], fill = cor, alpha = op)
   }
   for (r in cfg$referencias) {
     if (is.null(r$valor)) .erro("cfg$referencias: cada linha precisa de 'valor'.")
@@ -60,7 +60,7 @@
       hjust = 0, vjust = 1, gp = gpar(fontsize = an$letra_tamanho_pt %||% cfg$texto$tamanho_base_pt,
                                       fontface = if (isTRUE(an$letra_negrito)) "bold" else "plain",
                                       fontfamily = fonte, col = cfg$texto$cor)),
-      xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
+      xmin = .janela(info$ax_x)[1], xmax = .janela(info$ax_x)[2], ymin = .janela(info$ax_y)[1], ymax = .janela(info$ax_y)[2])
   }
   list(antes = antes, depois = cam)
 }
@@ -82,7 +82,8 @@
   info <- res$info
   if (isTRUE(so_info)) return(info)
   extra <- .camadas_extra(cfg, info)
-  g <- ggplot() + extra$antes + res$camadas + extra$depois
+  aju <- .camadas_ajustes(cfg, info); frm <- .camadas_formas(cfg, info)
+  g <- ggplot() + extra$antes + aju$antes + frm$antes + res$camadas + aju$depois + extra$depois + frm$depois
   mostrar_leg <- if (identical(cfg$legenda$mostrar, "auto")) info$legenda_auto else isTRUE(cfg$legenda$mostrar)
 
   if (isTRUE(info$pizza)) {

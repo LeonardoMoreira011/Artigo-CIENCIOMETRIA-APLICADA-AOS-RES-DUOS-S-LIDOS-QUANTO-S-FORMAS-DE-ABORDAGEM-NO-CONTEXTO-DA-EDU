@@ -30,6 +30,14 @@ The page opens at `http://cinabro.localhost:8421`. The R process closes a few se
 - **Plot box:** fixed size (like a plot area), so every figure has the same box; the page adjusts to fit numbers, titles and legend.
 - **Export:** choose one or more file types; transparent background; resolution; save/load settings (JSON); "equivalent code" for the script.
 
+## Fits, statistics, shapes, frozen blocks and tabs (third round)
+
+- **Block 13 — Fits and statistics:** curve fits (linear, exponential, power, logarithmic, polynomial, loess, **free formula** such as `a*exp(-b*x) + c`; only math functions are accepted), each with color, line type (solid/dashed...), thickness and an optional confidence band; **mean/median lines with SD, SE, 95% CI or min–max bands** (or per-X error bars) with color, thickness and line type; free **statistics boxes** (like the legend) with n, mean, median, SD, SE, sum, R², equation, p-values, Pearson/Spearman/Kendall, Shapiro-Wilk, t test, Wilcoxon, ANOVA, Kruskal-Wallis, Tukey, Bartlett..., with background, rounded or square border, shadow and position. Everything uses base R (`lm`, `nls`, `loess`, `aov`...). In scripts: `estatisticas(dados, cfg)`.
+- **Block 14 — Text boxes and polygons:** text box, rectangle, rounded rectangle, ellipse, triangle, diamond, hexagon, star and free polygon, with border color/width/type, fill, shadow, rotation, and position in plot-box fractions or axis units.
+- **Freeze** (tick in each block header): frozen blocks survive *Restore all*, pasted settings and carry over to new tabs. **Copy settings / Paste settings...** move all settings between charts or computers.
+- **Tabs:** one chart per tab (own data and settings); *+ New tab* (keeps only frozen blocks), *Duplicate*, *Rename*, close; *Show another tab alongside* draws a second chart under the preview. You edit one chart at a time; switching tabs saves and restores everything.
+- The `marca` palette was reordered so the first four colors are the most distinct (also for color-blind viewers).
+
 ## Palettes and licenses
 Only palettes from freely licensed work are included — no palettes named after programs, brands or journals: the original `cinabro` (default) and `marca`, Okabe-Ito, Paul Tol, Brewer (qualitative, sequential, diverging; includes `brewer_RdYlGn`, dark red to green), viridis family, cmocean and Crameri's scientific colour maps. Credits and license notices are in `NOTICE.md`. The font is Barlow (SIL Open Font License; `fontes/Barlow/OFL.txt`).
 

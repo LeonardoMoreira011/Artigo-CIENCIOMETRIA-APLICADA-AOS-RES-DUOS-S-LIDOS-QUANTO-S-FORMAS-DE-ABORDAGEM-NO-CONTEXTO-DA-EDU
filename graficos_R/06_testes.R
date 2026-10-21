@@ -384,7 +384,7 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
         L <- readLines(arq_painel, encoding = "UTF-8")
         L <- L[(grep("PAINEL DE AJUSTES DO GRÁFICO", L)[1]):(grep("EXECUÇÃO \\(não precisa editar\\)", L)[1])]
         v <- sub(" *<- .*", "", grep("^[a-z_A-Z]+ +<- ", L, value = TRUE))
-        extras <- c("ARQUIVO_CSV", "cores_personalizadas", "cores_gradiente", "cores_por_serie", "quebra_ativar",
+        extras <- c("ARQUIVO_CSV", "ajustes", "marcas_estatisticas", "caixas_estatisticas", "formas", "cores_personalizadas", "cores_gradiente", "cores_por_serie", "quebra_ativar",
                     "x_intervalo",
                     "y_intervalo", "x_ticks_manuais", "y_ticks_manuais", "eixos_titulo_negrito", "rotulos_dados_tamanho_pt",
                     "y2_series", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo", "y2_ticks_manuais", "y2_ticks_menores",
@@ -970,6 +970,58 @@ salvar_estilo(c1, "tmp_teste", pasta = tmp)
 teste("todos os estilos embutidos e da pasta estilos/ carregam e a paleta de cada um existe (sem aviso de paleta retirada)",
       all(vapply(listar_estilos(), function(e) { ce <- carregar_estilo(e, c0); length(avisos_de(.paleta(ce$cores$paleta, 3, ce$cores))) == 0 }, NA)))
 teste("estilo: salvar e carregar de volta", carregar_estilo("tmp_teste", c0, pasta = tmp)$texto$tamanho_base_pt == 14)
+
+cat("\n--- Ajustes, estatísticas, caixas e formas ---\n")
+set.seed(3); xa <- seq(1, 50, length.out = 30)
+da <- data.frame(x = xa, A = 2 * xa^0.8 + rnorm(30), B = 500000 + 40000 * log(xa) + rnorm(30, 0, 2e4), C = 10 + 3 * sin(xa / 5) + rnorm(30, 0, 0.4))
+ca <- c0; ca$grafico$coluna_x <- "x"; ca$series <- list()
+com <- function(...) { x <- ca; a <- list(...); for (n in names(a)) x[[n]] <- a[[n]]; x }
+teste("ajuste linear: R², EP e média iguais aos do R (lm, sd)", {
+  cv <- com(ajustes = list(list(tipo = "linear")), grafico = utils::modifyList(ca$grafico, list(colunas_y = "A")))
+  r <- estatisticas(da, cv); abs(r$ajustes$r2 - summary(lm(A ~ x, da))$r.squared) < 1e-9 && abs(r$descritiva$ep - sd(da$A) / sqrt(30)) < 1e-9 })
+teste("ajuste potência e fórmula livre iguais ao nls do R", {
+  nl <- nls(A ~ a * x^b, da, start = list(a = 1, b = 1)); g0 <- utils::modifyList(ca$grafico, list(colunas_y = "A"))
+  r1 <- estatisticas(da, com(ajustes = list(list(tipo = "potencia")), grafico = g0)); r2 <- estatisticas(da, com(ajustes = list(list(tipo = "formula", formula = "a*x^b")), grafico = g0))
+  abs(r1$parametros$estimativa[2] - coef(nl)[2]) < 1e-4 && abs(r2$parametros$estimativa[2] - coef(nl)[2]) < 1e-4 })
+teste("ajustes exponencial, logarítmico, polinomial e loess convergem", {
+  r <- estatisticas(da, com(ajustes = list(list(serie = "A", tipo = "exponencial"), list(serie = "B", tipo = "logaritmico"), list(serie = "C", tipo = "polinomial", grau = 3), list(serie = "C", tipo = "loess"))))
+  nrow(r$ajustes) == 4 && all(r$ajustes$r2 > 0.2) })
+teste("fórmula com função não permitida (system) é recusada; fórmula mal escrita e tipo inválido dão erro claro", {
+  da_erro(plotar(da, com(ajustes = list(list(tipo = "formula", formula = "system('ls') + a*x")))), "não é permitido") &&
+  da_erro(plotar(da, com(ajustes = list(list(tipo = "formula", formula = "a*x^2+")))), "não entendi") &&
+  da_erro(plotar(da, com(ajustes = list(list(tipo = "parabola")))), "não é válido") })
+teste("chave digitada errada em ajustes/caixas/formas avisa; item de caixa inexistente dá erro", {
+  da_aviso(plotar(da, com(ajustes = list(list(tipo = "linear", tipo_linhaa = "x")))), "tipo_linhaa") && da_aviso(plotar(da, com(formas = list(list(tipo = "texto", x = .5, y = .5, textoo = "a")))), "textoo") &&
+  da_erro(plotar(da, com(caixas_estatisticas = list(list(itens = "foo")))), "não existe") })
+teste("o '$' dos itens é exato (borda_tipo sozinho não liga a borda de uma forma sem querer)", {
+  f <- .grob_forma(list(tipo = "texto", x = .5, y = .5, texto = "a", borda_tipo = "dashed"), c0); inherits(f$grob, "grob") })
+teste("ANOVA, Tukey, Kruskal, Bartlett, Shapiro e correlações entre séries: valores iguais aos do R", {
+  g <- list(A = da$A, B = da$B / 1e4, C = da$C); gx <- list(A = da$x, B = da$x, C = da$x)
+  a <- .rodar_teste("anova", g); dd <- data.frame(y = unlist(g), grupo = factor(rep(names(g), each = 30)))
+  p0 <- summary(aov(y ~ grupo, dd))[[1]][1, "Pr(>F)"]
+  tk <- .rodar_teste("tukey", g); pe <- .rodar_teste("pearson", g, x = gx)
+  abs(a$p - p0) < 1e-12 && nrow(tk) == 3 && abs(pe$estatistica[1] - cor(da$x, da$A)) < 1e-9 && .rodar_teste("shapiro", g)$p[1] == shapiro.test(da$A)$p.value &&
+  abs(.rodar_teste("kruskal", g)$p - kruskal.test(y ~ grupo, dd)$p.value) < 1e-12 && abs(.rodar_teste("bartlett", g)$p - bartlett.test(y ~ grupo, dd)$p.value) < 1e-12 })
+teste("desenha ajustes + marcas + caixas + formas juntos (Y2, escala log, quebra de eixo, barras) sem erro nem aviso", {
+  cy <- suppressMessages(aplicar_painel(ca, list2env(list(y2_series = "B", x_escala = "log10",
+        ajustes = list(list(serie = "A", tipo = "potencia", banda = TRUE, estender = TRUE), list(serie = "B", tipo = "logaritmico", cor = "red"), list(serie = "C", tipo = "formula", formula = "a + b*sin(x/5)", inicio = c(a = 10, b = 3))),
+        marcas_estatisticas = list(list(serie = "B", faixa = "ep", preencher = TRUE), list(serie = "A", eixo = "x", faixa = "minmax", centro = "mediana"), list(serie = "A", modo = "barras_por_x", faixa = "dp")),
+        caixas_estatisticas = list(list(itens = c("media", "equacao", "r2_aj", "parametros", "spearman", "ttest", "tukey", "anova"), cantos = "reto", sombra = TRUE, series = c("A", "B"))),
+        formas = list(list(tipo = "poligono", vertices = "0.6,0.2; 0.9,0.2; 0.75,0.5", borda_tipo = "dashed", sombra = TRUE), list(tipo = "elipse", x = 10, y = 20, largura = 5, altura = 6, unidade = "dados", fundo = NA),
+                      list(tipo = "texto", x = 0.5, y = 0.9, texto = "m^{2} e H_{2}O", fundo = "#FFF3CD"))), parent = emptyenv()), dados = da))
+  length(avisos_de(g1 <- plotar(da, cy))) == 0 && monta(g1) })
+teste("quebra de eixo: ajuste e caixa só na parte de cima (caixa), curva nas duas", {
+  dq <- data.frame(x = 1:20, A = c(1:10, 1001:1010) + c(0.3, -0.2)); cq <- com(quebra = utils::modifyList(ca$quebra, list(ativo = TRUE, de = 100, ate = 900)), ajustes = list(list(tipo = "linear")),
+        caixas_estatisticas = list(list(itens = c("media", "r2"))), formas = list(list(tipo = "texto", x = .5, y = .5, texto = "m")))
+  pt <- attr(suppressWarnings(plotar(dq, cq)), "partes"); length(pt) == 2 && monta(pt[[1]]) && monta(pt[[2]]) })
+teste("barras e pizza aceitam formas (e ignoram ajustes) sem erro", {
+  cb <- com(ajustes = list(list(tipo = "linear")), formas = list(list(tipo = "retangulo", x = .5, y = .5))); cb$grafico$tipo <- "barras"
+  inherits(suppressWarnings(plotar(da[, c("x", "A")], cb)), "gg") })
+teste("painel: ajustes, marcas, caixas e formas chegam ao cfg; variável que não é lista dá erro", {
+  cp <- suppressMessages(aplicar_painel(c0, list2env(list(ajustes = list(list(tipo = "linear")), formas = list(list(tipo = "texto", x = .1, y = .1, texto = "a"))))))
+  length(cp$ajustes) == 1 && length(cp$formas) == 1 && da_erro(aplicar_painel(c0, list2env(list(ajustes = "linear"))), "lista") })
+teste("textos das estatísticas saem em inglês e espanhol", {
+  op <- options(cinabro.idioma = "en"); on.exit(options(op)); en <- .re("media"); options(cinabro.idioma = "es"); es <- .re("media"); en == "Mean" && es == "Media" })
 
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", .res["passou"], .res["falhou"]))
 unlink(tmp, recursive = TRUE)

@@ -7,9 +7,9 @@
 # =============================================================================
 
 campo <- function(id, tipo, rotulo, ajuda = NULL, opcoes = NULL, min = NA, max = NA, passo = NA,
-                  padrao = NULL, mais = FALSE, se = NULL, largura = 6) {
+                  padrao = NULL, mais = FALSE, se = NULL, largura = 6, chave = NULL) {
   list(id = id, tipo = tipo, rotulo = rotulo, ajuda = ajuda, opcoes = opcoes, min = min, max = max, passo = passo,
-       padrao = padrao, mais = mais, se = se, largura = largura)
+       padrao = padrao, mais = mais, se = se, largura = largura, chave = chave)
 }
 bloco <- function(id, titulo, resumo, dica = NULL, campos = list(), grupos = NULL) {
   list(id = id, titulo = titulo, resumo = resumo, dica = dica, campos = campos, grupos = grupos)
@@ -145,6 +145,156 @@ opcoes_paletas <- function(guardadas = character(0)) {
     campo("y2_distancia_numeros_pt", "num", "Distância números ↔ eixo (pt)", NULL, min = 0, mais = TRUE)
   )
 }
+
+
+# ---- Blocos 13 e 14: cada item (um ajuste, uma caixa, uma forma...) é um "cartão" com a sua caixa "Usar". ---------------------------
+#  Os campos de um cartão não são variáveis soltas do painel: o app junta os cartões ligados numa LISTA (ajustes, marcas_estatisticas,
+#  caixas_estatisticas, formas), igual ao painel_de_ajustes.R. O cartão k+1 só aparece quando o k está ligado.
+.SERIES_TODAS <- c("Todas as séries" = "todas")
+.ITENS_ESTAT <- list(
+  "Resumo dos números" = c("n (quantidade)" = "n", "Média" = "media", "Mediana" = "mediana", "Desvio padrão" = "dp", "Erro padrão" = "ep", "Soma" = "soma",
+                           "Mínimo" = "minimo", "Máximo" = "maximo", "Amplitude" = "amplitude", "Variância" = "variancia", "Coeficiente de variação" = "cv",
+                           "1º quartil" = "q1", "3º quartil" = "q3", "Intervalo de confiança 95% da média" = "ic95"),
+  "Do ajuste de curva" = c("Equação" = "equacao", "R²" = "r2", "R² ajustado" = "r2_aj", "RMSE (erro médio)" = "rmse", "AIC" = "aic", "BIC" = "bic",
+                           "Valor de p do modelo (F)" = "p_modelo", "Parâmetros ± erro" = "parametros", "Valor de p de cada parâmetro" = "p_parametros",
+                           "Normalidade dos resíduos (Shapiro)" = "shapiro_residuos"),
+  "Testes estatísticos" = c("Correlação de Pearson (X × Y)" = "pearson", "Correlação de Spearman (X × Y)" = "spearman", "Correlação de Kendall (X × Y)" = "kendall",
+                            "Normalidade (Shapiro-Wilk)" = "shapiro", "Teste t entre duas séries (Welch)" = "ttest", "Wilcoxon entre duas séries" = "wilcoxon",
+                            "Teste F de variâncias (duas séries)" = "var_test", "ANOVA de um fator (séries)" = "anova", "Kruskal-Wallis (séries)" = "kruskal",
+                            "Tukey (comparações duas a duas)" = "tukey", "Bartlett (variâncias iguais)" = "bartlett", "Fligner-Killeen (variâncias iguais)" = "fligner"))
+.AJUSTES_OPC <- c("Linear (reta)" = "linear", "Exponencial (y = a·e^(bx))" = "exponencial", "Potência (y = a·x^b)" = "potencia", "Logarítmico (y = a + b·ln x)" = "logaritmico",
+                  "Polinomial (grau 2, 3...)" = "polinomial", "Suavizado (loess)" = "loess", "Fórmula livre (a sua)" = "formula")
+.CANTOS9 <- c("Em cima, à esquerda" = "sup_esq", "Em cima, no centro" = "sup_centro", "Em cima, à direita" = "sup_dir", "No meio, à esquerda" = "centro_esq",
+              "No centro" = "centro", "No meio, à direita" = "centro_dir", "Embaixo, à esquerda" = "inf_esq", "Embaixo, no centro" = "inf_centro", "Embaixo, à direita" = "inf_dir")
+.TIPOS_FORMA <- c("Caixa de texto" = "texto", "Retângulo" = "retangulo", "Retângulo de cantos arredondados" = "retangulo_arredondado", "Elipse / círculo" = "elipse",
+                  "Triângulo" = "triangulo", "Losango" = "losango", "Hexágono" = "hexagono", "Estrela" = "estrela", "Polígono livre (vértices)" = "poligono")
+
+# Cartão k de um tipo de item. 'fn' devolve a lista de campos; os ids são <prefixo><k>_<chave>.
+.cartao <- function(pref, k, titulo, defs, usar) {
+  id <- function(chave) paste0(pref, k, "_", chave)
+  ativo <- paste0("input.", id("ativo"))
+  cs <- function(chave, tipo, rotulo, ajuda = NULL, ..., se = NULL) {       # {chave} dentro de 'se' vira input.<prefixo><k>_<chave>
+    cond <- if (is.null(se)) ativo else paste0(ativo, " && (", gsub("\\{(\\w+)\\}", paste0("input.", pref, k, "_\\1"), se), ")")
+    campo(id(chave), tipo, rotulo, ajuda, ..., se = cond, chave = chave)
+  }
+  list(titulo = titulo, se = if (k > 1) paste0("input.", pref, k - 1, "_ativo") else NULL, ativo = id("ativo"),
+       campos = c(list(campo(id("ativo"), "chk", usar, NULL, largura = 12, chave = "ativo")), defs(cs)))
+}
+.campos_ajuste <- function(cs) list(
+  cs("serie", "sel", "Série", "Qual série recebe a curva (ou uma curva para cada série).", opcoes = .SERIES_TODAS, padrao = "todas"),
+  cs("tipo", "sel", "Tipo de ajuste", "A equação e o R² aparecem nas caixas de estatística (abaixo).", opcoes = .AJUSTES_OPC, padrao = "linear"),
+  cs("formula", "txt", "Fórmula (use x e letras para os parâmetros)", "Ex.: a*exp(-b*x) + c   |   a/(1 + exp(-k*(x - x0)))   |   a*sin(b*x) + c. Funções: exp, log, log10, sqrt, sin, cos, tan, abs, ^ ...", se = "{tipo} == 'formula'", largura = 12),
+  cs("inicio", "txt", "Valores iniciais (opcional)", "Ex.: a=5, b=0.1, c=0. Vazio = o programa tenta vários sozinho.", se = "{tipo} == 'formula'", largura = 12),
+  cs("grau", "int", "Grau do polinômio", "2 = parábola, 3 = cúbica...", min = 1, max = 8, padrao = 2, se = "{tipo} == 'polinomial'"),
+  cs("suavizacao", "num", "Suavização (0.2 a 1)", "Maior = curva mais lisa.", min = 0.1, max = 1, passo = 0.05, padrao = 0.75, se = "{tipo} == 'loess'"),
+  cs("intercepto_zero", "chk", "Passar pela origem (y = 0 quando x = 0)", NULL, se = "{tipo} == 'linear'", largura = 12),
+  cs("cor", "cor", "Cor da curva", "Vazio = a cor da série."),
+  cs("tipo_linha", "sel", "Tipo de linha", NULL, opcoes = .LINHAS, padrao = "dashed"),
+  cs("espessura_pt", "num", "Grossura da linha (pt)", NULL, min = 0, passo = 0.25, padrao = 1.2),
+  cs("banda", "chk", "Faixa do intervalo de confiança da curva", NULL, largura = 12),
+  cs("banda_nivel", "num", "Nível da faixa (0 a 1)", "0.95 = 95%.", min = 0.5, max = 0.999, passo = 0.01, padrao = 0.95, se = "{banda}"),
+  cs("banda_opacidade", "num", "Opacidade da faixa", NULL, min = 0, max = 1, passo = 0.05, padrao = 0.18, se = "{banda}"),
+  cs("estender", "chk", "Estender a curva até as bordas do eixo X", "Desmarcado: só no trecho dos dados.", largura = 12, mais = TRUE),
+  cs("de", "num", "Desenhar a partir de X =", NULL, mais = TRUE),
+  cs("ate", "num", "Desenhar até X =", NULL, mais = TRUE),
+  cs("opacidade", "num", "Opacidade da linha", NULL, min = 0, max = 1, passo = 0.05, padrao = 1, mais = TRUE),
+  cs("nome", "txt", "Nome do ajuste nas caixas", "Vazio = o nome do tipo.", mais = TRUE),
+  cs("casas", "int", "Casas decimais da equação", "Vazio = 4 algarismos significativos.", min = 0, max = 10, mais = TRUE))
+.campos_marca <- function(cs) list(
+  cs("serie", "sel", "Série", NULL, opcoes = .SERIES_TODAS, padrao = "todas"),
+  cs("modo", "sel", "O que desenhar", "Linhas atravessando o gráfico, ou barras de erro em cada X com replicatas.",
+     opcoes = c("Linhas de média e faixa" = "linhas", "Barras de erro em cada X (replicatas)" = "barras_por_x"), padrao = "linhas"),
+  cs("eixo", "sel", "Linhas sobre o eixo", "Y: linhas horizontais (valores de Y); X: verticais.", opcoes = c("Y (horizontais)" = "y", "X (verticais)" = "x"), padrao = "y", se = "{modo} == 'linhas'"),
+  cs("centro", "sel", "Linha do centro", NULL, opcoes = c("Média" = "media", "Mediana" = "mediana", "Sem linha do centro" = "nenhum"), padrao = "media", se = "{modo} == 'linhas'"),
+  cs("faixa", "sel", "Faixa em volta", "Desvio padrão, erro padrão, intervalo de confiança 95% ou do mínimo ao máximo.",
+     opcoes = c("Desvio padrão (DP)" = "dp", "Erro padrão (EP)" = "ep", "Intervalo de confiança 95%" = "ic95", "Mínimo e máximo" = "minmax", "Sem faixa" = "nenhuma"), padrao = "dp"),
+  cs("multiplo", "num", "Quantos DP / EP", "1 = ±1; 2 = ±2...", min = 0.1, passo = 0.5, padrao = 1),
+  cs("cor", "cor", "Cor dos traços", "Vazio = a cor da série."),
+  cs("centro_espessura_pt", "num", "Grossura da linha do centro (pt)", NULL, min = 0, passo = 0.25, padrao = 1.2, se = "{modo} == 'linhas'"),
+  cs("centro_tipo", "sel", "Tipo da linha do centro", NULL, opcoes = .LINHAS, padrao = "solid", se = "{modo} == 'linhas'"),
+  cs("faixa_espessura_pt", "num", "Grossura dos traços da faixa (pt)", NULL, min = 0, passo = 0.25, padrao = 0.8),
+  cs("faixa_tipo", "sel", "Tipo dos traços da faixa", NULL, opcoes = .LINHAS, padrao = "dotted"),
+  cs("preencher", "chk", "Pintar a área da faixa", NULL, se = "{modo} == 'linhas'", largura = 12),
+  cs("preencher_opacidade", "num", "Opacidade da área pintada", NULL, min = 0, max = 1, passo = 0.05, padrao = 0.15, se = "{modo} == 'linhas' && {preencher}"),
+  cs("rotulo", "chk", "Escrever o valor ao lado de cada traço", NULL, padrao = TRUE, se = "{modo} == 'linhas'", largura = 12),
+  cs("rotulo_tamanho_pt", "num", "Tamanho do texto (pt)", NULL, min = 4, padrao = 8, se = "{modo} == 'linhas' && {rotulo}"),
+  cs("casas", "int", "Casas decimais", NULL, min = 0, max = 10, se = "{modo} == 'linhas'"),
+  cs("opacidade", "num", "Opacidade dos traços", NULL, min = 0, max = 1, passo = 0.05, padrao = 1, mais = TRUE),
+  cs("ponto_media", "chk", "Desenhar também a média (ponto)", NULL, se = "{modo} == 'barras_por_x'", largura = 12),
+  cs("chapeu_percentual", "num", "Largura da tampa da barra (% do eixo X)", NULL, min = 0, passo = 0.5, padrao = 1.5, se = "{modo} == 'barras_por_x'"))
+.campos_caixa <- function(cs) list(
+  cs("titulo", "txt", "Título da caixa (opcional)", NULL, largura = 12),
+  cs("series", "selmulti", "Séries incluídas", "Vazio = todas as séries do gráfico.", largura = 12),
+  cs("itens", "selmulti", "O que escrever na caixa", "Clique para escolher, na ordem em que quer ler. Vazio = n, média e desvio padrão.", opcoes = .ITENS_ESTAT, largura = 12),
+  cs("casas", "int", "Casas decimais", "Vazio = 4 algarismos significativos.", min = 0, max = 10),
+  cs("x", "num", "Posição horizontal (0 a 1)", "0 = esquerda da caixa do gráfico, 1 = direita.", min = 0, max = 1, passo = 0.01, padrao = 0.03),
+  cs("y", "num", "Posição vertical (0 a 1)", "0 = embaixo, 1 = em cima.", min = 0, max = 1, passo = 0.01, padrao = 0.97),
+  cs("ancora", "sel", "Qual ponto da caixa fica em (x, y)", NULL, opcoes = .CANTOS9, padrao = "sup_esq"),
+  cs("tamanho_pt", "num", "Tamanho do texto (pt)", "Vazio = o tamanho base.", min = 4, passo = 0.5),
+  cs("cor_texto", "cor", "Cor do texto"),
+  cs("negrito", "chk", "Texto em negrito"),
+  cs("alinhamento", "sel", "Alinhamento do texto", NULL, opcoes = c("À esquerda" = "esquerda", "Centralizado" = "centro", "À direita" = "direita"), padrao = "esquerda"),
+  cs("colorir_serie", "chk", "Escrever o nome da série na cor dela", NULL, padrao = TRUE, largura = 12),
+  cs("fundo", "cor", "Cor de fundo", "Vazio = branco."),
+  cs("opacidade_fundo", "num", "Opacidade do fundo (0 a 1)", NULL, min = 0, max = 1, passo = 0.05, padrao = 0.9),
+  cs("borda", "chk", "Borda na caixa", NULL, padrao = TRUE, largura = 12),
+  cs("borda_cor", "cor", "Cor da borda", NULL, se = "{borda}"),
+  cs("borda_pt", "num", "Grossura da borda (pt)", NULL, min = 0, passo = 0.25, padrao = 0.6, se = "{borda}"),
+  cs("borda_tipo", "sel", "Tipo da borda", NULL, opcoes = .LINHAS, padrao = "solid", se = "{borda}"),
+  cs("cantos", "sel", "Cantos", NULL, opcoes = c("Arredondados" = "arredondado", "Retos" = "reto"), padrao = "arredondado"),
+  cs("raio_pt", "num", "Arredondamento dos cantos (pt)", NULL, min = 0, passo = 1, padrao = 5, se = "{cantos} == 'arredondado'"),
+  cs("margem_pt", "num", "Folga entre o texto e a borda (pt)", NULL, min = 0, passo = 1, padrao = 5),
+  cs("sombra", "chk", "Sombra atrás da caixa", NULL, largura = 12),
+  cs("sombra_cor", "cor", "Cor da sombra", NULL, se = "{sombra}"),
+  cs("sombra_opacidade", "num", "Opacidade da sombra", NULL, min = 0, max = 1, passo = 0.05, padrao = 0.3, se = "{sombra}"),
+  cs("sombra_dx_pt", "num", "Sombra: para a direita (pt)", NULL, passo = 0.5, padrao = 3, se = "{sombra}"),
+  cs("sombra_dy_pt", "num", "Sombra: para baixo (pt)", NULL, passo = 0.5, padrao = 3, se = "{sombra}"),
+  cs("ajustes", "vec", "Quais ajustes entram (números)", "Ex.: 1, 3 = o 1º e o 3º ajuste do bloco. Vazio = todos.", mais = TRUE))
+.campos_forma <- function(cs) list(
+  cs("tipo", "sel", "Forma", NULL, opcoes = .TIPOS_FORMA, padrao = "texto", largura = 12),
+  cs("texto", "txt", "Texto", "Aceita expoente e índice: m^{2}, H_{2}O. Para mudar de linha, escreva \\n.", largura = 12),
+  cs("unidade", "sel", "Posição e tamanho em", "Fração da caixa do gráfico (0 a 1) ou na unidade dos eixos (para a forma acompanhar os dados).",
+     opcoes = c("Fração da caixa do gráfico (0 a 1)" = "fracao", "Unidades dos eixos (dados)" = "dados"), padrao = "fracao", largura = 12),
+  cs("x", "num", "Posição X", "Do centro da forma (ou do ponto escolhido abaixo).", padrao = 0.5, passo = 0.05, se = "{tipo} != 'poligono'"),
+  cs("y", "num", "Posição Y", NULL, padrao = 0.5, passo = 0.05, se = "{tipo} != 'poligono'"),
+  cs("largura", "num", "Largura", "Vazio = a caixa de texto se ajusta ao texto.", min = 0, passo = 0.05, se = "{tipo} != 'poligono'"),
+  cs("altura", "num", "Altura", NULL, min = 0, passo = 0.05, se = "{tipo} != 'poligono'"),
+  cs("vertices", "txt", "Vértices do polígono", "Pares x,y separados por ponto e vírgula. Ex.: 0.6,0.2; 0.9,0.2; 0.75,0.5 (na unidade escolhida acima).", se = "{tipo} == 'poligono'", largura = 12),
+  cs("tamanho_pt", "num", "Tamanho do texto (pt)", "Vazio = o tamanho base.", min = 4, passo = 0.5),
+  cs("cor_texto", "cor", "Cor do texto"),
+  cs("negrito", "chk", "Negrito"),
+  cs("italico", "chk", "Itálico"),
+  cs("alinhamento", "sel", "Alinhamento do texto", NULL, opcoes = c("Centralizado" = "centro", "À esquerda" = "esquerda", "À direita" = "direita"), padrao = "centro"),
+  cs("angulo", "num", "Girar (graus)", NULL, passo = 5),
+  cs("fundo", "cor", "Cor do preenchimento", "Vazio = azul claro (formas) ou sem fundo (caixa de texto)."),
+  cs("sem_fundo", "chk", "Sem preenchimento (só o contorno)", NULL, largura = 12),
+  cs("opacidade_fundo", "num", "Opacidade do preenchimento", NULL, min = 0, max = 1, passo = 0.05, padrao = 1),
+  cs("borda_cor", "cor", "Cor da borda"),
+  cs("borda_pt", "num", "Grossura da borda (pt)", NULL, min = 0, passo = 0.25),
+  cs("borda_tipo", "sel", "Tipo da borda", NULL, opcoes = c("(padrão)" = "", .LINHAS), padrao = ""),
+  cs("raio_pt", "num", "Arredondamento dos cantos (pt)", "Dá cantos arredondados a caixas e retângulos.", min = 0, passo = 1, se = "{tipo} == 'texto' || {tipo} == 'retangulo' || {tipo} == 'retangulo_arredondado'"),
+  cs("margem_pt", "num", "Folga entre o texto e a borda (pt)", NULL, min = 0, passo = 1, mais = TRUE),
+  cs("sombra", "chk", "Sombra atrás da forma", NULL, largura = 12),
+  cs("sombra_cor", "cor", "Cor da sombra", NULL, se = "{sombra}"),
+  cs("sombra_opacidade", "num", "Opacidade da sombra", NULL, min = 0, max = 1, passo = 0.05, padrao = 0.3, se = "{sombra}"),
+  cs("sombra_dx_pt", "num", "Sombra: para a direita (pt)", NULL, passo = 0.5, padrao = 3, se = "{sombra}"),
+  cs("sombra_dy_pt", "num", "Sombra: para baixo (pt)", NULL, passo = 0.5, padrao = 3, se = "{sombra}"),
+  cs("camada", "sel", "Camada", "Na frente dos dados ou atrás deles.", opcoes = c("Na frente dos dados" = "frente", "Atrás dos dados" = "atras"), padrao = "frente", mais = TRUE),
+  cs("ancora", "sel", "Qual ponto da forma fica em (x, y)", NULL, opcoes = c("No centro" = "centro", .CANTOS9[names(.CANTOS9) != "No centro"]), padrao = "centro", mais = TRUE,
+     se = "{tipo} != 'poligono'"))
+
+# Os cartões de cada lista (variável do painel): prefixo, quantidade, nome do item e a função dos campos.
+SLOTS <- list(
+  ajustes = list(pref = "aj", n = 4, defs = .campos_ajuste, usar = "Usar este ajuste"),
+  marcas_estatisticas = list(pref = "mk", n = 3, defs = .campos_marca, usar = "Usar estes traços"),
+  caixas_estatisticas = list(pref = "cx", n = 3, defs = .campos_caixa, usar = "Usar esta caixa"),
+  formas = list(pref = "fm", n = 6, defs = .campos_forma, usar = "Usar esta forma"))
+.NOMES_CARTAO <- list(
+  ajustes = c("Ajuste 1", "Ajuste 2", "Ajuste 3", "Ajuste 4"),
+  marcas_estatisticas = c("Traços de média e desvio 1", "Traços de média e desvio 2", "Traços de média e desvio 3"),
+  caixas_estatisticas = c("Caixa de estatística 1", "Caixa de estatística 2", "Caixa de estatística 3"),
+  formas = c("Forma 1", "Forma 2", "Forma 3", "Forma 4", "Forma 5", "Forma 6"))
+grupos_slot <- function(g) lapply(seq_len(SLOTS[[g]]$n), function(k) .cartao(SLOTS[[g]]$pref, k, .NOMES_CARTAO[[g]][k], SLOTS[[g]]$defs, SLOTS[[g]]$usar))
 
 ESPEC <- list(
   bloco("dados", "Dados e tipo de gráfico",
@@ -352,7 +502,21 @@ ESPEC <- list(
              campo("largura_cm", "num", "Largura da página (cm)", "Vale quando a caixa NÃO é fixa ou \"Ajustar a página\" está desmarcado.", min = 2, passo = 0.5,
                    se = "!input.painel_fixo || !input.ajustar_pagina"),
              campo("altura_cm", "num", "Altura da página (cm)", NULL, min = 2, passo = 0.5, se = "!input.painel_fixo || !input.ajustar_pagina"),
-             campo("nome_arquivo", "txt", "Nome do arquivo", "Sem extensão. Ex.: figura_1", largura = 12)))
+             campo("nome_arquivo", "txt", "Nome do arquivo", "Sem extensão. Ex.: figura_1", largura = 12))),
+  bloco("estatistica", "Ajustes e estatísticas",
+        "Curvas de ajuste (linear, exponencial, sua fórmula...), traços de média e desvio e caixas com números e testes.",
+        "Funciona com gráficos de pontos, linhas e áreas (eixo X numérico). Os cálculos usam todos os seus dados, até os que a quebra de eixo esconde. Ligue um cartão, escolha a série e o tipo; as caixas de estatística aceitam média, DP, EP, soma, R², equação, valor de p, ANOVA e mais.",
+        grupos = c(
+          list(list(titulo = "Curvas de ajuste", campos = list())),
+          grupos_slot("ajustes"),
+          list(list(titulo = "Traços de média, desvio padrão e erro padrão", campos = list())),
+          grupos_slot("marcas_estatisticas"),
+          list(list(titulo = "Caixas de estatística (como a legenda)", campos = list())),
+          grupos_slot("caixas_estatisticas"))),
+  bloco("formas", "Caixas de texto e polígonos",
+        "Caixas de texto, retângulos, elipses, triângulos e polígonos livres, com borda, cor, sombra e posição à sua escolha.",
+        "Em \"Fração da caixa\" a forma fica sempre no mesmo lugar do quadro; em \"Unidades dos eixos\" ela acompanha os dados (marca uma região do gráfico).",
+        grupos = grupos_slot("formas"))
 )
 
 ESPEC_CAMPOS <- unlist(lapply(ESPEC, function(b) c(b$campos, unlist(lapply(b$grupos, function(g) g$campos), recursive = FALSE))),

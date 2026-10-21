@@ -278,6 +278,22 @@ fundo_transparente <- NULL # TRUE = arquivo sem fundo branco (PNG, TIFF, SVG, PD
 nome_arquivo <- NULL       # EX.: "minha_figura"
 pasta_saida  <- NULL       # EX.: "C:/pasta/figuras"  (padrão: pasta saida/)
 
+# ---- 13. AJUSTES E ESTATÍSTICAS ------------------------------------------------------------------------
+#  Cada variável é uma LISTA de itens (veja as opções completas em 01_config.R: cfg$ajustes, cfg$marcas_estatisticas, cfg$caixas_estatisticas).
+ajustes <- NULL            # curvas de ajuste. EX.: list(list(serie = "Y1", tipo = "linear", cor = "red", tipo_linha = "dashed"),
+                           #                              list(serie = "Y2", tipo = "formula", formula = "a*exp(-b*x) + c", banda = TRUE))
+                           #   tipos: "linear" | "exponencial" | "potencia" | "logaritmico" | "polinomial" (grau) | "loess" | "formula"
+marcas_estatisticas <- NULL  # traços de média / mediana e faixas de DP, EP, IC 95%.
+                           #   EX.: list(list(serie = "Y1", centro = "media", faixa = "dp", cor = "grey30", preencher = TRUE))
+caixas_estatisticas <- NULL  # caixas de texto com números (como a legenda). EX.: list(list(series = "Y1", x = 0.05, y = 0.95, sombra = TRUE,
+                           #     itens = c("n", "media", "dp", "ep", "soma", "equacao", "r2", "p_modelo", "shapiro", "anova", "tukey")))
+
+# ---- 14. CAIXAS DE TEXTO E POLÍGONOS --------------------------------------------------------------------
+formas <- NULL             # EX.: list(list(tipo = "texto", x = 0.5, y = 0.9, texto = "Zona crítica", fundo = "#FFF3CD", borda_cor = "orange"),
+                           #           list(tipo = "poligono", vertices = "0.6,0.2; 0.9,0.2; 0.75,0.5", borda_tipo = "dashed"),
+                           #           list(tipo = "elipse", x = 30, y = 5, largura = 10, altura = 2, unidade = "dados", fundo = NA))
+                           #   tipos: "texto" | "retangulo" | "retangulo_arredondado" | "elipse" | "triangulo" | "losango" | "hexagono" | "estrela" | "poligono"
+
 # =============================================================================
 #  EXECUÇÃO (não precisa editar)
 # =============================================================================

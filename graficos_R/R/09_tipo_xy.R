@@ -93,6 +93,7 @@
 
   usa_y2 <- isTRUE(cfg$eixo_y2$ativo) && identical(cfg$eixo_y2$modo, "independente")
   ser_y2 <- if (usa_y2) ycols[vapply(est, function(e) identical(e$eixo, "y2"), logical(1))] else character(0)
+  pts_reais <- list(d = d[, c("x", "y", "serie")], ser_y2 = ser_y2)        # os dados de verdade (ajustes e estatísticas usam estes)
   # quebra de eixo sem ligar através: cada série só mostra os valores desta parte (Y1 e Y2 têm faixas próprias)
   rec <- cfg$.interno$recortar_y; rec2 <- cfg$.interno$recortar_y2 %||% rec
   if (!is.null(rec)) {
@@ -264,7 +265,8 @@
   list(camadas = c(cam, escalas),
        info = list(ax_x = ax_x, ax_y = ax_y, y2 = y2, flip = FALSE,
                    titulo_x = cfg$eixo_x$titulo %||% xcol, titulo_y = titulo_y,
-                   legenda_auto = TRUE, faixa_x = faixa_x, faixa_y = faixa_y))
+                   legenda_auto = TRUE, faixa_x = faixa_x, faixa_y = faixa_y, pts = pts_reais,
+                   cores_serie = stats::setNames(vapply(est[ycols], function(e) as.character(e$cor %||% "black"), ""), ycols)))
 }
 
 # Camada de linha (reta, spline ou degrau) de uma série ou de todas, com estilo mapeado ou fixo.

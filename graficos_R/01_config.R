@@ -99,7 +99,7 @@ cfg$cores <- list(
   # paleta: cores atribuídas automaticamente às séries, em sequência
   #   (como o "incremento" de cor). Veja todas com mostrar_paletas().
   #   OPÇÕES (todas aparecem, desenhadas, em mostrar_paletas()):
-  #     Do Cinabro ........... "cinabro" (padrão) | "marca" (azul e verde)
+  #     Do Cinabro ........... "cinabro" (padrão) | "marca" (azul e verde; as 4 primeiras cores são as mais distintas)
   #     Acessíveis ........... "okabe_ito" | "tol_brilhante" | "tol_vibrante" | "tol_suave" | "tol_alto_contraste" |
   #                            "tol_medio_contraste" | "tol_claro" | "tol_escuro" | "tol_palido"
   #     Qualitativas (Brewer)  "brewer_Set1" | "brewer_Set2" | "brewer_Dark2" | "brewer_Paired" | "brewer_Accent" |
@@ -1200,6 +1200,76 @@ cfg$anotacoes <- list(
   letra_tamanho_pt = NULL,
   letra_negrito = TRUE
 )
+
+# -----------------------------------------------------------------------------
+# AJUSTES — curvas de ajuste (linear, exponencial, potência, logarítmico, polinomial, loess, fórmula livre)
+# -----------------------------------------------------------------------------
+#  Lista de ajustes. Cada item (todas as chaves são opcionais, menos 'tipo' quando não for linear):
+#    serie        nome da série (coluna Y) ou "todas" (uma curva para cada série; padrão)
+#    tipo         "linear" | "exponencial" (y = a·exp(b·x)) | "potencia" (y = a·x^b) | "logaritmico" (y = a + b·ln x) |
+#                 "polinomial" (com 'grau') | "loess" (suavizado, com 'suavizacao') | "formula" (com 'formula')
+#    formula      só para tipo "formula": use x e nomes de parâmetros livres. EX.: "a*exp(-b*x) + c"  ou  "a/(1 + exp(-k*(x - x0)))"
+#                 Permitido: + - * / ^ ( ) e exp, log, log10, log2, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, abs, pi
+#    inicio       chutes iniciais dos parâmetros da fórmula. EX.: c(a = 5, b = 0.1, c = 0)   (vazio = o programa tenta vários)
+#    grau         só para "polinomial" (1 a 8; padrão 2)
+#    intercepto_zero  só para "linear": força a reta a passar pela origem
+#    cor          cor da curva (vazio = a cor da série)       tipo_linha  "solid" | "dashed" | "dotted" | "dotdash" | "longdash" | "twodash"
+#    espessura_pt grossura da curva (padrão 1.2)              opacidade   0 a 1
+#    de, ate      trecho do eixo X em que a curva é desenhada (vazio = a faixa dos dados); estender = TRUE vai até as bordas do eixo
+#    banda        TRUE desenha a faixa do intervalo de confiança da curva; banda_nivel (0.95) e banda_opacidade (0.18)
+#    nome         nome do ajuste nas caixas de estatística     casas  casas decimais da equação (vazio = 4 algarismos significativos)
+#  EX.: cfg$ajustes <- list(list(serie = "Y1", tipo = "linear", cor = "red", tipo_linha = "dashed"),
+#                           list(serie = "Y2", tipo = "formula", formula = "a*exp(-b*x) + c"))
+cfg$ajustes <- list()
+
+# -----------------------------------------------------------------------------
+# MARCAS_ESTATISTICAS — traços de média / mediana e faixas de desvio padrão, erro padrão, IC 95% ou mín–máx
+# -----------------------------------------------------------------------------
+#  Lista de marcas. Cada item (opcionais):
+#    serie          série (ou "todas")                 eixo   "y" (linhas horizontais; padrão) | "x" (linhas verticais)
+#    centro         "media" (padrão) | "mediana" | "nenhum"
+#    faixa          "dp" (padrão) | "ep" | "ic95" | "minmax" | "nenhuma"      multiplo  quantos DP/EP (padrão 1; 2 = ±2 DP)
+#    cor            cor dos traços (vazio = a cor da série)    opacidade  0 a 1
+#    centro_espessura_pt (1.2)  centro_tipo ("solid")  faixa_espessura_pt (0.8)  faixa_tipo ("dotted")
+#    preencher      TRUE pinta a área entre os dois traços da faixa (preencher_opacidade 0.15)
+#    rotulo         TRUE escreve o valor ao lado de cada traço (rotulo_tamanho_pt 8)     casas  casas decimais do rótulo
+#    modo           "linhas" (padrão) | "barras_por_x": barras de erro (média ± faixa) para cada valor de X com replicatas;
+#                   com ponto_media = TRUE desenha também a média; chapeu_percentual = largura da tampa (1.5)
+#  EX.: cfg$marcas_estatisticas <- list(list(serie = "Y1", faixa = "dp", preencher = TRUE, faixa_tipo = "dashed"))
+cfg$marcas_estatisticas <- list()
+
+# -----------------------------------------------------------------------------
+# CAIXAS_ESTATISTICAS — caixas livres (como a legenda) com números: média, DP, EP, soma, R², equação, valor de p, ANOVA...
+# -----------------------------------------------------------------------------
+#  Lista de caixas. Cada item (opcionais):
+#    series   séries incluídas (vazio = todas)     titulo  título da caixa
+#    itens    o que escrever, em ordem. Descritiva: "n" "media" "mediana" "dp" "ep" "soma" "minimo" "maximo" "amplitude" "variancia" "cv" "q1" "q3" "ic95"
+#             Ajuste: "equacao" "r2" "r2_aj" "rmse" "aic" "bic" "p_modelo" "parametros" "p_parametros" "shapiro_residuos"
+#             Testes (entre as séries): "pearson" "spearman" "kendall" (X × Y) "shapiro" (normalidade) "ttest" "wilcoxon" "var_test" (duas séries)
+#             "anova" "kruskal" "tukey" "bartlett" "fligner" (duas ou mais séries)
+#    ajustes  quais ajustes entram (números da lista cfg$ajustes; vazio = todos)    casas  casas decimais
+#    x, y     posição em fração da caixa do gráfico (0 a 1; padrão 0.03, 0.97)       ancora  "sup_esq" (padrão) | "sup_centro" | "sup_dir" | "centro_esq" | "centro" | "centro_dir" | "inf_esq" | "inf_centro" | "inf_dir"
+#    tamanho_pt, cor_texto, negrito, alinhamento ("esquerda" | "centro" | "direita"), colorir_serie (TRUE: nome na cor da série)
+#    fundo (cor), opacidade_fundo, borda_cor, borda_pt, borda_tipo, cantos ("arredondado" padrão | "reto"), raio_pt, margem_pt
+#    sombra (TRUE/FALSE), sombra_cor, sombra_opacidade, sombra_dx_pt, sombra_dy_pt
+#  EX.: cfg$caixas_estatisticas <- list(list(itens = c("media", "dp", "n", "equacao", "r2"), x = 0.05, y = 0.95, sombra = TRUE))
+cfg$caixas_estatisticas <- list()
+
+# -----------------------------------------------------------------------------
+# FORMAS — caixas de texto, retângulos, elipses, triângulos, polígonos livres...
+# -----------------------------------------------------------------------------
+#  Lista de formas. Cada item:
+#    tipo       "texto" | "retangulo" | "retangulo_arredondado" | "elipse" | "triangulo" | "losango" | "hexagono" | "estrela" | "poligono"
+#    x, y       posição do centro (ou da âncora; padrão 0.5, 0.5). unidade = "fracao" (0 a 1 da caixa do gráfico; padrão) | "dados" (unidades dos eixos)
+#    largura, altura   tamanho (na mesma unidade). Sem tamanho, a caixa de texto se ajusta ao texto.
+#    vertices   só para "poligono": "0.2,0.2; 0.5,0.8; 0.8,0.3" (ou c(x1,y1,x2,y2,...)); na mesma unidade
+#    texto      escreve dentro (aceita x^{2} e H_{2}O)     tamanho_pt, cor_texto, negrito, italico, alinhamento, angulo
+#    fundo (cor ou vazio), opacidade_fundo, borda_cor, borda_pt, borda_tipo, raio_pt (cantos arredondados), margem_pt
+#    sombra (TRUE), sombra_cor, sombra_opacidade, sombra_dx_pt, sombra_dy_pt
+#    camada     "frente" (padrão) | "atras" (atrás dos dados)     ancora  como nas caixas de estatística (padrão "centro")
+#  EX.: cfg$formas <- list(list(tipo = "texto", x = 0.5, y = 0.9, texto = "Zona crítica", fundo = "#FFF3CD", borda_cor = "orange"),
+#                          list(tipo = "elipse", x = 30, y = 5, largura = 10, altura = 2, unidade = "dados", fundo = NA))
+cfg$formas <- list()
 
 # -----------------------------------------------------------------------------
 # QUEBRA — quebra (interrupção) do eixo Y

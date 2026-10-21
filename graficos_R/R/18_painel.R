@@ -150,6 +150,14 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
     cfg[[alvo[1]]][[alvo[2]]] <- v
     marca(nome)
   }
+  # listas livres: ajustes, marcas e caixas de estatística, formas
+  for (nome in .BLOCOS_LISTA) {
+    v <- pega(nome)
+    if (is.null(v)) next
+    if (!is.list(v) || (length(v) && is.null(names(v)) == FALSE && !is.list(v[[1]])))
+      .erro("A variável '", nome, "' deve ser uma lista de itens: ", nome, " <- list(list(...), list(...)).")
+    cfg[[nome]] <- v; marca(nome)
+  }
   # intervalo entre ticks maiores / ticks em posições escolhidas
   for (ax in c("x", "y")) {
     e <- paste0("eixo_", ax)

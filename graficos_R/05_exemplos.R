@@ -1,7 +1,7 @@
 # =============================================================================
 #  05_exemplos.R — UM EXEMPLO DE CADA TIPO / RECURSO
 # =============================================================================
-#  Rode tudo (Ctrl+Shift+S) para gerar a pasta saida/exemplos/ com 31 figuras.
+#  Rode tudo (Ctrl+Shift+S) para gerar a pasta saida/exemplos/ com 32 figuras.
 #  Cada bloco é independente: copie para o 03_executar.R o que quiser reaproveitar.
 #  Antes de cada exemplo, novo_cfg() volta tudo ao padrão do 01_config.R.
 # =============================================================================
@@ -370,5 +370,21 @@ cfg$eixo_x$formato_rotulo_data <- "%d/%m"
 cfg$eixo_y$titulo <- "Temperatura (°C)"
 cfg$legenda$posicao <- "topo"
 gerar(serie, cfg)
+
+# --- 32 Ajustes de curva, estatísticas e formas: exponencial + fórmula livre, caixa com R² e testes, traços de DP, caixa de texto -----------
+cfg <- novo_cfg("32_ajustes_estatisticas_formas")
+cfg$grafico$tipo <- "pontos"
+cfg$grafico$colunas_y <- c("Amostra A", "Amostra B")
+cfg$eixo_y$titulo <- "Temperatura (°C)"
+cfg$ajustes <- list(
+  list(serie = "Amostra A", tipo = "polinomial", grau = 2, banda = TRUE),                            # parábola com faixa de confiança
+  list(serie = "Amostra B", tipo = "formula", formula = "a*(1 - exp(-b*x))", cor = "red",             # fórmula livre (saturação)
+       tipo_linha = "solid", inicio = c(a = 40, b = 0.05)))
+cfg$marcas_estatisticas <- list(list(serie = "Amostra B", faixa = "dp", preencher = TRUE, rotulo = FALSE))
+cfg$caixas_estatisticas <- list(list(series = c("Amostra A", "Amostra B"), x = 0.97, y = 0.04, ancora = "inf_dir", sombra = TRUE, tamanho_pt = 7,
+  itens = c("media", "dp", "equacao", "r2", "ttest")))
+cfg$formas <- list(list(tipo = "texto", x = 0.25, y = 0.85, texto = "Aquecimento (m^{2})", fundo = "#FFF3CD", borda_cor = "orange", cantos = "arredondado", raio_pt = 6))
+cfg$legenda$posicao <- "topo"
+gerar(temp, cfg)
 
 message("\nPronto! Veja a pasta saida/exemplos/")

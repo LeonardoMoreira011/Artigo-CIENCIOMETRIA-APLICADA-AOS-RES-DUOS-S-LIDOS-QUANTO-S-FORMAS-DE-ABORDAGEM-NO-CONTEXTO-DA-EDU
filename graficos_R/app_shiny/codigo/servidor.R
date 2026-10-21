@@ -9,6 +9,12 @@ PRESETS <- list(
   apresentacao = list(tamanho_texto_pt = 18, linha_espessura_pt = 2.5, simbolo_tamanho_pt = 10, grade_y = TRUE, grade_tipo = "dashed",
                       grade_opacidade = 0.3, dpi = 200, largura_cm = 24, altura_cm = 13.5, cores_paleta = "marca", legenda_escala = 1.2))
 
+# Os ids dos campos de cada bloco (para "congelar" um bloco inteiro).
+BLOCO_IDS <- stats::setNames(lapply(ESPEC, function(b) vapply(c(b$campos, unlist(lapply(b$grupos, function(g) g$campos), recursive = FALSE)), function(c) c$id, "")),
+                             vapply(ESPEC, function(b) b$id, ""))
+IDS_SERIE_SEL <- c(unlist(lapply(c("ajustes", "marcas_estatisticas"), function(g) paste0(SLOTS[[g]]$pref, seq_len(SLOTS[[g]]$n), "_serie"))))
+IDS_SERIES_MULTI <- paste0(SLOTS$caixas_estatisticas$pref, seq_len(SLOTS$caixas_estatisticas$n), "_series")
+
 # Atualiza um campo da tela (qualquer tipo). valor = NULL volta ao inicial.
 atualizar_campo <- function(session, campo, valor, cfg0, colunas = NULL) {
   id <- campo$id
@@ -39,7 +45,7 @@ servidor <- function(input, output, session) {
       later::later(function() if (.sessoes$n <= 0) shiny::stopApp(), 6)
   })
   rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL, geo = NULL,
-                       paletas = list())
+                       paletas = list(), pend_calc = FALSE, abas = list(list(nome = NULL, snap = NULL)), aba = 1L, est = NULL)
   dir_dados <- file.path(raiz, "dados")
   # idioma da página (vem do endereço, ?idioma=en) e atalhos para traduzir o que o servidor escreve na tela
   idioma <- reactive(input$idioma_pagina %||% "pt")
@@ -54,11 +60,18 @@ servidor <- function(input, output, session) {
       rv$erro <- paste0(T("Não consegui ler o arquivo: "), conditionMessage(e)); NULL })
     if (is.null(d)) return(invisible())
     rv$dados <- d; rv$nome <- nome; rv$erro <- NULL
-    cols <- names(d); num <- cols[vapply(d, is.numeric, NA)]
-    updateSelectInput(session, "coluna_x", choices = stats::setNames(c("", cols), c(T("(1ª coluna)"), cols)), selected = "")
-    updateSelectizeInput(session, "colunas_y", choices = stats::setNames(setdiff(num, cols[1]), setdiff(num, cols[1])), selected = character(0))
-    updateSelectizeInput(session, "y2_series", choices = stats::setNames(setdiff(num, cols[1]), setdiff(num, cols[1])), selected = character(0))
+    definir_colunas(d)
     updateSelectInput(session, "simbolos_ordem", selected = character(0))
+  }
+  # as listas de colunas (X, Y, Y2) a partir da tabela; 'sel' = valores a marcar (ao trocar de aba)
+  definir_colunas <- function(d, sel = NULL) {
+    if (is.null(d)) { cols <- character(0); num <- character(0) } else { cols <- names(d); num <- cols[vapply(d, is.numeric, NA)] }
+    x <- sel$coluna_x; x <- if (is.null(x) || !nzchar(x) || !x %in% cols) "" else x
+    xr <- if (nzchar(x)) x else cols[1]
+    num <- setdiff(num, xr)
+    updateSelectInput(session, "coluna_x", choices = stats::setNames(c("", cols), c(T("(1ª coluna)"), cols)), selected = x)
+    updateSelectizeInput(session, "colunas_y", choices = stats::setNames(num, num), selected = intersect(as.character(unlist(sel$colunas_y)), num))
+    updateSelectizeInput(session, "y2_series", choices = stats::setNames(num, num), selected = intersect(as.character(unlist(sel$y2_series)), num))
   }
   # a coluna do eixo X não aparece nas listas de séries (Y e Y2)
   observeEvent(input$coluna_x, {
@@ -156,6 +169,13 @@ servidor <- function(input, output, session) {
                stringsAsFactors = FALSE)
   })
 
+  # as listas "Série" dos cartões do bloco 13 acompanham as séries do gráfico
+  observe({
+    nomes <- unique(c(series_nomes_seguro(), input$y2_series))
+    for (id in IDS_SERIE_SEL) updateSelectInput(session, id, choices = c(tr_nomes(.SERIES_TODAS, idioma()), stats::setNames(nomes, nomes)), selected = isolate(input[[id]]) %||% "todas")
+    for (id in IDS_SERIES_MULTI) updateSelectizeInput(session, id, choices = stats::setNames(nomes, nomes), selected = intersect(isolate(input[[id]]), nomes))
+  })
+
   # ---- do que está na tela às variáveis do painel -------------------------------------------------------------------
   valores <- reactive({ v <- lapply(names(ESPEC_CAMPOS), function(id) input[[id]]); names(v) <- names(ESPEC_CAMPOS)
                         v$simbolo_modo <- input$simbolo_modo
@@ -168,7 +188,9 @@ servidor <- function(input, output, session) {
   })
   vars_deb <- debounce(vars_atual, 700)
 
+  st <- new.env(); st$ate <- Sys.time() - 1                 # troca de aba em andamento: espera as telas serem atualizadas antes de montar
   calcular <- function() {
+    if (Sys.time() < st$ate) { rv$pend_calc <- TRUE; return(invisible()) }
     if (is.null(rv$dados)) { rv$erro <- NULL; return(invisible()) }
     withProgress(message = T("Montando o gráfico..."), value = 0.4, {
       r <- construir_grafico(rv$dados, vars_atual(), CFG0, idioma = idioma())
@@ -184,6 +206,7 @@ servidor <- function(input, output, session) {
       }
     })
   }
+  observe({ req(isTRUE(rv$pend_calc)); invalidateLater(400); isolate(if (Sys.time() >= st$ate) { rv$pend_calc <- FALSE; if (isTRUE(input$auto)) calcular() }) })
   observeEvent(vars_deb(), { if (isTRUE(input$auto) && !is.null(rv$dados)) calcular() }, ignoreInit = TRUE)
   observeEvent(rv$dados, { if (isTRUE(input$auto)) calcular() }, ignoreInit = TRUE, priority = -10)
   observeEvent(input$atualizar, calcular())
@@ -205,7 +228,8 @@ servidor <- function(input, output, session) {
   derivados <- c(cores_personalizadas = "Cores da minha paleta", legenda_sombra_deslocamento_pt = "Sombra da legenda: deslocamento",
                  legenda_nomes = "Nomes na legenda", cores_por_serie = "Cores por série", simbolo_forma_por_serie = "Formas por série",
                  simbolo_tamanho_por_serie = "Tamanho dos pontos por série", linha_espessura_por_serie = "Grossura das linhas por série",
-                 simbolo_borda_por_serie = "Contorno dos pontos por série")
+                 simbolo_borda_por_serie = "Contorno dos pontos por série", ajustes = "Curvas de ajuste", marcas_estatisticas = "Traços de média e desvio",
+                 caixas_estatisticas = "Caixas de estatística", formas = "Caixas de texto e polígonos")
   rotulo_de <- function(id) { c <- ESPEC_CAMPOS[[id]]; if (!is.null(c)) c$rotulo else if (id %in% names(derivados)) derivados[[id]] else id }
   output$avisos <- renderUI({
     r <- rv$res
@@ -244,25 +268,62 @@ servidor <- function(input, output, session) {
   output$baixar_codigo <- downloadHandler(filename = function() paste0(nome_base(), ".R"),
     content = function(file) writeLines(gerar_codigo(vars_atual(), arquivo_csv = rv$nome, script_completo = TRUE), file, useBytes = TRUE))
 
-  # ---- salvar / carregar configuração -------------------------------------------------------------------------------
-  output$salvar_cfg <- downloadHandler(filename = function() paste0(nome_base(), "_configuracao.json"),
-    content = function(file) {
-      v <- valores(); v$paleta_propria <- input$paleta_propria %||% ""; v <- v[!vapply(v, is.null, NA)]
-      s <- if (!is.null(rv$dados)) series_df() else NULL
-      writeLines(jsonlite::toJSON(list(versao = 1, dados = rv$nome, valores = v[!startsWith(names(v), ".")], series = s, paletas = rv$paletas), auto_unbox = TRUE, null = "null", na = "null",
-                                  pretty = TRUE), file, useBytes = TRUE)
-    })
-  observeEvent(input$carregar_cfg, {
-    j <- tryCatch(jsonlite::fromJSON(input$carregar_cfg$datapath, simplifyVector = TRUE), error = function(e) NULL)
-    if (is.null(j) || is.null(j$valores)) { showNotification(T("Arquivo de configuração inválido."), type = "error"); return() }
+  # ---- congelar blocos, salvar / carregar / copiar / colar o modelo ------------------------------------------------------------------
+  congelados <- function() { b <- names(BLOCO_IDS); b[vapply(b, function(i) isTRUE(input[[paste0("cong_", i)]]), NA)] }
+  ids_congelados <- function() unlist(BLOCO_IDS[congelados()], use.names = FALSE)
+  modelo_lista <- function() {
+    v <- isolate(valores()); v$paleta_propria <- input$paleta_propria %||% ""; v <- v[!vapply(v, is.null, NA)]
+    s <- if (!is.null(rv$dados)) tryCatch(series_df(), error = function(e) NULL) else NULL
+    list(versao = 2, dados = rv$nome, valores = v[!startsWith(names(v), ".")], series = s, paletas = rv$paletas, congelados = unname(congelados()))
+  }
+  modelo_json <- function() as.character(jsonlite::toJSON(modelo_lista(), auto_unbox = TRUE, null = "null", na = "null", pretty = TRUE))
+  output$salvar_cfg <- downloadHandler(filename = function() paste0(nome_base(), "_configuracao.json"), content = function(file) writeLines(modelo_json(), file, useBytes = TRUE))
+  # Aplica valores salvos (o que não está no modelo volta ao padrão). Blocos congelados não mudam (respeitar = TRUE).
+  aplicar_config <- function(j, respeitar = TRUE, com_congelados = FALSE) {
+    cong <- if (respeitar) ids_congelados() else character(0)
+    for (id in setdiff(names(ESPEC_CAMPOS), cong)) {
+      c <- ESPEC_CAMPOS[[id]]; v <- j$valores[[id]]
+      if (c$tipo %in% c("colx", "colsy", "colsy2") && is.null(v)) next
+      atualizar_campo(session, c, v, CFG0)
+    }
+    if (!is.null(j$valores$paleta_propria)) updateTextAreaInput(session, "paleta_propria", value = as.character(j$valores$paleta_propria))
+    if (!is.null(j$valores$simbolo_modo)) updateSelectInput(session, "simbolo_modo", selected = j$valores$simbolo_modo)
     if (is.list(j$paletas) && length(j$paletas)) {
       rv$paletas <- utils::modifyList(rv$paletas, lapply(j$paletas, function(x) as.character(unlist(x)))); atualizar_lista_paletas()
     }
-    for (id in names(ESPEC_CAMPOS)) if (!is.null(j$valores[[id]])) atualizar_campo(session, ESPEC_CAMPOS[[id]], j$valores[[id]], CFG0)
-    if (!is.null(j$valores$paleta_propria)) updateTextAreaInput(session, "paleta_propria", value = as.character(j$valores$paleta_propria))
-    if (!is.null(j$valores$simbolo_modo)) updateSelectInput(session, "simbolo_modo", selected = j$valores$simbolo_modo)
-    if (!is.null(j$series)) rv$pend_series <- as.data.frame(j$series)
+    if (com_congelados) for (b in names(BLOCO_IDS)) updateCheckboxInput(session, paste0("cong_", b), value = b %in% as.character(unlist(j$congelados)))
+    if (!is.null(j$series) && length(j$series)) rv$pend_series <- as.data.frame(j$series)
+    length(unique(congelados()))
+  }
+  ler_modelo <- function(txt) {
+    j <- tryCatch(jsonlite::fromJSON(txt, simplifyVector = TRUE), error = function(e) NULL)
+    if (is.null(j) || !is.list(j) || is.null(j$valores)) NULL else j
+  }
+  observeEvent(input$carregar_cfg, {
+    j <- ler_modelo(input$carregar_cfg$datapath)
+    if (is.null(j)) { showNotification(T("Arquivo de configuração inválido."), type = "error"); return() }
+    aplicar_config(j, respeitar = TRUE, com_congelados = FALSE)
     showNotification(T("Configuração carregada."), type = "message")
+  })
+  observeEvent(input$copiar_modelo, {
+    txt <- modelo_json()
+    session$sendCustomMessage("copiar_texto", txt)
+    showModal(UI(modalDialog(title = "Modelo copiado", easyClose = TRUE, footer = modalButton("Fechar"),
+      div(class = "modal-modelo", tags$p("Este texto tem todas as configurações do gráfico (menos os dados). Cole em \"Colar modelo...\", em outra aba, outro computador ou num e-mail."),
+          tags$textarea(id = "modelo-saida", readonly = NA, onfocus = "this.select()", txt),
+          tags$button(type = "button", class = "btn-verde", id = "copiar-modelo", `data-copiado` = "Copiado!", "Copiar de novo")))))
+  })
+  observeEvent(input$colar_modelo, {
+    showModal(UI(modalDialog(title = "Colar modelo", easyClose = TRUE,
+      footer = tagList(modalButton("Cancelar"), actionButton("aplicar_modelo", "Aplicar modelo", class = "btn-verde")),
+      div(class = "modal-modelo", tags$p("Cole aqui o texto copiado com \"Copiar modelo\". Os blocos congelados continuam como estão."),
+          textAreaInput("modelo_texto", NULL, value = "", rows = 10, width = "100%")))))
+  })
+  observeEvent(input$aplicar_modelo, {
+    j <- ler_modelo(input$modelo_texto %||% "")
+    if (is.null(j)) { showNotification(T("Não entendi o texto colado: ele precisa ter sido copiado com \"Copiar modelo\"."), type = "error"); return() }
+    n <- aplicar_config(j, respeitar = TRUE, com_congelados = FALSE); removeModal()
+    showNotification(if (n) TF("Modelo aplicado (%d bloco(s) congelado(s) mantido(s)).", n) else T("Modelo aplicado."), type = "message")
   })
   observe({                         # séries salvas: aplica quando a tabela da tela já existir
     ps <- rv$pend_series; req(ps, !is.null(input$ser_legenda_1))
@@ -328,17 +389,130 @@ servidor <- function(input, output, session) {
     }
   })
 
+  # ---- tabelas de resultados (bloco 13) ----------------------------------------------------------------------------------------------
+  tabelas_estat <- eventReactive(input$estat_calcular, {
+    validate(need(!is.null(rv$dados), T("Carregue os dados primeiro.")))
+    cfg <- tryCatch(suppressMessages(suppressWarnings(aplicar_painel(CFG0, painel = list2env(vars_atual(), parent = emptyenv()), dados = rv$dados))), error = function(e) NULL)
+    validate(need(!is.null(cfg), T("Corrija o aviso de erro abaixo da prévia primeiro.")))
+    com_idioma(idioma(), suppressWarnings(estatisticas(rv$dados, cfg, testes = input$estat_testes)))
+  })
+  fmt_tab <- function(df, nomes) {
+    if (!nrow(df)) return(NULL)
+    for (n in names(df)) if (is.numeric(df[[n]])) df[[n]] <- ifelse(is.na(df[[n]]), "", vapply(df[[n]], function(z) if (is.na(z)) "" else if (n %in% c("n", "gl")) as.character(z) else if (grepl("^p", n) && z < 0.001) "<0.001" else format(signif(z, 4), trim = TRUE, scientific = FALSE), ""))
+    names(df) <- ifelse(names(df) %in% names(nomes), nomes[names(df)], names(df))
+    tags$table(tags$thead(tags$tr(lapply(names(df), tags$th))), tags$tbody(lapply(seq_len(nrow(df)), function(i) tags$tr(lapply(df[i, ], function(x) tags$td(as.character(x)))))))
+  }
+  output$estat_tabelas <- renderUI({
+    r <- tabelas_estat(); op <- options(cinabro.idioma = idioma()); on.exit(options(op))
+    base <- c(serie = T("Série"), ajuste = T("Ajuste"), equacao = T("Equação"), termo = T("Termo"), estimativa = T("Estimativa"), ep = .re("ep"), t = "t", p = "p", ic_inf = T("IC 95% inf."), ic_sup = T("IC 95% sup."),
+              teste = T("Teste"), grupos = T("Grupos"), estatistica = T("Estatística"), gl = .re("gl"), detalhe = T("Detalhe"), r2 = "R²", r2_aj = .re("r2_aj"), rmse = "RMSE", aic = "AIC", bic = "BIC", n = "n",
+              media = .re("media"), mediana = .re("mediana"), dp = .re("dp"), soma = .re("soma"), minimo = .re("minimo"), maximo = .re("maximo"), amplitude = .re("amplitude"),
+              variancia = .re("variancia"), cv = "CV (%)", q1 = "Q1", q3 = "Q3", ic_inf = T("IC 95% inf."), ic_sup = T("IC 95% sup."))
+    UI(tagList(
+      if (nrow(r$descritiva)) tagList(tags$h5(T("Resumo de cada série")), fmt_tab(r$descritiva, base)),
+      if (nrow(r$ajustes)) tagList(tags$h5(T("Ajustes de curva")), fmt_tab(r$ajustes, base)),
+      if (nrow(r$parametros)) tagList(tags$h5(T("Parâmetros dos ajustes")), fmt_tab(r$parametros, base)),
+      if (nrow(r$testes)) tagList(tags$h5(T("Testes estatísticos")), fmt_tab(r$testes[, setdiff(names(r$testes), "id"), drop = FALSE], base)),
+      if (!nrow(r$ajustes)) tags$p(class = "ajuda", T("Para ver os ajustes aqui, ligue um cartão de ajuste acima."))))
+  })
+  output$estat_baixar <- downloadHandler(filename = function() paste0(nome_base(), "_estatisticas.csv"), content = function(file) {
+    r <- tabelas_estat(); linhas <- character(0)
+    for (n in names(r)) if (nrow(r[[n]])) linhas <- c(linhas, paste0("# ", n), utils::capture.output(utils::write.csv(r[[n]], row.names = FALSE)), "")
+    writeLines(linhas, file, useBytes = TRUE)
+  })
+
+  # ---- abas: vários gráficos, um de cada vez na tela (e os outros ao lado, se quiser) ---------------------------------------------------------------
+  nome_aba <- function(i) { n <- rv$abas[[i]]$nome; if (is.null(n)) TF("Gráfico %d", i) else n }
+  capturar <- function() list(valores = isolate(valores()), series = if (!is.null(rv$dados)) isolate(tryCatch(series_df(), error = function(e) NULL)),
+                              dados = rv$dados, nome_dados = rv$nome, cong = unname(congelados()))
+  restaurar_aba <- function(snap) {
+    st$ate <- Sys.time() + 1.8                                  # as telas levam um instante para receber os valores; só então monta o gráfico
+    rv$dados <- snap$dados; rv$nome <- snap$nome_dados; rv$erro <- NULL; rv$res <- NULL; rv$previa <- NULL; rv$pend_calc <- TRUE
+    definir_colunas(snap$dados, snap$valores)
+    for (id in names(ESPEC_CAMPOS)) { c <- ESPEC_CAMPOS[[id]]; if (!c$tipo %in% c("colx", "colsy", "colsy2")) atualizar_campo(session, c, snap$valores[[id]], CFG0) }
+    updateTextAreaInput(session, "paleta_propria", value = as.character(snap$valores$.paleta_propria %||% ""))
+    updateSelectInput(session, "simbolo_modo", selected = snap$valores$simbolo_modo %||% "variar")
+    for (b in names(BLOCO_IDS)) updateCheckboxInput(session, paste0("cong_", b), value = b %in% snap$cong)
+    ps <- snap$series
+    session$onFlushed(function() isolate(rv$pend_series <- if (!is.null(ps) && nrow(ps)) ps else NULL), once = TRUE)
+  }
+  trocar_aba <- function(i) {
+    i <- as.integer(i); cur <- rv$aba
+    if (is.na(i) || i == cur || i < 1 || i > length(rv$abas)) return(invisible())
+    rv$abas[[cur]]$snap <- capturar(); rv$aba <- i; restaurar_aba(rv$abas[[i]]$snap)
+  }
+  observeEvent(input$aba_ir, trocar_aba(input$aba_ir))
+  observeEvent(input$aba_nova, {
+    cur <- rv$aba; snap <- capturar(); rv$abas[[cur]]$snap <- snap
+    livre <- setdiff(names(snap$valores), unlist(BLOCO_IDS[snap$cong], use.names = FALSE))      # só os blocos congelados vão para a aba nova
+    nova <- list(valores = snap$valores[setdiff(names(snap$valores), livre)], series = NULL, dados = NULL, nome_dados = NULL, cong = snap$cong)
+    nova$valores$simbolo_modo <- if ("cores" %in% snap$cong) snap$valores$simbolo_modo else NULL
+    rv$abas[[length(rv$abas) + 1]] <- list(nome = NULL, snap = nova); rv$aba <- length(rv$abas); restaurar_aba(nova)
+    showNotification(if (length(snap$cong)) TF("Aba nova: %d bloco(s) congelado(s) foram mantidos; o resto voltou ao padrão. Carregue os dados desta aba.", length(snap$cong)) else T("Aba nova, com o padrão do template. Carregue os dados desta aba."), type = "message")
+  })
+  observeEvent(input$aba_duplicar, {
+    cur <- rv$aba; snap <- capturar(); rv$abas[[cur]]$snap <- snap
+    rv$abas[[length(rv$abas) + 1]] <- list(nome = paste0(nome_aba(cur), T(" (cópia)")), snap = snap); rv$aba <- length(rv$abas)
+    showNotification(T("Aba duplicada, com as mesmas configurações e os mesmos dados."), type = "message")
+  })
+  observeEvent(input$aba_fechar, {
+    i <- as.integer(input$aba_fechar); n <- length(rv$abas); cur <- rv$aba
+    if (n < 2 || is.na(i) || i < 1 || i > n) return()
+    rv$abas[[i]] <- NULL
+    if (i == cur) { rv$aba <- max(1L, i - 1L); restaurar_aba(rv$abas[[rv$aba]]$snap) } else if (i < cur) rv$aba <- cur - 1L
+  })
+  observeEvent(input$aba_renomear, {
+    showModal(UI(modalDialog(title = "Nome desta aba", easyClose = TRUE, footer = tagList(modalButton("Cancelar"), actionButton("aba_nome_ok", "Salvar nome", class = "btn-verde")),
+                             textInput("aba_nome_novo", NULL, value = nome_aba(rv$aba), width = "100%"))))
+  })
+  observeEvent(input$aba_nome_ok, { n <- trimws(input$aba_nome_novo %||% ""); if (nzchar(n)) rv$abas[[rv$aba]]$nome <- n; removeModal() })
+  output$abas_ui <- renderUI({
+    n <- length(rv$abas); cur <- rv$aba
+    UI(tagList(
+      lapply(seq_len(n), function(i) tags$span(class = paste("aba", if (i == cur) "ativa"), onclick = sprintf("Shiny.setInputValue('aba_ir', %d, {priority: 'event'})", i),
+                                              tags$span(nome_aba(i)),
+                                              if (n > 1) tags$span(class = "aba-x", title = "Fechar esta aba", onclick = sprintf("event.stopPropagation(); Shiny.setInputValue('aba_fechar', %d, {priority: 'event'})", i), HTML("&times;")))),
+      tags$span(class = "aba-acao", title = "Outro gráfico, sem dados e só com os blocos congelados mantidos.", onclick = "Shiny.setInputValue('aba_nova', Date.now(), {priority: 'event'})", "+ Nova aba"),
+      tags$span(class = "aba-acao", title = "Cópia deste gráfico (configurações e dados) para variar.", onclick = "Shiny.setInputValue('aba_duplicar', Date.now(), {priority: 'event'})", "Duplicar"),
+      tags$span(class = "aba-acao", onclick = "Shiny.setInputValue('aba_renomear', Date.now(), {priority: 'event'})", "Renomear")))
+  })
+  output$lado_sel <- renderUI({
+    n <- length(rv$abas); if (n < 2) return(NULL)
+    outras <- setdiff(seq_len(n), rv$aba); atual <- isolate(input$lado_aba)
+    selectInput("lado_aba", NULL, choices = stats::setNames(outras, vapply(outras, nome_aba, "")), selected = if (!is.null(atual) && as.integer(atual) %in% outras) atual else outras[1], selectize = FALSE, width = "160px")
+  })
+  output$previa_lado <- renderUI({
+    if (!isTRUE(input$lado_ativo)) return(NULL)
+    if (length(rv$abas) < 2) return(UI(div(class = "previa-lado", tags$p(class = "ajuda", "Crie uma segunda aba (+ Nova aba) para ver os dois gráficos lado a lado."))))
+    j <- as.integer(input$lado_aba %||% setdiff(seq_along(rv$abas), rv$aba)[1])
+    UI(div(class = "previa-lado", tags$h2(nome_aba(j)), imageOutput("previa_lado_img", height = "auto"),
+           tags$p(class = "ajuda", "Para editar este gráfico, clique na aba dele lá em cima.")))
+  })
+  output$previa_lado_img <- renderImage({
+    req(isTRUE(input$lado_ativo), length(rv$abas) > 1)
+    j <- as.integer(input$lado_aba %||% setdiff(seq_along(rv$abas), rv$aba)[1]); req(j %in% seq_along(rv$abas), j != rv$aba)
+    snap <- rv$abas[[j]]$snap; req(snap, snap$dados)
+    r <- construir_grafico(snap$dados, montar_variaveis(snap$valores, CFG0, snap$series), CFG0, idioma = idioma()); req(is.null(r$erro))
+    p <- desenhar_previa(r$g, r$cfg, dpi = 110)
+    list(src = p$arquivo, contentType = "image/png", alt = nome_aba(j))
+  }, deleteFile = FALSE)
+
   # ---- estilos prontos, restaurar, guia ------------------------------------------------------------------------------------
   restaurar_campos <- function() {
-    for (id in names(ESPEC_CAMPOS)) if (!ESPEC_CAMPOS[[id]]$tipo %in% c("colx", "colsy", "colsy2")) atualizar_campo(session, ESPEC_CAMPOS[[id]], NULL, CFG0)
-    updateSelectInput(session, "simbolo_modo", selected = "variar")
+    cong <- ids_congelados()
+    for (id in setdiff(names(ESPEC_CAMPOS), cong)) if (!ESPEC_CAMPOS[[id]]$tipo %in% c("colx", "colsy", "colsy2")) atualizar_campo(session, ESPEC_CAMPOS[[id]], NULL, CFG0)
+    if (!"cores" %in% congelados()) updateSelectInput(session, "simbolo_modo", selected = "variar")
   }
-  observeEvent(input$restaurar, { restaurar_campos(); updateSelectInput(session, "estilo", selected = ""); showNotification(T("Tudo voltou ao padrão do template.")) })
+  observeEvent(input$restaurar, {
+    restaurar_campos(); updateSelectInput(session, "estilo", selected = "")
+    n <- length(congelados())
+    showNotification(if (n) TF("Tudo voltou ao padrão do template (%d bloco(s) congelado(s) mantido(s)).", n) else T("Tudo voltou ao padrão do template."))
+  })
   observeEvent(input$estilo, {
     if (!nzchar(input$estilo)) return()
     restaurar_campos()
-    p <- PRESETS[[input$estilo]]
-    for (id in names(p)) if (!is.null(ESPEC_CAMPOS[[id]])) atualizar_campo(session, ESPEC_CAMPOS[[id]], p[[id]], CFG0)
+    p <- PRESETS[[input$estilo]]; cong <- ids_congelados()
+    for (id in setdiff(names(p), cong)) if (!is.null(ESPEC_CAMPOS[[id]])) atualizar_campo(session, ESPEC_CAMPOS[[id]], p[[id]], CFG0)
   }, ignoreInit = TRUE)
   observeEvent(input$guia, showModal(UI(guia_rapido())))
   observeEvent(input$idioma_pagina, { if (!isTRUE(getOption("gerador_sem_guia"))) showModal(UI(guia_rapido())) }, once = TRUE)

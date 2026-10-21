@@ -67,12 +67,19 @@ ui_grade_campos <- function(campos, cfg0) {
 
 ui_bloco <- function(b, n, cfg0, aberto = FALSE, extra = NULL) {
   tags$details(class = "bloco", id = paste0("bloco-", b$id), open = if (aberto) NA else NULL,
-    tags$summary(class = "bloco-cab", span(class = "num", n), div(class = "tit", tags$h3(b$titulo), tags$p(b$resumo)), span(class = "seta")),
+    tags$summary(class = "bloco-cab", span(class = "num", n), div(class = "tit", tags$h3(b$titulo), tags$p(b$resumo)),
+                 span(class = "cong", title = "Congelar: este bloco mantém o que está agora ao restaurar tudo, ao criar uma aba nova e ao colar um modelo.",
+                      checkboxInput(paste0("cong_", b$id), "Congelar", value = FALSE)),
+                 span(class = "seta")),
     div(class = "bloco-corpo",
         if (!is.null(b$dica)) div(class = "dica", span(class = "dica-ic", "Dica"), b$dica),
         if (length(b$campos)) ui_grade_campos(b$campos, cfg0),
         lapply(b$grupos, function(g) {
-          gr <- div(class = "grupo", tags$h4(g$titulo), ui_grade_campos(g$campos, cfg0))
+          gr <- if (!length(g$campos)) div(class = "grupo-secao", tags$h4(g$titulo))
+                else if (!is.null(g$ativo)) {             # cartão: a caixa "Usar" sempre aparece; o resto só com ela marcada
+                  ca <- Filter(function(x) identical(x$chave, "ativo"), g$campos); resto <- Filter(function(x) !identical(x$chave, "ativo"), g$campos)
+                  div(class = "grupo", tags$h4(g$titulo), ui_grade_campos(ca, cfg0), conditionalPanel(condition = paste0("input.", g$ativo), ui_grade_campos(resto, cfg0)))
+                } else div(class = "grupo", tags$h4(g$titulo), ui_grade_campos(g$campos, cfg0))
           if (is.null(g$se)) gr else conditionalPanel(condition = g$se, gr)
         }),
         extra))
@@ -98,6 +105,10 @@ guia_rapido <- function() {
       div(class = "passo", span(class = "num", "2"), div(tags$b("Ajuste os blocos"), tags$p("Cada bloco numerado tem um assunto: intervalos, escala, números, grade, quebra, eixo direito, cores, fonte, legenda... Abra um bloco e mude só o que precisar. O gráfico se atualiza ao lado."))),
       div(class = "passo", span(class = "num", "3"), div(tags$b("Confira o gráfico"), tags$p("A prévia mostra o gráfico como vai sair no arquivo. Os avisos abaixo dela explicam, em português, qualquer problema."))),
       div(class = "passo", span(class = "num", "4"), div(tags$b("Baixe"), tags$p("Marque o tipo de arquivo no bloco 12 (PNG, TIFF, JPEG, SVG, PDF...) e use o botão de baixar. Salve a configuração para repetir depois, ou copie o código para usar no script."))),
+      tags$h4("Dica: quantas séries, quais cores"),
+      tags$p("Até 4 ou 5 séries, a paleta \"Marca (azul e verde)\" funciona bem: as primeiras cores foram ordenadas para serem as mais diferentes entre si, também para quem tem daltonismo. Passando disso, as cores de azul e verde começam a se parecer: use uma paleta de apoio (\"Okabe-Ito\" é feita para daltonismo) ou varie também a forma do ponto e o tipo da linha. Para valores contínuos, prefira um degradê."),
+      tags$h4("Vários gráficos"),
+      tags$p("As abas no alto guardam gráficos diferentes: cada uma tem os seus dados e as suas configurações, e dá para ver outra aba ao lado do gráfico que você edita. Marque \"Congelar\" nos blocos que quer repetir (por exemplo fonte, moldura e cores): eles não voltam ao padrão em \"Restaurar tudo\" e passam para as abas novas. \"Copiar modelo\" e \"Colar modelo...\" levam todas as configurações de um gráfico para outro."),
       tags$h4("Palavras que aparecem"),
       tags$dl(
         tags$dt("Traço (tick)"), tags$dd("Marca pequena no eixo, ao lado de cada número. Grande = com número; pequeno = entre dois grandes."),

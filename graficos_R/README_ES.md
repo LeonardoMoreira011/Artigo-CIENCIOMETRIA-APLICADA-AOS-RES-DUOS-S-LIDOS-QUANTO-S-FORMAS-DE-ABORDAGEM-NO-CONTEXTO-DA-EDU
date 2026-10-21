@@ -33,5 +33,13 @@ La página se abre en `http://cinabro.localhost:8421`. El proceso de R se cierra
 ## Paletas y licencias
 Solo se incluyen paletas de trabajos con licencia libre — ninguna con nombre de programa, marca o revista: la original `cinabro` (por defecto) y `marca`, Okabe-Ito, Paul Tol, Brewer (cualitativas, secuenciales, divergentes; incluye `brewer_RdYlGn`, de rojo oscuro a verde), la familia viridis, cmocean y los mapas de color científicos de Crameri. Los créditos y avisos de licencia están en `NOTICE.md`. La fuente es Barlow (SIL Open Font License; `fontes/Barlow/OFL.txt`).
 
+## Ajustes, estadísticas, formas, bloques congelados y pestañas (tercera ronda)
+
+- **Bloque 13 — Ajustes y estadísticas:** ajustes de curva (lineal, exponencial, potencia, logarítmico, polinómico, loess, **fórmula libre** como `a*exp(-b*x) + c`; solo se aceptan funciones matemáticas), cada uno con color, tipo de línea (continua/discontinua...), grosor y banda de confianza opcional; **líneas de media/mediana con bandas de DE, EE, IC 95% o mín–máx** (o barras de error por X), con color, grosor y tipo de línea; **cuadros de estadística** libres (como la leyenda) con n, media, mediana, DE, EE, suma, R², ecuación, valores p, Pearson/Spearman/Kendall, Shapiro-Wilk, prueba t, Wilcoxon, ANOVA, Kruskal-Wallis, Tukey, Bartlett..., con fondo, borde redondeado o recto, sombra y posición. Todo usa R base (`lm`, `nls`, `loess`, `aov`...). En scripts: `estatisticas(dados, cfg)`.
+- **Bloque 14 — Cuadros de texto y polígonos:** cuadro de texto, rectángulo, rectángulo redondeado, elipse, triángulo, rombo, hexágono, estrella y polígono libre, con color/grosor/tipo de borde, relleno, sombra, giro y posición en fracción de la caja o en unidades de los ejes.
+- **Congelar** (casilla en el encabezado de cada bloque): los bloques congelados sobreviven a *Restaurar todo*, a la configuración pegada y pasan a las pestañas nuevas. **Copiar configuración / Pegar configuración...** llevan todos los ajustes de un gráfico a otro.
+- **Pestañas:** un gráfico por pestaña (con sus datos y ajustes); *+ Nueva pestaña* (solo con los bloques congelados), *Duplicar*, *Renombrar* y cerrar; *Mostrar otra pestaña al lado* dibuja un segundo gráfico bajo la vista previa. Se edita un gráfico a la vez; al cambiar de pestaña todo se guarda y se restaura.
+- La paleta `marca` fue reordenada: los primeros cuatro colores son los más distintos (también para daltónicos).
+
 ## Pruebas
 `Rscript 06_testes.R` (motor) y `Rscript app_shiny/testes_app.R` (aplicación). Probado en Linux con ggplot2 3.5.2 y 4.0.3; **no probado en Windows**: ejecuta una vez `07_verificar_windows.R`.

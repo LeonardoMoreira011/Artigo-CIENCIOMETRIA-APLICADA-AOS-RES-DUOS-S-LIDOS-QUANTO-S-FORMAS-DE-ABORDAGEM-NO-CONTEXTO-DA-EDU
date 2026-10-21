@@ -39,6 +39,16 @@ Para quem não quer mexer em código: abra o **Cinabro** (laboratório de gráfi
 
 Só entram paletas de trabalhos com licença livre; os créditos e avisos estão em **`NOTICE.md`**. Foram retiradas paletas associadas a programas, revistas e marcas, e a paleta padrão agora é a `cinabro` (original, com as cores ordenadas para serem bem distintas, também para daltonismo). Nomes antigos continuam valendo (`"classico"` = `"cinabro"`).
 
+## Terceira rodada: ajustes, estatísticas, formas, congelar blocos e abas
+
+- **Bloco 13 — Ajustes e estatísticas** (gráficos de pontos, linhas e áreas com X numérico). Quatro cartões de **curva de ajuste**: linear (com opção de passar pela origem), exponencial, potência, logarítmico, polinomial (grau 1 a 8), suavizado (*loess*) e **fórmula livre** (`a*exp(-b*x) + c`, `a/(1 + exp(-k*(x - x0)))`...; só funções matemáticas são aceitas — nada de comandos do R). Cada curva tem cor, tipo de linha (contínua, tracejada...), grossura, opacidade, trecho desenhado e **faixa do intervalo de confiança**. Três cartões de **traços de média/mediana com desvio padrão, erro padrão, IC 95% ou mínimo–máximo** (linhas atravessando o gráfico, área pintada, valores escritos; ou barras de erro em cada X com replicatas), com cor, grossura e tipo de cada traço. Três **caixas de estatística** livres como a legenda: escolha o que escrever (n, média, mediana, DP, EP, soma, mín., máx., variância, CV, quartis, IC 95%; equação, R², R² ajustado, RMSE, AIC, BIC, valor de p do modelo, parâmetros ± erro, valores de p; correlações de Pearson/Spearman/Kendall, Shapiro-Wilk, teste t, Wilcoxon, teste F, ANOVA, Kruskal-Wallis, Tukey, Bartlett, Fligner-Killeen), com fundo, borda (reta ou **arredondada**), tipo e grossura da borda, **sombra**, posição, tamanho e cor do texto. Os cálculos usam o R base (`lm`, `nls`, `loess`, `aov`, `TukeyHSD`...) e **todos** os dados, também os do eixo Y2 e os que a quebra de eixo esconde. Há ainda o botão **Calcular as tabelas** (resumo, ajustes, parâmetros e testes) e **Baixar em CSV**. No script: `estatisticas(dados, cfg)` devolve as mesmas tabelas.
+- **Bloco 14 — Caixas de texto e polígonos:** seis cartões de forma: caixa de texto, retângulo, retângulo arredondado, elipse, triângulo, losango, hexágono, estrela e **polígono livre** (vértices `x,y; x,y; ...`), com texto (aceita `m^{2}` e `H_{2}O`), cor e opacidade do preenchimento, cor, grossura e tipo da borda, cantos arredondados, sombra, giro e camada (na frente ou atrás dos dados). A posição e o tamanho valem em **fração da caixa do gráfico** (0 a 1) ou nas **unidades dos eixos** (a forma acompanha os dados).
+- **No script (`painel_de_ajustes.R`)**: as variáveis `ajustes`, `marcas_estatisticas`, `caixas_estatisticas` e `formas` (listas de itens; veja as opções em `01_config.R`). O exemplo 32 de `05_exemplos.R` usa tudo junto.
+- **Congelar:** cada bloco tem um tic **Congelar** no cabeçalho. Um bloco congelado não volta ao padrão em **Restaurar tudo**, não muda ao aplicar um modelo colado e **passa para as abas novas** — assim, para fazer outro gráfico com a mesma fonte, moldura e cores, congele esses blocos e crie uma aba nova.
+- **Copiar e colar o modelo:** **Copiar modelo** copia todas as configurações do gráfico como texto (para outra aba, outro computador, um e-mail); **Colar modelo...** aplica o texto (blocos congelados ficam como estão). **Salvar/Carregar configuração** continua valendo e agora também guarda os blocos congelados.
+- **Abas:** no alto, uma aba por gráfico, cada uma com os seus dados e as suas configurações; **+ Nova aba** (só com os blocos congelados), **Duplicar**, **Renomear** e **×** para fechar. **Mostrar outra aba ao lado** desenha o gráfico de outra aba abaixo da prévia. Atenção: você **edita um gráfico por vez** — para editar o outro, clique na aba dele (a troca guarda e devolve tudo). A caixa de estatística ainda não se arrasta com o mouse: use as posições x e y (0 a 1).
+- **Paleta `marca` reordenada:** as 4 primeiras cores (azul, verde, verde-limão, petróleo) são as mais diferentes entre si, inclusive para daltonismo; a partir da 5ª, as cores de azul e verde se parecem. O **Como usar** traz a dica: até 4 ou 5 séries use a paleta da marca; acima disso, uma paleta de apoio (Okabe-Ito) ou formas e linhas diferentes.
+
 ## Segunda rodada de ajustes (app e motor)
 
 - **Listas de colunas (Y e Y2):** a lista suspensa não é mais cortada pelo bloco; tem **"Selecionar todas"** e **"Limpar"**, e a coluna do eixo X não aparece como série.
@@ -78,7 +88,7 @@ A **Barlow** (Barlow, Barlow Condensed e Barlow Semi Condensed; licença SIL OFL
    - Sem permissão de administrador? O script instala na sua pasta pessoal automaticamente.
    - Erro de download? Veja as instruções de proxy no topo do arquivo, ou peça à TI liberação de `https://cloud.r-project.org`.
 4. **Recomendado:** *Tools > Global Options > General > Graphics > Backend = "AGG"*. Assim a aba Plots mostra fontes e gradientes iguais ao arquivo final.
-5. Rode `05_exemplos.R` (Ctrl+Shift+S): gera 31 figuras de exemplo em `saida/exemplos/`.
+5. Rode `05_exemplos.R` (Ctrl+Shift+S): gera 32 figuras de exemplo em `saida/exemplos/`.
 6. No console: `galeria()` gera `saida/galeria_referencia.pdf` com símbolos, tipos de linha, paletas, ticks, gradientes e um exemplo de cada tipo.
 
 ## 2. Uso diário
@@ -224,7 +234,8 @@ cfg$eixo_x$tempo <- FALSE                         # trata a coluna como categori
 | `R/` | o código do motor, um assunto por arquivo (leitura, eixos, tema, um arquivo por tipo de gráfico, exportação...). **Mantenha a pasta junto do `02_motor.R`** |
 | `03_executar.R` | seu roteiro de trabalho |
 | `04_catalogo.R` | `ajuda()`, `galeria()`, `mostrar_paletas()` |
-| `05_exemplos.R` | 31 exemplos prontos (um de cada tipo/recurso) |
+| `R/21_ajustes.R`, `R/22_formas.R` | ajustes de curva, estatísticas e testes; caixas de estatística, textos e polígonos |
+| `05_exemplos.R` | 32 exemplos prontos (um de cada tipo/recurso) |
 | `06_testes.R` | 208 testes automáticos — rode depois de qualquer alteração no motor |
 | `painel_de_ajustes.R` | **o painel**: variáveis simples por categoria (escala, ticks, grade, quebra, cores...). Veja a seção 2.1 |
 | `07_verificar_windows.R` | confere fontes Arial/Times, PDF e gradiente no seu computador (seção 8) |

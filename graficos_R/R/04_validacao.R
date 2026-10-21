@@ -55,13 +55,16 @@
   notacao = c("normal", "milhar", "cientifica", "cientifica_E", "potencia10", "percentual")
 )
 
+# Blocos que são listas livres de itens (cada item tem as suas chaves; conferidas em .CHAVES_ITENS)
+.BLOCOS_LISTA <- c("ajustes", "marcas_estatisticas", "caixas_estatisticas", "formas")
+
 # Completa o cfg com os padrões do 01_config.R para tudo o que faltar nos blocos. Assim continuam
 # funcionando scripts que SUBSTITUEM um bloco inteiro (cfg$quebra <- list(...)) e estilos salvos
 # antes de um parâmetro existir. Não mexe em cfg$series e cfg$referencias (livres).
 .completar_cfg <- function(cfg) {
   ref <- .cfg_ref
   if (is.null(ref)) return(cfg)
-  for (bl in setdiff(names(ref), c("series", "referencias"))) {
+  for (bl in setdiff(names(ref), c("series", "referencias", .BLOCOS_LISTA))) {
     if (!is.list(ref[[bl]]) || is.null(names(ref[[bl]]))) next
     if (is.null(cfg[[bl]])) { cfg[[bl]] <- ref[[bl]]; next }
     if (!is.list(cfg[[bl]])) next
@@ -86,7 +89,7 @@
 .checar_nomes <- function(cfg) {
   ref <- .cfg_ref
   if (is.null(ref)) return(invisible())
-  livres <- c("series", "referencias", "interno")
+  livres <- c("series", "referencias", "interno", .BLOCOS_LISTA)
   for (bl in names(cfg)) {
     if (bl %in% c(".interno")) next
     if (!bl %in% names(ref)) {
@@ -110,7 +113,18 @@
   referencias = c("eixo", "valor", "cor", "espessura_pt", "tipo", "rotulo", "rotulo_tamanho_pt"),
   textos = c("x", "y", "texto", "tamanho_pt", "cor", "negrito", "alinhamento"),
   setas = c("x", "y", "x_fim", "y_fim", "cor", "espessura_pt", "tamanho_ponta_pt"),
-  faixas = c("eixo", "de", "ate", "cor", "opacidade"))
+  faixas = c("eixo", "de", "ate", "cor", "opacidade"),
+  ajustes = c("serie", "tipo", "formula", "inicio", "grau", "suavizacao", "intercepto_zero", "cor", "tipo_linha", "espessura_pt", "opacidade", "de", "ate",
+              "estender", "banda", "banda_nivel", "banda_opacidade", "nome", "casas", "n_pontos", "ativo"),
+  marcas_estatisticas = c("serie", "eixo", "centro", "faixa", "multiplo", "cor", "opacidade", "centro_espessura_pt", "centro_tipo", "faixa_espessura_pt",
+                          "faixa_tipo", "preencher", "preencher_opacidade", "rotulo", "rotulo_tamanho_pt", "casas", "modo", "ponto_media", "ponto_tamanho_pt",
+                          "chapeu_percentual", "ativo"),
+  caixas_estatisticas = c("series", "titulo", "itens", "ajustes", "casas", "x", "y", "ancora", "tamanho_pt", "cor_texto", "negrito", "italico", "alinhamento",
+                          "colorir_serie", "mostrar_nome_serie", "fundo", "opacidade_fundo", "borda", "borda_cor", "borda_pt", "borda_tipo", "cantos", "raio_pt",
+                          "margem_pt", "sombra", "sombra_cor", "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "ativo"),
+  formas = c("tipo", "x", "y", "unidade", "largura", "altura", "vertices", "texto", "tamanho_pt", "cor_texto", "negrito", "italico", "alinhamento", "angulo",
+             "fundo", "opacidade_fundo", "borda", "borda_cor", "borda_pt", "borda_tipo", "raio_pt", "cantos", "margem_pt", "sombra", "sombra_cor",
+             "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "camada", "ancora", "ativo"))
 
 # Avisa chave digitada errado dentro dos itens (ex.: tamanho_ptt), que antes era ignorada em silêncio.
 .checar_itens <- function(cfg) {
@@ -124,6 +138,7 @@
   }
   um(cfg$referencias, "referencias", "cfg$referencias")
   for (t in c("textos", "setas", "faixas")) um(cfg$anotacoes[[t]], t, paste0("cfg$anotacoes$", t))
+  for (t in .BLOCOS_LISTA) um(cfg[[t]], t, paste0("cfg$", t))
 }
 
 # Confere opções, limites e combinações do cfg; para no primeiro erro, com mensagem em português.
