@@ -283,17 +283,35 @@ opcoes_paletas <- function(guardadas = character(0)) {
   cs("ancora", "sel", "Qual ponto da forma fica em (x, y)", NULL, opcoes = c("No centro" = "centro", .CANTOS9[names(.CANTOS9) != "No centro"]), padrao = "centro", mais = TRUE,
      se = "{tipo} != 'poligono'"))
 
+.campos_imagem <- function(cs) list(
+  cs("arquivo", "arquivo", "Arquivo da figura (PNG ou JPEG)", "PNG com fundo transparente funciona bem (logotipo, esquema). A figura fica só nesta sessão: não vai no modelo copiado nem na configuração salva; anexe de novo ao reabrir o app.", largura = 12),
+  cs("unidade", "sel", "Posição e tamanho em", "Fração da caixa do gráfico (0 a 1) ou na unidade dos eixos (a figura acompanha os dados).",
+     opcoes = c("Fração da caixa do gráfico (0 a 1)" = "fracao", "Unidades dos eixos (dados)" = "dados"), padrao = "fracao", largura = 12),
+  cs("x", "num", "Posição X", "Do ponto da figura escolhido abaixo.", padrao = 0.5, passo = 0.05),
+  cs("y", "num", "Posição Y", NULL, padrao = 0.5, passo = 0.05),
+  cs("largura", "num", "Largura", "Vazio = 0.2 da caixa do gráfico.", min = 0, passo = 0.05),
+  cs("altura", "num", "Altura", "Vazio = mantém a proporção da figura. Em unidades dos eixos, largura e altura são obrigatórias.", min = 0, passo = 0.05),
+  cs("ancora", "sel", "Qual ponto da figura fica em (x, y)", NULL, opcoes = c("No centro" = "centro", .CANTOS9[names(.CANTOS9) != "No centro"]), padrao = "centro"),
+  cs("opacidade", "num", "Opacidade (0 a 1)", NULL, min = 0, max = 1, passo = 0.05, padrao = 1),
+  cs("angulo", "num", "Girar (graus)", NULL, passo = 5),
+  cs("borda_cor", "cor", "Cor do contorno", "Preencha para pôr um contorno em volta da figura."),
+  cs("borda_pt", "num", "Grossura do contorno (pt)", NULL, min = 0, passo = 0.25),
+  cs("borda_tipo", "sel", "Tipo do contorno", NULL, opcoes = c("(padrão)" = "", .LINHAS), padrao = ""),
+  cs("camada", "sel", "Camada", "Na frente dos dados ou atrás deles.", opcoes = c("Na frente dos dados" = "frente", "Atrás dos dados" = "atras"), padrao = "frente", mais = TRUE))
+
 # Os cartões de cada lista (variável do painel): prefixo, quantidade, nome do item e a função dos campos.
 SLOTS <- list(
   ajustes = list(pref = "aj", n = 4, defs = .campos_ajuste, usar = "Usar este ajuste"),
   marcas_estatisticas = list(pref = "mk", n = 3, defs = .campos_marca, usar = "Usar estes traços"),
   caixas_estatisticas = list(pref = "cx", n = 3, defs = .campos_caixa, usar = "Usar esta caixa"),
-  formas = list(pref = "fm", n = 6, defs = .campos_forma, usar = "Usar esta forma"))
+  formas = list(pref = "fm", n = 6, defs = .campos_forma, usar = "Usar esta forma"),
+  imagens = list(pref = "im", n = 3, defs = .campos_imagem, usar = "Usar esta figura"))
 .NOMES_CARTAO <- list(
   ajustes = c("Ajuste 1", "Ajuste 2", "Ajuste 3", "Ajuste 4"),
   marcas_estatisticas = c("Traços de média e desvio 1", "Traços de média e desvio 2", "Traços de média e desvio 3"),
   caixas_estatisticas = c("Caixa de estatística 1", "Caixa de estatística 2", "Caixa de estatística 3"),
-  formas = c("Forma 1", "Forma 2", "Forma 3", "Forma 4", "Forma 5", "Forma 6"))
+  formas = c("Forma 1", "Forma 2", "Forma 3", "Forma 4", "Forma 5", "Forma 6"),
+  imagens = c("Figura 1", "Figura 2", "Figura 3"))
 grupos_slot <- function(g) lapply(seq_len(SLOTS[[g]]$n), function(k) .cartao(SLOTS[[g]]$pref, k, .NOMES_CARTAO[[g]][k], SLOTS[[g]]$defs, SLOTS[[g]]$usar))
 
 ESPEC <- list(
@@ -514,9 +532,9 @@ ESPEC <- list(
           list(list(titulo = "Caixas de estatística (como a legenda)", campos = list())),
           grupos_slot("caixas_estatisticas"))),
   bloco("formas", "Caixas de texto e polígonos",
-        "Caixas de texto, retângulos, elipses, triângulos e polígonos livres, com borda, cor, sombra e posição à sua escolha.",
-        "Em \"Fração da caixa\" a forma fica sempre no mesmo lugar do quadro; em \"Unidades dos eixos\" ela acompanha os dados (marca uma região do gráfico).",
-        grupos = grupos_slot("formas"))
+        "Caixas de texto, retângulos, elipses, triângulos, polígonos livres e figuras anexadas (PNG ou JPEG), com borda, cor, sombra e posição à sua escolha.",
+        "Em \"Fração da caixa\" a forma ou a figura fica sempre no mesmo lugar do quadro; em \"Unidades dos eixos\" ela acompanha os dados (marca uma região do gráfico). Para anexar uma figura (logotipo, esquema, foto), use os cartões \"Figura\", no fim deste bloco.",
+        grupos = c(grupos_slot("formas"), list(list(titulo = "Figuras anexadas (PNG ou JPEG)", campos = list())), grupos_slot("imagens")))
 )
 
 ESPEC_CAMPOS <- unlist(lapply(ESPEC, function(b) c(b$campos, unlist(lapply(b$grupos, function(g) g$campos), recursive = FALSE))),

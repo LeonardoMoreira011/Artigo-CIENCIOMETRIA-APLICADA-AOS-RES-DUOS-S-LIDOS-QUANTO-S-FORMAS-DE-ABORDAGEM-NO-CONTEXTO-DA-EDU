@@ -35,7 +35,7 @@ valor_inicial <- function(campo, cfg0) {
     txt = if (is.character(d) && length(d) == 1) d else "",
     chk = isTRUE(d),
     sel = , tri = , selbusca = { o <- unname(unlist(campo$opcoes)); if (!is.null(d) && length(d) == 1 && as.character(d) %in% o) as.character(d) else o[1] },
-    cor = "",
+    cor = "", arquivo = "",
     chkgrupo = as.character(d),
     vec = "", selmulti = character(0), colx = "", colsy = character(0), colsy2 = character(0), NULL)
 }
@@ -82,6 +82,7 @@ ler_valor_slot <- function(campo, v) {
     vec = { p <- strsplit(gsub(",", ".", trimws(v %||% "")), "[;[:space:]]+")[[1]]; p <- p[nzchar(p)]
             n <- suppressWarnings(as.numeric(p)); if (!length(n) || anyNA(n)) NULL else n },
     selmulti = if (length(v)) as.character(v) else NULL,
+    arquivo = if (is.character(v) && length(v) == 1 && nzchar(v)) v else NULL,
     NULL)
 }
 # "a=5, b=0.1" -> c(a = 5, b = 0.1)

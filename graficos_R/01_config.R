@@ -1272,6 +1272,20 @@ cfg$caixas_estatisticas <- list()
 cfg$formas <- list()
 
 # -----------------------------------------------------------------------------
+# IMAGENS — figuras anexadas (PNG ou JPEG) sobre o gráfico: logotipo, esquema, foto da amostra...
+# -----------------------------------------------------------------------------
+#  Lista de figuras (precisa dos pacotes png e jpeg; veja 00_instalar_pacotes.R). Cada item:
+#    arquivo    caminho do PNG ou JPEG (PNG com fundo transparente funciona)
+#    x, y       posição do ponto de ancoragem (padrão 0.5, 0.5). unidade = "fracao" (0 a 1 da caixa do gráfico; padrão) | "dados" (unidades dos eixos)
+#    largura    largura da figura (padrão 0.2 da caixa); altura vazia = mantém a proporção da figura.
+#               Em unidades dos dados, largura E altura são obrigatórias.
+#    ancora     qual ponto da figura fica em (x, y): "centro" (padrão) | "sup_esq" | "sup_centro" | "sup_dir" | "centro_esq" | "centro_dir" | "inf_esq" | "inf_centro" | "inf_dir"
+#    opacidade  0 a 1       angulo  giro em graus       camada  "frente" (padrão) | "atras" (atrás dos dados)
+#    borda_cor, borda_pt, borda_tipo   contorno em volta da figura (basta preencher um deles)
+#  EX.: cfg$imagens <- list(list(arquivo = "logo.png", x = 0.98, y = 0.98, ancora = "sup_dir", largura = 0.15))
+cfg$imagens <- list()
+
+# -----------------------------------------------------------------------------
 # QUEBRA — quebra (interrupção) do eixo Y
 # -----------------------------------------------------------------------------
 cfg$quebra <- list(

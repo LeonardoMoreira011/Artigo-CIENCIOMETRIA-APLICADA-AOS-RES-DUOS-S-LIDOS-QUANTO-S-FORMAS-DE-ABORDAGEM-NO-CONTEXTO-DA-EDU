@@ -195,5 +195,6 @@
     ac <- .ann_forma(f, info)
     if (identical(it$camada, "atras")) antes[[length(antes) + 1]] <- ac else depois[[length(depois) + 1]] <- ac
   }
-  list(antes = antes, depois = depois)
+  im <- .camadas_imagens(cfg, info)                  # figuras anexadas (R/23_imagens.R)
+  list(antes = c(antes, im$antes), depois = c(depois, im$depois))
 }

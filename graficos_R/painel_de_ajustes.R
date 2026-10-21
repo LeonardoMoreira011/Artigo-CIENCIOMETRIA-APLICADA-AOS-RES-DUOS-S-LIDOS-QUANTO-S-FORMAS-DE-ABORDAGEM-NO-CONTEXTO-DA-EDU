@@ -294,6 +294,9 @@ formas <- NULL             # EX.: list(list(tipo = "texto", x = 0.5, y = 0.9, te
                            #           list(tipo = "elipse", x = 30, y = 5, largura = 10, altura = 2, unidade = "dados", fundo = NA))
                            #   tipos: "texto" | "retangulo" | "retangulo_arredondado" | "elipse" | "triangulo" | "losango" | "hexagono" | "estrela" | "poligono"
 
+imagens <- NULL            # figuras anexadas (PNG ou JPEG; pacotes png e jpeg). EX.: list(list(arquivo = "logo.png", x = 0.98, y = 0.98, ancora = "sup_dir", largura = 0.15))
+                           #   altura vazia = mantém a proporção; unidade = "fracao" (0 a 1 da caixa) | "dados"; opacidade, angulo, borda_cor, camada = "atras"
+
 # =============================================================================
 #  EXECUÇÃO (não precisa editar)
 # =============================================================================

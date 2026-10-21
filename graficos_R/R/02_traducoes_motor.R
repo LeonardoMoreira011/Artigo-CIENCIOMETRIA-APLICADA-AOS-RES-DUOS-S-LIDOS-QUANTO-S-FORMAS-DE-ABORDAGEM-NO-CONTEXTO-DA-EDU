@@ -243,7 +243,19 @@
     "poucos pontos (" = "too few points (",
     "exige X > 0" = "requires X > 0",
     "o suavizado (loess) não convergiu" = "the smoothed fit (loess) did not converge",
-    "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "the fit did not converge (provide initial values in 'inicio')"
+    "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "the fit did not converge (provide initial values in 'inicio')",
+    "cfg$imagens: cada figura precisa de 'arquivo' (caminho de um PNG ou JPEG)." = "cfg$imagens: each picture needs 'arquivo' (the path of a PNG or JPEG).",
+    "cfg$imagens: não achei a figura '" = "cfg$imagens: could not find the picture '",
+    "cfg$imagens: formato '." = "cfg$imagens: format '.",
+    "' não é aceito; use PNG ou JPEG." = "' is not accepted; use PNG or JPEG.",
+    "Para usar figuras é preciso o pacote " = "To use pictures you need the package ",
+    ": rode install.packages(\"" = ": run install.packages(\"",
+    "\") (ou 00_instalar_pacotes.R)." = "\") (or 00_instalar_pacotes.R).",
+    "cfg$imagens: não consegui ler '" = "cfg$imagens: could not read '",
+    "' (arquivo corrompido?)." = "' (corrupted file?).",
+    "cfg$imagens: unidade deve ser \"fracao\" ou \"dados\"." = "cfg$imagens: unidade must be \"fracao\" or \"dados\".",
+    "cfg$imagens: ancora '" = "cfg$imagens: ancora '",
+    "cfg$imagens: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\")." = "cfg$imagens: in data units, give largura and altura (or use unidade = \"fracao\")."
   ),
   es = c(
     "Cor inválida em " = "Color no válido en ",
@@ -472,7 +484,19 @@
     "poucos pontos (" = "pocos puntos (",
     "exige X > 0" = "requiere X > 0",
     "o suavizado (loess) não convergiu" = "el suavizado (loess) no convergió",
-    "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "el ajuste no convergió (indica valores iniciales en 'inicio')"
+    "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "el ajuste no convergió (indica valores iniciales en 'inicio')",
+    "cfg$imagens: cada figura precisa de 'arquivo' (caminho de um PNG ou JPEG)." = "cfg$imagens: cada imagen necesita 'arquivo' (la ruta de un PNG o JPEG).",
+    "cfg$imagens: não achei a figura '" = "cfg$imagens: no encontré la imagen '",
+    "cfg$imagens: formato '." = "cfg$imagens: el formato '.",
+    "' não é aceito; use PNG ou JPEG." = "' no se acepta; usa PNG o JPEG.",
+    "Para usar figuras é preciso o pacote " = "Para usar imágenes se necesita el paquete ",
+    ": rode install.packages(\"" = ": ejecuta install.packages(\"",
+    "\") (ou 00_instalar_pacotes.R)." = "\") (o 00_instalar_pacotes.R).",
+    "cfg$imagens: não consegui ler '" = "cfg$imagens: no pude leer '",
+    "' (arquivo corrompido?)." = "' (¿archivo dañado?).",
+    "cfg$imagens: unidade deve ser \"fracao\" ou \"dados\"." = "cfg$imagens: unidade debe ser \"fracao\" o \"dados\".",
+    "cfg$imagens: ancora '" = "cfg$imagens: ancora '",
+    "cfg$imagens: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\")." = "cfg$imagens: en unidades de los datos, indica largura y altura (o usa unidade = \"fracao\")."
   )
 )
 .ROTULOS_IDIOMA <- list(

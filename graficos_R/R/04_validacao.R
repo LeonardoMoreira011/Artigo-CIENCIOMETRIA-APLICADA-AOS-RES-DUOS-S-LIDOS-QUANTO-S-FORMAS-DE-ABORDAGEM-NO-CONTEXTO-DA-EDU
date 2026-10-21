@@ -56,7 +56,7 @@
 )
 
 # Blocos que são listas livres de itens (cada item tem as suas chaves; conferidas em .CHAVES_ITENS)
-.BLOCOS_LISTA <- c("ajustes", "marcas_estatisticas", "caixas_estatisticas", "formas")
+.BLOCOS_LISTA <- c("ajustes", "marcas_estatisticas", "caixas_estatisticas", "formas", "imagens")
 
 # Completa o cfg com os padrões do 01_config.R para tudo o que faltar nos blocos. Assim continuam
 # funcionando scripts que SUBSTITUEM um bloco inteiro (cfg$quebra <- list(...)) e estilos salvos
@@ -122,6 +122,7 @@
   caixas_estatisticas = c("series", "titulo", "itens", "ajustes", "casas", "x", "y", "ancora", "tamanho_pt", "cor_texto", "negrito", "italico", "alinhamento",
                           "colorir_serie", "mostrar_nome_serie", "fundo", "opacidade_fundo", "borda", "borda_cor", "borda_pt", "borda_tipo", "cantos", "raio_pt",
                           "margem_pt", "sombra", "sombra_cor", "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "ativo"),
+  imagens = c("arquivo", "x", "y", "largura", "altura", "unidade", "ancora", "opacidade", "angulo", "borda_cor", "borda_pt", "borda_tipo", "camada", "ativo"),
   formas = c("tipo", "x", "y", "unidade", "largura", "altura", "vertices", "texto", "tamanho_pt", "cor_texto", "negrito", "italico", "alinhamento", "angulo",
              "fundo", "opacidade_fundo", "borda", "borda_cor", "borda_pt", "borda_tipo", "raio_pt", "cantos", "margem_pt", "sombra", "sombra_cor",
              "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "camada", "ancora", "ativo"))

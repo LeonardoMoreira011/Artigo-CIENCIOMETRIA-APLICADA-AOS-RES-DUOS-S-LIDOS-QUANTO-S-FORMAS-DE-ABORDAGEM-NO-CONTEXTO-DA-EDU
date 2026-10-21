@@ -58,6 +58,8 @@ instalar_pacotes <- function() {
     devEMF       = "4.0",    # EMF para colar no Word/PowerPoint
     viridisLite  = "0.4.0",  # paletas viridis/magma/plasma/cividis
     RColorBrewer = "1.1-3",  # paletas brewer_*
+    png          = "0.1-7",  # figuras anexadas ao gráfico (logotipo, esquema): PNG
+    jpeg         = "0.1-9",  # figuras anexadas ao gráfico: JPEG
     shiny        = "1.7.0"   # aplicativo no navegador (app_shiny/, abrir_app.bat)
   )
 
@@ -1390,6 +1392,20 @@ cfg$caixas_estatisticas <- list()
 cfg$formas <- list()
 
 # -----------------------------------------------------------------------------
+# IMAGENS — figuras anexadas (PNG ou JPEG) sobre o gráfico: logotipo, esquema, foto da amostra...
+# -----------------------------------------------------------------------------
+#  Lista de figuras (precisa dos pacotes png e jpeg; veja 00_instalar_pacotes.R). Cada item:
+#    arquivo    caminho do PNG ou JPEG (PNG com fundo transparente funciona)
+#    x, y       posição do ponto de ancoragem (padrão 0.5, 0.5). unidade = "fracao" (0 a 1 da caixa do gráfico; padrão) | "dados" (unidades dos eixos)
+#    largura    largura da figura (padrão 0.2 da caixa); altura vazia = mantém a proporção da figura.
+#               Em unidades dos dados, largura E altura são obrigatórias.
+#    ancora     qual ponto da figura fica em (x, y): "centro" (padrão) | "sup_esq" | "sup_centro" | "sup_dir" | "centro_esq" | "centro_dir" | "inf_esq" | "inf_centro" | "inf_dir"
+#    opacidade  0 a 1       angulo  giro em graus       camada  "frente" (padrão) | "atras" (atrás dos dados)
+#    borda_cor, borda_pt, borda_tipo   contorno em volta da figura (basta preencher um deles)
+#  EX.: cfg$imagens <- list(list(arquivo = "logo.png", x = 0.98, y = 0.98, ancora = "sup_dir", largura = 0.15))
+cfg$imagens <- list()
+
+# -----------------------------------------------------------------------------
 # QUEBRA — quebra (interrupção) do eixo Y
 # -----------------------------------------------------------------------------
 cfg$quebra <- list(
@@ -2247,7 +2263,19 @@ suppressPackageStartupMessages({
     "poucos pontos (" = "too few points (",
     "exige X > 0" = "requires X > 0",
     "o suavizado (loess) não convergiu" = "the smoothed fit (loess) did not converge",
-    "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "the fit did not converge (provide initial values in 'inicio')"
+    "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "the fit did not converge (provide initial values in 'inicio')",
+    "cfg$imagens: cada figura precisa de 'arquivo' (caminho de um PNG ou JPEG)." = "cfg$imagens: each picture needs 'arquivo' (the path of a PNG or JPEG).",
+    "cfg$imagens: não achei a figura '" = "cfg$imagens: could not find the picture '",
+    "cfg$imagens: formato '." = "cfg$imagens: format '.",
+    "' não é aceito; use PNG ou JPEG." = "' is not accepted; use PNG or JPEG.",
+    "Para usar figuras é preciso o pacote " = "To use pictures you need the package ",
+    ": rode install.packages(\"" = ": run install.packages(\"",
+    "\") (ou 00_instalar_pacotes.R)." = "\") (or 00_instalar_pacotes.R).",
+    "cfg$imagens: não consegui ler '" = "cfg$imagens: could not read '",
+    "' (arquivo corrompido?)." = "' (corrupted file?).",
+    "cfg$imagens: unidade deve ser \"fracao\" ou \"dados\"." = "cfg$imagens: unidade must be \"fracao\" or \"dados\".",
+    "cfg$imagens: ancora '" = "cfg$imagens: ancora '",
+    "cfg$imagens: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\")." = "cfg$imagens: in data units, give largura and altura (or use unidade = \"fracao\")."
   ),
   es = c(
     "Cor inválida em " = "Color no válido en ",
@@ -2476,7 +2504,19 @@ suppressPackageStartupMessages({
     "poucos pontos (" = "pocos puntos (",
     "exige X > 0" = "requiere X > 0",
     "o suavizado (loess) não convergiu" = "el suavizado (loess) no convergió",
-    "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "el ajuste no convergió (indica valores iniciales en 'inicio')"
+    "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "el ajuste no convergió (indica valores iniciales en 'inicio')",
+    "cfg$imagens: cada figura precisa de 'arquivo' (caminho de um PNG ou JPEG)." = "cfg$imagens: cada imagen necesita 'arquivo' (la ruta de un PNG o JPEG).",
+    "cfg$imagens: não achei a figura '" = "cfg$imagens: no encontré la imagen '",
+    "cfg$imagens: formato '." = "cfg$imagens: el formato '.",
+    "' não é aceito; use PNG ou JPEG." = "' no se acepta; usa PNG o JPEG.",
+    "Para usar figuras é preciso o pacote " = "Para usar imágenes se necesita el paquete ",
+    ": rode install.packages(\"" = ": ejecuta install.packages(\"",
+    "\") (ou 00_instalar_pacotes.R)." = "\") (o 00_instalar_pacotes.R).",
+    "cfg$imagens: não consegui ler '" = "cfg$imagens: no pude leer '",
+    "' (arquivo corrompido?)." = "' (¿archivo dañado?).",
+    "cfg$imagens: unidade deve ser \"fracao\" ou \"dados\"." = "cfg$imagens: unidade debe ser \"fracao\" o \"dados\".",
+    "cfg$imagens: ancora '" = "cfg$imagens: ancora '",
+    "cfg$imagens: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\")." = "cfg$imagens: en unidades de los datos, indica largura y altura (o usa unidade = \"fracao\")."
   )
 )
 .ROTULOS_IDIOMA <- list(
@@ -2803,7 +2843,7 @@ colunas <- function(dados) {
 )
 
 # Blocos que são listas livres de itens (cada item tem as suas chaves; conferidas em .CHAVES_ITENS)
-.BLOCOS_LISTA <- c("ajustes", "marcas_estatisticas", "caixas_estatisticas", "formas")
+.BLOCOS_LISTA <- c("ajustes", "marcas_estatisticas", "caixas_estatisticas", "formas", "imagens")
 
 # Completa o cfg com os padrões da PARTE 1 para tudo o que faltar nos blocos. Assim continuam
 # funcionando scripts que SUBSTITUEM um bloco inteiro (cfg$quebra <- list(...)) e estilos salvos
@@ -2869,6 +2909,7 @@ colunas <- function(dados) {
   caixas_estatisticas = c("series", "titulo", "itens", "ajustes", "casas", "x", "y", "ancora", "tamanho_pt", "cor_texto", "negrito", "italico", "alinhamento",
                           "colorir_serie", "mostrar_nome_serie", "fundo", "opacidade_fundo", "borda", "borda_cor", "borda_pt", "borda_tipo", "cantos", "raio_pt",
                           "margem_pt", "sombra", "sombra_cor", "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "ativo"),
+  imagens = c("arquivo", "x", "y", "largura", "altura", "unidade", "ancora", "opacidade", "angulo", "borda_cor", "borda_pt", "borda_tipo", "camada", "ativo"),
   formas = c("tipo", "x", "y", "unidade", "largura", "altura", "vertices", "texto", "tamanho_pt", "cor_texto", "negrito", "italico", "alinhamento", "angulo",
              "fundo", "opacidade_fundo", "borda", "borda_cor", "borda_pt", "borda_tipo", "raio_pt", "cantos", "margem_pt", "sombra", "sombra_cor",
              "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "camada", "ancora", "ativo"))
@@ -7023,6 +7064,102 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
     ac <- .ann_forma(f, info)
     if (identical(it$camada, "atras")) antes[[length(antes) + 1]] <- ac else depois[[length(depois) + 1]] <- ac
   }
+  im <- .camadas_imagens(cfg, info)                  # figuras anexadas (R/23_imagens.R)
+  list(antes = c(antes, im$antes), depois = c(depois, im$depois))
+}
+
+# -----------------------------------------------------------------------------
+#  23_imagens.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/23_imagens.R — figuras anexadas (PNG ou JPEG) sobre o gráfico: logotipo, esquema, foto da amostra...
+# =============================================================================
+#  cfg$imagens é uma lista; cada item: arquivo, x, y, largura, altura, unidade ("fracao" | "dados"), ancora, opacidade,
+#  angulo, borda_cor, borda_pt, borda_tipo, camada ("frente" | "atras").  Precisa dos pacotes png e jpeg (00_instalar_pacotes.R).
+# =============================================================================
+
+.cache_imagens <- new.env()
+.IMAGEM_MAX_PX <- 2400            # lado maior; figuras maiores são reduzidas (só para desenhar)
+
+# Lê a figura. Sai: list(r, g, b, a, alt, larg) — canais de 0 a 1 em matrizes (altura x largura).
+.ler_imagem <- function(arq) {
+  if (is.null(arq) || !is.character(arq) || length(arq) != 1 || !nzchar(arq)) .erro("cfg$imagens: cada figura precisa de 'arquivo' (caminho de um PNG ou JPEG).")
+  if (!file.exists(arq)) .erro("cfg$imagens: não achei a figura '", arq, "'.")
+  chave <- paste(normalizePath(arq, winslash = "/"), file.mtime(arq), file.size(arq))
+  if (!is.null(.cache_imagens[[chave]])) return(.cache_imagens[[chave]])
+  ext <- tolower(tools::file_ext(arq))
+  if (!ext %in% c("png", "jpg", "jpeg")) .erro("cfg$imagens: formato '.", ext, "' não é aceito; use PNG ou JPEG.")
+  pk <- if (ext == "png") "png" else "jpeg"
+  if (!.tem(pk)) .erro("Para usar figuras é preciso o pacote ", pk, ": rode install.packages(\"", pk, "\") (ou 00_instalar_pacotes.R).")
+  a <- tryCatch(if (ext == "png") png::readPNG(arq) else jpeg::readJPEG(arq), error = function(e) .erro("cfg$imagens: não consegui ler '", arq, "' (arquivo corrompido?)."))
+  d <- dim(a)
+  if (length(d) == 2) a <- array(a, c(d, 1)); d <- dim(a)
+  ch <- d[3]
+  canal <- function(i) a[, , i]
+  R <- G <- B <- NULL; A <- matrix(1, d[1], d[2])
+  if (ch %in% c(1, 2)) { R <- G <- B <- canal(1); if (ch == 2) A <- canal(2) } else { R <- canal(1); G <- canal(2); B <- canal(3); if (ch >= 4) A <- canal(4) }
+  passo <- ceiling(max(d[1:2]) / .IMAGEM_MAX_PX)
+  if (passo > 1) { i <- seq(1, d[1], by = passo); j <- seq(1, d[2], by = passo); R <- R[i, j, drop = FALSE]; G <- G[i, j, drop = FALSE]; B <- B[i, j, drop = FALSE]; A <- A[i, j, drop = FALSE] }
+  out <- list(r = R, g = G, b = B, a = A, alt = nrow(R), larg = ncol(R))
+  .cache_imagens[[chave]] <- out
+  out
+}
+
+# Raster (matriz de cores) com a opacidade pedida.
+.raster_imagem <- function(im, opacidade = 1) {
+  matrix(grDevices::rgb(as.vector(im$r), as.vector(im$g), as.vector(im$b), alpha = pmin(pmax(as.vector(im$a) * opacidade, 0), 1)), nrow = im$alt)
+}
+
+# Grob que mantém a proporção da figura: a largura vem do painel (npc) e a altura é calculada na hora de desenhar.
+.grob_imagem_prop <- function(r, prop, largura, x, y, just, angulo, gp_borda) {
+  gTree(r = r, prop = prop, largura = largura, x = x, y = y, just = just, angulo = angulo, gp_borda = gp_borda, cl = "imagem_prop")
+}
+makeContent.imagem_prop <- function(x) {
+  w <- grid::convertWidth(x$largura, "in", valueOnly = TRUE); h <- w * x$prop
+  vp <- viewport(x = x$x, y = x$y, width = unit(w, "in"), height = unit(h, "in"), just = x$just, angle = x$angulo)
+  f <- list(rasterGrob(x$r, width = unit(1, "npc"), height = unit(1, "npc"), interpolate = TRUE),
+            if (!is.null(x$gp_borda)) rectGrob(gp = x$gp_borda))
+  grid::setChildren(x, do.call(gList, list(gTree(children = do.call(gList, Filter(Negate(is.null), f)), vp = vp))))
+}
+if (requireNamespace("grid", quietly = TRUE)) registerS3method("makeContent", "imagem_prop", makeContent.imagem_prop, envir = asNamespace("grid"))
+
+# Uma figura: devolve list(grob, xmin, xmax, ymin, ymax) para annotation_custom() (mesmo formato de .grob_forma).
+.grob_imagem <- function(it, cfg) {
+  it <- .ex(it)
+  un <- it$unidade %||% "fracao"
+  if (!un %in% c("fracao", "dados")) .erro("cfg$imagens: unidade deve ser \"fracao\" ou \"dados\".")
+  a <- .ANCORAS[[it$ancora %||% "centro"]]
+  if (is.null(a)) .erro("cfg$imagens: ancora '", it$ancora, "' não é válida.\n  OPÇÕES: ", paste0('"', names(.ANCORAS), '"', collapse = " | "))
+  im <- .ler_imagem(it$arquivo)
+  r <- .raster_imagem(im, it$opacidade %||% 1)
+  prop <- im$alt / im$larg
+  gp_b <- if (!is.null(it$borda_cor) || !is.null(it$borda_pt) || !is.null(it$borda_tipo))
+    gpar(col = .cor(it$borda_cor %||% "black"), fill = NA, lwd = .lw(it$borda_pt %||% 0.75) * ggplot2::.pt, lty = it$borda_tipo %||% "solid") else NULL
+  cx <- it$x %||% 0.5; cy <- it$y %||% 0.5; ang <- it$angulo %||% 0
+  if (un == "dados") {
+    if (is.null(it$largura) || is.null(it$altura)) .erro("cfg$imagens: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\").")
+    f <- gList(rasterGrob(r, width = unit(1, "npc"), height = unit(1, "npc"), interpolate = TRUE), if (!is.null(gp_b)) rectGrob(gp = gp_b))
+    g <- gTree(children = gList(gTree(children = f, vp = viewport(angle = ang))))
+    return(list(grob = g, xmin = cx - it$largura / 2, xmax = cx + it$largura / 2, ymin = cy - it$altura / 2, ymax = cy + it$altura / 2))
+  }
+  larg <- it$largura %||% 0.2
+  if (!is.null(it$altura)) {                     # largura e altura dadas: preenche o retângulo (pode deformar)
+    vp <- viewport(x = unit(cx, "npc"), y = unit(cy, "npc"), width = unit(larg, "npc"), height = unit(it$altura, "npc"), just = a, angle = ang)
+    f <- gList(rasterGrob(r, width = unit(1, "npc"), height = unit(1, "npc"), interpolate = TRUE), if (!is.null(gp_b)) rectGrob(gp = gp_b))
+    g <- gTree(children = gList(gTree(children = f, vp = vp)))
+  } else g <- gTree(children = gList(.grob_imagem_prop(r, prop, unit(larg, "npc"), unit(cx, "npc"), unit(cy, "npc"), a, ang, gp_b)))
+  list(grob = g, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
+}
+
+# Camadas das figuras. Sai: list(antes, depois).
+.camadas_imagens <- function(cfg, info = list()) {
+  antes <- list(); depois <- list(); parte <- cfg$.interno$parte
+  for (i in seq_along(cfg$imagens)) {
+    it <- .ex(cfg$imagens[[i]]); if (isFALSE(it$ativo)) next
+    if (identical(parte, "inferior") && identical(it$unidade %||% "fracao", "fracao")) next
+    ac <- .ann_forma(.grob_imagem(it, cfg), info)
+    if (identical(it$camada, "atras")) antes[[length(antes) + 1]] <- ac else depois[[length(depois) + 1]] <- ac
+  }
   list(antes = antes, depois = depois)
 }
 
@@ -10455,6 +10592,9 @@ formas <- NULL             # EX.: list(list(tipo = "texto", x = 0.5, y = 0.9, te
                            #           list(tipo = "poligono", vertices = "0.6,0.2; 0.9,0.2; 0.75,0.5", borda_tipo = "dashed"),
                            #           list(tipo = "elipse", x = 30, y = 5, largura = 10, altura = 2, unidade = "dados", fundo = NA))
                            #   tipos: "texto" | "retangulo" | "retangulo_arredondado" | "elipse" | "triangulo" | "losango" | "hexagono" | "estrela" | "poligono"
+
+imagens <- NULL            # figuras anexadas (PNG ou JPEG; pacotes png e jpeg). EX.: list(list(arquivo = "logo.png", x = 0.98, y = 0.98, ancora = "sup_dir", largura = 0.15))
+                           #   altura vazia = mantém a proporção; unidade = "fracao" (0 a 1 da caixa) | "dados"; opacidade, angulo, borda_cor, camada = "atras"
 
 # =============================================================================
 #  EXECUÇÃO (não precisa editar)

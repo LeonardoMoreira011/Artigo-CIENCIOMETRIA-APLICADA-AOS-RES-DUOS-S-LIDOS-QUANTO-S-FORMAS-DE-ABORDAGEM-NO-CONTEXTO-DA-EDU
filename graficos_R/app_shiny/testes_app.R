@@ -200,7 +200,7 @@ teste("o gráfico com esses ajustes monta sem erro", is.null(rn$erro) && !is.nul
 # ---- blocos 13 e 14: os cartões viram listas do painel ----------------------------------------------------------------------------
 vs <- lapply(ESPEC_CAMPOS, valor_inicial, cfg0 = CFG0)
 teste("cartões desligados não geram nada; ligados geram só o que difere do padrão (e a lista certa)", {
-  length(montar_variaveis(vs, CFG0)[names(SLOTS)]) == 4 && all(vapply(montar_variaveis(vs, CFG0)[names(SLOTS)], is.null, NA)) && {
+  length(montar_variaveis(vs, CFG0)[names(SLOTS)]) == length(SLOTS) && all(vapply(montar_variaveis(vs, CFG0)[names(SLOTS)], is.null, NA)) && {
     v1 <- vs; v1$aj1_ativo <- TRUE; v1$aj1_tipo <- "formula"; v1$aj1_formula <- "a*exp(-b*x)+c"; v1$aj1_inicio <- "a=5, b=0.1, c=0"; v1$fm1_ativo <- TRUE; v1$fm1_sem_fundo <- TRUE; v1$fm1_tipo <- "elipse"
     r <- montar_variaveis(v1, CFG0)
     identical(r$ajustes[[1]], list(tipo = "formula", formula = "a*exp(-b*x)+c", inicio = c(a = 5, b = 0.1, c = 0))) && identical(r$formas[[1]], list(tipo = "elipse", fundo = NA)) } })
@@ -216,11 +216,17 @@ if (length(erros_slot)) print(erros_slot)
 teste("todos os campos dos cartões (com todos os cartões ligados), alterados um a um, viram variáveis e o painel aplica sem erro", length(erros_slot) == 0)
 teste("os 4 cartões de ajuste, 3 de traços, 3 de caixas e 6 de formas existem, e o 2º só aparece com o 1º ligado", {
   g <- ESPEC[[13]]$grupos; any(vapply(g, function(x) identical(x$ativo, "aj2_ativo") && identical(x$se, "input.aj1_ativo"), NA)) &&
-    sum(vapply(c(ESPEC[[13]]$grupos, ESPEC[[14]]$grupos), function(x) !is.null(x$ativo), NA)) == 16 })
+    sum(vapply(c(ESPEC[[13]]$grupos, ESPEC[[14]]$grupos), function(x) !is.null(x$ativo), NA)) == 19 })
 teste("cada bloco tem o tic 'Congelar' no cabeçalho", all(vapply(seq_along(ESPEC), function(i) grepl(paste0("cong_", ESPEC[[i]]$id), paste(as.character(ui_bloco(ESPEC[[i]], i, CFG0)), collapse = ""), fixed = TRUE), NA)))
 re_slot <- construir_grafico(ler_csv(file.path(raiz, "dados", "ensaio_temperatura.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE))),
   list(tipo_grafico = "pontos", ajustes = list(list(tipo = "linear", banda = TRUE)), caixas_estatisticas = list(list(itens = c("media", "r2"))), formas = list(list(tipo = "texto", texto = "oi"))), CFG0)
 teste("o gráfico monta com os ajustes, a caixa e a forma vindos dos cartões", is.null(re_slot$erro) && !is.null(re_slot$g))
+teste("o campo de figura (PNG/JPEG) existe nos 3 cartões, como campo de arquivo, e vira 'arquivo' na lista imagens", {
+  vi <- vs; vi$im1_ativo <- TRUE; vi$im1_arquivo <- "/tmp/x.png"; vi$im1_ancora <- "sup_dir"; vi$im1_largura <- 0.3
+  length(IDS_ARQUIVO) == 3 && all(vapply(ESPEC_CAMPOS[IDS_ARQUIVO], function(c) c$tipo == "arquivo", NA)) &&
+    identical(montar_variaveis(vi, CFG0)$imagens, list(list(arquivo = "/tmp/x.png", largura = 0.3, ancora = "sup_dir"))) &&
+    grepl("fileInput|im1_arquivo", paste(as.character(ui_campo(ESPEC_CAMPOS$im1_arquivo, CFG0)), collapse = ""))
+})
 
 # ---- servidor (testServer) -------------------------------------------------------------------------------------------
 options(gerador_sem_guia = TRUE)
@@ -270,10 +276,19 @@ testServer(servidor, {
   teste("servidor: o modelo copiado é um JSON com valores, séries, paletas e blocos congelados, e dá para ler de volta", !is.null(j) && identical(j$valores$aj1_tipo, "polinomial") &&
         identical(j$congelados, "cores") && !is.null(j$series) && is.null(ler_modelo("isto não é um modelo")))
   teste("servidor: aplicar_config devolve quantos blocos congelados manteve e não falha", aplicar_config(j, respeitar = TRUE) == 1)
+  if (requireNamespace("png", quietly = TRUE)) {
+    f_fig <- tempfile(fileext = ".png"); png::writePNG(array(runif(30 * 60 * 4), c(30, 60, 4)), f_fig)
+    rv$img[["im1_arquivo"]] <- list(nome = "logo.png", caminho = f_fig)
+    session$setInputs(im1_ativo = TRUE, im1_largura = 0.3, atualizar = 40)
+    teste("servidor: a figura anexada aparece no gráfico (cfg$imagens) e o código equivalente usa o nome do arquivo enviado", is.null(rv$erro) && length(rv$res$cfg$imagens) == 1 &&
+          grepl('arquivo = "logo.png"', paste(gerar_codigo(vars_codigo()), collapse = ""), fixed = TRUE) && !"im1_arquivo" %in% names(modelo_lista()$valores))
+  }
   session$setInputs(aba_nova = 1)
   teste("servidor: aba nova começa sem dados e mantém só o que estava congelado", length(rv$abas) == 2 && rv$aba == 2 && is.null(rv$dados) && is.null(rv$abas[[2]]$snap$valores$aj1_ativo) &&
         identical(rv$abas[[2]]$snap$valores$cores_paleta, "okabe_ito") && identical(rv$abas[[2]]$snap$cong, "cores"))
   session$setInputs(aba_ir = 1)
+  teste("servidor: a figura anexada não passa para a aba nova (bloco não congelado) e volta com a aba 1", length(rv$abas[[2]]$snap$img) == 0 &&
+        length(rv$img) == if (requireNamespace("png", quietly = TRUE)) 1 else 0)
   teste("servidor: voltar à aba 1 devolve os dados e a configuração dela", rv$aba == 1 && !is.null(rv$dados) && nrow(rv$dados) == 13 && identical(rv$abas[[2]]$snap$cong, "cores"))
   session$setInputs(aba_duplicar = 1)
   teste("servidor: duplicar a aba copia dados e configuração, com o nome '(cópia)'", length(rv$abas) == 3 && rv$aba == 3 && grepl("cópia", nome_aba(3)) && nrow(rv$dados) == 13)

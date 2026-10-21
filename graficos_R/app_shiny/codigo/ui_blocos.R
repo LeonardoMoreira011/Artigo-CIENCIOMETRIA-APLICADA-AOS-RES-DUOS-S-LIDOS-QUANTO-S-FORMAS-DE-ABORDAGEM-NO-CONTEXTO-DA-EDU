@@ -44,6 +44,8 @@ ui_campo <- function(campo, cfg0) {
     chkgrupo = checkboxGroupInput(id, rot, choices = opc, selected = ini, inline = TRUE),
     cor = cor_input(id, rot, hex_de(padrao_do_campo(campo, cfg0))),
     selmulti = selectizeInput(id, rot, choices = opc, selected = NULL, multiple = TRUE, options = OPC_SELECTIZE_MULTI),
+    arquivo = tagList(fileInput(id, rot, accept = c(".png", ".jpg", ".jpeg"), buttonLabel = tr("Escolher arquivo..."), placeholder = tr("Nenhum arquivo"), width = "100%"),
+                      uiOutput(paste0(id, "_estado"))),
     colx = selectInput(id, rot, choices = stats::setNames("", tr("(1ª coluna)")), selectize = FALSE),
     colsy = , colsy2 = tagList(
       selectizeInput(id, rot, choices = character(0), multiple = TRUE,

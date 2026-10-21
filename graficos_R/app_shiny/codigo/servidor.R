@@ -12,6 +12,7 @@ PRESETS <- list(
 # Os ids dos campos de cada bloco (para "congelar" um bloco inteiro).
 BLOCO_IDS <- stats::setNames(lapply(ESPEC, function(b) vapply(c(b$campos, unlist(lapply(b$grupos, function(g) g$campos), recursive = FALSE)), function(c) c$id, "")),
                              vapply(ESPEC, function(b) b$id, ""))
+IDS_ARQUIVO <- names(ESPEC_CAMPOS)[vapply(ESPEC_CAMPOS, function(c) identical(c$tipo, "arquivo"), NA)]
 IDS_SERIE_SEL <- c(unlist(lapply(c("ajustes", "marcas_estatisticas"), function(g) paste0(SLOTS[[g]]$pref, seq_len(SLOTS[[g]]$n), "_serie"))))
 IDS_SERIES_MULTI <- paste0(SLOTS$caixas_estatisticas$pref, seq_len(SLOTS$caixas_estatisticas$n), "_series")
 
@@ -28,7 +29,8 @@ atualizar_campo <- function(session, campo, valor, cfg0, colunas = NULL) {
     selmulti = updateSelectInput(session, id, selected = as.character(valor)),
     chkgrupo = updateCheckboxGroupInput(session, id, selected = as.character(valor)),
     colx = updateSelectInput(session, id, selected = as.character(valor %||% "")),
-    colsy = , colsy2 = updateSelectInput(session, id, selected = as.character(valor)))
+    colsy = , colsy2 = updateSelectInput(session, id, selected = as.character(valor)),
+    arquivo = NULL)               # a figura anexada é guardada à parte (rv$img), não volta por aqui
 }
 
 # Sessões abertas: com gerador_encerrar_ao_fechar (atalho sem janela), o R termina quando a última aba fecha.
@@ -45,7 +47,7 @@ servidor <- function(input, output, session) {
       later::later(function() if (.sessoes$n <= 0) shiny::stopApp(), 6)
   })
   rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL, geo = NULL,
-                       paletas = list(), pend_calc = FALSE, abas = list(list(nome = NULL, snap = NULL)), aba = 1L, est = NULL)
+                       paletas = list(), pend_calc = FALSE, img = list(), abas = list(list(nome = NULL, snap = NULL)), aba = 1L, est = NULL)
   dir_dados <- file.path(raiz, "dados")
   # idioma da página (vem do endereço, ?idioma=en) e atalhos para traduzir o que o servidor escreve na tela
   idioma <- reactive(input$idioma_pagina %||% "pt")
@@ -178,6 +180,7 @@ servidor <- function(input, output, session) {
 
   # ---- do que está na tela às variáveis do painel -------------------------------------------------------------------
   valores <- reactive({ v <- lapply(names(ESPEC_CAMPOS), function(id) input[[id]]); names(v) <- names(ESPEC_CAMPOS)
+                        for (id in IDS_ARQUIVO) v[id] <- list(rv$img[[id]]$caminho)       # figuras anexadas: o caminho da cópia desta sessão
                         v$simbolo_modo <- input$simbolo_modo
                         v$.paleta_propria <- input$paleta_propria; v$.paletas_salvas <- rv$paletas; v })
   vars_atual <- reactive({
@@ -229,7 +232,7 @@ servidor <- function(input, output, session) {
                  legenda_nomes = "Nomes na legenda", cores_por_serie = "Cores por série", simbolo_forma_por_serie = "Formas por série",
                  simbolo_tamanho_por_serie = "Tamanho dos pontos por série", linha_espessura_por_serie = "Grossura das linhas por série",
                  simbolo_borda_por_serie = "Contorno dos pontos por série", ajustes = "Curvas de ajuste", marcas_estatisticas = "Traços de média e desvio",
-                 caixas_estatisticas = "Caixas de estatística", formas = "Caixas de texto e polígonos")
+                 caixas_estatisticas = "Caixas de estatística", formas = "Caixas de texto e polígonos", imagens = "Figuras anexadas")
   rotulo_de <- function(id) { c <- ESPEC_CAMPOS[[id]]; if (!is.null(c)) c$rotulo else if (id %in% names(derivados)) derivados[[id]] else id }
   output$avisos <- renderUI({
     r <- rv$res
@@ -264,9 +267,39 @@ servidor <- function(input, output, session) {
   })
 
   # ---- código equivalente ----------------------------------------------------------------------------------------
-  output$codigo <- renderText(gerar_codigo(vars_atual()))
+  output$codigo <- renderText(gerar_codigo(vars_codigo()))
   output$baixar_codigo <- downloadHandler(filename = function() paste0(nome_base(), ".R"),
-    content = function(file) writeLines(gerar_codigo(vars_atual(), arquivo_csv = rv$nome, script_completo = TRUE), file, useBytes = TRUE))
+    content = function(file) writeLines(gerar_codigo(vars_codigo(), arquivo_csv = rv$nome, script_completo = TRUE), file, useBytes = TRUE))
+
+  # ---- figuras anexadas (bloco 14): cada cartão guarda uma cópia do arquivo enviado --------------------------------------------------
+  for (id in IDS_ARQUIVO) local({
+    i <- id
+    observeEvent(input[[i]], {
+      f <- input[[i]]; req(nrow(f) == 1)
+      ext <- tolower(tools::file_ext(f$name))
+      if (!ext %in% c("png", "jpg", "jpeg")) return(showNotification(T("Use uma figura PNG ou JPEG."), type = "error"))
+      pk <- if (ext == "png") "png" else "jpeg"
+      if (!requireNamespace(pk, quietly = TRUE)) return(showNotification(TF("Para usar figuras é preciso o pacote %s (install.packages(\"%s\")).", pk, pk), type = "error"))
+      pasta <- file.path(tempdir(), "figuras_app"); dir.create(pasta, showWarnings = FALSE)
+      destino <- file.path(pasta, paste0(i, "_", as.integer(Sys.time()), ".", ext)); file.copy(f$datapath, destino, overwrite = TRUE)
+      rv$img[[i]] <- list(nome = f$name, caminho = destino)
+    })
+    output[[paste0(i, "_estado")]] <- renderUI({
+      x <- rv$img[[i]]; if (is.null(x)) return(NULL)
+      UI(div(class = "chips", span(class = "chip chip-verde", x$nome),
+             tags$a(href = "#", onclick = sprintf("Shiny.setInputValue('img_remover', '%s', {priority: 'event'}); return false;", i), "Remover a figura")))
+    })
+  })
+  observeEvent(input$img_remover, { rv$img[[input$img_remover]] <- NULL })
+  # no código equivalente, a figura aparece pelo nome do arquivo que você enviou (coloque-o ao lado do script)
+  vars_codigo <- function() {
+    v <- vars_atual()
+    if (!is.null(v$imagens)) {
+      nomes <- stats::setNames(vapply(rv$img, function(x) x$nome, ""), vapply(rv$img, function(x) x$caminho, ""))
+      v$imagens <- lapply(v$imagens, function(it) { if (!is.null(it$arquivo) && !is.na(nomes[it$arquivo])) it$arquivo <- unname(nomes[it$arquivo]); it })
+    }
+    v
+  }
 
   # ---- congelar blocos, salvar / carregar / copiar / colar o modelo ------------------------------------------------------------------
   congelados <- function() { b <- names(BLOCO_IDS); b[vapply(b, function(i) isTRUE(input[[paste0("cong_", i)]]), NA)] }
@@ -274,6 +307,7 @@ servidor <- function(input, output, session) {
   modelo_lista <- function() {
     v <- isolate(valores()); v$paleta_propria <- input$paleta_propria %||% ""; v <- v[!vapply(v, is.null, NA)]
     s <- if (!is.null(rv$dados)) tryCatch(series_df(), error = function(e) NULL) else NULL
+    v <- v[setdiff(names(v), IDS_ARQUIVO)]                          # figuras anexadas não vão no modelo (são arquivos desta sessão)
     list(versao = 2, dados = rv$nome, valores = v[!startsWith(names(v), ".")], series = s, paletas = rv$paletas, congelados = unname(congelados()))
   }
   modelo_json <- function() as.character(jsonlite::toJSON(modelo_lista(), auto_unbox = TRUE, null = "null", na = "null", pretty = TRUE))
@@ -283,7 +317,7 @@ servidor <- function(input, output, session) {
     cong <- if (respeitar) ids_congelados() else character(0)
     for (id in setdiff(names(ESPEC_CAMPOS), cong)) {
       c <- ESPEC_CAMPOS[[id]]; v <- j$valores[[id]]
-      if (c$tipo %in% c("colx", "colsy", "colsy2") && is.null(v)) next
+      if (c$tipo == "arquivo" || (c$tipo %in% c("colx", "colsy", "colsy2") && is.null(v))) next
       atualizar_campo(session, c, v, CFG0)
     }
     if (!is.null(j$valores$paleta_propria)) updateTextAreaInput(session, "paleta_propria", value = as.character(j$valores$paleta_propria))
@@ -424,10 +458,11 @@ servidor <- function(input, output, session) {
   # ---- abas: vários gráficos, um de cada vez na tela (e os outros ao lado, se quiser) ---------------------------------------------------------------
   nome_aba <- function(i) { n <- rv$abas[[i]]$nome; if (is.null(n)) TF("Gráfico %d", i) else n }
   capturar <- function() list(valores = isolate(valores()), series = if (!is.null(rv$dados)) isolate(tryCatch(series_df(), error = function(e) NULL)),
-                              dados = rv$dados, nome_dados = rv$nome, cong = unname(congelados()))
+                              dados = rv$dados, nome_dados = rv$nome, cong = unname(congelados()), img = rv$img)
   restaurar_aba <- function(snap) {
     st$ate <- Sys.time() + 1.8                                  # as telas levam um instante para receber os valores; só então monta o gráfico
     rv$dados <- snap$dados; rv$nome <- snap$nome_dados; rv$erro <- NULL; rv$res <- NULL; rv$previa <- NULL; rv$pend_calc <- TRUE
+    rv$img <- snap$img %||% list()
     definir_colunas(snap$dados, snap$valores)
     for (id in names(ESPEC_CAMPOS)) { c <- ESPEC_CAMPOS[[id]]; if (!c$tipo %in% c("colx", "colsy", "colsy2")) atualizar_campo(session, c, snap$valores[[id]], CFG0) }
     updateTextAreaInput(session, "paleta_propria", value = as.character(snap$valores$.paleta_propria %||% ""))
@@ -445,7 +480,8 @@ servidor <- function(input, output, session) {
   observeEvent(input$aba_nova, {
     cur <- rv$aba; snap <- capturar(); rv$abas[[cur]]$snap <- snap
     livre <- setdiff(names(snap$valores), unlist(BLOCO_IDS[snap$cong], use.names = FALSE))      # só os blocos congelados vão para a aba nova
-    nova <- list(valores = snap$valores[setdiff(names(snap$valores), livre)], series = NULL, dados = NULL, nome_dados = NULL, cong = snap$cong)
+    nova <- list(valores = snap$valores[setdiff(names(snap$valores), livre)], series = NULL, dados = NULL, nome_dados = NULL, cong = snap$cong,
+                 img = snap$img[intersect(names(snap$img), unlist(BLOCO_IDS[snap$cong], use.names = FALSE))])
     nova$valores$simbolo_modo <- if ("cores" %in% snap$cong) snap$valores$simbolo_modo else NULL
     rv$abas[[length(rv$abas) + 1]] <- list(nome = NULL, snap = nova); rv$aba <- length(rv$abas); restaurar_aba(nova)
     showNotification(if (length(snap$cong)) TF("Aba nova: %d bloco(s) congelado(s) foram mantidos; o resto voltou ao padrão. Carregue os dados desta aba.", length(snap$cong)) else T("Aba nova, com o padrão do template. Carregue os dados desta aba."), type = "message")
@@ -501,6 +537,7 @@ servidor <- function(input, output, session) {
   restaurar_campos <- function() {
     cong <- ids_congelados()
     for (id in setdiff(names(ESPEC_CAMPOS), cong)) if (!ESPEC_CAMPOS[[id]]$tipo %in% c("colx", "colsy", "colsy2")) atualizar_campo(session, ESPEC_CAMPOS[[id]], NULL, CFG0)
+    rv$img <- rv$img[intersect(names(rv$img), cong)]                  # as figuras anexadas dos blocos livres saem
     if (!"cores" %in% congelados()) updateSelectInput(session, "simbolo_modo", selected = "variar")
   }
   observeEvent(input$restaurar, {

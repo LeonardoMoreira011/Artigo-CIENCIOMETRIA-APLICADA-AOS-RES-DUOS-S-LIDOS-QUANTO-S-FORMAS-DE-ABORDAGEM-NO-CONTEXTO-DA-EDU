@@ -384,7 +384,7 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
         L <- readLines(arq_painel, encoding = "UTF-8")
         L <- L[(grep("PAINEL DE AJUSTES DO GRÁFICO", L)[1]):(grep("EXECUÇÃO \\(não precisa editar\\)", L)[1])]
         v <- sub(" *<- .*", "", grep("^[a-z_A-Z]+ +<- ", L, value = TRUE))
-        extras <- c("ARQUIVO_CSV", "ajustes", "marcas_estatisticas", "caixas_estatisticas", "formas", "cores_personalizadas", "cores_gradiente", "cores_por_serie", "quebra_ativar",
+        extras <- c("ARQUIVO_CSV", "ajustes", "marcas_estatisticas", "caixas_estatisticas", "formas", "imagens", "cores_personalizadas", "cores_gradiente", "cores_por_serie", "quebra_ativar",
                     "x_intervalo",
                     "y_intervalo", "x_ticks_manuais", "y_ticks_manuais", "eixos_titulo_negrito", "rotulos_dados_tamanho_pt",
                     "y2_series", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo", "y2_ticks_manuais", "y2_ticks_menores",
@@ -1021,7 +1021,32 @@ teste("painel: ajustes, marcas, caixas e formas chegam ao cfg; variável que nã
   cp <- suppressMessages(aplicar_painel(c0, list2env(list(ajustes = list(list(tipo = "linear")), formas = list(list(tipo = "texto", x = .1, y = .1, texto = "a"))))))
   length(cp$ajustes) == 1 && length(cp$formas) == 1 && da_erro(aplicar_painel(c0, list2env(list(ajustes = "linear"))), "lista") })
 teste("textos das estatísticas saem em inglês e espanhol", {
-  op <- options(cinabro.idioma = "en"); on.exit(options(op)); en <- .re("media"); options(cinabro.idioma = "es"); es <- .re("media"); en == "Mean" && es == "Media" })
+  options(cinabro.idioma = "en"); en <- .re("media"); options(cinabro.idioma = "es"); es <- .re("media"); options(cinabro.idioma = "pt"); en == "Mean" && es == "Media" })
+
+cat("\n--- Figuras anexadas (PNG/JPEG) ---\n")
+if (.tem("png") && .tem("jpeg")) {
+  fig_a <- array(runif(40 * 80 * 4), c(40, 80, 4)); f_png <- file.path(tmp, "fig.png"); f_jpg <- file.path(tmp, "fig.jpg")
+  png::writePNG(fig_a, f_png); jpeg::writeJPEG(fig_a[, , 1:3], f_jpg)
+  ci <- c0; ci$grafico$coluna_x <- "x"; ci$series <- list()
+  dfi <- data.frame(x = 1:10, y = c(2, 4, 3, 6, 8, 7, 9, 12, 11, 14))
+  teste("figura PNG e JPEG: lê com transparência, desenha na frente e atrás dos dados, em fração e em unidades dos eixos, sem aviso", {
+    ci$imagens <- list(list(arquivo = f_png, x = .97, y = .97, ancora = "sup_dir", largura = .25, borda_cor = "grey30", opacidade = .8),
+                       list(arquivo = f_jpg, x = 7, y = 3, unidade = "dados", largura = 3, altura = 3, camada = "atras", angulo = 15),
+                       list(arquivo = f_png, x = .05, y = .05, ancora = "inf_esq", largura = .2, altura = .1))
+    length(avisos_de(gi <- plotar(dfi, ci))) == 0 && monta(gi) })
+  teste("figura: arquivo ausente, formato não aceito e unidades dos dados sem altura dão erro claro; chave errada avisa", {
+    cx <- ci; cx$imagens <- list(list(arquivo = file.path(tmp, "nao_existe.png"))); a <- da_erro(plotar(dfi, cx), "não achei a figura")
+    writeLines("x", file.path(tmp, "a.gif")); cx$imagens <- list(list(arquivo = file.path(tmp, "a.gif"))); b <- da_erro(plotar(dfi, cx), "PNG ou JPEG")
+    cx$imagens <- list(list(arquivo = f_png, unidade = "dados", largura = 2)); d <- da_erro(plotar(dfi, cx), "largura e altura")
+    cx$imagens <- list(list(arquivo = f_png, larg = 1)); e <- da_aviso(plotar(dfi, cx), "larg")
+    a && b && d && e })
+  teste("figura: a proporção é mantida quando só a largura é dada (mesma imagem 2:1 sai com altura = metade da largura)", {
+    im <- .ler_imagem(f_png); abs(im$alt / im$larg - 0.5) < 1e-9 && identical(dim(.raster_imagem(im, 0.5)), c(40L, 80L)) })
+  teste("figura: com a quebra de eixo, a figura em fração fica só na parte de cima", {
+    dq <- data.frame(x = 1:20, A = c(1:10, 1001:1010)); cq <- ci; cq$grafico$colunas_y <- "A"; cq$quebra <- utils::modifyList(ci$quebra, list(ativo = TRUE, de = 100, ate = 900))
+    cq$imagens <- list(list(arquivo = f_png)); pt <- attr(suppressWarnings(plotar(dq, cq)), "partes"); monta(pt[[1]]) && monta(pt[[2]]) })
+  teste("painel: a variável imagens chega ao cfg", length(suppressMessages(aplicar_painel(c0, list2env(list(imagens = list(list(arquivo = f_png))))))$imagens) == 1)
+} else cat("(png/jpeg não instalados: testes de figuras pulados)\n")
 
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", .res["passou"], .res["falhou"]))
 unlink(tmp, recursive = TRUE)
