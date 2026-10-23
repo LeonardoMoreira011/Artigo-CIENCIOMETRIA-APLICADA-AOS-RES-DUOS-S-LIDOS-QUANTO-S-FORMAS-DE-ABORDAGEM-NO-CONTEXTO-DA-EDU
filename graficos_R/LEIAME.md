@@ -27,13 +27,11 @@ Para quem não quer mexer em código: abra o **Cinabro** (laboratório de gráfi
 - **Grade:** nos traços grandes (`grade_x`, `grade_y`) e nos pequenos (`grade_menor_x`, `grade_menor_y`), cada grupo com tipo, cor, grossura e opacidade; a menor precisa de traços pequenos (`x_ticks_menores` ≥ 1).
 - **Fontes:** o app lista **todas as fontes do computador (systemfonts)**, com busca, e aceita uma fonte de arquivo `.ttf`/`.otf`. No script: `listar_fontes()` e `fonte <- "Nome da fonte"`.
 
-## Idiomas: português (BR), inglês e espanhol
+## Idioma: só português (BR)
 
-- **No app:** o seletor no canto superior direito troca a tela inteira (textos, dicas, listas, avisos e mensagens de erro) entre **Português (BR)**, **English** e **Español**; a escolha fica lembrada no navegador. Também vale abrir `http://cinabro.localhost:8421/?idioma=en` (ou `es`, `pt`).
-- **No script:** `idioma <- "en"` (ou `"es"`) no `painel_de_ajustes.R` traduz as mensagens do motor e os textos automáticos dentro do gráfico (por exemplo, "Densidade" vira "Density" no histograma).
-- **Como funciona:** os textos do app são escritos em português e traduzidos por dicionários (`app_shiny/idiomas/en.json` e `es.json`, as mensagens do motor em `R/02_traducoes_motor.R`); texto sem tradução aparece em português. Para acrescentar um texto novo, escreva em português no código e acrescente uma linha nos dicionários (o teste `Rscript app_shiny/testes_app.R` avisa se faltar).
-- **O que continua só em português:** os comentários do `01_config.R` e do `painel_de_ajustes.R`, este LEIAME (há versões curtas em `README_EN.md` e `README_ES.md`) e as mensagens do R/ggplot2 que não são do Cinabro.
-- A tradução foi feita com apoio de ferramenta e revisada só por testes e pela leitura da tela; vale uma revisão por falantes nativos antes de divulgar.
+- O app e o motor falam **só português do Brasil**. O seletor de idioma saiu do cabeçalho e `idioma <- "en"` no painel avisa e usa o português.
+- O **inglês e o espanhol não foram apagados**: dicionários, mensagens do motor e READMEs estão guardados em **`idiomas_arquivados/`** (veja o `LEIA-ME.md` de lá). **Para reativar, peça.**
+- Todo texto novo é escrito só em português.
 
 ## Paletas e licenças
 

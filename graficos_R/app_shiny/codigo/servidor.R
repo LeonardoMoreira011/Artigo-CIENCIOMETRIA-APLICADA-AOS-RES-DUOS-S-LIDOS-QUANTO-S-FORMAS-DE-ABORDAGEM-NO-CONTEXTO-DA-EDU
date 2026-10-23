@@ -70,7 +70,7 @@ servidor <- function(input, output, session) {
                        paletas = list(), pend_calc = FALSE, img = list(), palco_larg = NULL, palco_usado = NULL, abas = list(list(nome = NULL, snap = NULL)), aba = 1L, est = NULL)
   dir_dados <- file.path(raiz, "dados")
   # idioma da página (vem do endereço, ?idioma=en) e atalhos para traduzir o que o servidor escreve na tela
-  idioma <- reactive(input$idioma_pagina %||% "pt")
+  idioma <- reactive("pt")                                 # só português (inglês e espanhol arquivados); antes: input$idioma_pagina %||% "pt"
   T <- function(x) tr(x, idioma())                         # um texto
   TF <- function(molde, ...) trf(molde, ..., idioma = idioma())   # um molde com %s / %.1f
   UI <- function(x) traduzir_html(x, idioma())             # um pedaço de tela

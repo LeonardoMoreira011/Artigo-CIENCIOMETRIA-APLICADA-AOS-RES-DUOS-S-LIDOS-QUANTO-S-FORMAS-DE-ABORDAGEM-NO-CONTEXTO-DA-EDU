@@ -31,10 +31,8 @@
     var b = this, orig = b.textContent, ok = $(b).data('copiado') || 'Copiado!', t = $('#modelo-saida').val();
     copiarTexto(t, function () { b.textContent = ok; setTimeout(function () { b.textContent = orig; }, 1600); });
   });
-  // idioma: o seletor do cabeçalho recarrega a página com ?idioma=xx (lembra a escolha neste navegador)
-  $(document).on('change', '#idioma_sel', function () { try { localStorage.setItem('cinabro_idioma', this.value); } catch (e) {} location.search = '?idioma=' + this.value; });
-  try { var salvo = localStorage.getItem('cinabro_idioma');
-        if (salvo && salvo !== 'pt' && location.search.indexOf('idioma=') < 0) location.search = '?idioma=' + salvo; } catch (e) {}
+  // (idioma: só português; o seletor foi retirado. Inglês e espanhol estão arquivados em idiomas_arquivados/.)
+  try { localStorage.removeItem('cinabro_idioma'); } catch (e) {}
   // "Selecionar todas" / "Limpar" nas listas de colunas
   function seletor(id) { var el = document.getElementById(id); return el && el.selectize; }
   $(document).on('click', '[data-sel-todas]', function (e) {

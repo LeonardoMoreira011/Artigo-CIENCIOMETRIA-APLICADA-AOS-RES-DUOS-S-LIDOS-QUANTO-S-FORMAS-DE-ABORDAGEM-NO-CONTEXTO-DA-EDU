@@ -1,13 +1,14 @@
 # =============================================================================
-#  app_shiny/codigo/idiomas.R — o app em português (BR), inglês e espanhol
+#  app_shiny/codigo/idiomas.R — o app é só em português (BR)
 # =============================================================================
-#  Todos os textos do app são escritos em português. Para outro idioma, cada texto é procurado no dicionário
-#  app_shiny/idiomas/en.json (ou es.json): {"texto em português": "translation"}. Texto sem tradução aparece em português.
-#  Para acrescentar um texto novo: escreva em português no código e acrescente a linha nos dois .json.
-#  O idioma vem do endereço (?idioma=en) e é escolhido no seletor do cabeçalho.
+#  Todos os textos do app são escritos em português. O inglês e o espanhol (dicionários en.json e es.json, mensagens do motor, READMEs)
+#  estão ARQUIVADOS em idiomas_arquivados/ (veja o LEIA-ME de lá); para reativar, peça. A máquina de tradução abaixo continua no código,
+#  desligada: com IDIOMAS só com "pt", nenhum dicionário é carregado, o seletor não existe e ?idioma=en vira português.
+#  Versão com os três idiomas (guardada para reativar):
+#    IDIOMAS <- c("Português (BR)" = "pt", "English" = "en", "Español" = "es")
 # =============================================================================
 
-IDIOMAS <- c("Português (BR)" = "pt", "English" = "en", "Español" = "es")
+IDIOMAS <- c("Português (BR)" = "pt")
 
 .i18n <- new.env()
 .i18n$idioma <- "pt"          # idioma do que está sendo montado agora (a tela)

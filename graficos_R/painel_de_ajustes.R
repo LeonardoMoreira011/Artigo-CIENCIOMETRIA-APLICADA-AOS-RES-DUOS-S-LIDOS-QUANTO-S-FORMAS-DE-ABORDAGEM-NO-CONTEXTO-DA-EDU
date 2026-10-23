@@ -264,7 +264,7 @@ legenda_sombra_opacidade <- NULL    # 0 a 1. EX.: 0.35
 legenda_sombra_deslocamento_pt <- NULL  # c(para a direita, para baixo) em pt. EX.: c(3, 3)  |  c(5, 2)
 
 # ---- IDIOMA -----------------------------------------------------------------------------------------
-idioma           <- NULL   # idioma das mensagens e dos textos automáticos do gráfico: "pt" (português do Brasil) | "en" | "es"
+idioma           <- NULL   # só "pt" (português do Brasil). Inglês e espanhol estão arquivados em idiomas_arquivados/ (peça para reativar).
 
 # ---- 12. EXPORTAÇÃO ------------------------------------------------------------------------------------
 largura_cm   <- NULL       # EX.: 14   (só vale com painel_fixo <- FALSE ou ajustar_pagina <- FALSE; senão a página se ajusta sozinha)

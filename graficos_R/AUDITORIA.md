@@ -181,7 +181,7 @@ Instalador Windows (R 4.5 portátil + pacotes com versão fixa + atalho com o í
 ### Decisões que preciso de você
 1. Aprova a **Fase 1** inteira? (corrige, não tira nada)
 2. **Abas**: (a) manter e refazer a troca sem as 646 mensagens, (b) manter como está, (c) cortar e deixar "Duplicar gráfico" abrindo outra janela do navegador, (d) cortar de vez?
-3. **EN/ES**: manter, congelar ou cortar?
-4. **Dados do time**: qual o maior CSV típico (linhas)? Define o limite da prévia reduzida.
+3. ~~**EN/ES**~~ **decidido:** tudo em português; inglês e espanhol arquivados em `idiomas_arquivados/` (reativar sob pedido).
+4. ~~**Dados do time**~~ **decidido:** o tamanho do CSV não será especificado (depende do número de variáveis). A prévia reduzida passa a valer por **quantidade de pontos desenhados**, automática, sem pedir nada ao usuário.
 5. **Fase 2**: aprova os 6 itens, ou quais?
 6. Pode me mandar o `diagnostico_cinabro_resultado.txt` e o `app.log` (depois de instalar R ≥ 4.5)? Confronto cada hipótese da seção 4 com o seu PC.

@@ -15,7 +15,7 @@ raiz <- normalizePath("..", winslash = "/")
 source(file.path(raiz, "01_config.R"), encoding = "UTF-8"); suppressMessages(source(file.path(raiz, "02_motor.R"), encoding = "UTF-8"))
 CFG0 <- .completar_cfg(cfg)
 for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8")
-carregar_dicionarios("idiomas")
+carregar_dicionarios("idiomas")             # (pasta ausente: só português)
 
 # ---- cobertura: tudo o que o painel tem, o app tem -------------------------------------------------------------------
 L <- readLines(file.path(raiz, "painel_de_ajustes.R"), encoding = "UTF-8")
@@ -95,49 +95,20 @@ for (id in names(ESPEC_CAMPOS)) {
 if (length(erros_campos)) print(erros_campos)
 teste("todos os campos do app, alterados um a um, viram variáveis e o painel aplica sem erro", length(erros_campos) == 0)
 
-# ---- idiomas: português (BR), inglês e espanhol -------------------------------------------------------------------------------
-teste("os dicionários de inglês e espanhol carregam (mais de 650 textos cada)", all(c("en", "es") %in% names(.i18n$dic)) &&
-      all(vapply(.i18n$dic, length, 1L) > 650))
-textos_espec <- local({
-  out <- character(0); add <- function(x) { x <- unlist(x, use.names = FALSE); out <<- c(out, x[!is.na(x) & nzchar(x)]) }
-  nomes_rec <- function(x) { if (is.list(x)) { add(names(x)); for (e in x) nomes_rec(e) } else if (!is.null(names(x))) add(names(x)) }
-  for (b in ESPEC) { add(c(b$titulo, b$resumo, b$dica)); for (g in b$grupos) add(g$titulo)
-    for (c in c(b$campos, unlist(lapply(b$grupos, function(g) g$campos), recursive = FALSE))) { add(c(c$rotulo, c$ajuda)); if (!is.null(c$opcoes)) nomes_rec(c$opcoes) } }
-  nomes_rec(.PALETAS_GRUPOS); unique(out) })
-textos_codigo <- local({            # textos entre aspas dentro de T(), TF(), tr() e trf() nos arquivos do app
-  out <- character(0)
-  for (arq in c("codigo/servidor.R", "codigo/ui_blocos.R")) {
-    walk <- function(e) if (is.call(e)) {
-      if (is.symbol(e[[1]]) && as.character(e[[1]]) %in% c("T", "TF", "tr", "trf") && length(e) > 1 && is.character(e[[2]])) out <<- c(out, e[[2]])
-      for (i in seq_along(e)) if (!identical(e[[i]], quote(expr = ))) walk(e[[i]]) }
-    for (e in parse(arq, keep.source = FALSE, encoding = "UTF-8")) walk(e) }
-  unique(out) })
-for (lg in c("en", "es"))
-  teste(paste0("todo texto do app tem tradução em ", lg, " (", length(textos_espec) + length(textos_codigo), " textos conferidos)"),
-        { f <- setdiff(c(textos_espec, textos_codigo), names(.i18n$dic[[lg]])); if (length(f)) print(head(f, 10)); length(f) == 0 })
-teste("tr(), tr_nomes() e trf() traduzem; texto sem tradução volta igual; em português nada muda",
-      identical(tr("Mais opções", "en"), "More options") && identical(tr("Mais opções", "pt"), "Mais opções") && identical(tr("texto que não existe", "es"), "texto que não existe") &&
-      identical(names(tr_nomes(c("Limpar" = "a", "Sem chave" = "b"), "en")), c("Clear", "Sem chave")) && identical(trf("Maior vazio: de %s a %s.", 1, 2, idioma = "es"), "Mayor vacío: de 1 a 2."))
-tg <- tags$div(class = "x", tags$label("Limpar"), tags$input(placeholder = "Nenhum arquivo", value = "Limpar"), HTML("Limpar"))
-th <- as.character(traduzir_html(tg, "en"))
-teste("traduzir_html troca o texto e o placeholder, mas não o value nem o HTML cru", grepl(">Clear<", th, fixed = TRUE) && grepl('placeholder="No file"', th, fixed = TRUE) &&
-      grepl('value="Limpar"', th, fixed = TRUE) && grepl("Limpar\n</div>", th, fixed = TRUE))
-teste("a tela inteira monta em inglês e em espanhol, sem restos do texto-chave em português nos títulos dos blocos", {
-  tudo_ok <- TRUE
-  for (lg in c("en", "es")) { .i18n$idioma <- lg; h <- paste(as.character(traduzir_html(ui_bloco(ESPEC[[2]], 2, CFG0, aberto = TRUE), lg)), collapse = "")
-    tudo_ok <- tudo_ok && !grepl("Intervalos dos eixos", h, fixed = TRUE) && grepl(tr("Intervalos dos eixos", lg), h, fixed = TRUE) }
-  .i18n$idioma <- "pt"; tudo_ok })
-teste("o idioma vem do endereço (?idioma=en | es); valor estranho vira português", identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=en")), "en") &&
-      identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=es")), "es") && identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=xx")), "pt") && identical(idioma_do_pedido(list(QUERY_STRING = "")), "pt"))
-re_en <- construir_grafico(d <- ler_csv(file.path(raiz, "dados", "exemplo_dois_eixos_e_quebra.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE))),
-                           list(quebra_ativar = TRUE, quebra_de = 10, quebra_ate = 5), CFG0, idioma = "en")
-re_es <- construir_grafico(d, list(quebra_ativar = TRUE, quebra_de = 10, quebra_ate = 5), CFG0, idioma = "es")
+# ---- idioma: só português (inglês e espanhol arquivados em idiomas_arquivados/) --------------------------------------------------
+teste("o app é só em português: nenhum dicionário carregado, sem seletor de idioma, e ?idioma=en ou es vira português",
+      length(.i18n$dic) == 0 && identical(unname(IDIOMAS), "pt") && identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=en")), "pt") &&
+      identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=es")), "pt") && !grepl("idioma_sel", paste(readLines("app.R", encoding = "UTF-8"), collapse = ""), fixed = TRUE) && !grepl("idioma_sel", paste(readLines("www/app.js", encoding = "UTF-8"), collapse = ""), fixed = TRUE))
+teste("o texto do app não muda: tr()/traduzir_html() devolvem o texto em português, e os arquivos arquivados existem para reativar", {
+  tg <- tags$div(class = "x", tags$label("Limpar"), tags$input(placeholder = "Nenhum arquivo"))
+  identical(tr("Mais opções", "en"), "Mais opções") && identical(as.character(traduzir_html(tg, "pt")), as.character(tg)) &&
+    all(file.exists(file.path(raiz, "idiomas_arquivados", c("app/en.json", "app/es.json", "motor/02_traducoes_motor.R", "LEIA-ME.md")))) })
+d <- ler_csv(file.path(raiz, "dados", "exemplo_dois_eixos_e_quebra.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE)))
 re_pt <- construir_grafico(d, list(quebra_ativar = TRUE, quebra_de = 10, quebra_ate = 5), CFG0)
-teste("as mensagens do motor chegam ao app no idioma da tela (e o idioma do motor volta ao português depois)",
-      grepl("set de < ate", re_en$erro, fixed = TRUE) && grepl("define de < ate", re_es$erro, fixed = TRUE) && grepl("defina", re_pt$erro) && identical(getOption("cinabro.idioma", "pt"), "pt"))
-vi <- montar_variaveis(v0, CFG0); vi$idioma <- "en"
-teste("o idioma entra no código equivalente (idioma <- \"en\") e a variável idioma é aceita pelo painel", grepl('idioma +<- "en"', gerar_codigo(vi)) &&
-      { r <- construir_grafico(d, vi, CFG0, idioma = "en"); is.null(r$erro) })
+teste("as mensagens do motor saem em português mesmo se a tela pedir outro idioma, e o motor não fica com idioma trocado", {
+  re_en <- construir_grafico(d, list(quebra_ativar = TRUE, quebra_de = 10, quebra_ate = 5), CFG0, idioma = "en")
+  grepl("defina", re_pt$erro) && grepl("defina", re_en$erro) && identical(.idioma(), "pt") })
+vi <- montar_variaveis(v0, CFG0)
 
 # ---- gráfico de verdade -----------------------------------------------------------------------------------------------
 d <- ler_csv(file.path(raiz, "dados", "exemplo_dois_eixos_e_quebra.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE)))
@@ -264,10 +235,9 @@ testServer(servidor, {
         !is.null(rv$geo) && all(rv$geo$legenda[1:2] >= rv$geo$painel[1:2] - 1e-6) && rv$geo$legenda[3] < rv$geo$painel[3])
   session$setInputs(legenda_arrastada = list(esq = 0.25, base = 0.5, t = 1), legenda_redimensionada = list(largura = 0.3, t = 1))
   teste("servidor: arrastar e redimensionar a legenda na prévia roda sem erro", is.null(rv$erro))
-  session$setInputs(idioma_pagina = "en")
-  teste("servidor: com idioma_pagina = en, a tela do servidor (avisos e resumo dos dados) sai em inglês", {
-    session$setInputs(quebra_ativar = TRUE, quebra_de = 450000, quebra_ate = 100000, atualizar = 20)
-    h <- paste(as.character(output$avisos$html), collapse = ""); grepl("Something needs adjusting", h, fixed = TRUE) && !grepl("Algo precisa", h, fixed = TRUE) })
+  session$setInputs(idioma_pagina = "en", quebra_ativar = TRUE, quebra_de = 450000, quebra_ate = 100000, atualizar = 20)
+  teste("servidor: mesmo com idioma_pagina = en a tela do servidor (avisos e resumo dos dados) sai em português", {
+    h <- paste(as.character(output$avisos$html), collapse = ""); grepl("Algo precisa", h, fixed = TRUE) && !grepl("Something needs adjusting", h, fixed = TRUE) })
   session$setInputs(quebra_ativar = FALSE, idioma_pagina = "pt")
   session$setInputs(paleta_propria = "#112233, #445566, #778899", paleta_nome = "Teste", paleta_salvar = 1)
   teste("servidor: guardar a paleta própria cria 'salva:Teste' na lista e fica nos valores", identical(names(rv$paletas), "Teste") &&

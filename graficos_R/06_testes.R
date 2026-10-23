@@ -1081,8 +1081,10 @@ teste("barras e pizza aceitam formas (e ignoram ajustes) sem erro", {
 teste("painel: ajustes, marcas, caixas e formas chegam ao cfg; variável que não é lista dá erro", {
   cp <- suppressMessages(aplicar_painel(c0, list2env(list(ajustes = list(list(tipo = "linear")), formas = list(list(tipo = "texto", x = .1, y = .1, texto = "a"))))))
   length(cp$ajustes) == 1 && length(cp$formas) == 1 && da_erro(aplicar_painel(c0, list2env(list(ajustes = "linear"))), "lista") })
-teste("textos das estatísticas saem em inglês e espanhol", {
-  options(cinabro.idioma = "en"); en <- .re("media"); options(cinabro.idioma = "es"); es <- .re("media"); options(cinabro.idioma = "pt"); en == "Mean" && es == "Media" })
+teste("idioma: o motor é só português (options(cinabro.idioma) é ignorado); o inglês e o espanhol estão arquivados e `idioma <- \"en\"` no painel avisa e usa o português", {
+  options(cinabro.idioma = "en"); r <- .re("media"); m <- .traduzir_msg("Cor inválida em "); options(cinabro.idioma = "pt")
+  r == "Média" && m == "Cor inválida em " && da_aviso(aplicar_painel(c0, list2env(list(idioma = "en"))), "arquivados") &&
+    file.exists(file.path("idiomas_arquivados", "motor", "02_traducoes_motor.R")) })
 
 cat("\n--- Zonas clicáveis dos títulos (app) ---\n")
 teste(".geometria_zonas acha título, eixo X e eixo Y (frações da página, dentro de 0 a 1); sem título, uma faixa acima do painel", {

@@ -66,9 +66,11 @@ suppressPackageStartupMessages({
 }
 
 # Emite um aviso (warning) em português, sem mostrar a chamada interna.
-# Idioma das mensagens e dos textos que o motor escreve sozinho: options(cinabro.idioma = "pt" | "en" | "es")
-# (no painel: idioma <- "en"). As mensagens são escritas em português e traduzidas pelo dicionário de R/02_traducoes_motor.R.
-.idioma <- function() { i <- getOption("cinabro.idioma", "pt"); if (i %in% c("pt", "en", "es")) i else "pt" }
+# Idioma das mensagens e dos textos que o motor escreve sozinho: SÓ PORTUGUÊS (o inglês e o espanhol estão arquivados em idiomas_arquivados/;
+# para reativar, peça). As mensagens ficam escritas em português e o resto da máquina de tradução (.traduzir_msg, .rot, .re) continua aqui, desligada.
+# Versão que lia o idioma (guardada para reativar):
+#   .idioma <- function() { i <- getOption("cinabro.idioma", "pt"); if (i %in% c("pt", "en", "es")) i else "pt" }
+.idioma <- function() "pt"
 .traduzir_msg <- function(msg) {
   i <- .idioma()
   if (i == "pt" || !exists(".TRAD_MOTOR", inherits = TRUE)) return(msg)

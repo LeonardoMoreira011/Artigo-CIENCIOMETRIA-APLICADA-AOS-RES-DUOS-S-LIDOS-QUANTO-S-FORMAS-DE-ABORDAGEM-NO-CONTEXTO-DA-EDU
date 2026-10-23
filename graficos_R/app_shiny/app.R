@@ -17,7 +17,7 @@ assign("raiz", raiz, envir = globalenv()); assign("CFG0", CFG0, envir = globalen
 addResourcePath("fontes", file.path(raiz, "fontes"))
 for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8", local = FALSE)
 
-carregar_dicionarios(file.path("idiomas"))
+carregar_dicionarios(file.path("idiomas"))      # (pasta ausente de propósito: só português; veja idiomas_arquivados/)
 
 EXEMPLOS <- c("Dois eixos + quebra de eixo (Y esquerdo e direito)" = "exemplo_dois_eixos_e_quebra.csv",
               "Série temporal (eixo de datas)" = "serie_temporal.csv",
@@ -46,7 +46,6 @@ construir_ui <- function(idioma) fluidPage(
         div(tags$h1(class = "nome", "Cinabro"), tags$p(class = "frase", "A punctis ad curvam: ubi data colorem accipiunt."),
             div(class = "fio", tags$i(), tags$i(), tags$i(), tags$i()))),
     div(class = "topo-acoes",
-        selectInput("idioma_sel", NULL, choices = IDIOMAS, selected = idioma, selectize = FALSE, width = "170px"),
         selectInput("estilo", NULL, choices = tr_nomes(c("Estilos prontos..." = "", "Padrão do template" = "padrao", "Publicação (artigo)" = "publicacao",
                                                "Apresentação (slides)" = "apresentacao")), selectize = FALSE, width = "190px"),
         actionButton("restaurar", "Restaurar tudo", class = "btn-topo"),
@@ -110,7 +109,7 @@ construir_ui <- function(idioma) fluidPage(
           div(class = "botoes-config", tags$button(type = "button", class = "btn-sec", id = "copiar-codigo", `data-copiado` = "Copiado!", "Copiar"),
               downloadButton("baixar_codigo", "Baixar script (.R)", class = "btn-sec"))))))
 
-# A tela é montada em português e traduzida para o idioma pedido no endereço (?idioma=en | es).
+# A tela é montada em português (o idioma pedido no endereço é ignorado: só português).
 ui <- function(request) {
   idioma <- idioma_do_pedido(request)
   .i18n$idioma <- idioma
