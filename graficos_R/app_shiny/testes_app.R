@@ -40,13 +40,13 @@ v0 <- lapply(ESPEC_CAMPOS, valor_inicial, cfg0 = CFG0)
 teste("com a tela no estado inicial nenhuma variável é enviada (vale o padrão do template)", length(montar_variaveis(v0, CFG0)) == 0)
 v1 <- v0; v1$x_intervalo <- "1"; v1$y_dividir_por <- 1000; v1$grade_tipo <- "dotted"; v1$grade_opacidade <- 0.3; v1$grade_x <- TRUE
 v1$quebra_ativar <- TRUE; v1$legenda_canto <- "sup_dir"; v1$legenda_distancia_pt <- 8; v1$painel_largura_cm <- 9; v1$simbolo_modo <- "igual"
-v1$simbolo_forma <- "quadrado"; v1$cores_paleta <- "marca"; v1$esfera_luz <- "0.35,0.45"; v1$x_ticks_manuais <- "2015, 2020; 2026"
+v1$simbolo_forma <- "quadrado"; v1$cores_paleta <- "brewer_Spectral"; v1$esfera_luz <- "0.35,0.45"; v1$x_ticks_manuais <- "2015, 2020; 2026"
 v1$legenda_sombra_dx <- 5; v1$legenda_sombra_dy <- 2; v1$legenda_mostrar <- "nao"; v1$y_titulo <- "Receita (US$ ×10^{3})"
 vv <- montar_variaveis(v1, CFG0)
 teste("valores alterados viram as variáveis certas, com o tipo certo", identical(vv$x_intervalo, 1) && vv$y_dividir_por == 1000 &&
       identical(vv$grade_tipo, "dotted") && vv$grade_opacidade == 0.3 && isTRUE(vv$grade_x) && isTRUE(vv$quebra_ativar) &&
       vv$legenda_canto == "sup_dir" && vv$painel_largura_cm == 9 && vv$simbolo_forma == "quadrado" &&
-      identical(vv$cores_paleta, "marca") && is.null(vv$cores_personalizadas) && identical(vv$esfera_luz, c(0.35, 0.45)) &&
+      identical(vv$cores_paleta, "brewer_Spectral") && is.null(vv$cores_personalizadas) && identical(vv$esfera_luz, c(0.35, 0.45)) &&
       identical(vv$x_ticks_manuais, c(2015, 2020, 2026)) && identical(vv$legenda_sombra_deslocamento_pt, c(5, 2)) &&
       identical(vv$legenda_mostrar, FALSE) && vv$y_titulo == "Receita (US$ ×10^{3})")
 v2 <- v0; v2$simbolo_modo <- "variar"; v2$simbolo_forma <- "estrela"
@@ -69,7 +69,7 @@ vss <- montar_variaveis(vs2, CFG0)
 teste("paleta própria (do editor ou guardada) vira cores_personalizadas; paleta pronta vira cores_paleta",
       identical(vpp$cores_personalizadas, c("#112233", "#445566")) && is.null(vpp$cores_paleta) &&
       identical(vss$cores_personalizadas, c("#AA0000", "#00AA00")) &&
-      identical({ vq <- v0; vq$cores_paleta <- "tol_suave"; montar_variaveis(vq, CFG0)$cores_paleta }, "tol_suave"))
+      identical({ vq <- v0; vq$cores_paleta <- "brewer_Purples"; montar_variaveis(vq, CFG0)$cores_paleta }, "brewer_Purples"))
 teste("a lista de paletas da tela tem todos os grupos do motor + 'Minhas paletas' (com as guardadas)", {
   o <- opcoes_paletas("Minha"); all(names(.PALETAS_GRUPOS) %in% names(o)) && identical(unname(o[["Minhas paletas"]][2]), "salva:Minha") })
 vf <- v0; vf$formatos <- c("tiff", "svg"); vf$fundo_transparente <- TRUE
@@ -288,7 +288,7 @@ testServer(servidor, {
   teste("servidor: a tabela de resultados traz o resumo, o ajuste, os parâmetros e os testes", {
     r <- tabelas_estat(); nrow(r$descritiva) == 2 && nrow(r$ajustes) == 1 && nrow(r$parametros) == 4 && nrow(r$testes) == 4 })
   teste("servidor: a tabela de resultados é desenhada na tela", { h <- paste(as.character(output$estat_tabelas$html), collapse = ""); grepl("<table", h, fixed = TRUE) && grepl("Amostra A", h, fixed = TRUE) })
-  session$setInputs(cong_cores = TRUE, cores_paleta = "okabe_ito", cong_legenda = FALSE)
+  session$setInputs(cong_cores = TRUE, cores_paleta = "brewer_YlOrRd", cong_legenda = FALSE)
   teste("servidor: o tic 'Congelar' vale para os campos do bloco (e só dele)", "cores_paleta" %in% ids_congelados() && !"tipo_grafico" %in% ids_congelados() && identical(congelados(), "cores"))
   txt <- modelo_json(); j <- ler_modelo(txt)
   teste("servidor: o modelo copiado é um JSON com valores, séries, paletas e blocos congelados, e dá para ler de volta", !is.null(j) && identical(j$valores$aj1_tipo, "polinomial") &&
@@ -307,7 +307,7 @@ testServer(servidor, {
   teste("servidor: a faixa de ferramentas (clique rápido) e a largura do palco rodam sem erro", is.null(rv$erro) && identical(rv$palco_larg, 1000))
   session$setInputs(aba_nova = 1)
   teste("servidor: aba nova começa sem dados e mantém só o que estava congelado", length(rv$abas) == 2 && rv$aba == 2 && is.null(rv$dados) && is.null(rv$abas[[2]]$snap$valores$aj1_ativo) &&
-        identical(rv$abas[[2]]$snap$valores$cores_paleta, "okabe_ito") && identical(rv$abas[[2]]$snap$cong, "cores"))
+        identical(rv$abas[[2]]$snap$valores$cores_paleta, "brewer_YlOrRd") && identical(rv$abas[[2]]$snap$cong, "cores"))
   session$setInputs(aba_ir = 1)
   teste("servidor: a figura anexada não passa para a aba nova (bloco não congelado) e volta com a aba 1", length(rv$abas[[2]]$snap$img) == 0 &&
         length(rv$img) == if (requireNamespace("png", quietly = TRUE)) 1 else 0)

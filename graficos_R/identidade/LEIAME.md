@@ -10,7 +10,7 @@
 | Azul-petróleo | `#2F6670` | foco, links, itens "congelados" |
 
 Tons derivados (cartões e linhas, só para a interface): cartão `#FAF4EA`, cartão-2 `#F1E6D3`, linha `#E0D2BC`, linha forte `#CDBBA0`, texto secundário `#6B6358`.
-Para gráficos há a paleta `identidade` (vermelho, petróleo, tinta, terracota): com mais de 4 séries, varie também a forma e o tipo da linha.
+A paleta padrão dos gráficos, `cinabro`, usa essas cores (vermelho, petróleo, tinta, terracota) e variações delas: com mais de 4 séries, varie também a forma e o tipo da linha.
 
 ## Arquivos
 - `emblema.svg` — emblema vetorizado (anel + curva + pontos), fundo transparente, só com as 5 cores; escala sem perder qualidade.

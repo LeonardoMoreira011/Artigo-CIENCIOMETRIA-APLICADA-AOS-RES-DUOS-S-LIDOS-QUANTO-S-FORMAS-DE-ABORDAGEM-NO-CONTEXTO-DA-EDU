@@ -353,8 +353,8 @@ teste("anos: ticks em todos os anos de 2015 a 2026, sem ticks menores",
 cq2 <- c0; cq2$grafico <- utils::modifyList(cq2$grafico, list(tipo = "linha_pontos", coluna_x = 1))
 cq2$quebra <- utils::modifyList(cq2$quebra, list(ativo = TRUE, de = 110000, ate = 440000, ligar_atraves = FALSE))
 cq2$eixo_y$mostrar_titulo <- FALSE; cq2$legenda$posicao <- "dentro"
-teste("quebra sem ligar pontos: a legenda da parte de cima mostra TODAS as séries (chave vermelha da LATAM)",
-      any(grepl("^#E34234", renderiza(attr(plotar(an, cq2), "partes")[[1]]))))
+teste("quebra sem ligar pontos: a legenda da parte de cima mostra TODAS as séries (chave petróleo (2ª cor da paleta) da LATAM)",
+      any(grepl("^#2F6670", renderiza(attr(plotar(an, cq2), "partes")[[1]]))))
 pg <- list2env(list(x_ticks_espessura_pt = 2.5, y_ticks_espessura_pt = 0.5, x_linha_espessura_pt = 2,
                     moldura_espessura_pt = 3,
                     x_ticks_cor = "red", x_intervalo = 2, x_primeiro_tick = 2016, x_inicio = 2015, x_fim = 2026))
@@ -924,18 +924,22 @@ teste("painel: legenda_n_linhas e fundo_transparente chegam ao cfg", cpl$legenda
 
 cat("--- paletas ---\n")
 ids_pal <- unlist(.PALETAS_GRUPOS, use.names = FALSE)
-teste("paletas: todas as do catálogo (grupos da tela) existem e entregam n cores válidas (n = 1, 3 e 12)",
-      length(ids_pal) >= 35 && all(vapply(ids_pal, function(i) all(vapply(c(1, 3, 12), function(n) {
+teste("paletas: a lista da tela tem 12 paletas e todas existem e entregam n cores válidas (n = 1, 3 e 12)",
+      length(ids_pal) == 12 && all(vapply(ids_pal, function(i) all(vapply(c(1, 3, 12), function(n) {
         x <- .paleta(i, n, c0$cores); length(x) == n && !anyNA(x) && is.matrix(grDevices::col2rgb(x)) }, NA)), NA)))
-teste("paletas: 'marca' (azul e verde) é uma paleta do motor e o painel a aceita; 'classico' (nome antigo) vale como 'cinabro'",
-      identical(.paleta("marca", 2, c0$cores), c("#1B3A8C", "#0E9F4B")) &&
-      suppressMessages(aplicar_painel(c0, list2env(list(cores_paleta = "marca"))))$cores$paleta == "marca")
-teste("paletas: de uma cor só (seq_azul) vão do claro ao escuro e as demais (qualitativas) ficam na ordem da lista", {
-  a <- .paleta("brewer_Blues", 5, c0$cores); l <- function(x) sum(grDevices::col2rgb(x)) / 3
-  l(a[1]) > l(a[5]) && identical(.paleta("okabe_ito", 3, c0$cores), c("#0072B2", "#D55E00", "#009E73")) })
-teste("paletas retiradas (tableau, d3, npg...) ainda funcionam com um aviso e uma paleta livre equivalente; 'classico' vale como 'cinabro' sem aviso",
-      da_aviso(.paleta("tableau", 3, c0$cores), "foi retirada") && identical(suppressWarnings(.paleta("tableau", 3, c0$cores)), .paleta("okabe_ito", 3, c0$cores)) &&
-      length(avisos_de(.paleta("classico", 3, c0$cores))) == 0 && identical(.paleta("classico", 4, c0$cores), .paleta("cinabro", 4, c0$cores)))
+teste("paletas: a padrão 'cinabro' começa pelas 4 cores da marca (vermelho, petróleo, tinta, terracota), tem 10 cores e o painel a aceita",
+      identical(.paleta("cinabro", 4, c0$cores), c("#B3262E", "#2F6670", "#20242B", "#C96A4A")) && length(.paleta("cinabro", 10, c0$cores)) == 10 &&
+      !anyDuplicated(.paleta("cinabro", 10, c0$cores)) && c0$cores$paleta == "cinabro" &&
+      suppressMessages(aplicar_painel(c0, list2env(list(cores_paleta = "brewer_YlOrRd"))))$cores$paleta == "brewer_YlOrRd")
+teste("paletas: os degradês vão do claro ao escuro e a 'cinabro' (categórica) fica na ordem da lista", {
+  a <- .paleta("brewer_Reds", 5, c0$cores); l <- function(x) sum(grDevices::col2rgb(x)) / 3
+  l(a[1]) > l(a[5]) && identical(.paleta("cinabro", 3, c0$cores), c("#B3262E", "#2F6670", "#20242B")) })
+teste("paletas retiradas (okabe_ito, marca, tol_*, brewer_Set*, viridis, tableau...) ainda funcionam com um aviso e a paleta mantida mais parecida; 'classico' vale como 'cinabro' sem aviso",
+      da_aviso(.paleta("okabe_ito", 3, c0$cores), "foi retirada") && identical(suppressWarnings(.paleta("okabe_ito", 3, c0$cores)), .paleta("cinabro", 3, c0$cores)) &&
+      identical(suppressWarnings(.paleta("brewer_Blues", 4, c0$cores)), .paleta("brewer_YlGnBu", 4, c0$cores)) &&
+      identical(suppressWarnings(.paleta("viridis", 4, c0$cores)), .paleta("brewer_YlGnBu", 4, c0$cores)) &&
+      all(unname(.PALETAS_ANTIGAS) %in% c(ids_pal)) && length(avisos_de(.paleta("classico", 3, c0$cores))) == 0 &&
+      identical(.paleta("classico", 4, c0$cores), .paleta("cinabro", 4, c0$cores)))
 teste("paleta desconhecida dá erro com a lista de opções", da_erro(.paleta("nao_existe", 3, c0$cores), "Opções:"))
 teste("paletas: mostrar_paletas() desenha todas sem erro", { g <- .grafico_paletas(6); inherits(g, "gg") && monta(g) })
 

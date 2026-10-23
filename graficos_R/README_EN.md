@@ -46,7 +46,7 @@ Colors `#B3262E` (cinnabar red), `#F5EBDD` (cream: page background; white only i
 - The `marca` palette was reordered so the first four colors are the most distinct (also for color-blind viewers).
 
 ## Palettes and licenses
-Only palettes from freely licensed work are included — no palettes named after programs, brands or journals: the original `cinabro` (default), `marca` and `identidade`, Okabe-Ito, Paul Tol, Brewer (qualitative, sequential, diverging; includes `brewer_RdYlGn`, dark red to green), viridis family, cmocean and Crameri's scientific colour maps. Credits and license notices are in `NOTICE.md`. The font is Barlow (SIL Open Font License; `fontes/Barlow/OFL.txt`).
+Only palettes from freely licensed work are included — no palettes named after programs, brands or journals. 12 palettes: the original `cinabro` (default; the brand colors and variations of them), six gradients (Brewer Reds, Purples, YlGnBu, YlOrRd; cmocean algae; Crameri oslo), two diverging (Brewer `brewer_RdYlGn`, dark red to green, and Spectral) and three continuous (magma, inferno, turbo from viridisLite). Names of removed palettes still work: the closest remaining one is used, with a warning. Credits and license notices are in `NOTICE.md`. The font is Barlow (SIL Open Font License; `fontes/Barlow/OFL.txt`).
 
 ## Tests
 `Rscript 06_testes.R` (engine) and `Rscript app_shiny/testes_app.R` (app). Tested on Linux with ggplot2 3.5.2 and 4.0.3; **not tested on Windows** — run `07_verificar_windows.R` once.

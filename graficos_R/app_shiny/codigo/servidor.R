@@ -7,7 +7,7 @@ PRESETS <- list(
                     simbolo_tamanho_pt = 5, painel_largura_cm = 8.5, painel_altura_cm = 6, dpi = 600, tamanho_texto_pt = 9,
                     x_ticks_direcao = "dentro", y_ticks_direcao = "dentro"),
   apresentacao = list(tamanho_texto_pt = 18, linha_espessura_pt = 2.5, simbolo_tamanho_pt = 10, grade_y = TRUE, grade_tipo = "dashed",
-                      grade_opacidade = 0.3, dpi = 200, largura_cm = 24, altura_cm = 13.5, cores_paleta = "marca", legenda_escala = 1.2))
+                      grade_opacidade = 0.3, dpi = 200, largura_cm = 24, altura_cm = 13.5, cores_paleta = "cinabro", legenda_escala = 1.2))
 
 # Os ids dos campos de cada bloco (para "congelar" um bloco inteiro).
 BLOCO_IDS <- stats::setNames(lapply(ESPEC, function(b) vapply(c(b$campos, unlist(lapply(b$grupos, function(g) g$campos), recursive = FALSE)), function(c) c$id, "")),
@@ -20,6 +20,7 @@ IDS_SERIES_MULTI <- paste0(SLOTS$caixas_estatisticas$pref, seq_len(SLOTS$caixas_
 atualizar_campo <- function(session, campo, valor, cfg0, colunas = NULL) {
   id <- campo$id
   if (is.null(valor)) valor <- valor_inicial(campo, cfg0)
+  if (identical(id, "cores_paleta") && length(valor) == 1 && as.character(valor) %in% names(.PALETAS_ANTIGAS)) valor <- .PALETAS_ANTIGAS[[as.character(valor)]]   # paleta que saiu da lista: vale a mais parecida
   switch(campo$tipo,
     num = , int = updateNumericInput(session, id, value = if (is.null(valor) || length(valor) != 1) NA else valor),
     txt = , vec = updateTextInput(session, id, value = paste(valor, collapse = ", ")),

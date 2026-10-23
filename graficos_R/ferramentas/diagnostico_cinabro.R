@@ -44,7 +44,7 @@ cat("Pasta temporária:", tempdir(), "\n")
 cat("Codificação:", l10n_info()$`UTF-8`, "(UTF-8) | locale:", Sys.getlocale("LC_CTYPE"), "\n")
 cat("Pastas de pacotes (.libPaths):\n"); for (l in .libPaths()) cat("  ", l, "\n")
 cat("Pacotes (versão instalada | carregada nesta sessão | pasta):\n")
-for (p in c("ggplot2", "scales", "patchwork", "ragg", "systemfonts", "shiny", "httpuv", "later", "jsonlite", "png", "jpeg", "svglite", "devEMF", "viridisLite", "RColorBrewer")) {
+for (p in c("ggplot2", "scales", "patchwork", "ragg", "systemfonts", "shiny", "httpuv", "later", "jsonlite", "png", "jpeg", "svglite", "devEMF", "viridisLite")) {
   inst <- tryCatch(as.character(utils::packageVersion(p)), error = function(e) "NÃO INSTALADO")
   carr <- if (isNamespaceLoaded(p)) getNamespaceVersion(p) else "-"
   pasta <- tryCatch(dirname(find.package(p)), error = function(e) "")

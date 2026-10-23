@@ -168,8 +168,7 @@ y2_titulo_italico <- NULL         # TRUE = título em itálico
 #  As cores de cada série (esquerda ou direita) também podem vir de cores_por_serie (bloco 8).
 
 # ---- 8. CORES, LINHAS E SÍMBOLOS ----------------------------------------------------------------
-cores_paleta        <- NULL   # "cinabro" (padrão) | "marca" | "okabe_ito" | "tol_brilhante" | "brewer_Set1" | "brewer_RdYlGn"
-                              # (vermelho-escuro -> verde) | "viridis" | "cmo_thermal" | "crameri_batlow" | "cinza"...
+cores_paleta        <- NULL   # "cinabro" (padrão: cores da marca e variações) | "brewer_Reds" | "brewer_YlOrRd" | "brewer_RdYlGn" | "magma" | "turbo"...
                               # (a lista completa, com as cores desenhadas: mostrar_paletas())
 cores_personalizadas <- NULL  # suas cores, na ordem das colunas Y. EX.: c("#000000", "#D62728", "#1F4E9E")
 cores_por_serie     <- NULL   # a cor de séries específicas (nome exato da coluna).

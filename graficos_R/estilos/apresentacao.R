@@ -2,7 +2,7 @@
 # Carregue com: cfg <- carregar_estilo("apresentacao", cfg)
 list(
   texto = list(fonte = "sans", tamanho_base_pt = 16),
-  cores = list(paleta = "okabe_ito", incrementar_simbolo = FALSE),
+  cores = list(paleta = "cinabro", incrementar_simbolo = FALSE),
   serie_padrao = list(simbolo = 21, tamanho_simbolo_pt = 9, espessura_borda_pt = 1.2,
                       linha_espessura_pt = 3, preenchimento_simbolo = "serie"),
   caixa = list(fechada = FALSE, ticks_espelhados = FALSE, margens_cm = c(0.5, 0.8, 0.5, 0.5)),

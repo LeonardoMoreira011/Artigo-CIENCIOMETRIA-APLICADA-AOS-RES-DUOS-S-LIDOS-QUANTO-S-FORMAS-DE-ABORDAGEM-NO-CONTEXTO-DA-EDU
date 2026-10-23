@@ -57,7 +57,7 @@ for (ax in c("eixo_x", "eixo_y")) { cfg[[ax]]$direcao_maiores <- "fora"; cfg[[ax
 cfg$grade$maior_y <- TRUE; cfg$grade$menor_y <- TRUE
 cfg$grafico$tipo <- "linha"
 cfg$linhas$ligacao <- "spline"
-cfg$cores$paleta <- "okabe_ito"
+cfg$cores$paleta <- "cinabro"
 cfg$serie_padrao$linha_espessura_pt <- 2
 cfg$legenda$posicao <- "direita"
 gerar(temp, cfg)
@@ -122,7 +122,7 @@ gerar(temp, cfg)
 cfg <- novo_cfg("09_area_empilhada")
 cfg$grafico$tipo <- "area_empilhada"
 cfg$grafico$colunas_y <- c("Amostra A", "Amostra B", "Amostra C")
-cfg$cores$paleta <- "viridis"
+cfg$cores$paleta <- "magma"
 cfg$serie_padrao$opacidade_preenchimento <- 0.85
 cfg$eixo_y$titulo <- "Soma acumulada"
 gerar(temp, cfg)
@@ -132,7 +132,7 @@ cfg <- novo_cfg("10_barras_agrupadas")
 cfg$grafico$tipo <- "barras"
 cfg$grafico$colunas_y <- c("Ensaio 1", "Ensaio 2", "Ensaio 3")
 cfg$series[["Ensaio 1"]] <- list(coluna_erro = "Erro 1")
-cfg$cores$paleta <- "okabe_ito"
+cfg$cores$paleta <- "cinabro"
 cfg$eixo_y$titulo <- "Resistência (MPa)"
 cfg$eixo_y$inicio <- 0; cfg$eixo_y$fim <- 1000
 cfg$eixo_y$ticks_modo <- "incremento"; cfg$eixo_y$incremento <- 200
@@ -160,7 +160,7 @@ cfg$barras$orientacao <- "horizontal"
 cfg$barras$arranjo <- "empilhado_100"
 cfg$barras$rotulos_valor <- TRUE; cfg$barras$rotulos_posicao <- "centro"; cfg$barras$rotulos_cor <- "white"
 cfg$barras$rotulos_casas <- 0
-cfg$cores$paleta <- "okabe_ito"
+cfg$cores$paleta <- "cinabro"
 cfg$eixo_y$ticks_modo <- "incremento"; cfg$eixo_y$incremento <- 25; cfg$eixo_y$sufixo <- "%"
 cfg$eixo_x$titulo <- ""
 cfg$legenda$posicao <- "base"
@@ -172,7 +172,7 @@ cfg <- novo_cfg("13_pizza")
 cfg$grafico$tipo <- "pizza"
 cfg$pizza$explodir <- "Cromo"
 cfg$pizza$agrupar_abaixo <- 1
-cfg$cores$paleta <- "okabe_ito"
+cfg$cores$paleta <- "cinabro"
 cfg$exportacao$largura <- 14; cfg$exportacao$altura <- 11
 gerar(liga, cfg)
 
@@ -183,7 +183,7 @@ cfg$pizza$raio_furo <- 0.55
 cfg$pizza$rotulos <- "percentual"
 cfg$pizza$rotulos_posicao <- "fora"
 cfg$pizza$ocultar_rotulo_abaixo <- 1
-cfg$cores$paleta <- "brewer_Set2"
+cfg$cores$paleta <- "cinabro"
 cfg$cores$preenchimento <- "gradiente"; cfg$cores$gradiente_direcao <- "radial"; cfg$cores$gradiente_cor2 <- "white"
 cfg$legenda$posicao <- "direita"
 cfg$titulos$titulo <- "Composição da liga (% massa)"
@@ -208,24 +208,24 @@ cfg$grafico$tipo <- "histograma"
 cfg$grafico$colunas_y <- c("Controle", "Dose 2")
 cfg$distribuicao$largura_classe <- 5
 cfg$distribuicao$medida <- "percentual"
-cfg$cores$paleta <- "okabe_ito"
+cfg$cores$paleta <- "cinabro"
 gerar(rep_, cfg)
 
 # --- 17 Densidade e ECDF ------------------------------------------------------
 cfg <- novo_cfg("17_densidade")
 cfg$grafico$tipo <- "densidade"
-cfg$cores$paleta <- "viridis"
+cfg$cores$paleta <- "magma"
 gerar(rep_, cfg)
 cfg <- novo_cfg("18_ecdf")
 cfg$grafico$tipo <- "ecdf"
-cfg$cores$paleta <- "brewer_Dark2"
+cfg$cores$paleta <- "cinabro"
 cfg$eixo_y$casas_decimais <- 1
 gerar(rep_, cfg)
 
 # --- 19 Boxplot padrão (Tukey, média, outliers) ------------------------------
 cfg <- novo_cfg("19_boxplot")
 cfg$grafico$tipo <- "boxplot"
-cfg$cores$paleta <- "okabe_ito"
+cfg$cores$paleta <- "cinabro"
 cfg$serie_padrao$opacidade_preenchimento <- 0.8
 cfg$eixo_y$titulo <- "Resposta (u.a.)"
 gerar(rep_, cfg)
@@ -237,7 +237,7 @@ cfg$boxplot$variacao <- "box_pontos"
 cfg$boxplot$bigode <- "percentis"; cfg$boxplot$bigode_percentis <- c(5, 95)
 cfg$boxplot$entalhe <- TRUE
 cfg$boxplot$mostrar_n <- TRUE
-cfg$cores$paleta <- "okabe_ito"; cfg$serie_padrao$opacidade_preenchimento <- 0.35
+cfg$cores$paleta <- "cinabro"; cfg$serie_padrao$opacidade_preenchimento <- 0.35
 gerar(rep_, cfg)
 
 # --- 21 Meio box + dados ao lado ---------------------------------------------
@@ -245,7 +245,7 @@ cfg <- novo_cfg("21_meio_box")
 cfg$grafico$tipo <- "boxplot"
 cfg$boxplot$variacao <- "meio_box"
 cfg$boxplot$largura <- 0.7
-cfg$cores$paleta <- "brewer_Set1"
+cfg$cores$paleta <- "cinabro"
 gerar(rep_, cfg)
 
 # --- 22 Violino + box, gradiente --------------------------------------------
@@ -253,7 +253,7 @@ cfg <- novo_cfg("22_violino_box_gradiente")
 cfg$grafico$tipo <- "boxplot"
 cfg$boxplot$variacao <- "violino_box"
 cfg$cores$preenchimento <- "gradiente"; cfg$cores$gradiente_cor2 <- "white"
-cfg$cores$paleta <- "brewer_Set2"
+cfg$cores$paleta <- "cinabro"
 gerar(rep_, cfg)
 
 # --- 23 Média ± erro padrão (barras), formato longo (coluna de grupo) -------
@@ -272,7 +272,7 @@ cfg <- novo_cfg("24_boxplot_horizontal")
 cfg$grafico$tipo <- "boxplot"
 cfg$boxplot$orientacao <- "horizontal"
 cfg$boxplot$variacao <- "box_pontos"; cfg$boxplot$pontos_disposicao <- "jitter"
-cfg$cores$paleta <- "okabe_ito"
+cfg$cores$paleta <- "cinabro"
 gerar(rep_, cfg)
 
 # --- 25 PAINÉIS empilhados com X comum (3 painéis) ---------------------------

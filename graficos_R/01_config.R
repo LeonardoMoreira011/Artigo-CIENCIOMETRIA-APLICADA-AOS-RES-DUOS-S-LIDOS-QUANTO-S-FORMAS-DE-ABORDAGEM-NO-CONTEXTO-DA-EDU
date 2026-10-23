@@ -99,25 +99,14 @@ cfg$cores <- list(
   # paleta: cores atribuídas automaticamente às séries, em sequência
   #   (como o "incremento" de cor). Veja todas com mostrar_paletas().
   #   OPÇÕES (todas aparecem, desenhadas, em mostrar_paletas()):
-  #     Do Cinabro ........... "cinabro" (padrão) | "marca" (azul e verde; as 4 primeiras cores são as mais distintas) | "identidade" (vermelho, petróleo, tinta e terracota: a identidade visual do Cinabro)
-  #     Acessíveis ........... "okabe_ito" | "tol_brilhante" | "tol_vibrante" | "tol_suave" | "tol_alto_contraste" |
-  #                            "tol_medio_contraste" | "tol_claro" | "tol_escuro" | "tol_palido"
-  #     Qualitativas (Brewer)  "brewer_Set1" | "brewer_Set2" | "brewer_Dark2" | "brewer_Paired" | "brewer_Accent" |
-  #                            "brewer_Pastel1" | "brewer_Pastel2" | "brewer_Set3"
-  #     Degradês (Brewer) .... "brewer_Blues" | "brewer_Greens" | "brewer_Oranges" | "brewer_Reds" | "brewer_Purples" |
-  #                            "brewer_YlGnBu" | "brewer_YlOrRd"
-  #     Divergentes (Brewer) . "brewer_RdYlGn" (vermelho-escuro -> verde) | "brewer_Spectral" | "brewer_RdYlBu" |
-  #                            "brewer_RdBu" | "brewer_BrBG" | "brewer_PiYG" | "brewer_PRGn"
-  #     Contínuas ............ "viridis" | "magma" | "plasma" | "cividis" | "inferno" | "turbo" | "mako" | "rocket"
-  #                            (pacote viridisLite) | "cmo_thermal" | "cmo_haline" | "cmo_algae" | "cmo_matter" |
-  #                            "cmo_deep" | "cmo_balance" | "cmo_delta" | "cmo_curl" | "crameri_batlow" | "crameri_roma" |
-  #                            "crameri_bam" | "crameri_vik" | "crameri_lajolla" | "crameri_bilbao" | "crameri_oslo" |
-  #                            "crameri_lapaz" | "crameri_hawaii" | "crameri_tokyo" | "crameri_berlin" |
-  #                            "tol_por_do_sol" | "tol_iridescente" | "tol_BuRd" | "cinza"
-  #     Outras do ColorBrewer  "brewer_<nome>" (precisa do pacote RColorBrewer)
+  #     Do Cinabro ........... "cinabro" (padrão: as cores da marca e variações delas; as 4 primeiras são as mais distintas)
+  #     Degradês ............. "brewer_Reds" | "brewer_Purples" | "brewer_YlGnBu" | "brewer_YlOrRd" | "cmo_algae" | "crameri_oslo"
+  #     Divergentes .......... "brewer_RdYlGn" (vermelho-escuro -> verde) | "brewer_Spectral"
+  #     Contínuas ............ "magma" | "inferno" | "turbo"   (pacote viridisLite)
   #     Sua própria .......... "personalizada" (cores em cfg$cores$personalizada)
+  #   Nomes de paletas que saíram da lista (okabe_ito, marca, tol_*, brewer_Set1 etc.) ainda funcionam: o motor usa a mais parecida e avisa.
   #   As cores vêm de trabalhos com licença livre; os créditos estão em NOTICE.md.
-  #   EX.: cfg$cores$paleta <- "okabe_ito"
+  #   EX.: cfg$cores$paleta <- "brewer_YlOrRd"
   paleta = "cinabro",
 
   # personalizada: suas cores, usadas quando paleta = "personalizada".

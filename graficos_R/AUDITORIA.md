@@ -171,7 +171,7 @@ Ordem por **ganho ÷ esforço**; as fases 1 e 2 não tiram nenhum recurso.
 1. Cartões de ajuste/marca/caixa/forma/figura **sob demanda** (botão "+"): 695 → ~250 campos, HTML 512 → ~180 KB.
 2. 14 painéis → **7**: Dados · Eixos · Séries (cores/símbolos) · Texto · Legenda · Análise (ajustes + formas + figuras) · Exportar.
 3. Y2 e quebra de eixo só aparecem quando ligados.
-4. Paletas 66 → ~12; fontes 74 → lista curta.
+4. ~~Paletas 66 → 12~~ **feito** (escolha do usuário; a padrão `cinabro` agora são as cores da marca e variações). Fontes 74 → lista curta: pendente.
 5. Cabeçalho 112 → ~52 px.
 6. Cortar "outra aba ao lado" e "copiar/colar modelo".
 

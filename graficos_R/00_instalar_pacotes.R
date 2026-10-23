@@ -23,8 +23,7 @@ minimos <- c(
 opcionais <- c(
   svglite      = "2.1.0",  # SVG editável (Inkscape/Illustrator)
   devEMF       = "4.0",    # EMF para colar no Word/PowerPoint
-  viridisLite  = "0.4.0",  # paletas viridis/magma/plasma/cividis
-  RColorBrewer = "1.1-3",  # paletas brewer_*
+  viridisLite  = "0.4.0",  # paletas magma/inferno/turbo
   png          = "0.1-7",  # figuras anexadas ao gráfico (logotipo, esquema): PNG
   jpeg         = "0.1-9",  # figuras anexadas ao gráfico: JPEG
   shiny        = "1.7.0"   # aplicativo no navegador (app_shiny/, abrir_app.bat)
