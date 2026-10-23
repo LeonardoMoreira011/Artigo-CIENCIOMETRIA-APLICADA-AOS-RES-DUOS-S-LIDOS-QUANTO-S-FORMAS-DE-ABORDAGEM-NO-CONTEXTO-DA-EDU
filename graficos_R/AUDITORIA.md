@@ -6,7 +6,7 @@ Princípio: **menos é mais — o simples, objetivo e bem feito.** Nada foi cort
 
 | | |
 |---|---|
-| **Medido (sandbox Linux, 4 núcleos, R 4.4.3, ggplot2 4.0.3 / 3.5.2)** | tempo de cada etapa do gráfico, montagem da tela, navegador (Chromium com CPU 4× mais lenta), memória em sessão longa, escala de dados, figuras anexadas, arquivos CSV estranhos, varredura de valores hostis nos campos (em andamento) |
+| **Medido (sandbox Linux, 4 núcleos, R 4.4.3, ggplot2 4.0.3 / 3.5.2)** | tempo de cada etapa do gráfico, montagem da tela, navegador (Chromium com CPU 4× mais lenta), memória em sessão longa, escala de dados, figuras anexadas, arquivos CSV estranhos, 2.027 valores hostis nos campos |
 | **Não medido** | o **seu PC com Windows**. Nenhum `diagnostico_cinabro_resultado.txt` nem `app.log` chegou até aqui. Tudo abaixo é código + medição no sandbox; o Windows deve ser 1,5–3× mais lento, e os números relativos (quem custa mais) valem igual |
 | **Não dá para medir** | *quais recursos o time usa*. O registro de uso grava tempos e erros, mas não grava quais campos são mexidos. Sem isso, "uso" na tabela da seção 5 é julgamento meu, não dado |
 
@@ -68,8 +68,17 @@ Um PNG de 4,3 MP (13 MB): fica **138 MB em memória para sempre** (a cache nunca
 * **CSVs defeituosos**: 17 casos (vazio, só cabeçalho, uma coluna, tudo texto, nomes repetidos, BOM, Latin-1, coluna só de NA, datas, 100 colunas, arquivo binário, Inf/1e300, xlsx renomeado...) → **0 erros que derrubam a sessão**; os problemas viram aviso na tela (algumas mensagens ainda mostram nomes de código).
 * **Sessão longa**: sem vazamento (seção 2.5).
 
-**Em andamento:** varredura de ~2.000 valores hostis (negativos, zero, 1e7, NA, texto de 3.000 caracteres, cores inválidas...) em todos os campos, em 3 processos, com limite de memória por processo. O resultado completo (lista de campos que travam ou estouram memória, e os 15 casos mais lentos) entra aqui quando terminar.
+**Varredura de valores hostis (concluída): 2.027 casos** (negativo, zero, 0,0001, 10.000.000, NA, texto vazio/de 3.000 caracteres/com aspas, cores inválidas), em todos os 646 campos, com limite de 4,5 GB de memória por processo (sem esse limite o R simplesmente continua alocando).
 
+| Resultado | Casos |
+|---|---|
+| Erros que escapam e derrubariam a sessão (fora de `tryCatch`) | **0** |
+| **Estouro de memória com 10.000.000** (pede 1,5 GB de uma vez; sem limite, passa de 8 GB) | **9 campos**: `x_ticks_menores`, `y_ticks_menores`, `y2_ticks_menores`, `quebra_y_ticks_menores_superior/inferior`, `quebra_y2_ticks_menores_superior/inferior`, `legenda_n_linhas`, `legenda_n_colunas` |
+| Lentos sem estourar memória | tamanho de fonte **negativo** (`-5`) em títulos/números dos eixos: **14 a 19 s** (`y_titulo_tamanho_pt`, `y2_numeros_tamanho_pt`, `y2_titulo_tamanho_pt`); `ticks menores` inferior da quebra = 10 milhões: 15 s; `legenda_largura_pt` = 10 milhões: 2,8 s |
+| Tempo típico por caso | mediana 0,8 s, p95 1,2 s |
+| Avisos | `formatC: 'digits' reduced to 324` quando as casas decimais ficam enormes |
+
+Leitura: o programa trata bem texto e dado ruim, mas **não valida número**. Um zero a mais digitado, ou um "-" na frente do tamanho da fonte, trava o R por segundos ou o derruba por memória. A correção é pequena e central: **o servidor aplicar o `min`/`max` que cada campo já declara** (e declarar máximo nos 204 campos que não têm), em vez de confiar no navegador.
 
 ## 4. Hipóteses para "tela cinza e lenta", por probabilidade
 
@@ -78,7 +87,7 @@ Um PNG de 4,3 MP (13 MB): fica **138 MB em memória para sempre** (a cache nunca
 | 1 | **R encerrado pelo próprio atalho** 6 s após a aba desconectar (PC suspenso, aba dormindo, antivírus) | código (`servidor.R`, `iniciar.R`); o cinza do Shiny aparece quando a sessão acaba | `app.log`: "sessão fechada" sem você ter fechado a aba; depois a janela do R some |
 | 2 | **Ambiente velho/misturado**: R 4.2.1, `shiny` ausente, ggplot2 3.3.6 carregado junto com 3.5.1 instalado, ragg 1.2.2 (< 1.5, com bug conhecido) | seu diagnóstico anterior | instalar R ≥ 4.5 e `00_instalar_pacotes.R`; refazer o diagnóstico |
 | 3 | **Dados grandes**: 30–76 s por clique, fila de cliques atrás | seção 2.2 | `app.log`: tempos "montar/total" altos; quantas linhas tem o seu CSV típico? |
-| 4 | **Valor numérico absurdo** num campo (> 8 GB) | seção 3 | `app.log` termina sem "sessão fechada"; memória do R alta no Gerenciador de Tarefas |
+| 4 | **Valor numérico absurdo** num campo (9 campos estouram memória; fonte negativa trava 14–19 s) | seção 3 | `app.log` termina sem "sessão fechada"; memória do R alta no Gerenciador de Tarefas |
 | 5 | **Figura grande anexada**: 4 s por clique + centenas de MB | seção 2.4 | PNG/JPEG de vários MP no bloco 14 |
 | 6 | Falha nativa do ragg/systemfonts antigos | plausível com ragg 1.2.2; não reproduzido | janela do R fecha sozinha, sem mensagem |
 | 7 | Erro não tratado num observador (mata a sessão) | **não encontrado** nos testes hostis | `app.log`: "ERRO não tratado" |
@@ -135,7 +144,7 @@ Ordem por **ganho ÷ esforço**; as fases 1 e 2 não tiram nenhum recurso.
 | 1 | **Um único ggplot por atualização**: desenhar e medir legenda/títulos com o mesmo objeto | −55% em toda atualização (1,15 → ~0,5 s) | pequeno |
 | 2 | **Prévia reduzida acima de 5 mil pontos** (mín./máx. por faixa, picos preservados), com aviso "prévia simplificada; o arquivo exportado usa todos os pontos" | 50 mil pts: 30 s → ~1 s; exportação intacta | médio |
 | 3 | **Tela montada uma vez por idioma** e reaproveitada | −1,8 s por aba/recarga, e o R não fica bloqueado | pequeno |
-| 4 | **Limites nos campos numéricos** (máx. razoável por campo; ticks menores ≤ 20, etc.) | impede valores que consomem > 8 GB | pequeno–médio (ver seção 3) |
+| 4 | **Servidor aplica `min`/`max` de cada campo** (e máximo nos 204 que não têm; ticks menores ≤ 20, fonte ≥ 1 pt, colunas/linhas da legenda ≤ 50) | impede os 9 estouros de memória e as travas de 14–19 s | pequeno (a lista de limites já existe no `espec.R`) |
 | 5 | **Não fechar o R por desconexão curta**: tolerância de 10 min + botão "Sair" visível; endereço `127.0.0.1` | elimina a hipótese 1 | pequeno |
 | 6 | **Figuras**: reduzir para ≤ 1.200 px ao ler, guardar o raster pronto, cache de no máximo 3 | −4 s por atualização, −130 MB por figura | pequeno |
 | 7 | **Aquecer o motor** ao abrir o app (um gráfico de 5 pontos antes de liberar a tela) | primeiro gráfico 7,8 → ~3 s | pequeno |
