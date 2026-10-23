@@ -14,7 +14,7 @@
 .AJUSTES_TIPOS <- c("linear", "exponencial", "potencia", "logaritmico", "polinomial", "loess", "formula", "externa")
 .EST_ITENS_DESC <- c("n", "media", "mediana", "dp", "ep", "soma", "minimo", "maximo", "amplitude", "variancia", "cv", "q1", "q3", "ic95")
 .EST_ITENS_AJUSTE <- c("equacao", "r2", "r2_aj", "rmse", "aic", "bic", "p_modelo", "parametros", "p_parametros", "shapiro_residuos")
-.EST_ITENS_TESTE <- c("pearson", "spearman", "kendall", "shapiro", "ttest", "wilcoxon", "var_test", "anova", "kruskal", "tukey", "bartlett", "fligner")
+.EST_ITENS_TESTE <- c("pearson", "spearman", "kendall", "shapiro", "ttest", "wilcoxon", "var_test", "anova", "kruskal", "tukey", "pares_wilcoxon", "bartlett", "fligner")
 .EST_ITENS <- c(.EST_ITENS_DESC, .EST_ITENS_AJUSTE, .EST_ITENS_TESTE)
 
 # Rótulos (pt, en, es).
@@ -30,7 +30,7 @@
   pearson = c("Pearson", "Pearson", "Pearson"), spearman = c("Spearman", "Spearman", "Spearman"), kendall = c("Kendall", "Kendall", "Kendall"),
   shapiro = c("Shapiro-Wilk", "Shapiro-Wilk", "Shapiro-Wilk"), ttest = c("Teste t (Welch)", "t test (Welch)", "Prueba t (Welch)"),
   wilcoxon = c("Wilcoxon", "Wilcoxon", "Wilcoxon"), var_test = c("Teste F (variâncias)", "F test (variances)", "Prueba F (varianzas)"),
-  anova = c("ANOVA", "ANOVA", "ANOVA"), kruskal = c("Kruskal-Wallis", "Kruskal-Wallis", "Kruskal-Wallis"), tukey = c("Tukey", "Tukey", "Tukey"),
+  anova = c("ANOVA", "ANOVA", "ANOVA"), kruskal = c("Kruskal-Wallis", "Kruskal-Wallis", "Kruskal-Wallis"), tukey = c("Tukey", "Tukey", "Tukey"), pares_wilcoxon = c("Pares (Wilcoxon, Holm)", "Pairwise (Wilcoxon, Holm)", "Pares (Wilcoxon, Holm)"),
   bartlett = c("Bartlett", "Bartlett", "Bartlett"), fligner = c("Fligner-Killeen", "Fligner-Killeen", "Fligner-Killeen"),
   linear = c("Linear", "Linear", "Lineal"), exponencial = c("Exponencial", "Exponential", "Exponencial"), potencia = c("Potência", "Power", "Potencia"),
   logaritmico = c("Logarítmico", "Logarithmic", "Logarítmico"), polinomial = c("Polinomial", "Polynomial", "Polinómico"),
@@ -341,6 +341,11 @@
         tk <- stats::TukeyHSD(stats::aov(y ~ grupo, data = dd))$grupo
         do.call(rbind, lapply(seq_len(nrow(tk)), function(i) tab(rownames(tk)[i], tk[i, "diff"], NA_character_, tk[i, "p adj"], paste0("IC95: [", .nf(tk[i, "lwr"], casas), "; ", .nf(tk[i, "upr"], casas), "]"),
                                                                  paste0(r, " ", rownames(tk)[i], ": Δ = ", .nf(tk[i, "diff"], casas), "; ", .pf(tk[i, "p adj"])))))
+      } else if (id == "pares_wilcoxon") {                 # depois do Kruskal-Wallis: quais pares diferem (p ajustado por Holm)
+        pw <- stats::pairwise.wilcox.test(dd$y, dd$grupo, p.adjust.method = "holm", exact = FALSE)$p.value
+        ij <- which(!is.na(pw), arr.ind = TRUE)
+        do.call(rbind, lapply(seq_len(nrow(ij)), function(m) { par <- paste(colnames(pw)[ij[m, 2]], rownames(pw)[ij[m, 1]], sep = " × "); pv <- pw[ij[m, 1], ij[m, 2]]
+          tab(par, NA_real_, NA_character_, pv, "Holm", paste0(r, " ", par, ": ", .pf(pv))) }))
       } else .teste_nd(id, nomes)
     }
   }), error = function(e) .teste_nd(id, paste(nm, collapse = " × ")))
@@ -392,7 +397,7 @@
   if (!is.null(cx$titulo) && nzchar(cx$titulo)) for (tl in strsplit(gsub("\\n", "\n", cx$titulo, fixed = TRUE), "\n", fixed = TRUE)[[1]]) add(tl, NULL, TRUE)
   com_nome <- length(sel) > 1 || isTRUE(cx$mostrar_nome_serie)
   desc_ids <- intersect(itens, .EST_ITENS_DESC); aj_ids <- intersect(itens, .EST_ITENS_AJUSTE)
-  cor_ids <- intersect(itens, c("pearson", "spearman", "kendall", "shapiro")); grp_ids <- intersect(itens, c("ttest", "wilcoxon", "var_test", "anova", "kruskal", "tukey", "bartlett", "fligner"))
+  cor_ids <- intersect(itens, c("pearson", "spearman", "kendall", "shapiro")); grp_ids <- intersect(itens, c("ttest", "wilcoxon", "var_test", "anova", "kruskal", "tukey", "pares_wilcoxon", "bartlett", "fligner"))
   for (s in sel) {
     d <- .dados_serie(info, s); de <- .desc(d$y)
     cor_s <- if (isTRUE(cx$colorir_serie %||% TRUE) && !is.null(cor_ser[[s]])) cor_ser[[s]] else NULL
@@ -429,14 +434,21 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
   cfg <- .completar_cfg(cfg)
   info <- .plotar_um(dados, cfg, so_info = TRUE)
   ss <- .series_pts(info)
+  # grupos: cada série de pontos/linhas; ou, em boxplot/histograma/densidade/ECDF, cada coluna Y (ou cada valor da coluna de grupo) = um grupo de replicatas
+  g <- NULL; por_grupos <- FALSE
+  if (length(ss)) { g <- lapply(ss, function(s) .dados_serie(info, s)); names(g) <- ss }
+  else if (cfg$grafico$tipo %in% c("boxplot", "histograma", "densidade", "ecdf")) {
+    A <- tryCatch(.amostras(dados, cfg), error = function(e) NULL)
+    if (!is.null(A) && length(A$am)) { g <- lapply(A$am, function(v) { v <- v[is.finite(v)]; data.frame(x = seq_along(v), y = v) }); ss <- names(g); por_grupos <- TRUE }
+  }
   if (!length(ss)) return(list(descritiva = data.frame(), ajustes = data.frame(), parametros = data.frame(), testes = data.frame()))
-  desc <- do.call(rbind, lapply(ss, function(s) { d <- .desc(.dados_serie(info, s)$y); if (is.null(d)) return(NULL); data.frame(serie = s, as.data.frame(d), stringsAsFactors = FALSE) }))
-  fits <- .calcular_ajustes(cfg, info)
+  desc <- do.call(rbind, lapply(ss, function(s) { d <- .desc(g[[s]]$y); if (is.null(d)) return(NULL); data.frame(serie = s, as.data.frame(d), stringsAsFactors = FALSE) }))
+  fits <- if (por_grupos) list() else .calcular_ajustes(cfg, info)
   aj <- do.call(rbind, lapply(fits, function(f) { ft <- f$fit; if (!ft$ok) return(data.frame(serie = f$serie, ajuste = f$nome, equacao = paste0("(", ft$msg, ")"), n = ft$n, r2 = NA, r2_aj = NA, rmse = NA, aic = NA, bic = NA, p = NA, stringsAsFactors = FALSE))
     data.frame(serie = f$serie, ajuste = f$nome, equacao = ft$eq, n = ft$n, r2 = ft$r2, r2_aj = ft$r2_aj, rmse = ft$rmse, aic = ft$aic, bic = ft$bic, p = ft$p, stringsAsFactors = FALSE) }))
   pa <- do.call(rbind, lapply(fits, function(f) if (f$fit$ok && !is.null(f$fit$par)) data.frame(serie = f$serie, ajuste = f$nome, f$fit$par, stringsAsFactors = FALSE)))
-  testes <- testes %||% c("pearson", "shapiro", if (length(ss) >= 2) c("anova", "kruskal", "bartlett"))
-  g <- lapply(ss, function(s) .dados_serie(info, s)); names(g) <- ss
+  testes <- testes %||% (if (por_grupos) c("shapiro", if (length(ss) >= 2) c("anova", "kruskal", "bartlett")) else c("pearson", "shapiro", if (length(ss) >= 2) c("anova", "kruskal", "bartlett")))
+  if (por_grupos) testes <- setdiff(testes, c("pearson", "spearman", "kendall"))     # correlação X × Y não faz sentido entre replicatas
   gy <- lapply(g, function(d) d$y); gx <- lapply(g, function(d) d$x)
   te <- do.call(rbind, lapply(testes, function(id) { r <- .rodar_teste(id, gy, NULL, gx); r }))
   vazio <- function(x) if (is.null(x)) data.frame() else { rownames(x) <- NULL; x }

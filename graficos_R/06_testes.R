@@ -342,6 +342,17 @@ camadas_erro <- Filter(function(l) inherits(l$geom, "GeomErrorbar"), ge$layers)
 teste("painel: erro_por_serie liga a barra de erro (coluna de erro não vira série) e erro_lado/espessura chegam ao cfg",
       identical(ce$series$Media$coluna_erro, "DP") && identical(ce$linhas$erro_lado, "superior") && ce$linhas$erro_espessura_pt == 2 &&
       length(camadas_erro) == 1 && nrow(camadas_erro[[1]]$data) == 8 && identical(sort(unique(as.character(camadas_erro[[1]]$data$serie))), c("Media", "Media2")))
+set.seed(7); rep_g <- data.frame(Controle = rnorm(12, 50, 3), D1 = rnorm(12, 55, 3), D2 = rnorm(12, 62, 3), D3 = rnorm(12, 70, 3))
+cb <- c0; cb$grafico$tipo <- "boxplot"
+eb <- suppressWarnings(suppressMessages(estatisticas(rep_g, cb, testes = c("pearson", "shapiro", "anova", "kruskal", "tukey", "pares_wilcoxon", "bartlett"))))
+teste("estatísticas em boxplot: cada coluna é um grupo (resumo, Shapiro por grupo, ANOVA, Kruskal-Wallis, Tukey e pares de Wilcoxon-Holm; sem correlação X×Y)",
+      nrow(eb$descritiva) == 4 && all(eb$descritiva$n == 12) && sum(eb$testes$id == "shapiro") == 4 && sum(eb$testes$id == "anova") == 1 && sum(eb$testes$id == "kruskal") == 1 &&
+      sum(eb$testes$id == "tukey") == 6 && sum(eb$testes$id == "pares_wilcoxon") == 6 && !"pearson" %in% eb$testes$id &&
+      eb$testes$p[eb$testes$id == "anova"] < 0.001 && all(is.finite(eb$testes$p[eb$testes$id == "pares_wilcoxon"])))
+dl_g <- data.frame(g = rep(c("A", "B", "C"), each = 10), v = c(rnorm(10, 5), rnorm(10, 6), rnorm(10, 9))); cl <- cb; cl$grafico$coluna_grupo <- "g"
+el <- suppressWarnings(suppressMessages(estatisticas(dl_g, cl)))
+teste("estatísticas em boxplot no formato longo (coluna de grupo): um grupo por valor da coluna, e os testes padrão (Shapiro, ANOVA, Kruskal, Bartlett)",
+      identical(el$descritiva$serie, c("A", "B", "C")) && all(c("shapiro", "anova", "kruskal", "bartlett") %in% el$testes$id))
 teste("painel: erro_por_serie sem nomes dá erro claro", da_erro(aplicar_painel(c0, list2env(list(erro_por_serie = "DP"))), "nomes"))
 teste("painel: tudo NULL não muda nada (o cfg sai igual ao padrão)",
       identical(suppressMessages(aplicar_painel(c0, list2env(list()))), .completar_cfg(c0)))

@@ -160,9 +160,9 @@ opcoes_paletas <- function(guardadas = character(0)) {
                            "Valor de p do modelo (F)" = "p_modelo", "Parâmetros ± erro" = "parametros", "Valor de p de cada parâmetro" = "p_parametros",
                            "Normalidade dos resíduos (Shapiro)" = "shapiro_residuos"),
   "Testes estatísticos" = c("Correlação de Pearson (X × Y)" = "pearson", "Correlação de Spearman (X × Y)" = "spearman", "Correlação de Kendall (X × Y)" = "kendall",
-                            "Normalidade (Shapiro-Wilk)" = "shapiro", "Teste t entre duas séries (Welch)" = "ttest", "Wilcoxon entre duas séries" = "wilcoxon",
-                            "Teste F de variâncias (duas séries)" = "var_test", "ANOVA de um fator (séries)" = "anova", "Kruskal-Wallis (séries)" = "kruskal",
-                            "Tukey (comparações duas a duas)" = "tukey", "Bartlett (variâncias iguais)" = "bartlett", "Fligner-Killeen (variâncias iguais)" = "fligner"))
+                            "Normalidade (Shapiro-Wilk, de cada grupo)" = "shapiro", "Teste t entre dois grupos (Welch)" = "ttest", "Wilcoxon entre dois grupos" = "wilcoxon",
+                            "Teste F de variâncias (dois grupos)" = "var_test", "ANOVA de um fator (grupos)" = "anova", "Kruskal-Wallis (grupos)" = "kruskal",
+                            "Tukey (comparações duas a duas, após a ANOVA)" = "tukey", "Pares de Wilcoxon com ajuste de Holm (após o Kruskal-Wallis)" = "pares_wilcoxon", "Bartlett (variâncias iguais)" = "bartlett", "Fligner-Killeen (variâncias iguais)" = "fligner"))
 .AJUSTES_OPC <- c("Linear (reta)" = "linear", "Exponencial (y = a·e^(bx))" = "exponencial", "Potência (y = a·x^b)" = "potencia", "Logarítmico (y = a + b·ln x)" = "logaritmico",
                   "Polinomial (grau 2, 3...)" = "polinomial", "Suavizado (loess)" = "loess", "Fórmula livre (a sua)" = "formula",
                   "Curva externa (pontos X,Y ou equação com valores prontos)" = "externa")
