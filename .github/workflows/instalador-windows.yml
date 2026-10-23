@@ -1,0 +1,126 @@
+name: Instalador do Windows
+
+# Monta o Cinabro-Setup-<versão>.exe (R portátil + pacotes fixos + app), TESTA tudo num Windows de verdade
+# e guarda o instalador como artefato (e como arquivo da versão, se o push for de uma tag v*).
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "graficos_R/**"
+      - ".github/workflows/instalador-windows.yml"
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  # Foto do CRAN usada para os pacotes (todo mundo recebe as mesmas versões). Para atualizar os pacotes, troque a data
+  # e confira se este fluxo continua verde.
+  FOTO_CRAN: "2026-02-01"
+
+jobs:
+  instalador:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: graficos_R
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.5"
+          use-public-rspm: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Gerar o arquivo único (graficos_R_completo.R)
+        run: python ferramentas/gerar_script_unico.py
+
+      - name: Versão
+        id: ver
+        run: |
+          $base = (Get-Content instalador/VERSAO.txt -Raw).Trim()
+          if ($env:GITHUB_REF -like "refs/tags/v*") { $v = $env:GITHUB_REF_NAME.TrimStart("v") } else { $v = "$base.$env:GITHUB_RUN_NUMBER" }
+          "versao=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Versão: $v"
+
+      - name: Montar a carga (R portátil + pacotes + app)
+        run: powershell -NoProfile -File instalador/montar.ps1 -Foto $env:FOTO_CRAN
+
+      - name: Testes do motor, com o R e os pacotes que vão no instalador
+        continue-on-error: true      # primeira rodada: ver o que o Windows mostra; depois vira obrigatório
+        run: |
+          $env:R_LIBS = (Resolve-Path instalador/stage/biblioteca).Path; $env:R_LIBS_USER = $env:R_LIBS
+          $rs = (Resolve-Path instalador/stage/R/bin/x64/Rscript.exe).Path
+          & $rs 06_testes.R 2>&1 | Tee-Object -FilePath ../testes_motor.log | Select-String -Pattern "FALHOU|====|erro:" 
+          if ((Get-Content ../testes_motor.log -Raw) -notmatch "0 FALHOU") { throw "há testes do motor falhando" }
+
+      - name: Testes do app, com o R e os pacotes que vão no instalador
+        continue-on-error: true
+        run: |
+          $env:R_LIBS = (Resolve-Path instalador/stage/biblioteca).Path; $env:R_LIBS_USER = $env:R_LIBS
+          $rs = (Resolve-Path instalador/stage/R/bin/x64/Rscript.exe).Path
+          Push-Location app_shiny
+          & $rs testes_app.R 2>&1 | Tee-Object -FilePath ../../testes_app.log | Select-String -Pattern "FALHOU|====|erro:"
+          Pop-Location
+          if ((Get-Content ../testes_app.log -Raw) -notmatch "0 FALHOU") { throw "há testes do app falhando" }
+
+      - name: Teste de fumaça da carga (motor + app sobe pelo lançador)
+        run: powershell -NoProfile -File instalador/testar_instalacao.ps1 -Pasta instalador/stage
+
+      - name: Garantir o Inno Setup
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup --no-progress -y }
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe não encontrado" }
+          Write-Host $iscc
+
+      - name: Compilar o instalador
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          Push-Location instalador
+          & $iscc "/DVersao=${{ steps.ver.outputs.versao }}" Cinabro.iss
+          Pop-Location
+          if ($LASTEXITCODE -ne 0) { throw "ISCC falhou" }
+          Get-ChildItem instalador/saida | Format-Table Name, Length
+
+      - name: Instalar em silêncio, testar a cópia instalada e desinstalar
+        run: |
+          $exe = (Get-ChildItem instalador/saida/Cinabro-Setup-*.exe | Select-Object -First 1).FullName
+          $dir = Join-Path $env:RUNNER_TEMP "Cinabro_instalado"
+          Start-Process $exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/NOICONS","/DIR=`"$dir`"","/LOG=`"$env:RUNNER_TEMP\instalacao.log`"" -Wait
+          if (-not (Test-Path "$dir\Cinabro.vbs")) { Get-Content "$env:RUNNER_TEMP\instalacao.log" -Tail 40; throw "a instalação não criou os arquivos" }
+          powershell -NoProfile -File instalador/testar_instalacao.ps1 -Pasta $dir
+          Start-Process "$dir\unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait
+          Start-Sleep -Seconds 3
+          if (Test-Path "$dir\Cinabro.vbs") { throw "a desinstalação deixou arquivos" }
+          Write-Host "Instalar, testar e desinstalar: OK"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Cinabro-Setup-${{ steps.ver.outputs.versao }}
+          path: graficos_R/instalador/saida/Cinabro-Setup-*.exe
+          if-no-files-found: error
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: registros-de-teste
+          path: |
+            testes_motor.log
+            testes_app.log
+            graficos_R/instalador/stage/versoes_dos_pacotes.txt
+          if-no-files-found: ignore
+
+      - name: Anexar à versão (só em tag v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: graficos_R/instalador/saida/Cinabro-Setup-*.exe
