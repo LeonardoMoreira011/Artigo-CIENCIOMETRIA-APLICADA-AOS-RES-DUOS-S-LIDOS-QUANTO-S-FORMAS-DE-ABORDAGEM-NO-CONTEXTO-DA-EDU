@@ -6,7 +6,9 @@
 # =============================================================================
 iniciar_gerador <- function(pasta = NULL, encerrar_ao_fechar = FALSE, porta = 8421L, nome = "127.0.0.1", abrir = TRUE) {
   if (is.null(pasta)) pasta <- if (file.exists("app.R")) "." else if (dir.exists("app_shiny")) "app_shiny" else "graficos_R/app_shiny"
-  if (!requireNamespace("shiny", quietly = TRUE)) install.packages("shiny", repos = "https://cloud.r-project.org")
+  arq_pacotes <- file.path(pasta, "pacotes.R")                    # instala sozinho o que faltar (1ª abertura); depois só confere
+  if (file.exists(arq_pacotes)) { source(arq_pacotes, encoding = "UTF-8"); if (!garantir_pacotes()) stop("Faltam pacotes do Cinabro (veja a mensagem acima).", call. = FALSE) }
+  else if (!requireNamespace("shiny", quietly = TRUE)) install.packages("shiny", repos = "https://cloud.r-project.org")
   livre <- function(p) { s <- tryCatch(httpuv::startServer("127.0.0.1", p, list()), error = function(e) NULL)
                          if (is.null(s)) FALSE else { httpuv::stopServer(s); TRUE } }
   if (!livre(porta)) porta <- httpuv::randomPort()               # a porta fixa já está em uso (outro gerador aberto?)

@@ -5,7 +5,7 @@ rem ============================================================================
 rem  Abre o CINABRO (laboratorio de graficos) no navegador (dois cliques neste arquivo).
 rem  Procura o R sozinho (PATH, registro do Windows e as pastas de instalacao mais comuns).
 rem  Se nao achar, pergunta o caminho do Rscript.exe uma vez e guarda em caminho_do_R.txt.
-rem  Na primeira vez instala os pacotes necessarios (precisa de internet).
+rem  Na primeira vez instala TODOS os pacotes necessarios sozinho (precisa de internet; pode levar alguns minutos).
 rem ============================================================================
 pushd "%~dp0"
 if not exist "app_shiny\app.R" (
@@ -66,7 +66,7 @@ echo.
 echo R encontrado: %RS%
 echo Abrindo o Cinabro no navegador (http://127.0.0.1:8421)...
 echo Esta janela fecha sozinha 10 minutos depois que voce fechar a aba do navegador (ou na hora, pelo botao Sair do Cinabro). Para nao ver a janela, use Criar_atalho_na_area_de_trabalho.bat.
-"%RS%" -e "options(repos=c(CRAN='https://cloud.r-project.org')); for (p in c('shiny','ggplot2','scales','patchwork','ragg','systemfonts')) if (!requireNamespace(p, quietly=TRUE)) install.packages(p); file.create('app_shiny/.pronto'); source('app_shiny/iniciar.R', encoding='UTF-8'); iniciar_gerador(encerrar_ao_fechar = TRUE)"
+"%RS%" -e "source('app_shiny/pacotes.R', encoding='UTF-8'); if (!garantir_pacotes()) quit(status = 1); file.create('app_shiny/.pronto'); source('app_shiny/iniciar.R', encoding='UTF-8'); iniciar_gerador(encerrar_ao_fechar = TRUE)"
 if errorlevel 1 (
   echo.
   echo O R terminou com erro ^(veja as mensagens acima^). Se faltou internet na primeira vez, conecte e rode de novo.

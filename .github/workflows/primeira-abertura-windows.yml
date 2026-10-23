@@ -1,0 +1,77 @@
+name: Primeira abertura no Windows (ZIP + abrir_app.bat)
+
+# Reproduz o que a equipe faz: pega o ZIP, extrai num Windows com R "de fábrica" (sem os pacotes do Cinabro) e dá dois cliques
+# no abrir_app.bat. O programa precisa instalar tudo sozinho, abrir, e abrir de novo (atalho sem janela) sem instalar nada.
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "graficos_R/**"
+      - ".github/workflows/primeira-abertura-windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  primeira-abertura:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        r: ["release", "oldrel/1"]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Permitir caminhos longos no git (o nome do repositório é enorme)
+        run: git config --system core.longpaths true
+
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.r }}
+
+      - name: Montar o ZIP como o que é entregue e extrair numa pasta curta
+        run: |
+          git archive --format=zip --prefix=graficos_R/ -o C:/app.zip HEAD:graficos_R
+          Expand-Archive C:/app.zip C:/u
+          Get-ChildItem C:/u/graficos_R | Select-Object -First 40 | Format-Table Name
+          Rscript -e "cat(R.version.string, '\n'); cat('pacotes do Cinabro já instalados:', intersect(c('shiny','ggplot2','ragg','patchwork','png'), rownames(installed.packages())), '\n')"
+
+      - name: 1ª abertura - dois cliques no abrir_app.bat (instala os pacotes sozinho)
+        working-directory: C:/u/graficos_R
+        run: |
+          $p = Start-Process cmd.exe -ArgumentList "/c","abrir_app.bat" -RedirectStandardOutput C:/u/abrir1.out -RedirectStandardError C:/u/abrir1.err -PassThru -WorkingDirectory C:/u/graficos_R
+          $ok = $false
+          for ($i = 0; $i -lt 450 -and -not $ok; $i++) {
+            Start-Sleep -Seconds 2
+            try { $r = Invoke-WebRequest -Uri "http://127.0.0.1:8421/" -UseBasicParsing -TimeoutSec 5 -Proxy $null; if ($r.StatusCode -eq 200) { $ok = $true } } catch { }
+            if ($p.HasExited) { break }
+          }
+          Write-Host "---- saída do abrir_app.bat (fim) ----"
+          Get-Content C:/u/abrir1.out -Tail 25 -ErrorAction SilentlyContinue
+          Get-Content C:/u/abrir1.err -Tail 25 -ErrorAction SilentlyContinue
+          if (-not $ok) { throw "o app não abriu na 1ª vez" }
+          if (-not (Test-Path C:/u/graficos_R/app_shiny/.pronto)) { throw "faltou o marcador .pronto" }
+          Write-Host "Cinabro abriu na 1ª vez."
+          Get-Process Rscript -ErrorAction SilentlyContinue | Stop-Process -Force
+          Start-Sleep -Seconds 2
+
+      - name: Pacotes que ficaram instalados
+        run: Rscript -e "src <- 'C:/u/graficos_R/app_shiny/pacotes.R'; source(src, encoding='UTF-8'); p <- c(names(.PACOTES_OBRIGATORIOS), names(.PACOTES_OPCIONAIS)); v <- vapply(p, function(x) tryCatch(as.character(packageVersion(x)), error=function(e) 'FALTA'), ''); print(v); if (any(v[names(.PACOTES_OBRIGATORIOS)] == 'FALTA')) quit(status = 1)"
+
+      - name: 2ª abertura - atalho sem janela (iniciar_gerador_oculto.vbs), sem instalar nada
+        working-directory: C:/u/graficos_R
+        run: |
+          Start-Process "$env:WINDIR\System32\wscript.exe" -ArgumentList "C:\u\graficos_R\iniciar_gerador_oculto.vbs" -WorkingDirectory C:/u/graficos_R
+          $ok = $false
+          for ($i = 0; $i -lt 60 -and -not $ok; $i++) {
+            Start-Sleep -Seconds 2
+            try { $r = Invoke-WebRequest -Uri "http://127.0.0.1:8421/" -UseBasicParsing -TimeoutSec 5 -Proxy $null; if ($r.StatusCode -eq 200) { $ok = $true } } catch { }
+          }
+          if (-not $ok) { throw "o atalho sem janela não abriu o app na 2ª vez" }
+          Write-Host "Cinabro abriu na 2ª vez (sem janela)."
+          Get-Process Rscript -ErrorAction SilentlyContinue | Stop-Process -Force

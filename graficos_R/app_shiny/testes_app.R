@@ -17,6 +17,21 @@ CFG0 <- .completar_cfg(cfg)
 for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8")
 carregar_dicionarios("idiomas")             # (pasta ausente: só português)
 
+# ---- pacotes: o que o código usa está na lista que o abrir_app.bat instala sozinho ------------------------------------------
+source("pacotes.R", encoding = "UTF-8")
+fontes_r <- c(list.files(file.path(raiz, "R"), "\\.R$", full.names = TRUE), list.files("codigo", "\\.R$", full.names = TRUE),
+              file.path(raiz, c("01_config.R", "02_motor.R", "04_catalogo.R")), "app.R", "iniciar.R")
+texto_r <- unlist(lapply(fontes_r[file.exists(fontes_r)], readLines, encoding = "UTF-8", warn = FALSE))
+texto_r <- texto_r[!grepl("^\\s*#", texto_r)]                                                # sem os comentários
+usados <- unique(c(unlist(regmatches(texto_r, gregexpr("[A-Za-z][A-Za-z0-9.]*(?=::)", texto_r, perl = TRUE))),
+                   unlist(regmatches(texto_r, gregexpr("(?<=requireNamespace\\(\")[A-Za-z0-9.]+", texto_r, perl = TRUE))),
+                   unlist(regmatches(texto_r, gregexpr("(?<=library\\()[A-Za-z0-9.]+(?=\\))", texto_r, perl = TRUE)))))
+base_r <- c("stats", "grid", "grDevices", "graphics", "utils", "tools", "methods", "parallel", "tcltk", "compiler", "datasets", "splines", "stats4")
+teste("pacotes: todo pacote que o código usa está na lista do pacotes.R (instalada sozinha na 1ª abertura)",
+      length(setdiff(usados, c(base_r, names(.PACOTES_OBRIGATORIOS), names(.PACOTES_OPCIONAIS)))) == 0)
+if (length(setdiff(usados, c(base_r, names(.PACOTES_OBRIGATORIOS), names(.PACOTES_OPCIONAIS))))) print(setdiff(usados, c(base_r, names(.PACOTES_OBRIGATORIOS), names(.PACOTES_OPCIONAIS))))
+teste("pacotes: garantir_pacotes(instalar = FALSE) só confere (TRUE quando os obrigatórios estão aqui) e não instala nada", isTRUE(garantir_pacotes(instalar = FALSE)))
+
 # ---- cobertura: tudo o que o painel tem, o app tem -------------------------------------------------------------------
 L <- readLines(file.path(raiz, "painel_de_ajustes.R"), encoding = "UTF-8")
 L <- L[(grep("PAINEL DE AJUSTES DO GRÁFICO", L)[1]):(grep("EXECUÇÃO \\(não precisa editar\\)", L)[1])]

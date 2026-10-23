@@ -5,6 +5,7 @@
 #  (Windows); ou, no R:  shiny::runApp("app_shiny").  A pasta graficos_R precisa estar inteira (o app usa o motor
 #  de gráficos que fica na pasta acima desta).
 # =============================================================================
+if (file.exists("pacotes.R")) { source("pacotes.R", encoding = "UTF-8"); if (!garantir_pacotes()) stop("Faltam pacotes do Cinabro (veja a mensagem acima).", call. = FALSE) }   # 1ª abertura: instala o que faltar
 suppressPackageStartupMessages({ library(shiny) })
 
 raiz <- normalizePath(if (file.exists("../02_motor.R")) ".." else if (file.exists("02_motor.R")) "." else
