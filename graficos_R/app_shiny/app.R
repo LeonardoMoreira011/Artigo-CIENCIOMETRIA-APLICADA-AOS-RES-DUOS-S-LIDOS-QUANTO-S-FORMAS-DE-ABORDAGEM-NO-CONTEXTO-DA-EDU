@@ -35,6 +35,8 @@ cartao_dados <- function() div(class = "dados-cartao",
   selectInput("exemplo", NULL, choices = tr_nomes(c("...ou use um exemplo" = "", EXEMPLOS)), selectize = FALSE, width = "100%"),
   uiOutput("resumo_dados"))
 
+options(shiny.error = function() registrar_log("ERRO não tratado: ", gsub("\n", " | ", substr(geterrmessage(), 1, 400))))   # vai para o registro de uso
+
 construir_ui <- function(idioma) fluidPage(
   title = "Cinabro — laboratório de gráficos",
   tags$head(tags$script(HTML(sprintf("window.IDIOMA = '%s'; $(document).on('shiny:connected', function () { Shiny.setInputValue('idioma_pagina', window.IDIOMA); });", idioma))), tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(HTML(paste0("window.PALETAS = ", jsonlite::toJSON(paletas_js(), auto_unbox = TRUE), ";"))), tags$script(src = "app.js"),

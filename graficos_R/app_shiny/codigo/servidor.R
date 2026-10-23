@@ -33,6 +33,22 @@ atualizar_campo <- function(session, campo, valor, cfg0, colunas = NULL) {
     arquivo = NULL)               # a figura anexada é guardada à parte (rv$img), não volta por aqui
 }
 
+# Registro de uso (para descobrir por que o app ficou lento ou caiu): %LOCALAPPDATA%/Cinabro/log/app.log (no Windows). Só texto,
+# sem dados: horário, tempos de cada gráfico, erros e quando as abas abrem e fecham. Passa de 2 MB, vira app.log.antigo.
+.log_arq <- local({
+  base <- Sys.getenv("LOCALAPPDATA"); if (!nzchar(base)) base <- file.path(Sys.getenv("HOME"), ".local", "share")
+  d <- file.path(base, "Cinabro", "log")
+  ok <- tryCatch({ dir.create(d, recursive = TRUE, showWarnings = FALSE); dir.exists(d) }, error = function(e) FALSE)
+  if (ok) file.path(d, "app.log") else NULL
+})
+registrar_log <- function(...) {
+  if (is.null(.log_arq) || isTRUE(getOption("cinabro.sem_log"))) return(invisible())
+  tryCatch({
+    if (file.exists(.log_arq) && file.size(.log_arq) > 2e6) file.rename(.log_arq, paste0(.log_arq, ".antigo"))
+    cat(format(Sys.time(), "%Y-%m-%d %H:%M:%S"), " ", paste0(...), "\n", file = .log_arq, append = TRUE, sep = "")
+  }, error = function(e) NULL)
+}
+
 # Sessões abertas: com gerador_encerrar_ao_fechar (atalho sem janela), o R termina quando a última aba fecha.
 .sessoes <- new.env(); .sessoes$n <- 0; .sessoes$visto <- FALSE
 # Se o R foi aberto pelo atalho (sem janela) e o navegador nunca chegou a conectar (ex.: foi bloqueado), não deixa o R escondido para sempre.
@@ -41,8 +57,10 @@ if (isTRUE(getOption("gerador_encerrar_ao_fechar")) && requireNamespace("later",
 
 servidor <- function(input, output, session) {
   .sessoes$n <- .sessoes$n + 1; .sessoes$visto <- TRUE
+  registrar_log("sessão aberta (", .sessoes$n, " aberta(s) agora; R ", getRversion(), ", shiny ", utils::packageVersion("shiny"), ", ggplot2 ", utils::packageVersion("ggplot2"), ")")
   session$onSessionEnded(function() {
     .sessoes$n <- .sessoes$n - 1
+    registrar_log("sessão fechada (", .sessoes$n, " aberta(s) agora)")
     if (isTRUE(getOption("gerador_encerrar_ao_fechar")))          # espera 6 s: recarregar a página não encerra o app
       later::later(function() if (.sessoes$n <= 0) shiny::stopApp(), 6)
   })
@@ -195,13 +213,19 @@ servidor <- function(input, output, session) {
   calcular <- function() {
     if (Sys.time() < st$ate) { rv$pend_calc <- TRUE; return(invisible()) }
     if (is.null(rv$dados)) { rv$erro <- NULL; return(invisible()) }
+    t_ini <- Sys.time()
     withProgress(message = T("Montando o gráfico..."), value = 0.4, {
       r <- construir_grafico(rv$dados, vars_atual(), CFG0, idioma = idioma())
-      if (!is.null(r$erro)) { rv$erro <- r$erro; rv$res <- r; return(invisible()) }
+      t_mont <- as.numeric(difftime(Sys.time(), t_ini, units = "secs"))
+      if (!is.null(r$erro)) { rv$erro <- r$erro; rv$res <- r; registrar_log("gráfico com erro (", sprintf("%.2f", t_mont), " s): ", substr(r$erro, 1, 200)); return(invisible()) }
       incProgress(0.3)
       p <- tryCatch(desenhar_previa(r$g, r$cfg, dpi = 130, alvo_px = if (!is.null(rv$palco_larg)) rv$palco_larg - 30), error = function(e) { rv$erro <- conditionMessage(e); NULL })
       if (!is.null(p)) rv$palco_usado <- rv$palco_larg
+      registrar_log("gráfico: montar ", sprintf("%.2f", t_mont), " s, total ", sprintf("%.2f", as.numeric(difftime(Sys.time(), t_ini, units = "secs"))),
+                    " s; ", length(vars_atual()), " ajustes ativos; memória do R ", round(sum(gc()[, 2])), " MB; pasta temporária ",
+                    length(list.files(tempdir(), recursive = TRUE)), " arquivos")
       if (!is.null(p)) {
+        if (!is.null(rv$previa$arquivo)) unlink(rv$previa$arquivo)          # a prévia anterior não fica acumulando na pasta temporária
         rv$res <- r; rv$previa <- p; rv$erro <- NULL
         geo <- tryCatch(.geometria_legenda(r$g, r$cfg), error = function(e) NULL)   # onde está a legenda (caixa que se arrasta)
         rv$geo <- geo
@@ -563,7 +587,7 @@ servidor <- function(input, output, session) {
     r <- construir_grafico(snap$dados, montar_variaveis(snap$valores, CFG0, snap$series), CFG0, idioma = idioma()); req(is.null(r$erro))
     p <- desenhar_previa(r$g, r$cfg, dpi = 110)
     list(src = p$arquivo, contentType = "image/png", alt = nome_aba(j))
-  }, deleteFile = FALSE)
+  }, deleteFile = TRUE)
 
   # ---- estilos prontos, restaurar, guia ------------------------------------------------------------------------------------
   restaurar_campos <- function() {

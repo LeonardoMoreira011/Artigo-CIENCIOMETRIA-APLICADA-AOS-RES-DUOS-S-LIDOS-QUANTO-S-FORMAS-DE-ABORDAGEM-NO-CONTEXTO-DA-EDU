@@ -10,6 +10,7 @@ teste <- function(nome, expr) {
 aqui <- normalizePath(if (file.exists("app.R")) "." else if (file.exists("app_shiny/app.R")) "app_shiny" else stop("rode a partir de graficos_R"), winslash = "/")
 setwd(aqui)
 suppressPackageStartupMessages(library(shiny))
+options(cinabro.sem_log = TRUE)                      # os testes não escrevem no registro de uso
 raiz <- normalizePath("..", winslash = "/")
 source(file.path(raiz, "01_config.R"), encoding = "UTF-8"); suppressMessages(source(file.path(raiz, "02_motor.R"), encoding = "UTF-8"))
 CFG0 <- .completar_cfg(cfg)
@@ -238,6 +239,13 @@ teste("o campo de figura (PNG/JPEG) existe nos 3 cartões, como campo de arquivo
     grepl("fileInput|im1_arquivo", paste(as.character(ui_campo(ESPEC_CAMPOS$im1_arquivo, CFG0)), collapse = ""))
 })
 
+teste("o registro de uso grava linhas de texto com horário, respeita a opção que o desliga e gira o arquivo quando passa de 2 MB", {
+  antigo <- .log_arq; tmp_log <- tempfile(fileext = ".log"); assign(".log_arq", tmp_log, envir = globalenv()); on.exit(assign(".log_arq", antigo, envir = globalenv()), add = TRUE)
+  options(cinabro.sem_log = FALSE); registrar_log("linha de teste"); l1 <- readLines(tmp_log)
+  options(cinabro.sem_log = TRUE); registrar_log("não deve aparecer"); l2 <- readLines(tmp_log); options(cinabro.sem_log = FALSE)
+  cat(strrep("x", 2.1e6), file = tmp_log); registrar_log("depois de girar"); girou <- file.exists(paste0(tmp_log, ".antigo")) && file.size(tmp_log) < 1000
+  options(cinabro.sem_log = TRUE)
+  grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9:]{8} linha de teste$", l1) && length(l2) == 1 && girou })
 # ---- servidor (testServer) -------------------------------------------------------------------------------------------
 options(gerador_sem_guia = TRUE)
 testServer(servidor, {
@@ -293,6 +301,8 @@ testServer(servidor, {
     teste("servidor: a figura anexada aparece no gráfico (cfg$imagens) e o código equivalente usa o nome do arquivo enviado", is.null(rv$erro) && length(rv$res$cfg$imagens) == 1 &&
           grepl('arquivo = "logo.png"', paste(gerar_codigo(vars_codigo()), collapse = ""), fixed = TRUE) && !"im1_arquivo" %in% names(modelo_lista()$valores))
   }
+  ant <- rv$previa$arquivo; session$setInputs(atualizar = 39)
+  teste("servidor: a prévia anterior é apagada quando a nova é desenhada", !is.null(ant) && !identical(ant, rv$previa$arquivo) && !file.exists(ant) && file.exists(rv$previa$arquivo))
   session$setInputs(rapido = list(acao = "ajuste", tipo = "exponencial", t = 1), palco_larg = 1000, atualizar = 41)
   teste("servidor: a faixa de ferramentas (clique rápido) e a largura do palco rodam sem erro", is.null(rv$erro) && identical(rv$palco_larg, 1000))
   session$setInputs(aba_nova = 1)

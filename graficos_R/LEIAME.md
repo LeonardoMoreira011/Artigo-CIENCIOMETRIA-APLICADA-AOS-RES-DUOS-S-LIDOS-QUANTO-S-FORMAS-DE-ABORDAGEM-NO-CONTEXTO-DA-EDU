@@ -47,6 +47,12 @@ Só entram paletas de trabalhos com licença livre; os créditos e avisos estão
 - **Ainda não:** arrastar com o mouse as caixas de estatística, as formas e as figuras (por enquanto, posição e tamanho nos painéis).
 - Os campos, as regras e o código gerado são os mesmos; só mudou a forma de chegar neles. Cartões incompletos (figura sem arquivo, fórmula sem fórmula) esperam ser preenchidos, sem dar erro.
 
+## Auditoria de desempenho (diagnóstico e registro de uso)
+
+- **Diagnóstico**: abra `ferramentas/diagnostico_cinabro.R` no RStudio e rode (Source). Ele confere versões do R e dos pacotes, mede o tempo de cada gráfico e o crescimento de memória, e grava `diagnostico_cinabro_resultado.txt` na mesma pasta. Antes: R 4.5 ou mais novo, reiniciar o RStudio e rodar `00_instalar_pacotes.R`.
+- **Registro de uso**: o aplicativo anota em `%LOCALAPPDATA%\Cinabro\log\app.log` (Windows) quando abre/fecha, quanto cada gráfico demora, memória, arquivos temporários e erros. Não grava seus dados nem o conteúdo do gráfico. Se a tela ficar cinza, envie o final desse arquivo.
+- A prévia antiga é apagada ao desenhar a nova (antes ficava acumulando na pasta temporária).
+
 ## Nova identidade visual (logo e cores)
 
 - **Cores:** `#B3262E` (vermelho-cinábrio), `#F5EBDD` (creme), `#20242B` (tinta), `#C96A4A` (terracota) e `#2F6670` (azul-petróleo). O **creme é o fundo da página**; o **branco fica só na caixa do gráfico**. Os cartões usam um creme mais claro derivado do fundo. A paleta de gráficos `identidade` traz as mesmas cores (sem o creme).
