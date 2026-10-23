@@ -6,7 +6,7 @@
  "(padrão)": "(predeterminado)",
  "(posição manual)": "(posición manual)",
  "(sem cores: escreva os códigos no editor abaixo)": "(sin colores: escribe los códigos en el editor de abajo)",
- "#1B3A8C, #0E9F4B, #0B6E78, #8CC63F": "#1B3A8C, #0E9F4B, #0B6E78, #8CC63F",
+ "#B3262E, #2F6670, #C96A4A, #20242B": "#B3262E, #2F6670, #C96A4A, #20242B",
  "+ Cor": "+ Color",
  "★ A que estou criando (veja abaixo)": "★ La que estoy creando (ver abajo)",
  "0 = embaixo, 1 = em cima.": "0 = abajo, 1 = arriba.",
@@ -930,5 +930,6 @@
  "Use uma figura PNG ou JPEG.": "Usa una imagen PNG o JPEG.",
  "Para usar figuras é preciso o pacote %s (install.packages(\"%s\")).": "Para usar imágenes se necesita el paquete %s (install.packages(\"%s\")).",
  "Remover a figura": "Quitar la imagen",
- "Figuras anexadas": "Imágenes adjuntas"
+ "Figuras anexadas": "Imágenes adjuntas",
+ "Identidade Cinabro (vermelho, petróleo, tinta, terracota)": "Identidad Cinabro (rojo, petróleo, tinta, terracota)"
 }

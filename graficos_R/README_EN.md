@@ -25,10 +25,13 @@ The page opens at `http://cinabro.localhost:8421`. The R process closes a few se
 - **Axes:** start/end, tick spacing, minor ticks, first tick, manual ticks, log and other scales, number format, rotation, a divide-by factor, titles with exponents and subscripts (`m^{2}`, `CO_{2}`).
 - **Right Y axis (Y2):** same options as the left axis, with its own scale, color and intervals.
 - **Axis break:** two styles (separate or continuous frame), per-part tick spacing and minor ticks, a button that finds the largest gap in your data.
-- **Colors:** 64 ready palettes (see below), your own palette (paste color codes, edit the swatches, save it with a name), color/shape/size per series.
+- **Colors:** 65 ready palettes (see below), your own palette (paste color codes, edit the swatches, save it with a name), color/shape/size per series.
 - **Legend:** inside or outside, vertical or horizontal, columns and rows, drag it on the preview, background, border, shadow, exact width.
 - **Plot box:** fixed size (like a plot area), so every figure has the same box; the page adjusts to fit numbers, titles and legend.
 - **Export:** choose one or more file types; transparent background; resolution; save/load settings (JSON); "equivalent code" for the script.
+
+## New visual identity
+Colors `#B3262E` (cinnabar red), `#F5EBDD` (cream: page background; white only inside the chart box), `#20242B` (ink), `#C96A4A` (terracotta), `#2F6670` (teal). The emblem was vectorized (`identidade/emblema.svg`) and is used in the app header, tab icon and Windows shortcut. A chart palette `identidade` has the same colors.
 
 ## Fits, statistics, shapes, frozen blocks and tabs (third round)
 
@@ -40,7 +43,7 @@ The page opens at `http://cinabro.localhost:8421`. The R process closes a few se
 - The `marca` palette was reordered so the first four colors are the most distinct (also for color-blind viewers).
 
 ## Palettes and licenses
-Only palettes from freely licensed work are included — no palettes named after programs, brands or journals: the original `cinabro` (default) and `marca`, Okabe-Ito, Paul Tol, Brewer (qualitative, sequential, diverging; includes `brewer_RdYlGn`, dark red to green), viridis family, cmocean and Crameri's scientific colour maps. Credits and license notices are in `NOTICE.md`. The font is Barlow (SIL Open Font License; `fontes/Barlow/OFL.txt`).
+Only palettes from freely licensed work are included — no palettes named after programs, brands or journals: the original `cinabro` (default), `marca` and `identidade`, Okabe-Ito, Paul Tol, Brewer (qualitative, sequential, diverging; includes `brewer_RdYlGn`, dark red to green), viridis family, cmocean and Crameri's scientific colour maps. Credits and license notices are in `NOTICE.md`. The font is Barlow (SIL Open Font License; `fontes/Barlow/OFL.txt`).
 
 ## Tests
 `Rscript 06_testes.R` (engine) and `Rscript app_shiny/testes_app.R` (app). Tested on Linux with ggplot2 3.5.2 and 4.0.3; **not tested on Windows** — run `07_verificar_windows.R` once.

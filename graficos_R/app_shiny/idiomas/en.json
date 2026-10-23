@@ -6,7 +6,7 @@
  "(padrão)": "(default)",
  "(posição manual)": "(manual position)",
  "(sem cores: escreva os códigos no editor abaixo)": "(no colors: write the codes in the editor below)",
- "#1B3A8C, #0E9F4B, #0B6E78, #8CC63F": "#1B3A8C, #0E9F4B, #0B6E78, #8CC63F",
+ "#B3262E, #2F6670, #C96A4A, #20242B": "#B3262E, #2F6670, #C96A4A, #20242B",
  "+ Cor": "+ Color",
  "★ A que estou criando (veja abaixo)": "★ The one I'm creating (see below)",
  "0 = embaixo, 1 = em cima.": "0 = bottom, 1 = top.",
@@ -930,5 +930,6 @@
  "Use uma figura PNG ou JPEG.": "Use a PNG or JPEG picture.",
  "Para usar figuras é preciso o pacote %s (install.packages(\"%s\")).": "To use pictures you need the %s package (install.packages(\"%s\")).",
  "Remover a figura": "Remove the picture",
- "Figuras anexadas": "Attached pictures"
+ "Figuras anexadas": "Attached pictures",
+ "Identidade Cinabro (vermelho, petróleo, tinta, terracota)": "Cinabro identity (red, teal, ink, terracotta)"
 }

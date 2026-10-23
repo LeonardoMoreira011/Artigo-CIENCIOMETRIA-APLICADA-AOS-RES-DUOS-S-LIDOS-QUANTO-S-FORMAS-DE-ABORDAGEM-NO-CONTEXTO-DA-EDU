@@ -126,7 +126,7 @@
   $(document).on('shiny:inputchanged', function (e) { if (e.name === 'paleta_propria') desenharChips((e.value || '').split(/[\s,;]+/).map(normHex).filter(Boolean)); });
   $(document).on('change', '#paleta-chips input[type=color]', function () { var l = listaHex(); l[+$(this).attr('data-i')] = this.value.toUpperCase(); gravar(l); });
   $(document).on('click', '#paleta-chips .chip-x', function () { var l = listaHex(); l.splice(+$(this).attr('data-i'), 1); gravar(l); });
-  $(document).on('click', '#paleta-mais', function () { var l = listaHex(); l.push(l.length ? l[l.length - 1] : '#1B3A8C'); gravar(l); });
+  $(document).on('click', '#paleta-mais', function () { var l = listaHex(); l.push(l.length ? l[l.length - 1] : '#B3262E'); gravar(l); });
   $(document).on('click', '#paleta-inverter', function () { gravar(listaHex().reverse()); });
   $(document).on('click', '#paleta-limpar', function () { gravar([]); });
   $(document).on('shiny:connected', function () {

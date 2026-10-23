@@ -31,9 +31,9 @@ EXEMPLOS <- EXEMPLOS[file.exists(file.path(raiz, "dados", EXEMPLOS))]
 construir_ui <- function(idioma) fluidPage(
   title = "Cinabro — laboratório de gráficos",
   tags$head(tags$script(HTML(sprintf("window.IDIOMA = '%s'; $(document).on('shiny:connected', function () { Shiny.setInputValue('idioma_pagina', window.IDIOMA); });", idioma))), tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(HTML(paste0("window.PALETAS = ", jsonlite::toJSON(paletas_js(), auto_unbox = TRUE), ";"))), tags$script(src = "app.js"),
-            tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")),
+            tags$meta(name = "viewport", content = "width=device-width, initial-scale=1"), tags$meta(name = "theme-color", content = "#20242B")),
   tags$header(class = "topo",
-    div(class = "marca", div(class = "marca-ico", HTML("&#9650;")),
+    div(class = "marca", div(class = "marca-ico", tags$img(src = "emblema.svg", alt = "Cinabro")),
         div(tags$h1("Cinabro"), tags$p("A punctis ad curvam: ubi data colorem accipiunt."))),
     div(class = "topo-acoes",
         selectInput("idioma_sel", NULL, choices = IDIOMAS, selected = idioma, selectize = FALSE, width = "140px"),

@@ -219,7 +219,7 @@ cfg$cores <- list(
   # paleta: cores atribuídas automaticamente às séries, em sequência
   #   (como o "incremento" de cor). Veja todas com mostrar_paletas().
   #   OPÇÕES (todas aparecem, desenhadas, em mostrar_paletas()):
-  #     Do Cinabro ........... "cinabro" (padrão) | "marca" (azul e verde; as 4 primeiras cores são as mais distintas)
+  #     Do Cinabro ........... "cinabro" (padrão) | "marca" (azul e verde; as 4 primeiras cores são as mais distintas) | "identidade" (vermelho, petróleo, tinta e terracota: a identidade visual do Cinabro)
   #     Acessíveis ........... "okabe_ito" | "tol_brilhante" | "tol_vibrante" | "tol_suave" | "tol_alto_contraste" |
   #                            "tol_medio_contraste" | "tol_claro" | "tol_escuro" | "tol_palido"
   #     Qualitativas (Brewer)  "brewer_Set1" | "brewer_Set2" | "brewer_Dark2" | "brewer_Paired" | "brewer_Accent" |
@@ -1859,6 +1859,8 @@ suppressPackageStartupMessages({
   # as cores da marca (azul e verde), numa ordem pensada: as 4 primeiras são bem distintas entre si (inclusive para daltonismo);
   # a 5ª em diante se parecem mais (tons de azul e de verde). Com muitas séries, combine com formas e tipos de linha diferentes.
   marca     = c("#1B3A8C", "#0E9F4B", "#8CC63F", "#0B6E78", "#2FB5A0", "#5B7DB1", "#6BBF59", "#0F4C81"),
+  # a identidade visual do Cinabro (sem o creme, que é o fundo): vermelho-cinábrio, azul-petróleo, tinta e terracota; com mais de 4 séries, varie também a forma e a linha
+  identidade = c("#B3262E", "#2F6670", "#20242B", "#C96A4A"),
   okabe_ito = c("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#000000", "#F0E442")
 )
 .PALETAS <- c(.PALETAS_PROPRIAS, .PALETAS_DADOS)
@@ -1869,7 +1871,7 @@ suppressPackageStartupMessages({
 
 # Para a tela e para mostrar_paletas(): grupo -> c(rótulo = nome).
 .PALETAS_GRUPOS <- list(
-  "Do Cinabro" = c("Cinabro (padrão)" = "cinabro", "Marca (azul e verde)" = "marca"),
+  "Do Cinabro" = c("Cinabro (padrão)" = "cinabro", "Marca (azul e verde)" = "marca", "Identidade Cinabro (vermelho, petróleo, tinta, terracota)" = "identidade"),
   "Acessíveis (daltonismo)" = c("Okabe-Ito" = "okabe_ito", "Tol: brilhante" = "tol_brilhante", "Tol: vibrante" = "tol_vibrante",
                                 "Tol: suave" = "tol_suave", "Tol: alto contraste" = "tol_alto_contraste",
                                 "Tol: contraste médio" = "tol_medio_contraste", "Tol: claro" = "tol_claro",

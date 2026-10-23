@@ -126,7 +126,7 @@ ui_paleta_propria <- function() {
   div(class = "grupo", id = "paleta-editor",
       tags$h4("Criar a minha paleta"),
       tags$p(class = "ajuda", "Cole os códigos das cores (por exemplo os de uma paleta que você gostou, de um site de paletas ou do manual da sua empresa), separados por vírgula, espaço ou linha. Os quadradinhos abaixo podem ser clicados para trocar a cor. As séries usam as cores nesta ordem. Para usar, escolha \"A que estou criando\" na lista de paletas, em cima."),
-      textAreaInput("paleta_propria", NULL, value = "", rows = 3, width = "100%", placeholder = "#1B3A8C, #0E9F4B, #0B6E78, #8CC63F"),
+      textAreaInput("paleta_propria", NULL, value = "", rows = 3, width = "100%", placeholder = "#B3262E, #2F6670, #C96A4A, #20242B"),
       div(id = "paleta-chips", class = "paleta-chips"),
       div(class = "botoes-config",
           tags$button(type = "button", class = "btn-sec", id = "paleta-mais", "+ Cor"),

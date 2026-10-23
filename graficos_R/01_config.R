@@ -99,7 +99,7 @@ cfg$cores <- list(
   # paleta: cores atribuídas automaticamente às séries, em sequência
   #   (como o "incremento" de cor). Veja todas com mostrar_paletas().
   #   OPÇÕES (todas aparecem, desenhadas, em mostrar_paletas()):
-  #     Do Cinabro ........... "cinabro" (padrão) | "marca" (azul e verde; as 4 primeiras cores são as mais distintas)
+  #     Do Cinabro ........... "cinabro" (padrão) | "marca" (azul e verde; as 4 primeiras cores são as mais distintas) | "identidade" (vermelho, petróleo, tinta e terracota: a identidade visual do Cinabro)
   #     Acessíveis ........... "okabe_ito" | "tol_brilhante" | "tol_vibrante" | "tol_suave" | "tol_alto_contraste" |
   #                            "tol_medio_contraste" | "tol_claro" | "tol_escuro" | "tol_palido"
   #     Qualitativas (Brewer)  "brewer_Set1" | "brewer_Set2" | "brewer_Dark2" | "brewer_Paired" | "brewer_Accent" |

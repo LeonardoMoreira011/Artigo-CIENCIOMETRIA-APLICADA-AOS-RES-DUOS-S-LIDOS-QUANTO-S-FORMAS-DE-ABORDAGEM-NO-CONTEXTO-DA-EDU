@@ -25,13 +25,16 @@ La página se abre en `http://cinabro.localhost:8421`. El proceso de R se cierra
 - **Ejes:** inicio/fin, separación de marcas, marcas secundarias, primera marca, marcas manuales, escalas logarítmicas y otras, formato de los números, rotación, factor de división, títulos con exponentes y subíndices (`m^{2}`, `CO_{2}`).
 - **Eje Y derecho (Y2):** las mismas opciones que el eje izquierdo, con escala, color e intervalos propios.
 - **Interrupción del eje:** dos estilos (marcos separados o marco continuo), separación de marcas y marcas secundarias por tramo, y un botón que encuentra el mayor hueco en tus datos.
-- **Colores:** 64 paletas listas (ver abajo), tu propia paleta (pega códigos de color, edita las muestras, guárdala con un nombre), color/forma/tamaño por serie.
+- **Colores:** 65 paletas listas (ver abajo), tu propia paleta (pega códigos de color, edita las muestras, guárdala con un nombre), color/forma/tamaño por serie.
 - **Leyenda:** dentro o fuera, vertical u horizontal, columnas y filas, se arrastra sobre la vista previa, fondo, borde, sombra, ancho exacto.
 - **Área del gráfico:** de tamaño fijo, de modo que todas las figuras tengan la misma área; la página se ajusta para que quepan números, títulos y leyenda.
 - **Exportación:** elige uno o más tipos de archivo; fondo transparente; resolución; guardar/cargar configuración (JSON); "código equivalente" para el script.
 
 ## Paletas y licencias
 Solo se incluyen paletas de trabajos con licencia libre — ninguna con nombre de programa, marca o revista: la original `cinabro` (por defecto) y `marca`, Okabe-Ito, Paul Tol, Brewer (cualitativas, secuenciales, divergentes; incluye `brewer_RdYlGn`, de rojo oscuro a verde), la familia viridis, cmocean y los mapas de color científicos de Crameri. Los créditos y avisos de licencia están en `NOTICE.md`. La fuente es Barlow (SIL Open Font License; `fontes/Barlow/OFL.txt`).
+
+## Nueva identidad visual
+Colores `#B3262E` (rojo cinabrio), `#F5EBDD` (crema: fondo de la página; el blanco solo dentro del recuadro del gráfico), `#20242B` (tinta), `#C96A4A` (terracota), `#2F6670` (petróleo). El emblema fue vectorizado (`identidade/emblema.svg`) y se usa en el encabezado de la app, el icono de la pestaña y el acceso directo de Windows. La paleta de gráficos `identidade` tiene los mismos colores.
 
 ## Ajustes, estadísticas, formas, bloques congelados y pestañas (tercera ronda)
 
