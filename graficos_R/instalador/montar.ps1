@@ -12,7 +12,7 @@ New-Item -ItemType Directory -Path $stage | Out-Null
 $rhome = (& Rscript -e "cat(normalizePath(R.home(), winslash='\\'))").Trim()
 if (-not (Test-Path (Join-Path $rhome "bin\x64\Rscript.exe"))) { throw "R x64 não encontrado em $rhome" }
 Write-Host "R de origem: $rhome"
-robocopy $rhome (Join-Path $stage "R") /E /XD doc tests /NFL /NDL /NJH /NJS /NP | Out-Null
+robocopy $rhome (Join-Path $stage "R") /E /XD doc tests demos /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy do R falhou ($LASTEXITCODE)" }
 $global:LASTEXITCODE = 0
 $rs = Join-Path $stage "R\bin\x64\Rscript.exe"

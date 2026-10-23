@@ -81,6 +81,13 @@ jobs:
           Pop-Location
           if ((Get-Content C:/cb/testes_app.log -Raw) -notmatch "0 FALHOU") { throw "há testes do app falhando" }
 
+      - name: Resumo dos testes (motor e app)
+        run: |
+          foreach ($f in "C:/cb/testes_motor.log", "C:/cb/testes_app.log") {
+            Write-Host "=== $f ==="
+            if (Test-Path $f) { Get-Content $f | Select-String -Pattern "FALHOU|====|erro:" | ForEach-Object { $_.Line } } else { Write-Host "(sem log)" }
+          }
+
       - name: Teste de fumaça da carga (motor + app sobe pelo lançador)
         run: powershell -NoProfile -File instalador/testar_instalacao.ps1 -Pasta instalador/stage
 
