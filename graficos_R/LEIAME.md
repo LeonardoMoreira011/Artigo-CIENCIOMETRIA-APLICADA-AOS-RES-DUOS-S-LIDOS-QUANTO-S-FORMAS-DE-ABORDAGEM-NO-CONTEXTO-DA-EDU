@@ -42,7 +42,7 @@ Só entram paletas de trabalhos com licença livre; os créditos e avisos estão
 ## Nova identidade visual (logo e cores)
 
 - **Cores:** `#B3262E` (vermelho-cinábrio), `#F5EBDD` (creme), `#20242B` (tinta), `#C96A4A` (terracota) e `#2F6670` (azul-petróleo). O **creme é o fundo da página**; o **branco fica só na caixa do gráfico**. Os cartões usam um creme mais claro derivado do fundo. A paleta de gráficos `identidade` traz as mesmas cores (sem o creme).
-- **Logo:** o emblema (anel, curva de ajuste e pontos) foi **vetorizado** (`identidade/emblema.svg`, fundo transparente, só as 5 cores) e aparece no cabeçalho do app, no ícone da aba e no atalho do Windows (`icone.ico`). Detalhes e origem do desenho em `identidade/LEIAME.md`.
+- **Logo:** o emblema (anel, curva de ajuste e pontos) foi **vetorizado** (`identidade/emblema.svg`, fundo transparente, só as 5 cores) e aparece no cabeçalho do app, no ícone da aba e no atalho do Windows (`icone.ico`). **Letreiro:** o nome "CINABRO" em *Titan One* (contorno, sombra terracota e sombra suave) e a frase em latim em *Kaushan Script* (letra de pincel), com fio e pontos nas cores da paleta, no cabeçalho do app; versões em PNG transparente em `identidade/` (fontes livres SIL OFL, em `fontes/Letreiro/`; veja `NOTICE.md`). Detalhes e origem do desenho em `identidade/LEIAME.md`.
 
 ## Terceira rodada: ajustes, estatísticas, formas, congelar blocos e abas
 

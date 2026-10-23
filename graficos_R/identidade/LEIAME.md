@@ -17,5 +17,9 @@ Para gráficos há a paleta `identidade` (vermelho, petróleo, tinta, terracota)
 - `emblema_512.png`, `emblema_1024.png` — versões em PNG com fundo transparente.
 - Em `app_shiny/www/`: `emblema.svg` (cabeçalho), `favicon.png`, `icone.ico` (atalho do Windows) e `icone_512.png`.
 
+## Letreiro
+- Nome **CINABRO** em *Titan One* (vermelho com contorno, sombra terracota e sombra suave) e frase em *Kaushan Script* (letra de pincel, combina com o emblema), com um fio e pontos nas cores da paleta. Fontes livres (SIL OFL 1.1), em `fontes/Letreiro/`.
+- `letreiro_fundo_escuro.png` e `letreiro_fundo_claro.png` — emblema + nome + frase, com fundo transparente (a versão clara tem contorno em tinta; a escura, em creme).
+
 ## Origem
 O desenho original foi criado no Canva (que informa uso de Canva AI) e depois vetorizado e recolorido para esta paleta. Antes de usar o emblema como marca comercial, confira os termos de licença do Canva e faça uma busca de marcas (INPI) pelo nome "Cinabro".

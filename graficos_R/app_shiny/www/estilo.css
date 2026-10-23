@@ -6,6 +6,9 @@
 @font-face { font-family: 'Barlow'; font-weight: 400; font-style: italic; src: url('fontes/Barlow/Barlow-Italic.ttf') format('truetype'); }
 @font-face { font-family: 'Barlow'; font-weight: 700; font-style: italic; src: url('fontes/Barlow/Barlow-BoldItalic.ttf') format('truetype'); }
 
+@font-face { font-family: 'Titan One'; font-weight: 400; font-style: normal; src: url('fontes/Letreiro/TitanOne-Regular.ttf') format('truetype'); }
+@font-face { font-family: 'Kaushan Script'; font-weight: 400; font-style: normal; src: url('fontes/Letreiro/KaushanScript-Regular.ttf') format('truetype'); }
+
 :root {
   /* identidade Cinabro: 5 cores. Creme = fundo da página; branco só na caixa do gráfico. */
   --vermelho: #B3262E; --creme: #F5EBDD; --tinta: #20242B; --terracota: #C96A4A; --petroleo: #2F6670;
@@ -25,12 +28,21 @@ h1, h2, h3, h4 { font-family: 'Barlow', sans-serif; font-weight: 700; margin: 0;
 /* ---- topo ---- */
 .topo { background: var(--tinta); color: var(--creme); border-bottom: 3px solid var(--vermelho); display: flex; justify-content: space-between; align-items: center; gap: 16px;
         padding: 14px 26px; position: sticky; top: 0; z-index: 50; box-shadow: 0 3px 14px rgba(32,36,43,.28); flex-wrap: wrap; }
-.marca { display: flex; align-items: center; gap: 14px; }
-.marca-ico { width: 52px; height: 52px; border-radius: 50%; background: var(--creme); display: grid; place-items: center; overflow: hidden;
-             box-shadow: 0 0 0 2px rgba(245,235,221,.35); }
-.marca-ico img { width: 44px; height: 44px; display: block; }
-.marca h1 { color: var(--creme); font-size: 26px; letter-spacing: .2px; line-height: 1; }
-.marca p { margin: 3px 0 0; opacity: .9; font-size: 14px; }
+.marca { display: flex; align-items: center; gap: 16px; }
+.marca-ico { width: 66px; height: 66px; border-radius: 50%; background: var(--creme); display: grid; place-items: center; overflow: hidden; flex: none;
+             box-shadow: 0 0 0 2px rgba(245,235,221,.35), 0 4px 10px rgba(0,0,0,.35); }
+.marca-ico img { width: 56px; height: 56px; display: block; }
+/* letreiro: nome em vermelho-cinábrio com contorno creme, sombra terracota e sombra suave; frase em letra de pincel, com fio e pontos nas cores da paleta */
+.marca h1.nome { font-family: 'Titan One', 'Barlow', sans-serif; font-weight: 400; font-size: 42px; line-height: 1; letter-spacing: .04em; text-transform: uppercase; margin: 0;
+  background: linear-gradient(180deg, #D8402F 0%, #B3262E 55%, #8F1C24 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(1.5px 0 0 var(--creme)) drop-shadow(-1.5px 0 0 var(--creme)) drop-shadow(0 1.5px 0 var(--creme)) drop-shadow(0 -1.5px 0 var(--creme))
+          drop-shadow(3px 4px 0 var(--terracota)) drop-shadow(5px 8px 7px rgba(0,0,0,.55)); }
+.marca p.frase { font-family: 'Kaushan Script', 'Barlow', cursive; font-size: 18px; line-height: 1.2; color: var(--creme); margin: 7px 0 0; opacity: 1; letter-spacing: .01em; }
+.marca .fio { display: flex; align-items: center; gap: 7px; margin-top: 6px; max-width: 360px; }
+.marca .fio::before, .marca .fio::after { content: ''; flex: 1 1 0; height: 1.5px; background: var(--terracota); opacity: .8; border-radius: 2px; }
+.marca .fio i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.marca .fio i:nth-child(1) { background: var(--vermelho); } .marca .fio i:nth-child(2) { background: var(--terracota); }
+.marca .fio i:nth-child(3) { background: var(--petroleo); box-shadow: 0 0 0 1px rgba(245,235,221,.35); } .marca .fio i:nth-child(4) { background: var(--creme); }
 .topo-acoes { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .topo-acoes .form-group { margin: 0; }
 .topo select.form-control { background: rgba(245,235,221,.14); color: var(--creme); border: 1px solid rgba(255,255,255,.4); border-radius: 999px; height: 38px; padding: 0 14px; }

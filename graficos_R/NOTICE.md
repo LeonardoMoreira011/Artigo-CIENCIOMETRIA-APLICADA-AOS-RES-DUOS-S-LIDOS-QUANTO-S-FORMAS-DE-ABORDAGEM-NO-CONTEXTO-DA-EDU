@@ -2,6 +2,9 @@
 
 O Cinabro usa, sem alterar, os trabalhos abaixo. Cada um tem a sua licença; os avisos exigidos estão aqui e nos cabeçalhos dos arquivos.
 
+## Fontes do letreiro (nome e frase do cabeçalho)
+- **Titan One** — Copyright 2011 Rodrigo Fuenzalida (nome "CINABRO"). **Kaushan Script** — Copyright 2011 Pablo Impallari e Igino Marini (frase em latim). As duas sob **SIL Open Font License 1.1**; os textos completos estão em `fontes/Letreiro/OFL-TitanOne.txt` e `fontes/Letreiro/OFL-KaushanScript.txt` e devem acompanhar os arquivos quando o projeto for distribuído. Só a interface do app e os arquivos da pasta `identidade/` usam essas fontes; os gráficos continuam em Barlow.
+
 ## Fonte Barlow
 - Barlow, Barlow Condensed e Barlow Semi Condensed — Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow). Licença **SIL Open Font License 1.1**. O texto completo está em `fontes/Barlow/OFL.txt` e deve acompanhar os arquivos da fonte quando o projeto for distribuído.
 
