@@ -334,6 +334,15 @@ teste("painel: grade tracejada com cor e transparência; sem recorte; fonte; neg
 teste("painel: cores_por_serie cria cfg$series e quebra_ativar acha de/ate sozinho",
       cp$series$WORLD$cor == "#000000" && cp$series$BRAZIL$cor == "#1F4E9E" && isTRUE(cp$quebra$ativo) &&
       cp$quebra$de > 85000 && cp$quebra$ate > cp$quebra$de && cp$quebra$ate < 460000 && !cp$quebra$ligar_atraves)
+dp <- data.frame(T = c(10, 20, 30, 40), Media = c(1, 2.5, 3, 5), DP = c(0.3, 0.5, 0.2, 0.8), Media2 = c(2, 3, 4, 4.5), DP2 = c(0.1, 0.2, 0.3, 0.4))
+pee <- list2env(list(tipo_grafico = "pontos", coluna_x = 1, erro_por_serie = c(Media = "DP", Media2 = "DP2"), erro_lado = "superior", erro_espessura_pt = 2))
+ce <- suppressMessages(aplicar_painel(c0, pee, dados = dp))
+ge <- suppressWarnings(plotar(dp, ce))
+camadas_erro <- Filter(function(l) inherits(l$geom, "GeomErrorbar"), ge$layers)
+teste("painel: erro_por_serie liga a barra de erro (coluna de erro não vira série) e erro_lado/espessura chegam ao cfg",
+      identical(ce$series$Media$coluna_erro, "DP") && identical(ce$linhas$erro_lado, "superior") && ce$linhas$erro_espessura_pt == 2 &&
+      length(camadas_erro) == 1 && nrow(camadas_erro[[1]]$data) == 8 && identical(sort(unique(as.character(camadas_erro[[1]]$data$serie))), c("Media", "Media2")))
+teste("painel: erro_por_serie sem nomes dá erro claro", da_erro(aplicar_painel(c0, list2env(list(erro_por_serie = "DP"))), "nomes"))
 teste("painel: tudo NULL não muda nada (o cfg sai igual ao padrão)",
       identical(suppressMessages(aplicar_painel(c0, list2env(list()))), .completar_cfg(c0)))
 cg <- c0; cg$grafico <- utils::modifyList(cg$grafico, list(tipo = "linha_pontos", coluna_x = 1))
@@ -384,7 +393,7 @@ teste("painel: painel_de_ajustes.R não tem variável sem destino (toda variáve
         L <- readLines(arq_painel, encoding = "UTF-8")
         L <- L[(grep("PAINEL DE AJUSTES DO GRÁFICO", L)[1]):(grep("EXECUÇÃO \\(não precisa editar\\)", L)[1])]
         v <- sub(" *<- .*", "", grep("^[a-z_A-Z]+ +<- ", L, value = TRUE))
-        extras <- c("ARQUIVO_CSV", "ajustes", "marcas_estatisticas", "caixas_estatisticas", "formas", "imagens", "cores_personalizadas", "cores_gradiente", "cores_por_serie", "quebra_ativar",
+        extras <- c("ARQUIVO_CSV", "ajustes", "marcas_estatisticas", "caixas_estatisticas", "formas", "imagens", "cores_personalizadas", "cores_gradiente", "cores_por_serie", "erro_por_serie", "quebra_ativar",
                     "x_intervalo",
                     "y_intervalo", "x_ticks_manuais", "y_ticks_manuais", "eixos_titulo_negrito", "rotulos_dados_tamanho_pt",
                     "y2_series", "y2_titulo", "y2_inicio", "y2_fim", "y2_intervalo", "y2_ticks_manuais", "y2_ticks_menores",

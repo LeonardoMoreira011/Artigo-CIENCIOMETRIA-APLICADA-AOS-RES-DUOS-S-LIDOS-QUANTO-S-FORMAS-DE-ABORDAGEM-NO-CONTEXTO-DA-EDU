@@ -173,6 +173,11 @@ cores_paleta        <- NULL   # "cinabro" (padrão: cores da marca e variações
 cores_personalizadas <- NULL  # suas cores, na ordem das colunas Y. EX.: c("#000000", "#D62728", "#1F4E9E")
 cores_por_serie     <- NULL   # a cor de séries específicas (nome exato da coluna).
                               # EX.: c("WORLD" = "#000000", "LATAM" = "#C00000", "BRAZIL" = "#1F4E9E")
+erro_por_serie      <- NULL   # BARRAS DE ERRO (±) nos pontos: a série e a coluna que traz o erro (ex.: o desvio padrão).
+                              # EX.: c("Média" = "DP")   (a coluna de erro não é desenhada como série)
+erro_lado           <- NULL   # "ambos" (padrão) | "superior" | "inferior"
+erro_espessura_pt   <- NULL   # grossura da barra de erro, pt. EX.: 1
+erro_chapeu_pct     <- NULL   # largura do "chapéu" da barra, % do eixo X. EX.: 2   (0 = sem chapéu)
 cores_gradiente     <- NULL   # TRUE = barras/áreas com degradê
 cores_gradiente_cor2 <- NULL  # cor final do degradê. EX.: "white"
 #  Grossuras SEPARADAS (todas em pt; valem para todas as séries):

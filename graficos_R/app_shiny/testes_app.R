@@ -24,14 +24,14 @@ vars_painel <- sub(" *<- .*", "", grep("^[a-z_A-Z0-9]+ +<- ", L, value = TRUE))
 vars_painel <- setdiff(vars_painel, "ARQUIVO_CSV")
 tratadas_a_parte <- c("fonte_pasta",                                    # arquivo da fonte: o app já traz a Barlow
                       "cores_personalizadas", "cores_por_serie", "legenda_nomes", "linha_espessura_por_serie",
-                      "simbolo_tamanho_por_serie", "simbolo_borda_por_serie", "simbolo_forma_por_serie",   # tabela de séries
+                      "simbolo_tamanho_por_serie", "simbolo_borda_por_serie", "simbolo_forma_por_serie", "erro_por_serie",   # tabela de séries (o erro vem do campo colunas_erro)
                       "simbolo_variar", "legenda_sombra_deslocamento_pt", "legenda_ancora",
                       "pasta_saida", "idioma")                                  # a pasta: o navegador é que baixa o arquivo
 teste("o app tem um campo para cada variável do painel_de_ajustes.R (as exceções estão listadas e são tratadas à parte)",
       length(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte, names(SLOTS)))) == 0)
 if (length(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte, names(SLOTS))))) print(setdiff(vars_painel, c(names(ESPEC_CAMPOS), tratadas_a_parte, names(SLOTS))))
 teste("todo campo do app vira uma variável do painel (ou é um dos auxiliares conhecidos)",
-      all(names(ESPEC_CAMPOS) %in% c(vars_painel, "simbolo_modo", "legenda_sombra_dx", "legenda_sombra_dy", IDS_SLOT)))
+      all(names(ESPEC_CAMPOS) %in% c(vars_painel, "simbolo_modo", "legenda_sombra_dx", "legenda_sombra_dy", "colunas_erro", IDS_SLOT)))
 teste("cada bloco do app tem número, título, resumo e pelo menos um campo", all(vapply(ESPEC, function(b)
   nzchar(b$titulo) && nzchar(b$resumo) && (length(b$campos) + length(b$grupos)) > 0, NA)) && length(ESPEC) == 14)
 
@@ -58,6 +58,14 @@ teste("tabela de séries vira variáveis por série (e nome igual ao da coluna n
       identical(vs$cores_por_serie, c(A = "#112233")) && identical(vs$simbolo_forma_por_serie, c(A = "esfera")) &&
       identical(vs$simbolo_tamanho_por_serie, c(B = 9)) && identical(vs$linha_espessura_por_serie, c(A = 3)) &&
       identical(vs$legenda_nomes, c(A = "Série A")) && is.null(vs$simbolo_borda_por_serie))
+
+sr2 <- cbind(sr, erro = c("DP", ""), stringsAsFactors = FALSE)
+v_er <- v0; v_er$colunas_y <- c("A", "B", "DP"); v_er$colunas_erro <- "DP"
+ve <- montar_variaveis(v_er, CFG0, sr2)
+teste("colunas de erro viram erro_por_serie (pela ordem das séries) e saem da lista de colunas Y",
+      identical(ve$erro_por_serie, c(A = "DP")) && identical(ve$colunas_y, c("A", "B")) && is.null(ve$colunas_erro))
+v_er$colunas_y <- "DP"; teste("se só sobra a coluna de erro em Y, Y volta a 'todas as outras' (vazio)", is.null(montar_variaveis(v_er, CFG0, sr2)$colunas_y))
+teste("sem coluna de erro nada muda: não há erro_por_serie", is.null(vs$erro_por_serie))
 
 # ---- segunda rodada: paletas, formatos, campos novos ----------------------------------------------------------------------
 teste("ler_cores_texto entende #RRGGBB, #RGB, RRGGBB, nomes do R, vírgulas, espaços e linhas (e ignora o que não é cor)",

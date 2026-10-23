@@ -114,13 +114,14 @@ servidor <- function(input, output, session) {
     updateSelectInput(session, "coluna_x", choices = stats::setNames(c("", cols), c(T("(1ª coluna)"), cols)), selected = x)
     updateSelectizeInput(session, "colunas_y", choices = stats::setNames(num, num), selected = intersect(as.character(unlist(sel$colunas_y)), num))
     updateSelectizeInput(session, "y2_series", choices = stats::setNames(num, num), selected = intersect(as.character(unlist(sel$y2_series)), num))
+    updateSelectizeInput(session, "colunas_erro", choices = stats::setNames(num, num), selected = intersect(as.character(unlist(sel$colunas_erro)), num))
   }
   # a coluna do eixo X não aparece nas listas de séries (Y e Y2)
   observeEvent(input$coluna_x, {
     d <- rv$dados; req(d)
     x <- input$coluna_x; if (is.null(x) || !nzchar(x)) x <- names(d)[1]
     num <- setdiff(names(d)[vapply(d, is.numeric, NA)], x)
-    for (id in c("colunas_y", "y2_series"))
+    for (id in c("colunas_y", "y2_series", "colunas_erro"))
       updateSelectizeInput(session, id, choices = stats::setNames(num, num), selected = intersect(isolate(input[[id]]), num))
   }, ignoreInit = TRUE)
   observeEvent(input$arquivo, { carregar(input$arquivo$datapath, input$arquivo$name); updateSelectInput(session, "exemplo", selected = "") })
@@ -185,12 +186,15 @@ servidor <- function(input, output, session) {
     d <- rv$dados; req(d)
     x <- input$coluna_x; if (is.null(x) || !nzchar(x)) x <- names(d)[1]
     num <- setdiff(names(d)[vapply(d, is.numeric, NA)], x)
-    sel <- input$colunas_y
+    err <- input$colunas_erro                              # coluna de erro não é série
+    sel <- setdiff(input$colunas_y, err); num <- setdiff(num, err)
     if (length(sel)) sel else num
   })
   series_nomes_seguro <- function() tryCatch(series_nomes(), error = function(e) character(0))
+  nomes_chave <- reactiveVal(character(0))                 # a tabela de séries só é refeita quando a LISTA de séries muda
+  observe({ n <- series_nomes_seguro(); if (!identical(n, isolate(nomes_chave()))) nomes_chave(n) })
   output$tabela_series <- renderUI({
-    d <- rv$dados
+    nomes_chave(); d <- rv$dados
     if (is.null(d)) return(UI(div(class = "vazio", "Carregue os dados para editar cada série.")))
     tp <- input$tipo_grafico %||% "linha_pontos"
     if (!tp %in% c("pontos", "linha", "linha_pontos", "area", "area_empilhada"))
@@ -208,6 +212,7 @@ servidor <- function(input, output, session) {
                linha = vapply(seq_len(n), function(i) as.numeric(g("ser_linha_", i, NA_real_)), 0),
                borda = vapply(seq_len(n), function(i) as.numeric(g("ser_borda_", i, NA_real_)), 0),
                legenda = vapply(seq_len(n), function(i) as.character(g("ser_legenda_", i, nomes[i])), ""),
+               erro = vapply(seq_len(n), function(i) { e <- input$colunas_erro; if (i <= length(e)) as.character(e[i]) else "" }, ""),   # a i-ésima coluna de erro vale para a i-ésima série
                stringsAsFactors = FALSE)
   })
 
@@ -288,7 +293,7 @@ servidor <- function(input, output, session) {
   derivados <- c(cores_personalizadas = "Cores da minha paleta", legenda_sombra_deslocamento_pt = "Sombra da legenda: deslocamento",
                  legenda_nomes = "Nomes na legenda", cores_por_serie = "Cores por série", simbolo_forma_por_serie = "Formas por série",
                  simbolo_tamanho_por_serie = "Tamanho dos pontos por série", linha_espessura_por_serie = "Grossura das linhas por série",
-                 simbolo_borda_por_serie = "Contorno dos pontos por série", ajustes = "Curvas de ajuste", marcas_estatisticas = "Traços de média e desvio",
+                 simbolo_borda_por_serie = "Contorno dos pontos por série", erro_por_serie = "Colunas de erro (barras de erro)", ajustes = "Curvas de ajuste", marcas_estatisticas = "Traços de média e desvio",
                  caixas_estatisticas = "Caixas de estatística", formas = "Caixas de texto e polígonos", imagens = "Figuras anexadas")
   rotulo_de <- function(id) { c <- ESPEC_CAMPOS[[id]]; if (!is.null(c)) c$rotulo else if (id %in% names(derivados)) derivados[[id]] else id }
   output$avisos <- renderUI({

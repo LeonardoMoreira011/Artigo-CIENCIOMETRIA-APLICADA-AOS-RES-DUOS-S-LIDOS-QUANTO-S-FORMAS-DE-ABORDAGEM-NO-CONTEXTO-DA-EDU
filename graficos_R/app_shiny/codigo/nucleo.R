@@ -152,11 +152,13 @@ montar_variaveis <- function(v, cfg0, series = NULL) {
   vars <- list(); reg <- new.env(); reg$m <- list()           # reg: campos cujo número foi limitado (vira aviso)
   for (id in names(ESPEC_CAMPOS)) {
     campo <- ESPEC_CAMPOS[[id]]
-    if (id %in% c("simbolo_modo", "legenda_sombra_dx", "legenda_sombra_dy") || id %in% IDS_SLOT) next
+    if (id %in% c("simbolo_modo", "legenda_sombra_dx", "legenda_sombra_dy", "colunas_erro") || id %in% IDS_SLOT) next
     val <- ler_valor(campo, v[[id]], cfg0, reg)
     if (!is.null(val)) vars[[id]] <- val
   }
   vars <- c(vars, montar_slots(v, reg))                   # ajustes, marcas, caixas de estatística e formas
+  # a coluna de erro nunca é série: sai da lista de colunas Y (se a lista ficar vazia, vale "todas as outras", que já descarta as de erro)
+  if (length(vars$colunas_y) && length(v$colunas_erro)) { vars$colunas_y <- setdiff(vars$colunas_y, v$colunas_erro); if (!length(vars$colunas_y)) vars$colunas_y <- NULL }
   # paleta própria (a do editor ou uma guardada) = cores personalizadas
   pal <- vars$cores_paleta
   if (identical(pal, "propria") || (is.character(pal) && startsWith(pal, "salva:"))) {
@@ -189,6 +191,7 @@ montar_variaveis <- function(v, cfg0, series = NULL) {
     tp <- por("tamanho"); if (!is.null(tp)) vars$simbolo_tamanho_por_serie <- tp
     lp <- por("linha"); if (!is.null(lp)) vars$linha_espessura_por_serie <- lp
     bp <- por("borda"); if (!is.null(bp)) vars$simbolo_borda_por_serie <- bp
+    ep <- if ("erro" %in% names(series)) por("erro", "txt"); if (!is.null(ep)) vars$erro_por_serie <- ep
     np <- por("legenda", "txt"); if (!is.null(np)) { np <- np[names(np) != unname(np)]; if (length(np)) vars$legenda_nomes <- np }
   }
   if (length(reg$m)) attr(vars, "limitados") <- reg$m

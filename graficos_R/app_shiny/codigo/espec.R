@@ -105,6 +105,7 @@ opcoes_paletas <- function(guardadas = character(0)) {
 
 .SE_Y2 <- "input.y2_series && input.y2_series.length"
 .SE_QUEBRA <- "input.quebra_ativar"
+.SE_ERRO <- "input.colunas_erro && input.colunas_erro.length"
 .SE_QUEBRA_Y2 <- "input.quebra_ativar && input.y2_series && input.y2_series.length"
 
 # Eixo da direita (Y2): as mesmas opções do eixo Y.
@@ -325,7 +326,11 @@ ESPEC <- list(
         list(
           campo("tipo_grafico", "sel", "Tipo de gráfico", "Linha, pontos, barras, pizza...", opcoes = .TIPOS, padrao = "linha_pontos", largura = 12),
           campo("coluna_x", "colx", "Coluna do eixo X", "Vazio = a 1ª coluna."),
-          campo("colunas_y", "colsy", "Colunas do eixo Y (séries)", "Vazio = todas as outras colunas numéricas.")
+          campo("colunas_y", "colsy", "Colunas do eixo Y (séries)", "Vazio = todas as outras colunas numéricas."),
+          campo("colunas_erro", "colsy2", "Colunas de erro (± desvio padrão)", "Barras de erro nos pontos. A 1ª coluna vale para a 1ª série, a 2ª para a 2ª, e assim por diante. Elas não são desenhadas como série.", largura = 12),
+          campo("erro_lado", "sel", "Lado da barra de erro", "Os dois lados, só para cima ou só para baixo.", opcoes = c("Os dois lados" = "ambos", "Só para cima" = "superior", "Só para baixo" = "inferior"), se = .SE_ERRO),
+          campo("erro_espessura_pt", "num", "Grossura da barra de erro (pt)", "Espessura do traço.", min = 0, max = 10, passo = 0.25, se = .SE_ERRO),
+          campo("erro_chapeu_pct", "num", "Largura do chapéu (%)", "Tamanho do tracinho nas pontas, em % do eixo X. 0 tira o chapéu.", min = 0, max = 20, passo = 0.5, se = .SE_ERRO)
         )),
   bloco("intervalos", "Intervalos dos eixos",
         "Onde cada eixo começa e termina, de quanto em quanto aparecem os traços e como eles são.",
