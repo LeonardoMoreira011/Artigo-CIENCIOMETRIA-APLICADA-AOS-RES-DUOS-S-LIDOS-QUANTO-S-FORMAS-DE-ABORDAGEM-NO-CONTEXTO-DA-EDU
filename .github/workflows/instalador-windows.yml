@@ -102,7 +102,7 @@ jobs:
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           Push-Location instalador
-          & $iscc "/DVersao=${{ steps.ver.outputs.versao }}" Cinabro.iss
+          & $iscc /Q "/DVersao=${{ steps.ver.outputs.versao }}" Cinabro.iss
           Pop-Location
           if ($LASTEXITCODE -ne 0) { throw "ISCC falhou" }
           Get-ChildItem instalador/saida | Format-Table Name, Length
