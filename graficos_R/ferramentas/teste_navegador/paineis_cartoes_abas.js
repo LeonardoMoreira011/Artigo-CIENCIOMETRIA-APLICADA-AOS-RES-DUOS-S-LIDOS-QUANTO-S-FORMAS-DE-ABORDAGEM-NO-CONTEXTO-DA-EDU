@@ -12,6 +12,7 @@ const DADOS = process.env.CINABRO_DADOS || require('path').resolve(__dirname, '.
   page.on('pageerror', e => console.log('PAGEERROR', e.message));
   const idle = async () => { await page.waitForTimeout(500); await page.waitForFunction(() => !document.documentElement.classList.contains('shiny-busy'), null, { timeout: 90000 }); await page.waitForTimeout(500); };
   await page.goto(URL); await page.waitForTimeout(2500);
+  if (await page.$('#shiny-modal-wrapper .modal')) { await page.keyboard.press('Escape'); await page.waitForTimeout(800); }   // o guia de 4 passos abre na primeira visita
   console.log('altura do cabeçalho (px):', await page.$eval('.topo', e => Math.round(e.getBoundingClientRect().height)), '| abas:', await page.$eval('.abas-barra', e => Math.round(e.getBoundingClientRect().height)));
   console.log('botões do trilho:', await page.$$eval('.trilho-btn', b => b.map(x => x.title)));
   await page.selectOption('#exemplo', 'ensaio_temperatura.csv'); await page.waitForFunction(() => document.querySelector('#previa img')); await idle();

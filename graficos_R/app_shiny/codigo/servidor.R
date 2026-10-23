@@ -545,16 +545,25 @@ servidor <- function(input, output, session) {
   nome_aba <- function(i) { n <- rv$abas[[i]]$nome; if (is.null(n)) TF("Gráfico %d", i) else n }
   capturar <- function() list(valores = isolate(valores()), series = if (!is.null(rv$dados)) isolate(tryCatch(series_df(), error = function(e) NULL)),
                               dados = rv$dados, nome_dados = rv$nome, cong = unname(congelados()), img = rv$img)
+  # só envia à tela o que muda de uma aba para a outra: de 646 mensagens (~10 s) para as poucas que de fato diferem
+  igual_campo <- function(a, b) identical(as.character(unlist(a)), as.character(unlist(b)))
   restaurar_aba <- function(snap) {
-    st$ate <- Sys.time() + 1.8                                  # as telas levam um instante para receber os valores; só então monta o gráfico
+    atual <- isolate(valores()); cong_atual <- isolate(congelados())
     rv$dados <- snap$dados; rv$nome <- snap$nome_dados; rv$erro <- NULL; rv$res <- NULL; rv$previa <- NULL; rv$pend_calc <- TRUE
     rv$img <- snap$img %||% list()
     garantir_cartoes(snap$valores)
     definir_colunas(snap$dados, snap$valores)
-    for (id in names(ESPEC_CAMPOS)) { c <- ESPEC_CAMPOS[[id]]; if (!c$tipo %in% c("colx", "colsy", "colsy2")) atualizar_campo(session, c, snap$valores[[id]], CFG0) }
-    updateTextAreaInput(session, "paleta_propria", value = as.character(snap$valores$.paleta_propria %||% ""))
-    updateSelectInput(session, "simbolo_modo", selected = snap$valores$simbolo_modo %||% "variar")
-    for (b in names(BLOCO_IDS)) updateCheckboxInput(session, paste0("cong_", b), value = b %in% snap$cong)
+    n <- 0L
+    for (id in names(ESPEC_CAMPOS)) {
+      c <- ESPEC_CAMPOS[[id]]; if (c$tipo %in% c("colx", "colsy", "colsy2")) next
+      alvo <- snap$valores[[id]]; if (is.null(alvo)) alvo <- valor_inicial(c, CFG0)
+      if (igual_campo(atual[[id]], alvo)) next
+      atualizar_campo(session, c, snap$valores[[id]], CFG0); n <- n + 1L
+    }
+    if (!igual_campo(atual$.paleta_propria, snap$valores$.paleta_propria)) updateTextAreaInput(session, "paleta_propria", value = as.character(snap$valores$.paleta_propria %||% ""))
+    if (!igual_campo(atual$simbolo_modo, snap$valores$simbolo_modo %||% "variar")) updateSelectInput(session, "simbolo_modo", selected = snap$valores$simbolo_modo %||% "variar")
+    for (b in names(BLOCO_IDS)) if ((b %in% snap$cong) != (b %in% cong_atual)) updateCheckboxInput(session, paste0("cong_", b), value = b %in% snap$cong)
+    st$ate <- Sys.time() + min(1.8, 0.4 + 0.003 * n)           # as telas levam um instante para receber os valores; só então monta o gráfico
     ps <- snap$series
     session$onFlushed(function() isolate(rv$pend_series <- if (!is.null(ps) && nrow(ps)) ps else NULL), once = TRUE)
   }

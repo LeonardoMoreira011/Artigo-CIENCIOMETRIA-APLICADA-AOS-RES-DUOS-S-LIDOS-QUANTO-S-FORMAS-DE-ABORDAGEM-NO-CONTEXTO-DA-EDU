@@ -129,7 +129,7 @@ Critério: valor para o time × custo (tempo, tela, manutenção). "Uso" = julga
 | Caixas de texto/polígonos (bloco 14) | **196 campos**, 6+3 cartões fixos | **Manter o recurso; cartões sob demanda** | idem |
 | Figuras anexadas | 3 cartões | **Manter, corrigindo memória** (≤ 1.200 px, cache limitada) | hoje custa 4 s e 138 MB por figura |
 | Paletas | 66 | **Reduzir para ~12** (as 5 do Cinabro + 2 sequenciais + 2 divergentes + 3 daltônico-seguras) | quem precisa de mais cria a própria |
-| Abas de gráficos | troca de ~10 s, 646 mensagens, truque de 1,8 s | **Decidir** (ver seção 7) | caro e frágil nesse desenho |
+| Abas de gráficos | troca de ~10 s, 646 mensagens, truque de 1,8 s | **Refeito:** só os campos que diferem são enviados; espera proporcional (0,4 s + 3 ms por campo, máx. 1,8 s). Nova aba ~0,7 s; voltar ~3 s com a prévia | resolvido |
 | "Mostrar outra aba ao lado" | 1 gráfico extra renderizado | **Cortar** | dobra o custo; em tela pequena não cabe |
 | Congelar blocos + copiar/colar modelo + salvar/carregar configuração | 3 mecanismos para "reaproveitar ajustes" | **Manter só salvar/carregar + Estilos prontos**; congelar só se ficarem abas | redundância |
 | Idiomas EN/ES | 950 + 950 linhas JSON + 505 linhas no motor + READMEs | **Congelar** (manter, sem evoluir) ou cortar | toda frase nova custa 3 textos |
