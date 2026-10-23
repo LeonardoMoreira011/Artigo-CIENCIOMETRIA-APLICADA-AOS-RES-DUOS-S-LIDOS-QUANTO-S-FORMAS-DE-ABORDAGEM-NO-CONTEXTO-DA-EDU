@@ -44,8 +44,47 @@
   $(document).on('click', '[data-sel-limpar]', function (e) {
     e.preventDefault(); var s = seletor($(this).data('sel-limpar')); if (s) s.clear(false);
   });
-  // clicar num atalho do índice abre o bloco
-  $(document).on('click', 'a[href^="#bloco-"]', function () { var d = document.querySelector($(this).attr('href')); if (d) d.open = true; });
+  // ---- estúdio: trilho de ícones, gaveta de painéis, faixa de ferramentas, maximizar ----------------------------------------------
+  function ajustarTopo() {
+    var h = ($('.topo').outerHeight() || 0) + ($('.abas-barra').outerHeight() || 0);
+    document.documentElement.style.setProperty('--alt-topo', h + 'px'); document.documentElement.style.setProperty('--alt-cab', ($('.topo').outerHeight() || 0) + 'px');
+  }
+  function avisarPalco() { setTimeout(function () { $(window).trigger('resize'); var w = $('.previa-quadro').innerWidth(); if (w) Shiny.setInputValue('palco_larg', Math.round(w), { priority: 'event' }); }, 380); }
+  function abrirPainel(id, manter) {
+    var $p = $('#bloco-' + id); if (!$p.length) return;
+    $('.painel').removeClass('ativo'); $p.addClass('ativo');
+    $('.trilho-btn').removeClass('ativo').filter('[data-painel="' + id + '"]').addClass('ativo');
+    $('.estudio').addClass('gaveta-aberta').removeClass('max'); $('.gaveta').scrollTop(0);
+    try { localStorage.setItem('cinabro_painel', id); } catch (e) {}
+    if (!manter) avisarPalco();
+  }
+  $(document).on('click', '.trilho-btn', function () {
+    var id = $(this).data('painel');
+    if ($(this).hasClass('ativo') && $('.estudio').hasClass('gaveta-aberta')) { $('.estudio').removeClass('gaveta-aberta'); $(this).removeClass('ativo'); avisarPalco(); }
+    else abrirPainel(id);
+  });
+  $(document).on('click', 'a[href^="#bloco-"]', function (e) { e.preventDefault(); abrirPainel(String($(this).attr('href')).replace('#bloco-', '')); });
+  $(document).on('click', '[data-abrir]', function () { abrirPainel($(this).data('abrir')); });
+  $(document).on('click', '.faixa-lista .faixa-btn', function () { $(this).closest('details').removeAttr('open'); });
+  $(document).on('click', function (e) { if (!$(e.target).closest('.faixa-menu').length) $('.faixa-menu').removeAttr('open'); });
+  $(document).on('click', '[data-rapido]', function () {
+    var d = $(this).data('rapido'); d.t = Date.now(); Shiny.setInputValue('rapido', d, { priority: 'event' });
+  });
+  function maximizar(ligar) {
+    var $e = $('.estudio'); if (ligar === undefined) ligar = !$e.hasClass('max');
+    $e.toggleClass('max', ligar); $('#maximizar').text(ligar ? ($('#maximizar').data('sair') || 'Mostrar painéis') : ($('#maximizar').data('max') || 'Maximizar'));
+    avisarPalco();
+  }
+  $(document).on('click', '#maximizar', function () { if (!$(this).data('max')) { $(this).data('max', $(this).text()); } maximizar(); });
+  $(document).on('keydown', function (e) { if (e.key === 'Escape' && $('.estudio').hasClass('max')) maximizar(false); });
+  Shiny.addCustomMessageHandler('abrir_painel', function (m) {
+    abrirPainel(m.id, true);
+    if (m.cartao) setTimeout(function () { var el = document.getElementById(m.cartao); if (!el) return; var $g = $(el).closest('.grupo'); $g[0] && $g[0].scrollIntoView({ block: 'center' }); $g.addClass('flash'); setTimeout(function () { $g.removeClass('flash'); }, 1600); }, 350);
+    avisarPalco();
+  });
+  $(function () { ajustarTopo(); abrirPainel('dados', true); setTimeout(function () { ajustarTopo(); avisarPalco(); }, 700); });
+  $(window).on('resize', function () { ajustarTopo(); clearTimeout(window.__rz); window.__rz = setTimeout(function () { var w = $('.previa-quadro').innerWidth(); if (w) Shiny.setInputValue('palco_larg', Math.round(w), { priority: 'event' }); }, 500); });
+  $(document).on('shiny:connected', function () { setTimeout(avisarPalco, 600); });
 
   // ---- caixa da legenda: arrastar (posição) e puxar a alça (largura) sobre a prévia ------------------------------------------
   var geo = null, ar = null;
@@ -56,7 +95,57 @@
     var r = im.getBoundingClientRect(), hr = h.getBoundingClientRect();
     return { W: r.width, H: r.height, ox: r.left - hr.left + h.scrollLeft, oy: r.top - hr.top + h.scrollTop };
   }
+  // ---- edição dentro do gráfico: zonas clicáveis sobre os títulos; clicar abre uma caixa com o texto, o negrito e o tamanho ----------------
+  var EDIT = { titulo: ['titulo_grafico', 'titulo_grafico_negrito', 'titulo_grafico_tamanho_pt'],
+               xlab: ['x_titulo', 'eixos_titulo_negrito', 'x_titulo_tamanho_pt'],
+               ylab: ['y_titulo', 'eixos_titulo_negrito', 'y_titulo_tamanho_pt'] };
+  var pop = null;
+  function rotulo(k) { return $('#edicao-rotulos [data-z="' + k + '"]').text(); }
+  function fecharPopover() {
+    if (!pop) return;
+    pop.itens.forEach(function (it) { if (it.next && it.next.parentNode === it.parent) it.parent.insertBefore(it.node, it.next); else it.parent.appendChild(it.node); });
+    $('#popover-edicao').remove(); pop = null;
+  }
+  function reposicionarPopover() {
+    if (!pop) return;
+    var $z = $('.zona[data-z="' + pop.k + '"]'), $p = $('#popover-edicao'), h = host(); if (!$z.length || !$p.length) return;
+    var zl = parseFloat($z.css('left')), zt = parseFloat($z.css('top')), zh = $z.outerHeight();
+    var esq = Math.max(6, Math.min(zl, h.scrollLeft + h.clientWidth - $p.outerWidth() - 6)), topo = zt + zh + 6;
+    if (topo + $p.outerHeight() > h.scrollTop + h.clientHeight) topo = Math.max(zt - $p.outerHeight() - 6, 6);
+    $p.css({ left: esq, top: topo });
+  }
+  function abrirPopover(k) {
+    fecharPopover();
+    var $p = $('<div id="popover-edicao"><div class="pop-cab"><b></b><button type="button" class="pop-x">&times;</button></div><div class="pop-corpo"></div></div>');
+    $p.find('b').text(rotulo(k)); $p.find('.pop-x').attr('title', rotulo('fechar'));
+    var itens = [];
+    EDIT[k].forEach(function (id) {
+      var node = $('#' + id).closest('.campo')[0]; if (!node) return;
+      itens.push({ node: node, parent: node.parentNode, next: node.nextSibling }); $p.find('.pop-corpo').append(node);
+    });
+    $(host()).append($p); pop = { k: k, itens: itens }; reposicionarPopover();
+    setTimeout(function () { $p.find('input[type=text], input:not([type])').first().focus(); }, 60);
+  }
+  function colocarZonas() {
+    var h = host(), im = imagem(); $('.zona').remove();
+    if (!h || !im || !geo || !geo.zonas) { fecharPopover(); return; }
+    var r = im.getBoundingClientRect(), hr = h.getBoundingClientRect(), ox = r.left - hr.left + h.scrollLeft, oy = r.top - hr.top + h.scrollTop;
+    Object.keys(geo.zonas).forEach(function (k) {
+      var z = geo.zonas[k]; if (!EDIT[k] || !z) return;
+      $('<div class="zona" data-z="' + k + '"></div>').css({ left: ox + z[0] * r.width, top: oy + z[1] * r.height, width: z[2] * r.width, height: Math.max(z[3] * r.height, 16) })
+        .attr('title', rotulo('dica')).appendTo(h);
+    });
+    reposicionarPopover();
+  }
+  $(document).on('click', '.zona', function (e) { abrirPopover($(this).data('z')); e.stopPropagation(); });
+  $(document).on('click', '.pop-x', fecharPopover);
+  $(document).on('mousedown', function (e) {
+    if (pop && !$(e.target).closest('#popover-edicao, .zona, .selectize-dropdown, .modal').length) fecharPopover();
+  });
+  $(document).on('keydown', function (e) { if (e.key === 'Escape' && pop) { fecharPopover(); e.stopImmediatePropagation(); } });
+
   function colocar() {
+    colocarZonas();
     var $b = $('#legenda-caixa'), m = medidas();
     if (!m || !$('#arrastar').is(':checked')) { $b.hide(); return; }
     $b.css({ display: 'block', left: (m.ox + geo.legenda[0] * m.W) + 'px', top: (m.oy + geo.legenda[1] * m.H) + 'px',

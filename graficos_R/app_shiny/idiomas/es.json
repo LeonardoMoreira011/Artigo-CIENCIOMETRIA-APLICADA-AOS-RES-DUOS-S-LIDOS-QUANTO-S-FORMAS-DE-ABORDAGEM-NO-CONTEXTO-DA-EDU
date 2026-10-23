@@ -931,5 +931,21 @@
  "Para usar figuras é preciso o pacote %s (install.packages(\"%s\")).": "Para usar imágenes se necesita el paquete %s (install.packages(\"%s\")).",
  "Remover a figura": "Quitar la imagen",
  "Figuras anexadas": "Imágenes adjuntas",
- "Identidade Cinabro (vermelho, petróleo, tinta, terracota)": "Identidad Cinabro (rojo, petróleo, tinta, terracota)"
+ "Identidade Cinabro (vermelho, petróleo, tinta, terracota)": "Identidad Cinabro (rojo, petróleo, tinta, terracota)",
+ "Todos os cartões deste tipo já estão em uso. Desligue um para reaproveitar.": "Todas las tarjetas de este tipo ya están en uso. Apaga una para reutilizarla.",
+ "Análise": "Análisis",
+ "Anotar": "Anotar",
+ "Ajuste de curva": "Ajuste de curva",
+ "Média ± DP": "Media ± DE",
+ "Tabelas e testes": "Tablas y pruebas",
+ "Figura": "Imagen",
+ "Maximizar": "Maximizar",
+ "Mostrar painéis": "Mostrar paneles",
+ "Esconde o trilho e o painel para o gráfico ocupar a tela toda (Esc volta).": "Oculta la barra lateral y el panel para que el gráfico ocupe toda la pantalla (Esc los devuelve).",
+ "Clique para editar o texto, o negrito e o tamanho": "Haz clic para editar el texto, la negrita y el tamaño",
+ "Modelo, configuração e código": "Configuración copiada, guardada y código",
+ "...ou use um exemplo": "...o usa un ejemplo",
+ "Monte e ajuste": "Arma y ajusta",
+ "O trilho de ícones, à esquerda, abre um painel de cada vez: intervalos, escala, números, grade, quebra, eixo direito, cores, fonte, moldura, legenda, análises e formas. Na faixa acima do gráfico, um clique liga um ajuste de curva, a média ± DP, uma caixa de estatística, um texto, uma forma ou uma figura. Clique no título ou nos nomes dos eixos, no próprio gráfico, para editá-los. \"Maximizar\" dá a tela toda ao gráfico.": "La barra de iconos de la izquierda abre un panel a la vez: intervalos, escala, números, cuadrícula, corte del eje, eje derecho, colores, fuente, marco, leyenda, análisis y formas. En la franja sobre el gráfico, un clic activa un ajuste de curva, la media ± DE, un cuadro de estadística, un texto, una forma o una imagen. Haz clic en el título o en los nombres de los ejes, sobre el propio gráfico, para editarlos. \"Maximizar\" da toda la pantalla al gráfico.",
+ "Caixa de estatística": "Cuadro de estadística"
 }

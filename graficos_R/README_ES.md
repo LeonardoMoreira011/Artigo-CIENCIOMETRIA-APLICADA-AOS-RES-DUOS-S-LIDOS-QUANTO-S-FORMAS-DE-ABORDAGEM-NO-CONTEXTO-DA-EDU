@@ -33,6 +33,9 @@ La página se abre en `http://cinabro.localhost:8421`. El proceso de R se cierra
 ## Paletas y licencias
 Solo se incluyen paletas de trabajos con licencia libre — ninguna con nombre de programa, marca o revista: la original `cinabro` (por defecto) y `marca`, Okabe-Ito, Paul Tol, Brewer (cualitativas, secuenciales, divergentes; incluye `brewer_RdYlGn`, de rojo oscuro a verde), la familia viridis, cmocean y los mapas de color científicos de Crameri. Los créditos y avisos de licencia están en `NOTICE.md`. La fuente es Barlow (SIL Open Font License; `fontes/Barlow/OFL.txt`).
 
+## Nuevo diseño: el gráfico primero
+Una barra de iconos a la izquierda abre un panel a la vez (adiós a la lista de 14 bloques); *Maximizar* da toda la pantalla al gráfico, que se dibuja al ancho del escenario. Una franja sobre el gráfico activa con un clic un ajuste de curva, media ± DE, un cuadro de estadística, texto, formas o una imagen. Haz clic en el título o en el nombre de un eje, sobre el propio gráfico, para editar su texto, negrita y tamaño. Arrastrar con el ratón los cuadros de estadística, las formas y las imágenes todavía no está disponible.
+
 ## Nueva identidad visual
 Colores `#B3262E` (rojo cinabrio), `#F5EBDD` (crema: fondo de la página; el blanco solo dentro del recuadro del gráfico), `#20242B` (tinta), `#C96A4A` (terracota), `#2F6670` (petróleo). El emblema fue vectorizado (`identidade/emblema.svg`) y se usa en el encabezado de la app, el icono de la pestaña y el acceso directo de Windows. La paleta de gráficos `identidade` tiene los mismos colores.
 

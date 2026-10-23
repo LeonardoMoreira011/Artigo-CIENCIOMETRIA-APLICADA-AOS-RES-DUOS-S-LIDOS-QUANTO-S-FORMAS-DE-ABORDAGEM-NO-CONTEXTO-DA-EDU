@@ -39,7 +39,7 @@ tr_nomes <- function(x, idioma = .i18n$idioma) {
 }
 
 # Traduz uma árvore de HTML (a tela montada em português): textos e alguns atributos (placeholder, title, alt, label...).
-.ATRIBUTOS_TRADUZIDOS <- c("placeholder", "title", "alt", "label", "aria-label", "data-copiado", "data-placeholder")
+.ATRIBUTOS_TRADUZIDOS <- c("placeholder", "title", "alt", "label", "aria-label", "data-copiado", "data-placeholder", "data-sair")
 traduzir_html <- function(x, idioma = .i18n$idioma) {
   if (identical(idioma, "pt") || is.null(x)) return(x)
   if (is.character(x)) return(if (inherits(x, "html") || length(x) != 1) x else tr(x, idioma))

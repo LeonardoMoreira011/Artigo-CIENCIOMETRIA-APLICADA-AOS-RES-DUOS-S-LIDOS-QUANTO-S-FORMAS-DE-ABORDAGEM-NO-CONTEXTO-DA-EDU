@@ -110,6 +110,9 @@ montar_slots <- function(v) {
       it$sem_fundo <- NULL
       if (identical(it$serie, "todas")) it$serie <- NULL
       if (!is.null(it$tipo) && identical(it$tipo, "poligono")) { it$x <- NULL; it$y <- NULL; it$largura <- NULL; it$altura <- NULL; it$ancora <- NULL }
+      # cartão ligado mas ainda incompleto (figura sem arquivo, fórmula sem fórmula): espera ser preenchido, sem dar erro
+      if (g == "imagens" && is.null(it$arquivo)) next
+      if (g == "ajustes" && identical(it$tipo, "formula") && is.null(it$formula)) next
       itens[[length(itens) + 1]] <- it
     }
     if (length(itens)) out[[g]] <- itens
@@ -188,12 +191,13 @@ construir_grafico <- function(dados, vars, cfg0, preview = TRUE, idioma = "pt") 
 }
 
 # Desenha o gráfico numa imagem PNG para a prévia. Sai: list(arquivo, larg_px, alt_px).
-desenhar_previa <- function(g, cfg, dpi = 130, arq = tempfile("previa_", fileext = ".png")) {
+desenhar_previa <- function(g, cfg, dpi = 130, arq = tempfile("previa_", fileext = ".png"), alvo_px = NULL) {
   prep <- .preparar_saida(g, cfg)
+  if (!is.null(alvo_px) && is.finite(alvo_px) && alvo_px > 200) dpi <- min(max(alvo_px / prep$larg, 96), 300, 2400 / prep$larg)   # o gráfico ocupa a largura do palco
   .abrir_dispositivo("png", arq, prep$larg, prep$alt, dpi, "white", usar_ragg = .ragg_ok(cfg))
   disp <- grDevices::dev.cur()
   tryCatch(.desenhar(prep, g), finally = if (disp %in% grDevices::dev.list()) grDevices::dev.off(disp))
-  list(arquivo = arq, larg_px = round(prep$larg * dpi), alt_px = round(prep$alt * dpi))
+  list(arquivo = arq, larg_px = round(prep$larg * dpi), alt_px = round(prep$alt * dpi), dpi = dpi)
 }
 
 # Texto do código do painel (para colar no painel_de_ajustes.R ou usar como script).

@@ -67,13 +67,13 @@ ui_grade_campos <- function(campos, cfg0) {
     if (length(mais)) tags$details(class = "mais", tags$summary("Mais opções"), div(class = "campos", lapply(mais, ui_campo, cfg0 = cfg0))))
 }
 
-ui_bloco <- function(b, n, cfg0, aberto = FALSE, extra = NULL) {
-  tags$details(class = "bloco", id = paste0("bloco-", b$id), open = if (aberto) NA else NULL,
-    tags$summary(class = "bloco-cab", span(class = "num", n), div(class = "tit", tags$h3(b$titulo), tags$p(b$resumo)),
-                 span(class = "cong", title = "Congelar: este bloco mantém o que está agora ao restaurar tudo, ao criar uma aba nova e ao colar um modelo.",
-                      checkboxInput(paste0("cong_", b$id), "Congelar", value = FALSE)),
-                 span(class = "seta")),
+ui_bloco <- function(b, n, cfg0, aberto = FALSE, extra = NULL, antes = NULL) {
+  div(class = paste("painel", if (aberto) "ativo"), id = paste0("bloco-", b$id), `data-painel` = b$id,
+    div(class = "painel-cab", span(class = "num", n), div(class = "tit", tags$h3(b$titulo), tags$p(b$resumo)),
+        span(class = "cong", title = "Congelar: este bloco mantém o que está agora ao restaurar tudo, ao criar uma aba nova e ao colar um modelo.",
+             checkboxInput(paste0("cong_", b$id), "Congelar", value = FALSE))),
     div(class = "bloco-corpo",
+        antes,
         if (!is.null(b$dica)) div(class = "dica", span(class = "dica-ic", "Dica"), b$dica),
         if (length(b$campos)) ui_grade_campos(b$campos, cfg0),
         lapply(b$grupos, function(g) {
@@ -85,6 +85,49 @@ ui_bloco <- function(b, n, cfg0, aberto = FALSE, extra = NULL) {
           if (is.null(g$se)) gr else conditionalPanel(condition = g$se, gr)
         }),
         extra))
+}
+
+# ---- trilho de ícones (à esquerda) e faixa de ferramentas (acima do gráfico) ---------------------------------------------------------------
+# Ícones desenhados para o Cinabro (traços simples, sem biblioteca de terceiros).
+.ICONES <- c(
+  dados = '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>',
+  intervalos = '<path d="M3 18h18M5 18v-5M9 18v-3M13 18v-5M17 18v-3M21 18v-5"/><path d="M3 7h18" stroke-dasharray="2 3"/>',
+  escala = '<path d="M4 4v16h16"/><path d="M6 17c2-1 3-7 6-9s4-2 6-2"/>',
+  numeros = '<text x="12" y="16.5" text-anchor="middle" font-size="10.5" font-weight="700" fill="currentColor" stroke="none" font-family="Barlow,sans-serif">123</text>',
+  grade = '<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16"/>',
+  quebra = '<path d="M4 4v6M4 14v6M4 20h16"/><path d="M1.5 12.5l5-2M1.5 14.5l5-2"/><path d="M9 15l3-3 3 2 4-5"/>',
+  y2 = '<path d="M4 4v16h16V4"/><path d="M7 16l3.5-5 3 3 3.5-6"/>',
+  cores = '<path d="M12 3a9 9 0 100 18c1.6 0 2.2-1 2.2-2s-.9-1.5-.9-2.6.9-1.9 2-1.9H18a3.5 3.5 0 003.5-3.6C21 6.6 17 3 12 3z"/><circle cx="7.8" cy="11" r="1.1" fill="currentColor"/><circle cx="11" cy="7.4" r="1.1" fill="currentColor"/><circle cx="15.4" cy="8.2" r="1.1" fill="currentColor"/>',
+  fonte = '<text x="12" y="17" text-anchor="middle" font-size="15" font-weight="700" fill="currentColor" stroke="none" font-family="Barlow,sans-serif">Aa</text>',
+  moldura = '<rect x="4" y="5" width="16" height="14" rx="1"/><path d="M8 15l3-4 3 3 2-2"/>',
+  legenda = '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M7.5 9h2M11.5 9H17M7.5 12h2M11.5 12H17M7.5 15h2M11.5 15H17"/>',
+  estatistica = '<path d="M4 20h16"/><path d="M5 19c3.2 0 3.2-14 7-14s3.8 14 7 14"/>',
+  formas = '<rect x="3.5" y="4" width="9" height="9" rx="1.2"/><circle cx="16.5" cy="16" r="4.2"/>',
+  exportacao = '<path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 20h14"/>')
+.TRILHO <- list("dados", c("intervalos", "escala", "numeros", "grade", "quebra", "y2"), c("cores", "fonte", "moldura", "legenda"), c("estatistica", "formas"), "exportacao")
+ui_trilho <- function() {
+  num <- stats::setNames(seq_along(ESPEC), vapply(ESPEC, function(b) b$id, ""))
+  tags$nav(class = "trilho",
+    lapply(.TRILHO, function(g) div(class = "trilho-grupo", lapply(g, function(id) {
+      tags$button(type = "button", class = "trilho-btn", `data-painel` = id, title = ESPEC[[num[[id]]]]$titulo,
+                  HTML(sprintf('<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">%s</svg>', .ICONES[[id]])),
+                  span(class = "trilho-n", num[[id]]))
+    }))))
+}
+.rapido <- function(rot, ...) tags$button(type = "button", class = "faixa-btn", `data-rapido` = as.character(jsonlite::toJSON(list(...), auto_unbox = TRUE)), rot)
+.menu_faixa <- function(rot, itens) tags$details(class = "faixa-menu", tags$summary(class = "faixa-btn", rot, HTML("&nbsp;&#9662;")), div(class = "faixa-lista", itens))
+ui_faixa <- function() {
+  div(class = "faixa",
+    div(class = "faixa-grupo", span(class = "faixa-tit", "Análise"),
+        .menu_faixa("Ajuste de curva", lapply(seq_along(.AJUSTES_OPC), function(i) .rapido(names(.AJUSTES_OPC)[i], acao = "ajuste", tipo = unname(.AJUSTES_OPC[i])))),
+        .rapido("Média ± DP", acao = "marca"), .rapido("Caixa de estatística", acao = "caixa"),
+        tags$button(type = "button", class = "faixa-btn", `data-abrir` = "estatistica", "Tabelas e testes")),
+    div(class = "faixa-grupo", span(class = "faixa-tit", "Anotar"),
+        .rapido("Texto", acao = "texto"),
+        .menu_faixa("Forma", lapply(seq_along(.TIPOS_FORMA)[-1], function(i) .rapido(names(.TIPOS_FORMA)[i], acao = "forma", tipo = unname(.TIPOS_FORMA[i])))),
+        .rapido("Figura", acao = "figura")),
+    div(class = "faixa-grupo faixa-dir", uiOutput("botoes_baixar", inline = TRUE),
+        tags$button(type = "button", class = "faixa-btn faixa-max", id = "maximizar", `data-sair` = "Mostrar painéis", title = "Esconde o trilho e o painel para o gráfico ocupar a tela toda (Esc volta).", "Maximizar")))
 }
 
 # Cartão de uma série (cor, forma, tamanhos e nome na legenda).
@@ -104,7 +147,7 @@ guia_rapido <- function() {
   modalDialog(easyClose = TRUE, size = "l", footer = modalButton("Entendi"), title = "Como usar em 4 passos",
     div(class = "guia",
       div(class = "passo", span(class = "num", "1"), div(tags$b("Carregue seus dados"), tags$p("Envie um arquivo CSV (1ª linha com os títulos das colunas) ou escolha um dos exemplos. Escolha o tipo de gráfico."))),
-      div(class = "passo", span(class = "num", "2"), div(tags$b("Ajuste os blocos"), tags$p("Cada bloco numerado tem um assunto: intervalos, escala, números, grade, quebra, eixo direito, cores, fonte, legenda... Abra um bloco e mude só o que precisar. O gráfico se atualiza ao lado."))),
+      div(class = "passo", span(class = "num", "2"), div(tags$b("Monte e ajuste"), tags$p("O trilho de ícones, à esquerda, abre um painel de cada vez: intervalos, escala, números, grade, quebra, eixo direito, cores, fonte, moldura, legenda, análises e formas. Na faixa acima do gráfico, um clique liga um ajuste de curva, a média ± DP, uma caixa de estatística, um texto, uma forma ou uma figura. Clique no título ou nos nomes dos eixos, no próprio gráfico, para editá-los. \"Maximizar\" dá a tela toda ao gráfico."))),
       div(class = "passo", span(class = "num", "3"), div(tags$b("Confira o gráfico"), tags$p("A prévia mostra o gráfico como vai sair no arquivo. Os avisos abaixo dela explicam, em português, qualquer problema."))),
       div(class = "passo", span(class = "num", "4"), div(tags$b("Baixe"), tags$p("Marque o tipo de arquivo no bloco 12 (PNG, TIFF, JPEG, SVG, PDF...) e use o botão de baixar. Salve a configuração para repetir depois, ou copie o código para usar no script."))),
       tags$h4("Dica: quantas séries, quais cores"),

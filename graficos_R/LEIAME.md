@@ -39,6 +39,14 @@ Para quem não quer mexer em código: abra o **Cinabro** (laboratório de gráfi
 
 Só entram paletas de trabalhos com licença livre; os créditos e avisos estão em **`NOTICE.md`**. Foram retiradas paletas associadas a programas, revistas e marcas, e a paleta padrão agora é a `cinabro` (original, com as cores ordenadas para serem bem distintas, também para daltonismo). Nomes antigos continuam valendo (`"classico"` = `"cinabro"`).
 
+## Novo layout: o gráfico em primeiro lugar
+
+- **Gráfico grande e painéis sob demanda.** No lugar da lista de 14 blocos, há um **trilho de ícones** à esquerda (um ícone por assunto: dados, intervalos, escala, números, grade, quebra, eixo direito, cores, fonte, moldura, legenda, análises, formas, exportação). Cada ícone abre **um painel de cada vez**; clique de novo para fechar e dar mais espaço ao gráfico. **Maximizar** (Esc volta) esconde o trilho e o painel. O gráfico é desenhado na largura do palco, então não fica pequeno.
+- **Faixa de ferramentas acima do gráfico.** Um clique liga o primeiro cartão livre: **Ajuste de curva** (linear, exponencial, potência, logarítmico, polinomial, suavizado, fórmula livre), **Média ± DP**, **Caixa de estatística**, **Texto**, **Forma** e **Figura**; o painel correspondente abre já no cartão novo para você estilizar. **Tabelas e testes** abre os resultados em números. Os botões de baixar ficam na mesma faixa.
+- **Edição dentro do gráfico.** Passe o mouse sobre o **título** ou sobre o **nome de um eixo**: aparece uma zona clicável; clique e abre uma caixinha com o texto, o negrito e o tamanho. (Mover e redimensionar a legenda com o mouse continua como antes.)
+- **Ainda não:** arrastar com o mouse as caixas de estatística, as formas e as figuras (por enquanto, posição e tamanho nos painéis).
+- Os campos, as regras e o código gerado são os mesmos; só mudou a forma de chegar neles. Cartões incompletos (figura sem arquivo, fórmula sem fórmula) esperam ser preenchidos, sem dar erro.
+
 ## Nova identidade visual (logo e cores)
 
 - **Cores:** `#B3262E` (vermelho-cinábrio), `#F5EBDD` (creme), `#20242B` (tinta), `#C96A4A` (terracota) e `#2F6670` (azul-petróleo). O **creme é o fundo da página**; o **branco fica só na caixa do gráfico**. Os cartões usam um creme mais claro derivado do fundo. A paleta de gráficos `identidade` traz as mesmas cores (sem o creme).

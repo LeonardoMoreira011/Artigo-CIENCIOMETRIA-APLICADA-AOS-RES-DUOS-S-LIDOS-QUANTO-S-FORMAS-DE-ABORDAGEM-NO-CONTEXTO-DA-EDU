@@ -28,6 +28,13 @@ EXEMPLOS <- c("Dois eixos + quebra de eixo (Y esquerdo e direito)" = "exemplo_do
               "Replicatas (boxplot)" = "replicatas.csv", "Vários sinais" = "multissinal.csv")
 EXEMPLOS <- EXEMPLOS[file.exists(file.path(raiz, "dados", EXEMPLOS))]
 
+cartao_dados <- function() div(class = "dados-cartao",
+  tags$h2("Seus dados"),
+  tags$p(class = "ajuda", "Envie um CSV ou escolha um exemplo para ver o gráfico funcionando."),
+  fileInput("arquivo", NULL, accept = c(".csv", ".txt", ".tsv"), buttonLabel = "Escolher arquivo...", placeholder = "Nenhum arquivo", width = "100%"),
+  selectInput("exemplo", NULL, choices = tr_nomes(c("...ou use um exemplo" = "", EXEMPLOS)), selectize = FALSE, width = "100%"),
+  uiOutput("resumo_dados"))
+
 construir_ui <- function(idioma) fluidPage(
   title = "Cinabro — laboratório de gráficos",
   tags$head(tags$script(HTML(sprintf("window.IDIOMA = '%s'; $(document).on('shiny:connected', function () { Shiny.setInputValue('idioma_pagina', window.IDIOMA); });", idioma))), tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(HTML(paste0("window.PALETAS = ", jsonlite::toJSON(paletas_js(), auto_unbox = TRUE), ";"))), tags$script(src = "app.js"),
@@ -44,18 +51,12 @@ construir_ui <- function(idioma) fluidPage(
         actionButton("guia", "Como usar", class = "btn-topo btn-topo-forte"))),
   div(class = "abas-barra", uiOutput("abas_ui", inline = TRUE),
       div(class = "aba-lado", checkboxInput("lado_ativo", "Mostrar outra aba ao lado", value = FALSE), uiOutput("lado_sel", inline = TRUE))),
-  div(class = "area",
-    tags$aside(class = "esq",
-      div(class = "passos-mini", lapply(seq_along(ESPEC), function(i) tags$a(href = paste0("#bloco-", ESPEC[[i]]$id), title = ESPEC[[i]]$titulo, i))),
-      div(class = "cartao dados-cartao",
-          tags$h2(span(class = "num", "0"), "Seus dados"),
-          tags$p(class = "ajuda", "Envie um CSV ou escolha um exemplo para ver o gráfico funcionando."),
-          fileInput("arquivo", NULL, accept = c(".csv", ".txt", ".tsv"), buttonLabel = "Escolher arquivo...", placeholder = "Nenhum arquivo", width = "100%"),
-          selectInput("exemplo", NULL, choices = tr_nomes(c("...ou use um exemplo" = "", EXEMPLOS)), selectize = FALSE, width = "100%"),
-          uiOutput("resumo_dados")),
+  div(class = "estudio gaveta-aberta",
+    ui_trilho(),
+    tags$aside(class = "gaveta",
       lapply(seq_along(ESPEC), function(i) {
         b <- ESPEC[[i]]
-        ui_bloco(b, i, CFG0, aberto = i == 1,
+        ui_bloco(b, i, CFG0, aberto = i == 1, antes = if (b$id == "dados") cartao_dados(),
                  extra = if (b$id == "cores") tagList(ui_paleta_propria(), div(class = "grupo", tags$h4("Série por série"),
                           tags$p(class = "ajuda", "Só preencha o que quiser diferente da paleta e dos valores gerais acima."), uiOutput("tabela_series")))
                          else if (b$id == "quebra") conditionalPanel("input.quebra_ativar", div(class = "botoes-config",
@@ -73,35 +74,36 @@ construir_ui <- function(idioma) fluidPage(
                           fileInput("fonte_arquivo", NULL, multiple = TRUE, accept = c(".ttf", ".otf"), buttonLabel = "Escolher arquivo(s)...", placeholder = "Nenhum arquivo", width = "100%"))
                          )
       }),
-      NULL),
-    tags$main(class = "dir",
+    ),
+    tags$main(class = "palco",
+      ui_faixa(),
       div(class = "cartao previa-cartao",
           div(class = "previa-barra",
-              tags$h2("Prévia"),
               div(class = "previa-ctl", checkboxInput("arrastar", "Arrastar a legenda", TRUE), checkboxInput("auto", "Atualizar sozinho", TRUE),
                   actionButton("atualizar", "Atualizar agora", class = "btn-verde"))),
           div(class = "previa-quadro", uiOutput("estado"), imageOutput("previa", height = "auto"),
               div(id = "legenda-caixa", title = "Arraste para mover; puxe a alça da direita para mudar a largura",
                   span(class = "legenda-rotulo", "legenda"), div(class = "legenda-alca"))),
+          div(id = "edicao-rotulos", style = "display:none",
+              span(`data-z` = "titulo", "Título do gráfico"), span(`data-z` = "xlab", "Título do eixo X"), span(`data-z` = "ylab", "Título do eixo Y"),
+              span(`data-z` = "dica", "Clique para editar o texto, o negrito e o tamanho"), span(`data-z` = "fechar", "Fechar")),
           uiOutput("info_previa"),
           uiOutput("avisos"),
           uiOutput("previa_lado")),
-      div(class = "cartao baixar-cartao",
-          tags$h2("Baixar"),
-          uiOutput("botoes_baixar"),
+      tags$details(class = "cartao mais-cartao",
+          tags$summary(tags$h2("Modelo, configuração e código")),
           tags$p(class = "ajuda", tags$a(href = "#bloco-exportacao", "Escolher o tipo de arquivo, a resolução e o tamanho (bloco 12)"), ". PNG, TIFF e SVG usam a Barlow direto; no PDF a fonte precisa estar instalada no computador."),
           div(class = "botoes-config",
               actionButton("copiar_modelo", "Copiar modelo", class = "btn-sec", title = "Copia todas as configurações deste gráfico como texto, para colar em outra aba, outro computador ou num e-mail."),
               actionButton("colar_modelo", "Colar modelo...", class = "btn-sec", title = "Cola um modelo copiado antes e aplica aqui (os blocos congelados ficam como estão).")),
           div(class = "botoes-config",
               downloadButton("salvar_cfg", "Salvar configuração", class = "btn-sec"),
-              fileInput("carregar_cfg", NULL, accept = ".json", buttonLabel = "Carregar configuração...", placeholder = "", width = "230px"))),
-      div(class = "cartao codigo-cartao",
-          tags$details(tags$summary(tags$h2("Código equivalente (para usar no script)")),
-            tags$p(class = "ajuda", "Estas linhas fazem o mesmo no painel_de_ajustes.R. Copie e cole, ou baixe o script pronto."),
-            tags$pre(id = "codigo-txt", textOutput("codigo", inline = TRUE)),
-            div(class = "botoes-config", tags$button(type = "button", class = "btn-sec", id = "copiar-codigo", `data-copiado` = "Copiado!", "Copiar"),
-                downloadButton("baixar_codigo", "Baixar script (.R)", class = "btn-sec")))))))
+              fileInput("carregar_cfg", NULL, accept = ".json", buttonLabel = "Carregar configuração...", placeholder = "", width = "230px")),
+          tags$h4("Código equivalente (para usar no script)"),
+          tags$p(class = "ajuda", "Estas linhas fazem o mesmo no painel_de_ajustes.R. Copie e cole, ou baixe o script pronto."),
+          tags$pre(id = "codigo-txt", textOutput("codigo", inline = TRUE)),
+          div(class = "botoes-config", tags$button(type = "button", class = "btn-sec", id = "copiar-codigo", `data-copiado` = "Copiado!", "Copiar"),
+              downloadButton("baixar_codigo", "Baixar script (.R)", class = "btn-sec"))))))
 
 # A tela é montada em português e traduzida para o idioma pedido no endereço (?idioma=en | es).
 ui <- function(request) {

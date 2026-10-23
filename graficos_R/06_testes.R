@@ -1023,6 +1023,12 @@ teste("painel: ajustes, marcas, caixas e formas chegam ao cfg; variável que nã
 teste("textos das estatísticas saem em inglês e espanhol", {
   options(cinabro.idioma = "en"); en <- .re("media"); options(cinabro.idioma = "es"); es <- .re("media"); options(cinabro.idioma = "pt"); en == "Mean" && es == "Media" })
 
+cat("\n--- Zonas clicáveis dos títulos (app) ---\n")
+teste(".geometria_zonas acha título, eixo X e eixo Y (frações da página, dentro de 0 a 1); sem título, uma faixa acima do painel", {
+  cz <- c0; cz$titulos$titulo <- "Meu título"; gz <- plotar(d, cz); z <- .geometria_zonas(gz, cz)
+  cs <- c0; cs$titulos$titulo <- NULL; z2 <- .geometria_zonas(plotar(d, cs), cs)
+  all(c("titulo", "xlab", "ylab") %in% names(z)) && all(vapply(z, function(v) length(v) == 4 && all(v >= 0 & v <= 1), NA)) && z$titulo[2] < z$xlab[2] &&
+    z$ylab[1] < z$xlab[1] + 0.5 && !is.null(z2$titulo) && z2$titulo[4] > 0 })
 cat("\n--- Figuras anexadas (PNG/JPEG) ---\n")
 if (.tem("png") && .tem("jpeg")) {
   fig_a <- array(runif(40 * 80 * 4), c(40, 80, 4)); f_png <- file.path(tmp, "fig.png"); f_jpg <- file.path(tmp, "fig.jpg")

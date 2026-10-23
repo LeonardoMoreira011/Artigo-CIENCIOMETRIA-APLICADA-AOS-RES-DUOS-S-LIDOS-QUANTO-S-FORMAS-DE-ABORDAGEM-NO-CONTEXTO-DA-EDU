@@ -30,6 +30,9 @@ The page opens at `http://cinabro.localhost:8421`. The R process closes a few se
 - **Plot box:** fixed size (like a plot area), so every figure has the same box; the page adjusts to fit numbers, titles and legend.
 - **Export:** choose one or more file types; transparent background; resolution; save/load settings (JSON); "equivalent code" for the script.
 
+## New layout: the chart comes first
+An icon rail on the left opens one panel at a time (no more list of 14 blocks); *Maximize* gives the whole screen to the chart, which is drawn at the stage width. A strip above the chart turns on a curve fit, mean ± SD, a statistics box, text, shapes or a picture with one click. Click the title or an axis name right on the chart to edit its text, bold and size. Dragging statistics boxes, shapes and pictures with the mouse is not available yet.
+
 ## New visual identity
 Colors `#B3262E` (cinnabar red), `#F5EBDD` (cream: page background; white only inside the chart box), `#20242B` (ink), `#C96A4A` (terracotta), `#2F6670` (teal). The emblem was vectorized (`identidade/emblema.svg`) and is used in the app header, tab icon and Windows shortcut. A chart palette `identidade` has the same colors.
 

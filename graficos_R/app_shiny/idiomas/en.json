@@ -931,5 +931,21 @@
  "Para usar figuras é preciso o pacote %s (install.packages(\"%s\")).": "To use pictures you need the %s package (install.packages(\"%s\")).",
  "Remover a figura": "Remove the picture",
  "Figuras anexadas": "Attached pictures",
- "Identidade Cinabro (vermelho, petróleo, tinta, terracota)": "Cinabro identity (red, teal, ink, terracotta)"
+ "Identidade Cinabro (vermelho, petróleo, tinta, terracota)": "Cinabro identity (red, teal, ink, terracotta)",
+ "Todos os cartões deste tipo já estão em uso. Desligue um para reaproveitar.": "All cards of this type are already in use. Turn one off to reuse it.",
+ "Análise": "Analysis",
+ "Anotar": "Annotate",
+ "Ajuste de curva": "Curve fit",
+ "Média ± DP": "Mean ± SD",
+ "Tabelas e testes": "Tables and tests",
+ "Figura": "Picture",
+ "Maximizar": "Maximize",
+ "Mostrar painéis": "Show panels",
+ "Esconde o trilho e o painel para o gráfico ocupar a tela toda (Esc volta).": "Hides the rail and the panel so the chart fills the screen (Esc brings them back).",
+ "Clique para editar o texto, o negrito e o tamanho": "Click to edit the text, bold and size",
+ "Modelo, configuração e código": "Copied settings, saved settings and code",
+ "...ou use um exemplo": "...or use an example",
+ "Monte e ajuste": "Build and adjust",
+ "O trilho de ícones, à esquerda, abre um painel de cada vez: intervalos, escala, números, grade, quebra, eixo direito, cores, fonte, moldura, legenda, análises e formas. Na faixa acima do gráfico, um clique liga um ajuste de curva, a média ± DP, uma caixa de estatística, um texto, uma forma ou uma figura. Clique no título ou nos nomes dos eixos, no próprio gráfico, para editá-los. \"Maximizar\" dá a tela toda ao gráfico.": "The icon rail on the left opens one panel at a time: intervals, scale, numbers, grid, axis break, right axis, colors, font, frame, legend, analyses and shapes. In the strip above the chart, one click turns on a curve fit, mean ± SD, a statistics box, a text, a shape or a picture. Click the title or the axis names, right on the chart, to edit them. \"Maximize\" gives the whole screen to the chart.",
+ "Caixa de estatística": "Statistics box"
 }

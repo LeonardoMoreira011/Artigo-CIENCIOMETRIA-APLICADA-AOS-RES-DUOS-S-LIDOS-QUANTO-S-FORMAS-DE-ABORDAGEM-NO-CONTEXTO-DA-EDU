@@ -47,7 +47,7 @@ servidor <- function(input, output, session) {
       later::later(function() if (.sessoes$n <= 0) shiny::stopApp(), 6)
   })
   rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL, geo = NULL,
-                       paletas = list(), pend_calc = FALSE, img = list(), abas = list(list(nome = NULL, snap = NULL)), aba = 1L, est = NULL)
+                       paletas = list(), pend_calc = FALSE, img = list(), palco_larg = NULL, palco_usado = NULL, abas = list(list(nome = NULL, snap = NULL)), aba = 1L, est = NULL)
   dir_dados <- file.path(raiz, "dados")
   # idioma da página (vem do endereço, ?idioma=en) e atalhos para traduzir o que o servidor escreve na tela
   idioma <- reactive(input$idioma_pagina %||% "pt")
@@ -199,13 +199,15 @@ servidor <- function(input, output, session) {
       r <- construir_grafico(rv$dados, vars_atual(), CFG0, idioma = idioma())
       if (!is.null(r$erro)) { rv$erro <- r$erro; rv$res <- r; return(invisible()) }
       incProgress(0.3)
-      p <- tryCatch(desenhar_previa(r$g, r$cfg, dpi = 130), error = function(e) { rv$erro <- conditionMessage(e); NULL })
+      p <- tryCatch(desenhar_previa(r$g, r$cfg, dpi = 130, alvo_px = if (!is.null(rv$palco_larg)) rv$palco_larg - 30), error = function(e) { rv$erro <- conditionMessage(e); NULL })
+      if (!is.null(p)) rv$palco_usado <- rv$palco_larg
       if (!is.null(p)) {
         rv$res <- r; rv$previa <- p; rv$erro <- NULL
         geo <- tryCatch(.geometria_legenda(r$g, r$cfg), error = function(e) NULL)   # onde está a legenda (caixa que se arrasta)
         rv$geo <- geo
-        session$sendCustomMessage("legenda_geom", if (is.null(geo)) list(ok = FALSE)
-                                  else list(ok = TRUE, painel = geo$painel, legenda = geo$legenda, pagina = geo$pagina))
+        zonas <- tryCatch(.geometria_zonas(r$g, r$cfg), error = function(e) NULL)       # títulos clicáveis sobre a prévia
+        session$sendCustomMessage("legenda_geom", if (is.null(geo)) list(ok = FALSE, zonas = zonas)
+                                  else list(ok = TRUE, painel = geo$painel, legenda = geo$legenda, pagina = geo$pagina, zonas = zonas))
       }
     })
   }
@@ -224,7 +226,7 @@ servidor <- function(input, output, session) {
   })
   output$info_previa <- renderUI({
     r <- rv$res; p <- rv$previa; if (is.null(r) || is.null(r$cfg) || is.null(p)) return(NULL)
-    div(class = "chips", span(class = "chip", TF("Página %.1f × %.1f cm", p$larg_px / 130 * 2.54, p$alt_px / 130 * 2.54)),
+    div(class = "chips", span(class = "chip", TF("Página %.1f × %.1f cm", p$larg_px / (p$dpi %||% 130) * 2.54, p$alt_px / (p$dpi %||% 130) * 2.54)),
         if (!is.null(r$cfg$caixa$painel_largura_cm)) span(class = "chip chip-verde", TF("Caixa fixa %.1f × %.1f cm", r$cfg$caixa$painel_largura_cm, r$cfg$caixa$painel_altura_cm %||% NA)),
         span(class = "chip", paste(T("Fonte:"), r$cfg$texto$fonte)))
   })
@@ -300,6 +302,36 @@ servidor <- function(input, output, session) {
     }
     v
   }
+
+  # ---- largura do palco (o gráfico é desenhado na largura que a tela dá a ele) ----------------------------------------------------------------
+  observeEvent(input$palco_larg, {
+    w <- input$palco_larg; if (!is.numeric(w) || w < 200) return()
+    rv$palco_larg <- w
+    if (!is.null(rv$previa) && !is.null(rv$palco_usado) && abs(w - rv$palco_usado) / rv$palco_usado > 0.12 && isTRUE(input$auto)) calcular()
+  })
+
+  # ---- faixa de ferramentas: um clique liga o primeiro cartão livre do tipo pedido ------------------------------------------------------------
+  observeEvent(input$rapido, {
+    r <- input$rapido; acao <- r$acao
+    grupo <- switch(acao, ajuste = "ajustes", marca = "marcas_estatisticas", caixa = "caixas_estatisticas", texto = , forma = "formas", figura = "imagens")
+    req(grupo); g <- SLOTS[[grupo]]; pref <- g$pref
+    painel <- if (grupo %in% c("formas", "imagens")) "formas" else "estatistica"
+    livre <- NULL
+    for (k in seq_len(g$n)) if (!isTRUE(input[[paste0(pref, k, "_ativo")]])) { livre <- k; break }
+    if (is.null(livre)) {
+      showNotification(T("Todos os cartões deste tipo já estão em uso. Desligue um para reaproveitar."), type = "warning")
+      return(session$sendCustomMessage("abrir_painel", list(id = painel)))
+    }
+    id <- function(ch) paste0(pref, livre, "_", ch)
+    updateCheckboxInput(session, id("ativo"), value = TRUE)
+    switch(acao,
+      ajuste = updateSelectInput(session, id("tipo"), selected = r$tipo),
+      marca = updateCheckboxInput(session, id("preencher"), value = TRUE),
+      forma = { updateSelectInput(session, id("tipo"), selected = r$tipo)
+                if (identical(r$tipo, "poligono")) updateTextInput(session, id("vertices"), value = "0.3,0.3; 0.7,0.3; 0.5,0.7") },
+      texto = updateTextInput(session, id("texto"), value = T("Texto")))
+    session$sendCustomMessage("abrir_painel", list(id = painel, cartao = id("ativo")))
+  })
 
   # ---- congelar blocos, salvar / carregar / copiar / colar o modelo ------------------------------------------------------------------
   congelados <- function() { b <- names(BLOCO_IDS); b[vapply(b, function(i) isTRUE(input[[paste0("cong_", i)]]), NA)] }

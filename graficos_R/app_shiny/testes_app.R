@@ -221,6 +221,16 @@ teste("cada bloco tem o tic 'Congelar' no cabeçalho", all(vapply(seq_along(ESPE
 re_slot <- construir_grafico(ler_csv(file.path(raiz, "dados", "ensaio_temperatura.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE))),
   list(tipo_grafico = "pontos", ajustes = list(list(tipo = "linear", banda = TRUE)), caixas_estatisticas = list(list(itens = c("media", "r2"))), formas = list(list(tipo = "texto", texto = "oi"))), CFG0)
 teste("o gráfico monta com os ajustes, a caixa e a forma vindos dos cartões", is.null(re_slot$erro) && !is.null(re_slot$g))
+teste("o trilho tem um ícone por bloco (14) e a faixa de ferramentas tem os 7 tipos de ajuste, as formas, média ± DP, caixa, texto e figura", {
+  tr_html <- paste(as.character(ui_trilho()), collapse = ""); fx <- gsub("&quot;", "\"", paste(as.character(ui_faixa()), collapse = ""), fixed = TRUE)
+  all(vapply(ESPEC, function(b) grepl(paste0('data-painel="', b$id, '"'), tr_html, fixed = TRUE), NA)) &&
+    all(vapply(unname(.AJUSTES_OPC), function(t) grepl(paste0('"tipo":"', t, '"'), fx, fixed = TRUE), NA)) &&
+    all(vapply(c("marca", "caixa", "texto", "figura", "forma"), function(a) grepl(paste0('"acao":"', a, '"'), fx, fixed = TRUE), NA)) })
+teste("desenhar_previa ajusta a resolução à largura do palco (entre 96 e 300 dpi) e devolve o dpi usado; .geometria_zonas funciona no gráfico do app", {
+  rz <- construir_grafico(ler_csv(file.path(raiz, "dados", "ensaio_temperatura.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE))), list(titulo_grafico = "T"), CFG0)
+  p1 <- desenhar_previa(rz$g, rz$cfg, alvo_px = 700); p2 <- desenhar_previa(rz$g, rz$cfg, alvo_px = 1400)
+  z <- .geometria_zonas(rz$g, rz$cfg)
+  p1$dpi >= 96 && p2$dpi <= 300 && p2$dpi > p1$dpi && p2$larg_px > p1$larg_px && all(c("titulo", "xlab", "ylab") %in% names(z)) })
 teste("o campo de figura (PNG/JPEG) existe nos 3 cartões, como campo de arquivo, e vira 'arquivo' na lista imagens", {
   vi <- vs; vi$im1_ativo <- TRUE; vi$im1_arquivo <- "/tmp/x.png"; vi$im1_ancora <- "sup_dir"; vi$im1_largura <- 0.3
   length(IDS_ARQUIVO) == 3 && all(vapply(ESPEC_CAMPOS[IDS_ARQUIVO], function(c) c$tipo == "arquivo", NA)) &&
@@ -283,6 +293,8 @@ testServer(servidor, {
     teste("servidor: a figura anexada aparece no gráfico (cfg$imagens) e o código equivalente usa o nome do arquivo enviado", is.null(rv$erro) && length(rv$res$cfg$imagens) == 1 &&
           grepl('arquivo = "logo.png"', paste(gerar_codigo(vars_codigo()), collapse = ""), fixed = TRUE) && !"im1_arquivo" %in% names(modelo_lista()$valores))
   }
+  session$setInputs(rapido = list(acao = "ajuste", tipo = "exponencial", t = 1), palco_larg = 1000, atualizar = 41)
+  teste("servidor: a faixa de ferramentas (clique rápido) e a largura do palco rodam sem erro", is.null(rv$erro) && identical(rv$palco_larg, 1000))
   session$setInputs(aba_nova = 1)
   teste("servidor: aba nova começa sem dados e mantém só o que estava congelado", length(rv$abas) == 2 && rv$aba == 2 && is.null(rv$dados) && is.null(rv$abas[[2]]$snap$valores$aj1_ativo) &&
         identical(rv$abas[[2]]$snap$valores$cores_paleta, "okabe_ito") && identical(rv$abas[[2]]$snap$cong, "cores"))

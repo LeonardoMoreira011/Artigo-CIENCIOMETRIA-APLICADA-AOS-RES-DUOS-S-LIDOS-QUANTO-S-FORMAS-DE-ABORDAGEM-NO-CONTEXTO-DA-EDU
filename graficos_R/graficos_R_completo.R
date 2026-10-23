@@ -6353,6 +6353,34 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
        legenda = c(pl + esq, pt + ph - base - lh, lw, lh) / c(prep$larg, prep$alt, prep$larg, prep$alt))
 }
 
+# Onde estão o título do gráfico e os títulos dos eixos na página (frações da página: x, y de cima, largura, altura), para o app
+# desenhar zonas clicáveis sobre a prévia. Título ausente: uma faixa logo acima do painel. Sai NULL se não for possível medir.
+.geometria_zonas <- function(g, cfg) {
+  prep <- .preparar_saida(g, cfg)
+  dtmp <- .abrir_dispositivo_tmp(prep$larg, prep$alt); on.exit(grDevices::dev.off(dtmp), add = TRUE)
+  gt <- prep$grob %||% attr(g, "gt") %||% ggplot2::ggplotGrob(g)
+  if (!inherits(gt, "gtable") || !"panel" %in% gt$layout$name) return(NULL)
+  tam <- function(u, total_in, conv) {
+    nulo <- grid::unitType(u) == "null"; r <- numeric(length(u))
+    if (any(!nulo)) r[!nulo] <- conv(u[!nulo], "in", valueOnly = TRUE)
+    if (any(nulo)) { v <- as.numeric(u[nulo]); r[nulo] <- max(total_in - sum(r[!nulo]), 0) * v / sum(v) }
+    r
+  }
+  w <- tam(gt$widths, prep$larg, grid::convertWidth); h <- tam(gt$heights, prep$alt, grid::convertHeight)
+  caixa <- function(nome) {
+    k <- which(gt$layout$name == nome); if (!length(k)) return(NULL); k <- k[1]; lay <- gt$layout[k, ]
+    list(l = sum(w[seq_len(lay$l - 1)]), t = sum(h[seq_len(lay$t - 1)]), w = sum(w[lay$l:lay$r]), h = sum(h[lay$t:lay$b]), vazio = inherits(gt$grobs[[k]], "zeroGrob"))
+  }
+  fr <- function(b) round(pmin(pmax(c(b$l / prep$larg, b$t / prep$alt, b$w / prep$larg, b$h / prep$alt), 0), 1), 5)
+  pan <- caixa("panel"); out <- list()
+  tit <- caixa("title")
+  if (!is.null(tit) && !tit$vazio && tit$h > 0.05) out$titulo <- fr(tit)
+  else out$titulo <- fr(list(l = pan$l, t = max(pan$t - 0.28, 0), w = pan$w, h = min(0.28, pan$t)))
+  xl <- caixa("xlab-b"); if (!is.null(xl) && !xl$vazio && xl$h > 0.05) out$xlab <- fr(xl)
+  yl <- caixa("ylab-l"); if (!is.null(yl) && !yl$vazio && yl$w > 0.05) out$ylab <- fr(yl)
+  out
+}
+
 # -----------------------------------------------------------------------------
 #  21_ajustes.R
 # -----------------------------------------------------------------------------
