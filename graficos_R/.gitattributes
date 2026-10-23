@@ -1,0 +1,4 @@
+# o ZIP do programa é gerado a partir desta pasta: os .bat/.cmd/.vbs precisam sair com quebras de linha do Windows (CRLF)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.vbs text eol=crlf
