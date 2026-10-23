@@ -178,7 +178,7 @@ opcoes_paletas <- function(guardadas = character(0)) {
     cond <- if (is.null(se)) ativo else paste0(ativo, " && (", gsub("\\{(\\w+)\\}", paste0("input.", pref, k, "_\\1"), se), ")")
     campo(id(chave), tipo, rotulo, ajuda, ..., se = cond, chave = chave)
   }
-  list(titulo = titulo, se = if (k > 1) paste0("input.", pref, k - 1, "_ativo") else NULL, ativo = id("ativo"),
+  list(titulo = titulo, se = NULL, ativo = id("ativo"),            # (os cartões são criados quando você adiciona; não há mais "o 2º só aparece com o 1º")
        campos = c(list(campo(id("ativo"), "chk", usar, NULL, largura = 12, chave = "ativo")), defs(cs)))
 }
 .campos_ajuste <- function(cs) list(
@@ -253,7 +253,7 @@ opcoes_paletas <- function(guardadas = character(0)) {
   cs("sombra_opacidade", "num", "Opacidade da sombra", NULL, min = 0, max = 1, passo = 0.05, padrao = 0.3, se = "{sombra}"),
   cs("sombra_dx_pt", "num", "Sombra: para a direita (pt)", NULL, passo = 0.5, padrao = 3, se = "{sombra}"),
   cs("sombra_dy_pt", "num", "Sombra: para baixo (pt)", NULL, passo = 0.5, padrao = 3, se = "{sombra}"),
-  cs("ajustes", "vec", "Quais ajustes entram (números)", "Ex.: 1, 3 = o 1º e o 3º ajuste do bloco. Vazio = todos.", mais = TRUE))
+  cs("ajustes", "vec", "Quais ajustes entram (números)", "Ex.: 1, 3 = os cartões \"Ajuste 1\" e \"Ajuste 3\". Vazio = todos.", mais = TRUE))
 .campos_forma <- function(cs) list(
   cs("tipo", "sel", "Forma", NULL, opcoes = .TIPOS_FORMA, padrao = "texto", largura = 12),
   cs("texto", "txt", "Texto", "Aceita expoente e índice: m^{2}, H_{2}O. Para mudar de linha, escreva \\n.", largura = 12),
@@ -335,7 +335,7 @@ ESPEC <- list(
                      min = 0, passo = 0.25),
                campo("moldura_cor", "cor", "Cor da moldura"),
                campo("ticks_espelhados", "chk", "Repetir os traços nos lados de cima e da direita",
-                     "Só vale com a moldura fechada (bloco 10).", largura = 12))),
+                     "Só vale com a moldura fechada (seção \"Moldura e tamanho do gráfico\").", largura = 12))),
         grupos = list(list(titulo = "Eixo X (horizontal)", campos = .campos_intervalo("x")),
                       list(titulo = "Eixo Y (vertical)", campos = .campos_intervalo("y")))),
   bloco("escala", "Escala",
@@ -355,7 +355,7 @@ ESPEC <- list(
                       list(titulo = "Eixo Y", campos = .campos_numeros("y")))),
   bloco("grade", "Grade (linhas de fundo)",
         "Linhas de fundo nos traços grandes e/ou nos pequenos: tracejadas, coloridas e transparentes, cada grupo com o seu estilo.",
-        "A grade dos traços pequenos precisa de traços pequenos: no bloco 2, \"Traços pequenos entre dois grandes\" deve ser 1 ou mais.",
+        "A grade dos traços pequenos precisa de traços pequenos: na seção \"Intervalos dos eixos\", \"Traços pequenos entre dois grandes\" deve ser 1 ou mais.",
         list(),
         grupos = list(
           list(titulo = "Grade nos traços grandes", campos = list(
@@ -456,7 +456,7 @@ ESPEC <- list(
         "A moldura e o tamanho da caixa do gráfico. Com a caixa fixa, todos os gráficos saem com a caixa do mesmo tamanho.",
         "Mexer em números, títulos ou legenda move esses textos, não o gráfico; a página se ajusta.",
         list(campo("caixa_fechada", "chk", "Moldura nos 4 lados", "Desmarcado: só os eixos esquerdo e inferior.", largura = 12),
-             campo("painel_fixo", "chk", "Caixa do gráfico de tamanho fixo", "Desmarque para a caixa ocupar o que sobra da página (bloco 12).", largura = 12),
+             campo("painel_fixo", "chk", "Caixa do gráfico de tamanho fixo", "Desmarque para a caixa ocupar o que sobra da página (seção \"Exportação\").", largura = 12),
              campo("painel_largura_cm", "num", "Largura da caixa (cm)", "Vazio = 10 cm.", min = 1, passo = 0.5, se = "input.painel_fixo"),
              campo("painel_altura_cm", "num", "Altura da caixa (cm)", "Vazio = 7.5 cm.", min = 1, passo = 0.5, se = "input.painel_fixo"))),
   bloco("legenda", "Legenda: posição, fundo, borda e sombra",
@@ -519,7 +519,7 @@ ESPEC <- list(
                    opcoes = .FORMATOS, largura = 12),
              campo("fundo_transparente", "chk", "Fundo transparente", "Sem o branco atrás do gráfico (PNG, TIFF, SVG, PDF). O JPEG não tem transparência.", largura = 12),
              campo("dpi", "int", "Resolução (dpi)", "300 = bom para relatório; 600 = publicação. Vale para PNG, TIFF e JPEG.", min = 72, max = 1200, largura = 12),
-             campo("ajustar_pagina", "chk", "Ajustar a página ao conteúdo", "Com a caixa de tamanho fixo (bloco 10): a página cresce ou encolhe para caber números, títulos e legenda, sem cortar.",
+             campo("ajustar_pagina", "chk", "Ajustar a página ao conteúdo", "Com a caixa de tamanho fixo (seção \"Moldura e tamanho do gráfico\"): a página cresce ou encolhe para caber números, títulos e legenda, sem cortar.",
                    se = "input.painel_fixo", largura = 12),
              campo("largura_cm", "num", "Largura da página (cm)", "Vale quando a caixa NÃO é fixa ou \"Ajustar a página\" está desmarcado.", min = 2, passo = 0.5,
                    se = "!input.painel_fixo || !input.ajustar_pagina"),

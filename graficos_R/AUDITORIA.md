@@ -167,7 +167,7 @@ Ordem por **ganho ÷ esforço**; as fases 1 e 2 não tiram nenhum recurso.
 | 7 | **Aquecer o motor** ao abrir o app (um gráfico de 5 pontos antes de liberar a tela) | primeiro gráfico 7,8 → ~3 s | pequeno |
 | 8 | **Registrar no log quais campos mudam** (só os nomes) | transforma "uso" em dado em 2 semanas de beta | pequeno |
 
-### Fase 2 — Cortar interface (precisa do seu OK em cada linha)
+### Fase 2 — Cortar interface — FEITA (aprovada: "aprovo os seis"; ver LEIAME)
 1. Cartões de ajuste/marca/caixa/forma/figura **sob demanda** (botão "+"): 695 → ~250 campos, HTML 512 → ~180 KB.
 2. 14 painéis → **7**: Dados · Eixos · Séries (cores/símbolos) · Texto · Legenda · Análise (ajustes + formas + figuras) · Exportar.
 3. Y2 e quebra de eixo só aparecem quando ligados.

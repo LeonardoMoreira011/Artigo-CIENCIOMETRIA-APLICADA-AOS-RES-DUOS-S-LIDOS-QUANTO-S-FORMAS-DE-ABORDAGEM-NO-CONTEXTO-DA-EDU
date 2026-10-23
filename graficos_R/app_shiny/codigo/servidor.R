@@ -75,8 +75,20 @@ servidor <- function(input, output, session) {
     later::later(function() shiny::stopApp(), 1.5)
   })
   rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL, geo = NULL,
-                       paletas = list(), pend_calc = FALSE, img = list(), palco_larg = NULL, palco_usado = NULL, abas = list(list(nome = NULL, snap = NULL)), aba = 1L, est = NULL)
+                       paletas = list(), cartao_novo = NULL, pend_calc = FALSE, img = list(), palco_larg = NULL, palco_usado = NULL, abas = list(list(nome = NULL, snap = NULL)), aba = 1L, est = NULL)
   dir_dados <- file.path(raiz, "dados")
+  # Cartões sob demanda: a tela nasce sem cartões de ajuste, traços, caixa, forma e figura; cada um é montado (insertUI) quando o usuário adiciona
+  # ou quando uma configuração/aba guardada precisa dele. 'criados' guarda os que já existem na tela desta sessão.
+  criados <- new.env(); criados$ids <- character(0); criados$novos <- character(0)
+  abrir_cartao <- function(slot, k) {
+    chave <- paste0(SLOTS[[slot]]$pref, k)
+    if (chave %in% criados$ids) return(invisible(FALSE))
+    ok <- tryCatch({ insertUI(selector = paste0("#slot-", slot), where = "beforeEnd", ui = UI(ui_cartao(slot, k, CFG0)), immediate = TRUE, session = session); TRUE }, error = function(e) FALSE)
+    if (ok) { criados$ids <- c(criados$ids, chave); criados$novos <- c(criados$novos, chave); rv$cartao_novo <- as.numeric(Sys.time()) }
+    invisible(ok)
+  }
+  garantir_cartoes <- function(valores) for (slot in names(SLOTS)) for (k in seq_len(SLOTS[[slot]]$n))
+    if (isTRUE(valores[[paste0(SLOTS[[slot]]$pref, k, "_ativo")]])) abrir_cartao(slot, k)
   # idioma da página (vem do endereço, ?idioma=en) e atalhos para traduzir o que o servidor escreve na tela
   idioma <- reactive("pt")                                 # só português (inglês e espanhol arquivados); antes: input$idioma_pagina %||% "pt"
   T <- function(x) tr(x, idioma())                         # um texto
@@ -199,12 +211,17 @@ servidor <- function(input, output, session) {
                stringsAsFactors = FALSE)
   })
 
-  # as listas "Série" dos cartões do bloco 13 acompanham as séries do gráfico
-  observe({
+  # as listas "Série" dos cartões de análise acompanham as séries do gráfico (e um cartão novo recebe a lista na hora em que nasce)
+  atualizar_series_cartoes <- function(ids_sel = IDS_SERIE_SEL, ids_multi = IDS_SERIES_MULTI) {
     nomes <- unique(c(series_nomes_seguro(), input$y2_series))
-    for (id in IDS_SERIE_SEL) updateSelectInput(session, id, choices = c(tr_nomes(.SERIES_TODAS, idioma()), stats::setNames(nomes, nomes)), selected = isolate(input[[id]]) %||% "todas")
-    for (id in IDS_SERIES_MULTI) updateSelectizeInput(session, id, choices = stats::setNames(nomes, nomes), selected = intersect(isolate(input[[id]]), nomes))
-  })
+    for (id in ids_sel) updateSelectInput(session, id, choices = c(tr_nomes(.SERIES_TODAS, idioma()), stats::setNames(nomes, nomes)), selected = isolate(input[[id]]) %||% "todas")
+    for (id in ids_multi) updateSelectizeInput(session, id, choices = stats::setNames(nomes, nomes), selected = intersect(isolate(input[[id]]), nomes))
+  }
+  observe(atualizar_series_cartoes())
+  observeEvent(rv$cartao_novo, isolate({
+    for (k in criados$novos) atualizar_series_cartoes(grep(paste0("^", k, "_"), IDS_SERIE_SEL, value = TRUE), grep(paste0("^", k, "_"), IDS_SERIES_MULTI, value = TRUE))
+    criados$novos <- character(0)
+  }), ignoreNULL = TRUE)
 
   # ---- do que está na tela às variáveis do painel -------------------------------------------------------------------
   valores <- reactive({ v <- lapply(names(ESPEC_CAMPOS), function(id) input[[id]]); names(v) <- names(ESPEC_CAMPOS)
@@ -258,7 +275,7 @@ servidor <- function(input, output, session) {
     list(src = p$arquivo, contentType = "image/png", alt = T("Prévia do gráfico"))
   }, deleteFile = FALSE)
   output$estado <- renderUI({
-    if (is.null(rv$dados)) UI(div(class = "vazio grande", tags$b("Comece pelos dados."), tags$p("Envie um CSV ou escolha um exemplo no bloco \"Seus dados\"; o gráfico aparece aqui.")))
+    if (is.null(rv$dados)) UI(div(class = "vazio grande", tags$b("Comece pelos dados."), tags$p("Envie um CSV ou escolha um exemplo no painel Dados; o gráfico aparece aqui.")))
   })
   output$info_previa <- renderUI({
     r <- rv$res; p <- rv$previa; if (is.null(r) || is.null(r$cfg) || is.null(p)) return(NULL)
@@ -300,7 +317,7 @@ servidor <- function(input, output, session) {
       file.copy(arqs[1], file, overwrite = TRUE)
     })
   for (ext in unname(.FORMATOS)) local({ e <- ext; output[[paste0("baixar_", e)]] <- baixar(e) })
-  output$botoes_baixar <- renderUI({              # um botão para cada tipo de arquivo marcado no bloco 12
+  output$botoes_baixar <- renderUI({              # um botão para cada tipo de arquivo marcado em Exportação
     f <- input$formatos; if (!length(f)) f <- "png"
     f <- intersect(unname(.FORMATOS), f)
     div(class = "botoes-baixar", lapply(f, function(e) downloadButton(paste0("baixar_", e), paste(T("Baixar"), toupper(e)), class = "btn-baixar")))
@@ -353,7 +370,7 @@ servidor <- function(input, output, session) {
     r <- input$rapido; acao <- r$acao
     grupo <- switch(acao, ajuste = "ajustes", marca = "marcas_estatisticas", caixa = "caixas_estatisticas", texto = , forma = "formas", figura = "imagens")
     req(grupo); g <- SLOTS[[grupo]]; pref <- g$pref
-    painel <- if (grupo %in% c("formas", "imagens")) "formas" else "estatistica"
+    painel <- "analise"
     livre <- NULL
     for (k in seq_len(g$n)) if (!isTRUE(input[[paste0(pref, k, "_ativo")]])) { livre <- k; break }
     if (is.null(livre)) {
@@ -361,6 +378,7 @@ servidor <- function(input, output, session) {
       return(session$sendCustomMessage("abrir_painel", list(id = painel)))
     }
     id <- function(ch) paste0(pref, livre, "_", ch)
+    abrir_cartao(grupo, livre)
     updateCheckboxInput(session, id("ativo"), value = TRUE)
     # regra: ajuste e média ± DP não escrevem números colados na linha; cada um ganha a sua caixa de estatística, que se move e se edita à parte
     criar_caixa <- function(itens, ajuste = NULL) {
@@ -368,6 +386,7 @@ servidor <- function(input, output, session) {
       for (kk in seq_len(g2$n)) if (!isTRUE(input[[paste0(p2, kk, "_ativo")]])) { k2 <- kk; break }
       if (is.null(k2)) { showNotification(T("Todos os cartões de caixa de estatística já estão em uso: o resultado não ganhou caixa. Desligue um para reaproveitar."), type = "warning"); return(invisible()) }
       id2 <- function(ch) paste0(p2, k2, "_", ch)
+      abrir_cartao("caixas_estatisticas", k2)
       usadas <- sum(vapply(seq_len(g2$n), function(kk) isTRUE(input[[paste0(p2, kk, "_ativo")]]), NA))
       updateCheckboxInput(session, id2("ativo"), value = TRUE)
       updateSelectInput(session, id2("itens"), selected = itens)
@@ -401,6 +420,7 @@ servidor <- function(input, output, session) {
   # Aplica valores salvos (o que não está no modelo volta ao padrão). Blocos congelados não mudam (respeitar = TRUE).
   aplicar_config <- function(j, respeitar = TRUE, com_congelados = FALSE) {
     cong <- if (respeitar) ids_congelados() else character(0)
+    garantir_cartoes(j$valores[setdiff(names(j$valores), cong)])                 # cartões ligados na configuração precisam existir na tela
     for (id in setdiff(names(ESPEC_CAMPOS), cong)) {
       c <- ESPEC_CAMPOS[[id]]; v <- j$valores[[id]]
       if (c$tipo == "arquivo" || (c$tipo %in% c("colx", "colsy", "colsy2") && is.null(v))) next
@@ -424,26 +444,6 @@ servidor <- function(input, output, session) {
     if (is.null(j)) { showNotification(T("Arquivo de configuração inválido."), type = "error"); return() }
     aplicar_config(j, respeitar = TRUE, com_congelados = FALSE)
     showNotification(T("Configuração carregada."), type = "message")
-  })
-  observeEvent(input$copiar_modelo, {
-    txt <- modelo_json()
-    session$sendCustomMessage("copiar_texto", txt)
-    showModal(UI(modalDialog(title = "Modelo copiado", easyClose = TRUE, footer = modalButton("Fechar"),
-      div(class = "modal-modelo", tags$p("Este texto tem todas as configurações do gráfico (menos os dados). Cole em \"Colar modelo...\", em outra aba, outro computador ou num e-mail."),
-          tags$textarea(id = "modelo-saida", readonly = NA, onfocus = "this.select()", txt),
-          tags$button(type = "button", class = "btn-verde", id = "copiar-modelo", `data-copiado` = "Copiado!", "Copiar de novo")))))
-  })
-  observeEvent(input$colar_modelo, {
-    showModal(UI(modalDialog(title = "Colar modelo", easyClose = TRUE,
-      footer = tagList(modalButton("Cancelar"), actionButton("aplicar_modelo", "Aplicar modelo", class = "btn-verde")),
-      div(class = "modal-modelo", tags$p("Cole aqui o texto copiado com \"Copiar modelo\". Os blocos congelados continuam como estão."),
-          textAreaInput("modelo_texto", NULL, value = "", rows = 10, width = "100%")))))
-  })
-  observeEvent(input$aplicar_modelo, {
-    j <- ler_modelo(input$modelo_texto %||% "")
-    if (is.null(j)) { showNotification(T("Não entendi o texto colado: ele precisa ter sido copiado com \"Copiar modelo\"."), type = "error"); return() }
-    n <- aplicar_config(j, respeitar = TRUE, com_congelados = FALSE); removeModal()
-    showNotification(if (n) TF("Modelo aplicado (%d bloco(s) congelado(s) mantido(s)).", n) else T("Modelo aplicado."), type = "message")
   })
   observe({                         # séries salvas: aplica quando a tabela da tela já existir
     ps <- rv$pend_series; req(ps, !is.null(input$ser_legenda_1))
@@ -541,7 +541,7 @@ servidor <- function(input, output, session) {
     writeLines(linhas, file, useBytes = TRUE)
   })
 
-  # ---- abas: vários gráficos, um de cada vez na tela (e os outros ao lado, se quiser) ---------------------------------------------------------------
+  # ---- abas: vários gráficos, um de cada vez na tela ---------------------------------------------------------------
   nome_aba <- function(i) { n <- rv$abas[[i]]$nome; if (is.null(n)) TF("Gráfico %d", i) else n }
   capturar <- function() list(valores = isolate(valores()), series = if (!is.null(rv$dados)) isolate(tryCatch(series_df(), error = function(e) NULL)),
                               dados = rv$dados, nome_dados = rv$nome, cong = unname(congelados()), img = rv$img)
@@ -549,6 +549,7 @@ servidor <- function(input, output, session) {
     st$ate <- Sys.time() + 1.8                                  # as telas levam um instante para receber os valores; só então monta o gráfico
     rv$dados <- snap$dados; rv$nome <- snap$nome_dados; rv$erro <- NULL; rv$res <- NULL; rv$previa <- NULL; rv$pend_calc <- TRUE
     rv$img <- snap$img %||% list()
+    garantir_cartoes(snap$valores)
     definir_colunas(snap$dados, snap$valores)
     for (id in names(ESPEC_CAMPOS)) { c <- ESPEC_CAMPOS[[id]]; if (!c$tipo %in% c("colx", "colsy", "colsy2")) atualizar_campo(session, c, snap$valores[[id]], CFG0) }
     updateTextAreaInput(session, "paleta_propria", value = as.character(snap$valores$.paleta_propria %||% ""))
@@ -598,26 +599,6 @@ servidor <- function(input, output, session) {
       tags$span(class = "aba-acao", title = "Cópia deste gráfico (configurações e dados) para variar.", onclick = "Shiny.setInputValue('aba_duplicar', Date.now(), {priority: 'event'})", "Duplicar"),
       tags$span(class = "aba-acao", onclick = "Shiny.setInputValue('aba_renomear', Date.now(), {priority: 'event'})", "Renomear")))
   })
-  output$lado_sel <- renderUI({
-    n <- length(rv$abas); if (n < 2) return(NULL)
-    outras <- setdiff(seq_len(n), rv$aba); atual <- isolate(input$lado_aba)
-    selectInput("lado_aba", NULL, choices = stats::setNames(outras, vapply(outras, nome_aba, "")), selected = if (!is.null(atual) && as.integer(atual) %in% outras) atual else outras[1], selectize = FALSE, width = "160px")
-  })
-  output$previa_lado <- renderUI({
-    if (!isTRUE(input$lado_ativo)) return(NULL)
-    if (length(rv$abas) < 2) return(UI(div(class = "previa-lado", tags$p(class = "ajuda", "Crie uma segunda aba (+ Nova aba) para ver os dois gráficos lado a lado."))))
-    j <- as.integer(input$lado_aba %||% setdiff(seq_along(rv$abas), rv$aba)[1])
-    UI(div(class = "previa-lado", tags$h2(nome_aba(j)), imageOutput("previa_lado_img", height = "auto"),
-           tags$p(class = "ajuda", "Para editar este gráfico, clique na aba dele lá em cima.")))
-  })
-  output$previa_lado_img <- renderImage({
-    req(isTRUE(input$lado_ativo), length(rv$abas) > 1)
-    j <- as.integer(input$lado_aba %||% setdiff(seq_along(rv$abas), rv$aba)[1]); req(j %in% seq_along(rv$abas), j != rv$aba)
-    snap <- rv$abas[[j]]$snap; req(snap, snap$dados)
-    r <- construir_grafico(snap$dados, montar_variaveis(snap$valores, CFG0, snap$series), CFG0, idioma = idioma()); req(is.null(r$erro))
-    p <- desenhar_previa(r$g, r$cfg, dpi = 110)
-    list(src = p$arquivo, contentType = "image/png", alt = nome_aba(j))
-  }, deleteFile = TRUE)
 
   # ---- estilos prontos, restaurar, guia ------------------------------------------------------------------------------------
   restaurar_campos <- function() {

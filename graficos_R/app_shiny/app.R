@@ -37,6 +37,25 @@ cartao_dados <- function() div(class = "dados-cartao",
 
 options(shiny.error = function() registrar_log("ERRO não tratado: ", gsub("\n", " | ", substr(geterrmessage(), 1, 400))))   # vai para o registro de uso
 
+# O que cada bloco leva além dos campos: o cartão de dados, o editor de paleta, a tabela de séries, os resultados em números...
+extras_do_bloco <- function(b) list(
+  antes = if (b$id == "dados") cartao_dados(),
+  extra = if (b$id == "cores") tagList(ui_paleta_propria(), div(class = "grupo", tags$h4("Série por série"),
+            tags$p(class = "ajuda", "Só preencha o que quiser diferente da paleta e dos valores gerais acima."), uiOutput("tabela_series")))
+          else if (b$id == "quebra") conditionalPanel("input.quebra_ativar", div(class = "botoes-config",
+            actionButton("quebra_sugerir", "Achar o maior vazio nos meus dados", class = "btn-verde"),
+            tags$small(class = "ajuda", "Preenche \"de\" e \"até\" com o maior espaço vazio entre os valores do eixo esquerdo.")))
+          else if (b$id == "estatistica") div(class = "grupo", tags$h4("Resultados em números"),
+            tags$p(class = "ajuda", "Tabelas com o resumo de cada série, os ajustes (equação, R², p), os parâmetros e os testes escolhidos. Calcule quando quiser; dá para baixar em CSV."),
+            selectizeInput("estat_testes", "Testes na tabela", choices = tr_nomes(.ITENS_ESTAT[["Testes estatísticos"]]), selected = c("pearson", "shapiro"), multiple = TRUE, options = OPC_SELECTIZE_MULTI),
+            div(class = "botoes-config", actionButton("estat_calcular", "Calcular as tabelas", class = "btn-verde"), downloadButton("estat_baixar", "Baixar em CSV", class = "btn-sec")),
+            div(class = "estat-tabelas", uiOutput("estat_tabelas")))
+          else if (b$id == "legenda") div(class = "grupo", tags$h4("Nomes na legenda"), tags$p(class = "ajuda", "Os nomes das séries são editados no painel Cores, linhas e símbolos, em cada série."))
+          else if (b$id == "fonte") div(class = "grupo", tags$h4("Adicionar uma fonte de arquivo"),
+            tags$p(class = "ajuda", "Tem uma fonte em .ttf ou .otf que não está instalada? Escolha o arquivo (e, se quiser negrito/itálico de verdade, os arquivos -Bold, -Italic e -BoldItalic juntos). Ela entra na lista acima. Vale enquanto o app estiver aberto."),
+            textInput("fonte_nome", "Nome da fonte (opcional)", value = "", placeholder = "ex.: Minha Fonte"),
+            fileInput("fonte_arquivo", NULL, multiple = TRUE, accept = c(".ttf", ".otf"), buttonLabel = "Escolher arquivo(s)...", placeholder = "Nenhum arquivo", width = "100%")))
+
 construir_ui <- function(idioma) fluidPage(
   title = "Cinabro — laboratório de gráficos",
   tags$head(tags$script(HTML(sprintf("window.IDIOMA = '%s'; $(document).on('shiny:connected', function () { Shiny.setInputValue('idioma_pagina', window.IDIOMA); });", idioma))), tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(HTML(paste0("window.PALETAS = ", jsonlite::toJSON(paletas_js(), auto_unbox = TRUE), ";"))), tags$script(src = "app.js"),
@@ -51,32 +70,11 @@ construir_ui <- function(idioma) fluidPage(
         actionButton("restaurar", "Restaurar tudo", class = "btn-topo"),
         actionButton("sair", "Sair", class = "btn-topo", title = "Encerra o Cinabro (fecha o R). Seus gráficos não salvos se perdem: salve a configuração antes."),
         actionButton("guia", "Como usar", class = "btn-topo btn-topo-forte"))),
-  div(class = "abas-barra", uiOutput("abas_ui", inline = TRUE),
-      div(class = "aba-lado", checkboxInput("lado_ativo", "Mostrar outra aba ao lado", value = FALSE), uiOutput("lado_sel", inline = TRUE))),
+  div(class = "abas-barra", uiOutput("abas_ui", inline = TRUE)),
   div(class = "estudio gaveta-aberta",
     ui_trilho(),
     tags$aside(class = "gaveta",
-      lapply(seq_along(ESPEC), function(i) {
-        b <- ESPEC[[i]]
-        ui_bloco(b, i, CFG0, aberto = i == 1, antes = if (b$id == "dados") cartao_dados(),
-                 extra = if (b$id == "cores") tagList(ui_paleta_propria(), div(class = "grupo", tags$h4("Série por série"),
-                          tags$p(class = "ajuda", "Só preencha o que quiser diferente da paleta e dos valores gerais acima."), uiOutput("tabela_series")))
-                         else if (b$id == "quebra") conditionalPanel("input.quebra_ativar", div(class = "botoes-config",
-                          actionButton("quebra_sugerir", "Achar o maior vazio nos meus dados", class = "btn-verde"),
-                          tags$small(class = "ajuda", "Preenche \"de\" e \"até\" com o maior espaço vazio entre os valores do eixo esquerdo.")))
-                         else if (b$id == "estatistica") div(class = "grupo", tags$h4("Resultados em números"),
-                          tags$p(class = "ajuda", "Tabelas com o resumo de cada série, os ajustes (equação, R², p), os parâmetros e os testes escolhidos. Calcule quando quiser; dá para baixar em CSV."),
-                          selectizeInput("estat_testes", "Testes na tabela", choices = tr_nomes(.ITENS_ESTAT[["Testes estatísticos"]]), selected = c("pearson", "shapiro"), multiple = TRUE, options = OPC_SELECTIZE_MULTI),
-                          div(class = "botoes-config", actionButton("estat_calcular", "Calcular as tabelas", class = "btn-verde"), downloadButton("estat_baixar", "Baixar em CSV", class = "btn-sec")),
-                          div(class = "estat-tabelas", uiOutput("estat_tabelas")))
-                                                  else if (b$id == "legenda") div(class = "grupo", tags$h4("Nomes na legenda"), tags$p(class = "ajuda", "Os nomes das séries são editados no bloco 8, em cada série."))
-                         else if (b$id == "fonte") div(class = "grupo", tags$h4("Adicionar uma fonte de arquivo"),
-                          tags$p(class = "ajuda", "Tem uma fonte em .ttf ou .otf que não está instalada? Escolha o arquivo (e, se quiser negrito/itálico de verdade, os arquivos -Bold, -Italic e -BoldItalic juntos). Ela entra na lista acima. Vale enquanto o app estiver aberto."),
-                          textInput("fonte_nome", "Nome da fonte (opcional)", value = "", placeholder = "ex.: Minha Fonte"),
-                          fileInput("fonte_arquivo", NULL, multiple = TRUE, accept = c(".ttf", ".otf"), buttonLabel = "Escolher arquivo(s)...", placeholder = "Nenhum arquivo", width = "100%"))
-                         )
-      }),
-    ),
+      lapply(seq_along(.PAINEIS), function(i) ui_painel(names(.PAINEIS)[i], i, CFG0, aberto = i == 1, extras = extras_do_bloco))),
     tags$main(class = "palco",
       ui_faixa(),
       div(class = "cartao previa-cartao",
@@ -93,14 +91,10 @@ construir_ui <- function(idioma) fluidPage(
               span(`data-z` = "cx_figura", "Figura"), span(`data-z` = "cx_dica", "Arraste para mover, puxe o quadradinho do canto para mudar o tamanho, clique para editar"),
               span(`data-z` = "cx_mais", "Todas as opções")),
           uiOutput("info_previa"),
-          uiOutput("avisos"),
-          uiOutput("previa_lado")),
+          uiOutput("avisos")),
       tags$details(class = "cartao mais-cartao",
           tags$summary(tags$h2("Modelo, configuração e código")),
-          tags$p(class = "ajuda", tags$a(href = "#bloco-exportacao", "Escolher o tipo de arquivo, a resolução e o tamanho (bloco 12)"), ". PNG, TIFF e SVG usam a Barlow direto; no PDF a fonte precisa estar instalada no computador."),
-          div(class = "botoes-config",
-              actionButton("copiar_modelo", "Copiar modelo", class = "btn-sec", title = "Copia todas as configurações deste gráfico como texto, para colar em outra aba, outro computador ou num e-mail."),
-              actionButton("colar_modelo", "Colar modelo...", class = "btn-sec", title = "Cola um modelo copiado antes e aplica aqui (os blocos congelados ficam como estão).")),
+          tags$p(class = "ajuda", tags$a(href = "#bloco-exportacao", "Escolher o tipo de arquivo, a resolução e o tamanho (painel Tamanho e exportação)"), ". PNG, TIFF e SVG usam a Barlow direto; no PDF a fonte precisa estar instalada no computador."),
           div(class = "botoes-config",
               downloadButton("salvar_cfg", "Salvar configuração", class = "btn-sec"),
               fileInput("carregar_cfg", NULL, accept = ".json", buttonLabel = "Carregar configuração...", placeholder = "", width = "230px")),

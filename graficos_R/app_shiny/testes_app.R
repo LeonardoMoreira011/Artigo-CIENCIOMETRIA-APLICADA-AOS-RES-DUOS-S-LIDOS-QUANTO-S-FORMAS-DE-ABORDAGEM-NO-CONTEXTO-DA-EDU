@@ -217,16 +217,32 @@ teste("tela montada uma vez (.UI_PRONTA), botão Sair, espera de 10 minutos para
   grepl(".UI_PRONTA <- traduzir_html(construir_ui(\"pt\"), \"pt\")", ap, fixed = TRUE) && grepl(".UI_RESPOSTA", ap, fixed = TRUE) &&
     grepl('actionButton("sair"', ap, fixed = TRUE) && grepl("Aquecimento", ap, fixed = TRUE) && identical(.GRACA_ENCERRAR, 600) &&
     grepl("observeEvent(input$sair", paste(readLines("codigo/servidor.R", encoding = "UTF-8"), collapse = "\n"), fixed = TRUE) })
-teste("os 4 cartões de ajuste, 3 de traços, 3 de caixas e 6 de formas existem, e o 2º só aparece com o 1º ligado", {
-  g <- ESPEC[[13]]$grupos; any(vapply(g, function(x) identical(x$ativo, "aj2_ativo") && identical(x$se, "input.aj1_ativo"), NA)) &&
-    sum(vapply(c(ESPEC[[13]]$grupos, ESPEC[[14]]$grupos), function(x) !is.null(x$ativo), NA)) == 19 })
+teste("os 4 cartões de ajuste, 3 de traços, 3 de caixas, 6 de formas e 3 de figuras existem (19), sem depender uns dos outros", {
+  g <- c(ESPEC[[13]]$grupos, ESPEC[[14]]$grupos); cart <- Filter(function(x) !is.null(x$ativo), g)
+  length(cart) == 19 && all(vapply(cart, function(x) is.null(x$se), NA)) })
+teste("7 painéis juntam os 14 blocos (nenhum fica de fora nem repetido); Y2 e quebra são seções recolhidas; cada seção tem o seu 'Congelar'", {
+  todos <- unlist(.PAINEIS, use.names = FALSE); ids <- vapply(ESPEC, function(b) b$id, "")
+  ex <- function(b) list(extra = NULL, antes = NULL); h <- paste(as.character(ui_painel("eixos", 2, CFG0, extras = ex)), collapse = "")
+  setequal(todos, ids) && !anyDuplicated(todos) && grepl('id="bloco-y2"', h, fixed = TRUE) && grepl('id="bloco-quebra"', h, fixed = TRUE) &&
+    !grepl('<details class="secao" id="bloco-quebra" data-bloco="quebra" open', h, fixed = TRUE) && grepl('id="bloco-intervalos" data-bloco="intervalos" open', h, fixed = TRUE) &&
+    all(vapply(.PAINEIS$eixos, function(b) grepl(paste0('id="cong_', b, '"'), h, fixed = TRUE), NA)) })
+teste("cartões sob demanda: a tela sai sem nenhum campo de cartão (só os contêineres 'slot-...'); ui_cartao() monta um cartão com os campos dele", {
+  ex <- function(b) list(extra = NULL, antes = NULL); h <- paste(as.character(ui_painel("analise", 6, CFG0, extras = ex)), collapse = "")
+  hc <- paste(as.character(ui_cartao("ajustes", 2, CFG0)), collapse = "")
+  all(vapply(names(SLOTS), function(sl) grepl(paste0('id="slot-', sl, '"'), h, fixed = TRUE), NA)) && !grepl("aj1_ativo|cx1_ativo|fm1_ativo|im1_ativo", h) &&
+    grepl('id="aj2_ativo"', hc, fixed = TRUE) && grepl('id="aj2_tipo"', hc, fixed = TRUE) && grepl('id="aj2_pontos"', hc, fixed = TRUE) })
+teste("o JS do app: cada addCustomMessageHandler recebe uma função com UM parâmetro (com zero o Shiny dá erro e o resto do script não roda) e o arquivo não tem erro de sintaxe", {
+  js <- paste(readLines("www/app.js", encoding = "UTF-8"), collapse = "\n")
+  m <- regmatches(js, gregexpr("addCustomMessageHandler\\('[a-z_]+', *function *\\(([^)]*)\\)", js))[[1]]
+  length(m) >= 5 && all(grepl("function *\\([A-Za-z_]+\\)$", m)) &&
+    (!nzchar(Sys.which("node")) || system2("node", c("-e", shQuote("new Function(require('fs').readFileSync('www/app.js','utf8'))")), stdout = FALSE, stderr = FALSE) == 0) })
 teste("cada bloco tem o tic 'Congelar' no cabeçalho", all(vapply(seq_along(ESPEC), function(i) grepl(paste0("cong_", ESPEC[[i]]$id), paste(as.character(ui_bloco(ESPEC[[i]], i, CFG0)), collapse = ""), fixed = TRUE), NA)))
 re_slot <- construir_grafico(ler_csv(file.path(raiz, "dados", "ensaio_temperatura.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE))),
   list(tipo_grafico = "pontos", ajustes = list(list(tipo = "linear", banda = TRUE)), caixas_estatisticas = list(list(itens = c("media", "r2"))), formas = list(list(tipo = "texto", texto = "oi"))), CFG0)
 teste("o gráfico monta com os ajustes, a caixa e a forma vindos dos cartões", is.null(re_slot$erro) && !is.null(re_slot$g))
-teste("o trilho tem um ícone por bloco (14) e a faixa de ferramentas tem os 7 tipos de ajuste, as formas, média ± DP, caixa, texto e figura", {
+teste("o trilho tem um ícone por painel (7) e a faixa de ferramentas tem os 8 tipos de ajuste, as formas, média ± DP, caixa, texto e figura", {
   tr_html <- paste(as.character(ui_trilho()), collapse = ""); fx <- gsub("&quot;", "\"", paste(as.character(ui_faixa()), collapse = ""), fixed = TRUE)
-  all(vapply(ESPEC, function(b) grepl(paste0('data-painel="', b$id, '"'), tr_html, fixed = TRUE), NA)) &&
+  length(.PAINEIS) == 7 && all(vapply(names(.PAINEIS), function(p) grepl(paste0('data-painel="', p, '"'), tr_html, fixed = TRUE), NA)) &&
     all(vapply(unname(.AJUSTES_OPC), function(t) grepl(paste0('"tipo":"', t, '"'), fx, fixed = TRUE), NA)) &&
     all(vapply(c("marca", "caixa", "texto", "figura", "forma"), function(a) grepl(paste0('"acao":"', a, '"'), fx, fixed = TRUE), NA)) })
 teste("desenhar_previa ajusta a resolução à largura do palco (entre 96 e 300 dpi) e devolve o dpi usado; .geometria_zonas funciona no gráfico do app", {

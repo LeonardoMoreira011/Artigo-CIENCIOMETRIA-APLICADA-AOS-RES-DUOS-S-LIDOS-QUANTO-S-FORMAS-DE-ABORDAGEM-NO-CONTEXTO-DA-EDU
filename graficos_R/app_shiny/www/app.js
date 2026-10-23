@@ -19,20 +19,8 @@
       var a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); document.execCommand('copy'); document.body.removeChild(a);
     }).then(function () { b.textContent = ok; setTimeout(function () { b.textContent = orig; }, 1600); });
   });
-  // copiar o modelo (texto da configuração) para a área de transferência
-  function copiarTexto(t, cb) {
-    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).catch(function () {
-      var a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select();
-      try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(a);
-    }).then(function () { if (cb) cb(); });
-  }
-  Shiny.addCustomMessageHandler('copiar_texto', function (t) { copiarTexto(t); });
-  $(document).on('click', '#copiar-modelo', function () {
-    var b = this, orig = b.textContent, ok = $(b).data('copiado') || 'Copiado!', t = $('#modelo-saida').val();
-    copiarTexto(t, function () { b.textContent = ok; setTimeout(function () { b.textContent = orig; }, 1600); });
-  });
   // botão "Sair": o R encerra e esta aba mostra um aviso de despedida
-  Shiny.addCustomMessageHandler('adeus', function () {
+  Shiny.addCustomMessageHandler('adeus', function (m) {
     document.body.innerHTML = '<div style="font-family:Barlow,sans-serif;max-width:520px;margin:18vh auto;padding:0 24px;text-align:center;color:#20242B">' +
       '<h2 style="color:#B3262E">Cinabro encerrado</h2><p>Pode fechar esta aba. Para voltar a usar, abra o Cinabro pelo atalho ou pelo <b>abrir_app.bat</b>.</p></div>';
     document.body.style.background = '#F5EBDD';
@@ -54,10 +42,15 @@
     document.documentElement.style.setProperty('--alt-topo', h + 'px'); document.documentElement.style.setProperty('--alt-cab', ($('.topo').outerHeight() || 0) + 'px');
   }
   function avisarPalco() { setTimeout(function () { $(window).trigger('resize'); var w = $('.previa-quadro').innerWidth(); if (w) Shiny.setInputValue('palco_larg', Math.round(w), { priority: 'event' }); }, 380); }
+  // os 14 blocos viraram seções de 7 painéis; um id antigo de bloco abre o painel dele, abre a seção e rola até ela
+  var PAINEL_DO_BLOCO = { dados: 'dados', intervalos: 'eixos', escala: 'eixos', numeros: 'eixos', grade: 'eixos', quebra: 'eixos', y2: 'eixos', cores: 'series', fonte: 'texto',
+                          legenda: 'legenda', estatistica: 'analise', formas: 'analise', moldura: 'exportar', exportacao: 'exportar' };
   function abrirPainel(id, manter) {
-    var $p = $('#bloco-' + id); if (!$p.length) return;
-    $('.painel').removeClass('ativo'); $p.addClass('ativo');
+    var pid = PAINEL_DO_BLOCO[id] || id, $p = $('#painel-' + pid); if (!$p.length) return;
+    var $sec = $('details.secao#bloco-' + id);
+    $('.painel').removeClass('ativo'); $p.addClass('ativo'); id = pid;
     $('.trilho-btn').removeClass('ativo').filter('[data-painel="' + id + '"]').addClass('ativo');
+    if ($sec.length) { $sec.attr('open', 'open'); setTimeout(function () { $sec[0].scrollIntoView({ block: 'start' }); }, 80); }
     $('.estudio').addClass('gaveta-aberta').removeClass('max'); $('.gaveta').scrollTop(0);
     try { localStorage.setItem('cinabro_painel', id); } catch (e) {}
     if (!manter) avisarPalco();
@@ -67,6 +60,14 @@
     if ($(this).hasClass('ativo') && $('.estudio').hasClass('gaveta-aberta')) { $('.estudio').removeClass('gaveta-aberta'); $(this).removeClass('ativo'); avisarPalco(); }
     else abrirPainel(id);
   });
+  $(document).on('click', 'summary .cong', function (e) { e.stopPropagation(); });            // marcar "Congelar" não abre nem fecha a seção
+  // seções recolhidas que escondem um recurso ligado (eixo da direita, quebra de eixo) ganham o aviso "ligado"
+  function marcarLigados() {
+    $('#bloco-quebra').toggleClass('ligado', $('#quebra_ativar').is(':checked'));
+    var y2 = $('#y2_series').val(); $('#bloco-y2').toggleClass('ligado', !!(y2 && y2.length));
+  }
+  $(document).on('shiny:inputchanged', function (e) { if (e.name === 'quebra_ativar' || e.name === 'y2_series') setTimeout(marcarLigados, 30); });
+  $(document).on('shiny:connected', function () { setTimeout(marcarLigados, 400); });
   $(document).on('click', 'a[href^="#bloco-"]', function (e) { e.preventDefault(); abrirPainel(String($(this).attr('href')).replace('#bloco-', '')); });
   $(document).on('click', '[data-abrir]', function () { abrirPainel($(this).data('abrir')); });
   $(document).on('click', '.faixa-lista .faixa-btn', function () { $(this).closest('details').removeAttr('open'); });
@@ -83,7 +84,7 @@
   $(document).on('keydown', function (e) { if (e.key === 'Escape' && $('.estudio').hasClass('max')) maximizar(false); });
   function irParaCartao(painel, cartao) {
     abrirPainel(painel, true);
-    if (cartao) setTimeout(function () { var el = document.getElementById(cartao); if (!el) return; var $g = $(el).closest('.grupo'); $g[0] && $g[0].scrollIntoView({ block: 'center' }); $g.addClass('flash'); setTimeout(function () { $g.removeClass('flash'); }, 1600); }, 350);
+    if (cartao) setTimeout(function () { var el = document.getElementById(cartao); if (!el) return; $(el).closest('details.secao').attr('open', 'open'); var $g = $(el).closest('.grupo'); $g[0] && $g[0].scrollIntoView({ block: 'center' }); $g.addClass('flash'); setTimeout(function () { $g.removeClass('flash'); }, 1600); }, 350);
     avisarPalco();
   }
   Shiny.addCustomMessageHandler('abrir_painel', function (m) { irParaCartao(m.id, m.cartao); });

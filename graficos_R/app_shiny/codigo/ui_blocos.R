@@ -68,24 +68,79 @@ ui_grade_campos <- function(campos, cfg0) {
     if (length(mais)) tags$details(class = "mais", tags$summary("Mais opções"), div(class = "campos", lapply(mais, ui_campo, cfg0 = cfg0))))
 }
 
+# Um cartão (ajuste, traços, caixa de estatística, forma ou figura). Os cartões não são montados junto com a tela: nascem quando o usuário
+# adiciona um (faixa de ferramentas) e ficam no contêiner "slot-<tipo>" — eram 446 campos montados à toa.
+ui_grupo <- function(g, cfg0) {
+  gr <- if (!length(g$campos)) div(class = "grupo-secao", tags$h4(g$titulo))
+        else if (!is.null(g$ativo)) {             # cartão: a caixa "Usar" sempre aparece; o resto só com ela marcada
+          ca <- Filter(function(x) identical(x$chave, "ativo"), g$campos); resto <- Filter(function(x) !identical(x$chave, "ativo"), g$campos)
+          div(class = "grupo", tags$h4(g$titulo), ui_grade_campos(ca, cfg0), conditionalPanel(condition = paste0("input.", g$ativo), ui_grade_campos(resto, cfg0)))
+        } else div(class = "grupo", tags$h4(g$titulo), ui_grade_campos(g$campos, cfg0))
+  if (is.null(g$se)) gr else conditionalPanel(condition = g$se, gr)
+}
+ui_cartao <- function(slot, k, cfg0) ui_grupo(grupos_slot(slot)[[k]], cfg0)
+.SLOT_VAZIO <- c(ajustes = "Nenhum ajuste ainda. Adicione pela faixa de ferramentas, acima do gráfico (Análise > Ajuste de curva).",
+                 marcas_estatisticas = "Nenhum traço ainda. Adicione pela faixa de ferramentas (Análise > Média ± DP).",
+                 caixas_estatisticas = "Nenhuma caixa ainda. Adicione pela faixa de ferramentas (Análise > Caixa de estatística).",
+                 formas = "Nenhuma forma ou texto ainda. Adicione pela faixa de ferramentas (Anotar > Texto ou Forma).",
+                 imagens = "Nenhuma figura ainda. Adicione pela faixa de ferramentas (Anotar > Figura).")
+.slot_do_cartao <- function(g) { pref <- sub("[0-9]+_ativo$", "", g$ativo); names(SLOTS)[vapply(SLOTS, function(s) identical(s$pref, pref), NA)][1] }
+
+# Corpo de um bloco (dica, campos, grupos, cartões sob demanda, extras).
+ui_corpo <- function(b, cfg0, extra = NULL, antes = NULL) {
+  vistos <- character(0)
+  tagList(
+    antes,
+    if (!is.null(b$dica)) div(class = "dica", span(class = "dica-ic", "Dica"), b$dica),
+    if (length(b$campos)) ui_grade_campos(b$campos, cfg0),
+    lapply(b$grupos, function(g) {
+      if (!is.null(g$ativo)) {                               # cartão: só o contêiner (uma vez por tipo); os cartões entram por insertUI
+        sl <- .slot_do_cartao(g); if (sl %in% vistos) return(NULL); vistos <<- c(vistos, sl)
+        return(div(id = paste0("slot-", sl), class = "slot-cartoes", `data-vazio` = .SLOT_VAZIO[[sl]]))
+      }
+      ui_grupo(g, cfg0)
+    }),
+    extra)
+}
+
+# Um bloco como painel (usado nos testes e quando o painel tem um bloco só).
 ui_bloco <- function(b, n, cfg0, aberto = FALSE, extra = NULL, antes = NULL) {
   div(class = paste("painel", if (aberto) "ativo"), id = paste0("bloco-", b$id), `data-painel` = b$id,
     div(class = "painel-cab", span(class = "num", n), div(class = "tit", tags$h3(b$titulo), tags$p(b$resumo)),
-        span(class = "cong", title = "Congelar: este bloco mantém o que está agora ao restaurar tudo, ao criar uma aba nova e ao colar um modelo.",
+        span(class = "cong", title = "Congelar: este bloco mantém o que está agora ao restaurar tudo, ao criar uma aba nova e ao carregar uma configuração.",
              checkboxInput(paste0("cong_", b$id), "Congelar", value = FALSE))),
+    div(class = "bloco-corpo", ui_corpo(b, cfg0, extra, antes)))
+}
+
+# ---- os 7 painéis (cada um agrupa blocos do ESPEC; as seções menos usadas começam recolhidas) ----------------------------------------------
+.PAINEIS <- list(dados = "dados", eixos = c("intervalos", "escala", "numeros", "grade", "quebra", "y2"), series = "cores", texto = "fonte",
+                 legenda = "legenda", analise = c("estatistica", "formas"), exportar = c("moldura", "exportacao"))
+.TITULO_PAINEL <- c(dados = "Dados e tipo de gráfico", eixos = "Eixos, escala e grade", series = "Cores, linhas e símbolos", texto = "Fonte e tamanhos de texto",
+                    legenda = "Legenda", analise = "Análises e anotações", exportar = "Tamanho e exportação")
+.RESUMO_PAINEL <- c(dados = "Escolha o arquivo, o tipo de gráfico e quais colunas entram.",
+                    eixos = "Intervalos, escala, números, grade. O eixo da direita e a quebra de eixo ficam recolhidos até você precisar deles.",
+                    series = "Paleta, grossura das linhas, formas dos pontos e o ajuste série por série.",
+                    texto = "A fonte e o tamanho de cada texto do gráfico.",
+                    legenda = "Posição, fundo, borda e sombra da legenda (ou arraste-a no gráfico).",
+                    analise = "Curvas de ajuste, média e desvio, caixas de estatística, textos, formas e figuras: cada cartão nasce quando você o adiciona.",
+                    exportar = "Moldura e tamanho do gráfico, tipo de arquivo e resolução.")
+.SECAO_ABERTA <- c("intervalos", "estatistica", "moldura")        # as demais seções de um painel começam recolhidas
+ui_painel <- function(pid, n, cfg0, aberto = FALSE, extras = function(b) list()) {
+  ids <- .PAINEIS[[pid]]; bs <- ESPEC[match(ids, vapply(ESPEC, function(b) b$id, ""))]
+  cong <- function(b) span(class = "cong", title = "Congelar: esta seção mantém o que está agora ao restaurar tudo, ao criar uma aba nova e ao carregar uma configuração.",
+                           checkboxInput(paste0("cong_", b$id), "Congelar", value = FALSE))
+  div(class = paste("painel", if (aberto) "ativo"), id = paste0("painel-", pid), `data-painel` = pid,
+    div(class = "painel-cab", span(class = "num", n), div(class = "tit", tags$h3(.TITULO_PAINEL[[pid]]), tags$p(.RESUMO_PAINEL[[pid]])),
+        if (length(bs) == 1) cong(bs[[1]])),
     div(class = "bloco-corpo",
-        antes,
-        if (!is.null(b$dica)) div(class = "dica", span(class = "dica-ic", "Dica"), b$dica),
-        if (length(b$campos)) ui_grade_campos(b$campos, cfg0),
-        lapply(b$grupos, function(g) {
-          gr <- if (!length(g$campos)) div(class = "grupo-secao", tags$h4(g$titulo))
-                else if (!is.null(g$ativo)) {             # cartão: a caixa "Usar" sempre aparece; o resto só com ela marcada
-                  ca <- Filter(function(x) identical(x$chave, "ativo"), g$campos); resto <- Filter(function(x) !identical(x$chave, "ativo"), g$campos)
-                  div(class = "grupo", tags$h4(g$titulo), ui_grade_campos(ca, cfg0), conditionalPanel(condition = paste0("input.", g$ativo), ui_grade_campos(resto, cfg0)))
-                } else div(class = "grupo", tags$h4(g$titulo), ui_grade_campos(g$campos, cfg0))
-          if (is.null(g$se)) gr else conditionalPanel(condition = g$se, gr)
-        }),
-        extra))
+        if (length(bs) == 1) { ex <- extras(bs[[1]]); div(id = paste0("bloco-", bs[[1]]$id), ui_corpo(bs[[1]], cfg0, ex$extra, ex$antes)) }
+        else lapply(bs, function(b) {
+          ex <- extras(b)
+          det <- tags$details(class = "secao", id = paste0("bloco-", b$id), `data-bloco` = b$id,
+            tags$summary(span(class = "secao-tit", b$titulo), span(class = "secao-res", b$resumo), cong(b)),
+            div(class = "secao-corpo", ui_corpo(b, cfg0, ex$extra, ex$antes)))
+          if (b$id %in% .SECAO_ABERTA) tagAppendAttributes(det, open = NA) else det
+        })))
 }
 
 # ---- trilho de ícones (à esquerda) e faixa de ferramentas (acima do gráfico) ---------------------------------------------------------------
@@ -105,13 +160,14 @@ ui_bloco <- function(b, n, cfg0, aberto = FALSE, extra = NULL, antes = NULL) {
   estatistica = '<path d="M4 20h16"/><path d="M5 19c3.2 0 3.2-14 7-14s3.8 14 7 14"/>',
   formas = '<rect x="3.5" y="4" width="9" height="9" rx="1.2"/><circle cx="16.5" cy="16" r="4.2"/>',
   exportacao = '<path d="M12 4v11M7.5 11l4.5 4.5 4.5-4.5M5 20h14"/>')
-.TRILHO <- list("dados", c("intervalos", "escala", "numeros", "grade", "quebra", "y2"), c("cores", "fonte", "moldura", "legenda"), c("estatistica", "formas"), "exportacao")
+.TRILHO <- list("dados", c("eixos", "series", "texto", "legenda"), "analise", "exportar")
+.ICONE_DO_PAINEL <- c(dados = "dados", eixos = "escala", series = "cores", texto = "fonte", legenda = "legenda", analise = "estatistica", exportar = "exportacao")
 ui_trilho <- function() {
-  num <- stats::setNames(seq_along(ESPEC), vapply(ESPEC, function(b) b$id, ""))
+  num <- stats::setNames(seq_along(.PAINEIS), names(.PAINEIS))
   tags$nav(class = "trilho",
     lapply(.TRILHO, function(g) div(class = "trilho-grupo", lapply(g, function(id) {
-      tags$button(type = "button", class = "trilho-btn", `data-painel` = id, title = ESPEC[[num[[id]]]]$titulo,
-                  HTML(sprintf('<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">%s</svg>', .ICONES[[id]])),
+      tags$button(type = "button", class = "trilho-btn", `data-painel` = id, title = .TITULO_PAINEL[[id]],
+                  HTML(sprintf('<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">%s</svg>', .ICONES[[.ICONE_DO_PAINEL[[id]]]])),
                   span(class = "trilho-n", num[[id]]))
     }))))
 }
@@ -148,15 +204,15 @@ guia_rapido <- function() {
   modalDialog(easyClose = TRUE, size = "l", footer = modalButton("Entendi"), title = "Como usar em 4 passos",
     div(class = "guia",
       div(class = "passo", span(class = "num", "1"), div(tags$b("Carregue seus dados"), tags$p("Envie um arquivo CSV (1ª linha com os títulos das colunas) ou escolha um dos exemplos. Escolha o tipo de gráfico."))),
-      div(class = "passo", span(class = "num", "2"), div(tags$b("Monte e ajuste"), tags$p("O trilho de ícones, à esquerda, abre um painel de cada vez: intervalos, escala, números, grade, quebra, eixo direito, cores, fonte, moldura, legenda, análises e formas. Na faixa acima do gráfico, um clique liga um ajuste de curva, a média ± DP, uma caixa de estatística, um texto, uma forma ou uma figura. Clique no título ou nos nomes dos eixos, no próprio gráfico, para editá-los. \"Maximizar\" dá a tela toda ao gráfico."))),
+      div(class = "passo", span(class = "num", "2"), div(tags$b("Monte e ajuste"), tags$p("O trilho de ícones, à esquerda, abre um painel de cada vez: dados, eixos (com o eixo da direita e a quebra de eixo recolhidos), cores e símbolos, texto, legenda, análises e anotações, tamanho e exportação. Na faixa acima do gráfico, um clique liga um ajuste de curva, a média ± DP, uma caixa de estatística, um texto, uma forma ou uma figura. Clique no título ou nos nomes dos eixos, no próprio gráfico, para editá-los. \"Maximizar\" dá a tela toda ao gráfico."))),
       div(class = "passo", span(class = "num", "3"), div(tags$b("Confira o gráfico"), tags$p("A prévia mostra o gráfico como vai sair no arquivo. Os avisos abaixo dela explicam, em português, qualquer problema."))),
-      div(class = "passo", span(class = "num", "4"), div(tags$b("Baixe"), tags$p("Marque o tipo de arquivo no bloco 12 (PNG, TIFF, JPEG, SVG, PDF...) e use o botão de baixar. Salve a configuração para repetir depois, ou copie o código para usar no script."))),
+      div(class = "passo", span(class = "num", "4"), div(tags$b("Baixe"), tags$p("Marque o tipo de arquivo no painel Tamanho e exportação (PNG, TIFF, JPEG, SVG, PDF...) e use o botão de baixar. Salve a configuração para repetir depois, ou copie o código para usar no script."))),
       tags$h4("Dica: quantas séries, quais cores"),
       tags$p("A paleta padrão, \"Cinabro\", usa as cores da marca e variações delas: as 4 primeiras (vermelho, petróleo, tinta e terracota) são as mais diferentes entre si. Com mais de 4 ou 5 séries as cores começam a se parecer: varie também a forma do ponto e o tipo da linha (o app já varia a forma sozinho). Para valores contínuos, prefira um degradê."),
       tags$h4("Caixas que se movem"),
       tags$p("Figuras, textos, formas, caixas de estatística e a legenda se movem com o mouse: arraste para mudar de lugar, puxe o quadradinho vermelho do canto para mudar o tamanho (nas caixas de texto isso muda a letra) e clique para editar o conteúdo, o tamanho e o negrito. Ao pôr um ajuste de curva ou Média ± DP, os números (equação, R², média, desvio) vão para uma caixa de estatística própria, que você edita e move à parte. Uma curva que você já tem, de outro programa ou de um artigo, entra em Ajuste de curva > Curva externa."),
       tags$h4("Vários gráficos"),
-      tags$p("As abas no alto guardam gráficos diferentes: cada uma tem os seus dados e as suas configurações, e dá para ver outra aba ao lado do gráfico que você edita. Marque \"Congelar\" nos blocos que quer repetir (por exemplo fonte, moldura e cores): eles não voltam ao padrão em \"Restaurar tudo\" e passam para as abas novas. \"Copiar modelo\" e \"Colar modelo...\" levam todas as configurações de um gráfico para outro."),
+      tags$p("As abas no alto guardam gráficos diferentes: cada uma tem os seus dados e as suas configurações (você edita um gráfico por vez; para ver o outro, clique na aba dele). Marque \"Congelar\" nas seções que quer repetir (por exemplo texto, moldura e cores): elas não voltam ao padrão em \"Restaurar tudo\" e passam para as abas novas. \"Salvar configuração\" e \"Carregar configuração\" levam todas as configurações de um gráfico para outro, ou para outro computador."),
       tags$h4("Palavras que aparecem"),
       tags$dl(
         tags$dt("Traço (tick)"), tags$dd("Marca pequena no eixo, ao lado de cada número. Grande = com número; pequeno = entre dois grandes."),
@@ -167,7 +223,7 @@ guia_rapido <- function() {
         tags$dt("Caixa do gráfico"), tags$dd("A área dentro dos eixos. Com tamanho fixo, ela é igual em todos os gráficos."))))
 }
 
-# Editor da paleta própria (bloco 8): códigos de cor, quadradinhos que se editam, guardar com um nome.
+# Editor da paleta própria (painel Cores, linhas e símbolos): códigos de cor, quadradinhos que se editam, guardar com um nome.
 ui_paleta_propria <- function() {
   div(class = "grupo", id = "paleta-editor",
       tags$h4("Criar a minha paleta"),
