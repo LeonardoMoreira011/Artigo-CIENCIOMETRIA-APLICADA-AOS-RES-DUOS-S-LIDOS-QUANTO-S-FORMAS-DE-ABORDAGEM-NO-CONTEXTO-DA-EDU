@@ -64,7 +64,6 @@ jobs:
         run: powershell -NoProfile -File instalador/montar.ps1 -Foto $env:FOTO_CRAN
 
       - name: Testes do motor, com o R e os pacotes que vão no instalador
-        continue-on-error: true      # primeira rodada: ver o que o Windows mostra; depois vira obrigatório
         run: |
           $env:R_LIBS = (Resolve-Path instalador/stage/biblioteca).Path; $env:R_LIBS_USER = $env:R_LIBS
           $rs = (Resolve-Path instalador/stage/R/bin/x64/Rscript.exe).Path
@@ -72,7 +71,6 @@ jobs:
           if ((Get-Content C:/cb/testes_motor.log -Raw) -notmatch "0 FALHOU") { throw "há testes do motor falhando" }
 
       - name: Testes do app, com o R e os pacotes que vão no instalador
-        continue-on-error: true
         run: |
           $env:R_LIBS = (Resolve-Path instalador/stage/biblioteca).Path; $env:R_LIBS_USER = $env:R_LIBS
           $rs = (Resolve-Path instalador/stage/R/bin/x64/Rscript.exe).Path
