@@ -1,10 +1,10 @@
 # =============================================================================
 #  app_shiny/iniciar.R — abre o Cinabro no navegador, com endereço fixo e bonito
 # =============================================================================
-#  iniciar_gerador()                  # abre em  http://cinabro.localhost:8421  (o navegador entende *.localhost)
+#  iniciar_gerador()                  # abre em  http://127.0.0.1:8421  (endereço simples: funciona com proxy e IPv6)
 #  iniciar_gerador(encerrar_ao_fechar = TRUE)   # o R também fecha sozinho quando você fecha a aba (para o atalho sem janela)
 # =============================================================================
-iniciar_gerador <- function(pasta = NULL, encerrar_ao_fechar = FALSE, porta = 8421L, nome = "cinabro.localhost", abrir = TRUE) {
+iniciar_gerador <- function(pasta = NULL, encerrar_ao_fechar = FALSE, porta = 8421L, nome = "127.0.0.1", abrir = TRUE) {
   if (is.null(pasta)) pasta <- if (file.exists("app.R")) "." else if (dir.exists("app_shiny")) "app_shiny" else "graficos_R/app_shiny"
   if (!requireNamespace("shiny", quietly = TRUE)) install.packages("shiny", repos = "https://cloud.r-project.org")
   livre <- function(p) { s <- tryCatch(httpuv::startServer("127.0.0.1", p, list()), error = function(e) NULL)

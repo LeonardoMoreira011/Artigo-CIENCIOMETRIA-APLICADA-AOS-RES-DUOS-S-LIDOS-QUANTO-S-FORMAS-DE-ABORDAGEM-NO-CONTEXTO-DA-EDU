@@ -49,6 +49,7 @@ construir_ui <- function(idioma) fluidPage(
         selectInput("estilo", NULL, choices = tr_nomes(c("Estilos prontos..." = "", "Padrão do template" = "padrao", "Publicação (artigo)" = "publicacao",
                                                "Apresentação (slides)" = "apresentacao")), selectize = FALSE, width = "190px"),
         actionButton("restaurar", "Restaurar tudo", class = "btn-topo"),
+        actionButton("sair", "Sair", class = "btn-topo", title = "Encerra o Cinabro (fecha o R). Seus gráficos não salvos se perdem: salve a configuração antes."),
         actionButton("guia", "Como usar", class = "btn-topo btn-topo-forte"))),
   div(class = "abas-barra", uiOutput("abas_ui", inline = TRUE),
       div(class = "aba-lado", checkboxInput("lado_ativo", "Mostrar outra aba ao lado", value = FALSE), uiOutput("lado_sel", inline = TRUE))),
@@ -109,11 +110,24 @@ construir_ui <- function(idioma) fluidPage(
           div(class = "botoes-config", tags$button(type = "button", class = "btn-sec", id = "copiar-codigo", `data-copiado` = "Copiado!", "Copiar"),
               downloadButton("baixar_codigo", "Baixar script (.R)", class = "btn-sec"))))))
 
-# A tela é montada em português (o idioma pedido no endereço é ignorado: só português).
+# A tela é montada em português UMA vez, ao abrir o programa, e a mesma serve a todas as abas e recarregamentos. Antes ela era refeita a cada
+# página aberta (cerca de 2 s com o R parado, medidos na auditoria). O idioma pedido no endereço é ignorado: só português.
+.UI_PRONTA <- traduzir_html(construir_ui("pt"), "pt")
+# Montar o HTML final a partir das tags também custava ~1 s por página (5,5 mil tags): a resposta pronta do shiny é guardada na 1ª visita e
+# reaproveitada. Se o shiny não oferecer esse caminho, cai para a tela montada (UI_PRONTA), que é a versão segura.
+.UI_RESPOSTA <- NULL
 ui <- function(request) {
-  idioma <- idioma_do_pedido(request)
-  .i18n$idioma <- idioma
-  traduzir_html(construir_ui(idioma), idioma)
+  if (is.null(.UI_RESPOSTA))
+    .UI_RESPOSTA <<- tryCatch({ r <- utils::getFromNamespace("uiHttpHandler", "shiny")(.UI_PRONTA)(request); if (inherits(r, "httpResponse")) r else NULL }, error = function(e) NULL)
+  if (is.null(.UI_RESPOSTA)) .UI_PRONTA else .UI_RESPOSTA
 }
+
+# Aquecimento: o primeiro gráfico de um R recém-aberto leva alguns segundos a mais (fontes, pacotes). Desenha um gráfico pequeno agora, ao abrir,
+# para que o primeiro gráfico de verdade já saia rápido. Qualquer falha aqui é ignorada.
+try(local({
+  dm <- suppressMessages(ler_csv(file.path(raiz, "dados", "ensaio_temperatura.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE))))
+  r <- construir_grafico(dm, montar_variaveis(list(), CFG0, NULL), CFG0)
+  if (is.null(r$erro)) { p <- desenhar_previa(r$g, r$cfg, dpi = 72); unlink(p$arquivo) }
+}), silent = TRUE)
 
 shinyApp(ui, servidor)

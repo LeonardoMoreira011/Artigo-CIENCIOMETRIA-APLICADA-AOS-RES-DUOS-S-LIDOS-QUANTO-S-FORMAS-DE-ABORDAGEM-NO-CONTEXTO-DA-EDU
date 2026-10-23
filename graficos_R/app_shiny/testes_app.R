@@ -146,8 +146,8 @@ teste("o ícone é um .ico válido e os lançadores (bat, vbs, ps1, iniciar.R) e
       identical(ico[1:4], as.raw(c(0, 0, 1, 0))) && ico[5] >= as.raw(4) &&
       all(file.exists(file.path(raiz, c("abrir_app.bat", "iniciar_gerador_oculto.vbs", "criar_atalho.ps1", "criar_atalho.vbs", "Criar_atalho_na_area_de_trabalho.bat", "abrir_app.R"))),
           file.exists("iniciar.R")))
-teste("iniciar_gerador() existe e usa o endereço bonito cinabro.localhost", { source("iniciar.R"); is.function(iniciar_gerador) &&
-      grepl("cinabro.localhost", paste(deparse(iniciar_gerador), collapse = "")) })
+teste("iniciar_gerador() existe e usa o endereço simples 127.0.0.1 (sem cinabro.localhost, que podia falhar com proxy ou IPv6)", { source("iniciar.R"); is.function(iniciar_gerador) &&
+      grepl('nome = "127.0.0.1"', paste(deparse(iniciar_gerador), collapse = ""), fixed = TRUE) && !grepl("cinabro.localhost", paste(deparse(iniciar_gerador), collapse = "")) })
 teste("o .vbs e os .bat têm quebras de linha do Windows (CRLF)",
       all(vapply(file.path(raiz, c("abrir_app.bat", "iniciar_gerador_oculto.vbs", "criar_atalho.vbs", "Criar_atalho_na_area_de_trabalho.bat")),
                  function(f) { b <- readBin(f, "raw", file.size(f)); any(b[-length(b)] == as.raw(13) & b[-1] == as.raw(10)) }, NA)))
@@ -193,6 +193,30 @@ for (id in IDS_SLOT[!grepl("_ativo$", IDS_SLOT)]) {                  # cada camp
 }
 if (length(erros_slot)) print(erros_slot)
 teste("todos os campos dos cartões (com todos os cartões ligados), alterados um a um, viram variáveis e o painel aplica sem erro", length(erros_slot) == 0)
+teste("limites: o servidor aplica o mínimo e o máximo de cada campo (ticks menores 10 milhões vira 20, letra negativa vira 4) e avisa; sem máximo: 500 pt, 300 cm", {
+  vl <- vs; vl$x_ticks_menores <- 1e7; vl$y_titulo_tamanho_pt <- -5; vl$legenda_n_colunas <- 5000; vl$x_titulo_tamanho_pt <- 1e6; vl$largura_cm <- 1e5
+  r <- montar_variaveis(vl, CFG0); lim <- attr(r, "limitados")
+  r$x_ticks_menores == 20L && r$y_titulo_tamanho_pt == 4 && r$legenda_n_colunas == 12L && r$x_titulo_tamanho_pt == 500 && r$largura_cm == 300 && length(lim) == 5 &&
+    all(grepl("ficou em", unlist(lim))) && is.null(attr(montar_variaveis(vs, CFG0), "limitados")) })
+teste("limites: campos dos cartões também (largura de forma 1e12 vira 1e9) e o aviso chega à lista de avisos do gráfico", {
+  vl <- vs; vl$fm1_ativo <- TRUE; vl$fm1_largura <- 1e12; vl$fm1_tipo <- "retangulo"; r <- montar_variaveis(vl, CFG0)
+  rr <- construir_grafico(ler_csv(file.path(raiz, "dados", "ensaio_temperatura.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE))), { w <- vs; w$x_ticks_menores <- 1e7; montar_variaveis(w, CFG0) }, CFG0)
+  r$formas[[1]]$largura == 1e9 && any(grepl("ficou em 20", rr$avisos)) && is.null(rr$erro) })
+teste("prévia reduzida: acima de 5 mil linhas só uma amostra com os picos e vales; arquivos baixados e estatísticas usam tudo; não reduz com ajuste, fora de linha/pontos ou abaixo do limite", {
+  set.seed(7); n <- 20000; dg <- data.frame(t = seq_len(n), A = cumsum(rnorm(n)), B = rnorm(n)); dg$A[777] <- 500; dg$B[12345] <- -50
+  cg <- CFG0; cg$grafico$tipo <- "linha"; cg$grafico$coluna_x <- "t"
+  rd <- reduzir_previa(dg, cg); ca <- cg; ca$ajustes <- list(list(tipo = "linear")); cb <- cg; cb$grafico$tipo <- "boxplot"; cp <- cg; cp$grafico$tipo <- "pontos"
+  rp <- reduzir_previa(dg, cp); v0g <- montar_variaveis(vs, CFG0)
+  !is.null(rd) && rd$para < 3500 && rd$de == n && 777 %in% rd$dados$t && 12345 %in% rd$dados$t && 1 %in% rd$dados$t && n %in% rd$dados$t && !is.unsorted(rd$dados$t) &&
+    is.null(reduzir_previa(dg, ca)) && is.null(reduzir_previa(dg, cb)) && is.null(reduzir_previa(dg[1:4000, ], cg)) && !is.null(rp) && rp$para < 3500 && 777 %in% rp$dados$t &&
+    { v1 <- v0g; v1$coluna_x <- "t"; v1$tipo_grafico <- "linha"
+      rpv <- construir_grafico(dg, montar_variaveis(v1, CFG0), CFG0); rfull <- construir_grafico(dg, montar_variaveis(v1, CFG0), CFG0, preview = FALSE)
+      !is.null(rpv$decimado) && is.null(rfull$decimado) && is.null(rpv$erro) && is.null(rfull$erro) } })
+teste("tela montada uma vez (.UI_PRONTA), botão Sair, espera de 10 minutos para o R fechar e o aquecimento ao abrir", {
+  ap <- paste(readLines("app.R", encoding = "UTF-8"), collapse = "\n")
+  grepl(".UI_PRONTA <- traduzir_html(construir_ui(\"pt\"), \"pt\")", ap, fixed = TRUE) && grepl(".UI_RESPOSTA", ap, fixed = TRUE) &&
+    grepl('actionButton("sair"', ap, fixed = TRUE) && grepl("Aquecimento", ap, fixed = TRUE) && identical(.GRACA_ENCERRAR, 600) &&
+    grepl("observeEvent(input$sair", paste(readLines("codigo/servidor.R", encoding = "UTF-8"), collapse = "\n"), fixed = TRUE) })
 teste("os 4 cartões de ajuste, 3 de traços, 3 de caixas e 6 de formas existem, e o 2º só aparece com o 1º ligado", {
   g <- ESPEC[[13]]$grupos; any(vapply(g, function(x) identical(x$ativo, "aj2_ativo") && identical(x$se, "input.aj1_ativo"), NA)) &&
     sum(vapply(c(ESPEC[[13]]$grupos, ESPEC[[14]]$grupos), function(x) !is.null(x$ativo), NA)) == 19 })

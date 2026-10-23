@@ -151,11 +151,11 @@ Critério: valor para o time × custo (tempo, tela, manutenção). "Uso" = julga
 * Erros mostram nomes de código ao usuário ("Defina cfg$grafico$colunas_y").
 * Peso na tela: Font Awesome (253 KB) só para 2 ícones, fonte Kaushan (206 KB) só para a frase, emblema SVG 92 KB. Local não pesa; some quando o instalador embutir, mas é lixo.
 
-## 7. Plano proposto (nada executado)
+## 7. Plano (Fase 1 executada; Fase 2 aguarda aprovação)
 
 Ordem por **ganho ÷ esforço**; as fases 1 e 2 não tiram nenhum recurso.
 
-### Fase 1 — Corrigir (sem perder recurso)
+### Fase 1 — Corrigir (sem perder recurso) — FEITA (ver LEIAME, seção "Auditoria de desempenho")
 | # | O quê | Ganho medido/estimado | Esforço |
 |---|---|---|---|
 | 1 | **Um único ggplot por atualização**: desenhar e medir legenda/títulos com o mesmo objeto | −55% em toda atualização (1,15 → ~0,5 s) | pequeno |

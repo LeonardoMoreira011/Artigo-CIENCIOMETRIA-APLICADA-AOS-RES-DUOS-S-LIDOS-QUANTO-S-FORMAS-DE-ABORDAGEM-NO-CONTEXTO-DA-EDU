@@ -51,7 +51,10 @@ registrar_log <- function(...) {
   }, error = function(e) NULL)
 }
 
-# Sessões abertas: com gerador_encerrar_ao_fechar (atalho sem janela), o R termina quando a última aba fecha.
+# Sessões abertas: com gerador_encerrar_ao_fechar (atalho sem janela), o R termina quando a última aba fecha E passam .GRACA_ENCERRAR segundos
+# sem nenhuma aba aberta. A espera era de 6 s: o computador suspender, o navegador "dormir" a aba ou o antivírus cortar a conexão por um instante
+# bastava para o R sumir e a tela ficar cinza. O botão "Sair" (cabeçalho) encerra na hora.
+.GRACA_ENCERRAR <- 600
 .sessoes <- new.env(); .sessoes$n <- 0; .sessoes$visto <- FALSE
 # Se o R foi aberto pelo atalho (sem janela) e o navegador nunca chegou a conectar (ex.: foi bloqueado), não deixa o R escondido para sempre.
 if (isTRUE(getOption("gerador_encerrar_ao_fechar")) && requireNamespace("later", quietly = TRUE))
@@ -63,8 +66,13 @@ servidor <- function(input, output, session) {
   session$onSessionEnded(function() {
     .sessoes$n <- .sessoes$n - 1
     registrar_log("sessão fechada (", .sessoes$n, " aberta(s) agora)")
-    if (isTRUE(getOption("gerador_encerrar_ao_fechar")))          # espera 6 s: recarregar a página não encerra o app
-      later::later(function() if (.sessoes$n <= 0) shiny::stopApp(), 6)
+    if (isTRUE(getOption("gerador_encerrar_ao_fechar")))          # espera 10 min: recarregar a página, suspender o PC ou uma queda curta não encerram o app
+      later::later(function() if (.sessoes$n <= 0) shiny::stopApp(), .GRACA_ENCERRAR)
+  })
+  observeEvent(input$sair, {                                        # botão "Sair": encerra o R na hora
+    registrar_log("botão Sair")
+    session$sendCustomMessage("adeus", list())
+    later::later(function() shiny::stopApp(), 1.5)
   })
   rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL, geo = NULL,
                        paletas = list(), pend_calc = FALSE, img = list(), palco_larg = NULL, palco_usado = NULL, abas = list(list(nome = NULL, snap = NULL)), aba = 1L, est = NULL)
@@ -225,7 +233,7 @@ servidor <- function(input, output, session) {
       p <- tryCatch(desenhar_previa(r$g, r$cfg, dpi = 130, alvo_px = if (!is.null(rv$palco_larg)) rv$palco_larg - 30, prep = prep), error = function(e) { rv$erro <- conditionMessage(e); NULL })
       if (!is.null(p)) rv$palco_usado <- rv$palco_larg
       registrar_log("gráfico: montar ", sprintf("%.2f", t_mont), " s, total ", sprintf("%.2f", as.numeric(difftime(Sys.time(), t_ini, units = "secs"))),
-                    " s; ", length(vars_atual()), " ajustes ativos; memória do R ", round(sum(gc()[, 2])), " MB; pasta temporária ",
+                    " s; campos em uso: ", paste(names(vars_atual()), collapse = ","), "; memória do R ", round(sum(gc()[, 2])), " MB; pasta temporária ",
                     length(list.files(tempdir(), recursive = TRUE)), " arquivos")
       if (!is.null(p)) {
         if (!is.null(rv$previa$arquivo)) unlink(rv$previa$arquivo)          # a prévia anterior não fica acumulando na pasta temporária
@@ -256,6 +264,8 @@ servidor <- function(input, output, session) {
     r <- rv$res; p <- rv$previa; if (is.null(r) || is.null(r$cfg) || is.null(p)) return(NULL)
     div(class = "chips", span(class = "chip", TF("Página %.1f × %.1f cm", p$larg_px / (p$dpi %||% 130) * 2.54, p$alt_px / (p$dpi %||% 130) * 2.54)),
         if (!is.null(r$cfg$caixa$painel_largura_cm)) span(class = "chip chip-verde", TF("Caixa fixa %.1f × %.1f cm", r$cfg$caixa$painel_largura_cm, r$cfg$caixa$painel_altura_cm %||% NA)),
+        if (!is.null(r$decimado)) span(class = "chip chip-aviso", title = T("Para a prévia ficar rápida, só uma amostra das linhas é desenhada (os picos e vales ficam). O arquivo baixado usa todas as linhas."),
+                                       TF("Prévia simplificada: %s de %s linhas", format(r$decimado[["para"]], big.mark = ".", decimal.mark = ","), format(r$decimado[["de"]], big.mark = ".", decimal.mark = ","))),
         span(class = "chip", paste(T("Fonte:"), r$cfg$texto$fonte)))
   })
   derivados <- c(cores_personalizadas = "Cores da minha paleta", legenda_sombra_deslocamento_pt = "Sombra da legenda: deslocamento",

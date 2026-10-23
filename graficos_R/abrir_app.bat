@@ -64,8 +64,8 @@ exit /b 1
 :rodar
 echo.
 echo R encontrado: %RS%
-echo Abrindo o Cinabro no navegador (http://cinabro.localhost:8421)...
-echo Esta janela fecha sozinha uns segundos depois que voce fechar a aba do navegador. Para nao ver a janela, use Criar_atalho_na_area_de_trabalho.bat.
+echo Abrindo o Cinabro no navegador (http://127.0.0.1:8421)...
+echo Esta janela fecha sozinha 10 minutos depois que voce fechar a aba do navegador (ou na hora, pelo botao Sair do Cinabro). Para nao ver a janela, use Criar_atalho_na_area_de_trabalho.bat.
 "%RS%" -e "options(repos=c(CRAN='https://cloud.r-project.org')); for (p in c('shiny','ggplot2','scales','patchwork','ragg','systemfonts')) if (!requireNamespace(p, quietly=TRUE)) install.packages(p); file.create('app_shiny/.pronto'); source('app_shiny/iniciar.R', encoding='UTF-8'); iniciar_gerador(encerrar_ao_fechar = TRUE)"
 if errorlevel 1 (
   echo.

@@ -31,6 +31,12 @@
     var b = this, orig = b.textContent, ok = $(b).data('copiado') || 'Copiado!', t = $('#modelo-saida').val();
     copiarTexto(t, function () { b.textContent = ok; setTimeout(function () { b.textContent = orig; }, 1600); });
   });
+  // botão "Sair": o R encerra e esta aba mostra um aviso de despedida
+  Shiny.addCustomMessageHandler('adeus', function () {
+    document.body.innerHTML = '<div style="font-family:Barlow,sans-serif;max-width:520px;margin:18vh auto;padding:0 24px;text-align:center;color:#20242B">' +
+      '<h2 style="color:#B3262E">Cinabro encerrado</h2><p>Pode fechar esta aba. Para voltar a usar, abra o Cinabro pelo atalho ou pelo <b>abrir_app.bat</b>.</p></div>';
+    document.body.style.background = '#F5EBDD';
+  });
   // (idioma: só português; o seletor foi retirado. Inglês e espanhol estão arquivados em idiomas_arquivados/.)
   try { localStorage.removeItem('cinabro_idioma'); } catch (e) {}
   // "Selecionar todas" / "Limpar" nas listas de colunas

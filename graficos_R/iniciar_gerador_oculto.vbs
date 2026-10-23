@@ -1,7 +1,7 @@
 ' ============================================================================
 '  Abre o CINABRO (laboratorio de graficos) no navegador SEM janela de comando.
 '  Use pelo atalho da area de trabalho (veja Criar_atalho_na_area_de_trabalho.bat).
-'  O R fecha sozinho alguns segundos depois que voce fecha a aba do navegador.
+'  O R fecha sozinho 10 minutos depois que voce fecha a aba do navegador (ou na hora, pelo botao Sair do Cinabro).
 ' ============================================================================
 Option Explicit
 Dim sh, fso, pasta, rs, f, cmd

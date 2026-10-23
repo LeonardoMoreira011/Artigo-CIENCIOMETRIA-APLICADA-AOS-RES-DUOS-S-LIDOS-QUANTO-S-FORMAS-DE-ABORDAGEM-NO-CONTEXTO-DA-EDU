@@ -50,6 +50,14 @@ Só entram paletas de trabalhos com licença livre; os créditos e avisos estão
 - **Diagnóstico**: abra `ferramentas/diagnostico_cinabro.R` no RStudio e rode (Source). Ele confere versões do R e dos pacotes, mede o tempo de cada gráfico e o crescimento de memória, e grava `diagnostico_cinabro_resultado.txt` na mesma pasta. Antes: R 4.5 ou mais novo, reiniciar o RStudio e rodar `00_instalar_pacotes.R`.
 - **Registro de uso**: o aplicativo anota em `%LOCALAPPDATA%\Cinabro\log\app.log` (Windows) quando abre/fecha, quanto cada gráfico demora, memória, arquivos temporários e erros. Não grava seus dados nem o conteúdo do gráfico. Se a tela ficar cinza, envie o final desse arquivo.
 - A prévia antiga é apagada ao desenhar a nova (antes ficava acumulando na pasta temporária).
+- **Fase 1 da auditoria (feita):**
+  - **Limites nos campos:** o servidor passa a aplicar o mínimo e o máximo de cada campo (o navegador deixa digitar qualquer número; 10 milhões de "traços menores" enchia o R de memória e letra de tamanho negativo travava por 15 s). O valor é corrigido e um aviso diz qual campo ficou em qual valor. Sem máximo declarado: 500 pt (tamanhos em pt), 300 cm (tamanhos em cm), 1e9 (demais).
+  - **Prévia reduzida:** acima de 5 mil linhas, a prévia (só ela) desenha uma amostra que guarda picos e vales, e um aviso "Prévia simplificada: N de M linhas" aparece sob o gráfico. Os arquivos baixados e as tabelas de estatística usam **todas** as linhas. Não reduz com ajuste, média ± DP ou caixa de estatística ligados, nem em barras/boxplot/histograma. Medido: 50 mil linhas de ~30 s para ~1,4 s por atualização; 200 mil, de 76 s para ~1,1 s.
+  - **Um gráfico só por atualização** (desenho e medidas da legenda, dos títulos e das caixas usam o mesmo): 13 pontos, de ~1,15 s para ~0,75 s.
+  - **Tela montada uma vez** ao abrir o programa (antes, ~1,8 s com o R parado a cada aba ou recarga; agora a página sai em ~3 ms) e **aquecimento**: um gráfico pequeno é desenhado ao abrir, para o primeiro gráfico de verdade sair rápido.
+  - **O R não fecha mais por uma queda curta:** espera 10 minutos sem nenhuma aba aberta (antes, 6 s). Botão **Sair** no cabeçalho encerra na hora. Endereço `http://127.0.0.1:8421`.
+  - **Figuras leves:** uma figura de 4 megapixels ocupa ~17 MB (antes 138 MB), é lida em 0,1 s e desenhada sem conversão (antes 4 s a cada atualização); a memória guarda no máximo 3 figuras.
+  - **Registro de uso:** o `app.log` agora anota os nomes dos campos em uso (não os valores) em cada gráfico, para sabermos o que a equipe realmente usa.
 
 ## Caixas que se movem, caixa de estatística separada e curva externa
 
@@ -86,8 +94,8 @@ Só entram paletas de trabalhos com licença livre; os créditos e avisos estão
 ## Atalho com ícone, sem janela de comando, e endereço bonito
 
 - **Atalho com ícone:** um `.bat` não pode ter ícone no Windows; o jeito é um **atalho**. **Extraia o ZIP inteiro** (não rode de dentro do ZIP) e dê dois cliques em **`Criar_atalho_na_area_de_trabalho.bat`** (uma vez). Ele usa um VBScript (`criar_atalho.vbs`, sem PowerShell); se o computador bloquear, tenta o PowerShell e, por último, deixa um `Cinabro.cmd` na área de trabalho (sem ícone). O atalho "Cinabro" aparece na área de trabalho e no menu Iniciar, com o ícone do projeto (`app_shiny/www/icone.ico`, provisório). Pode fixar na barra de tarefas pelo menu de contexto do atalho.
-- **Sem janela de comando:** o atalho abre o app por `iniciar_gerador_oculto.vbs` (R escondido). O R **fecha sozinho** poucos segundos depois que você fecha a aba do navegador (e também se o navegador nunca chegar a conectar, após 3 minutos); recarregar a página não encerra. Com o `abrir_app.bat` a janela preta também fecha sozinha ao terminar (só pede uma tecla se o R terminar com erro). A primeira vez (ou se o R não for achado) abre o `abrir_app.bat` com janela, que instala o que falta.
-- **Endereço:** `http://cinabro.localhost:8421` (porta fixa; se estiver ocupada o app escolhe outra e mostra o endereço). O navegador entende `*.localhost` sozinho, sem editar nada no Windows.
+- **Sem janela de comando:** o atalho abre o app por `iniciar_gerador_oculto.vbs` (R escondido). O R **fecha sozinho** 10 minutos depois que a última aba do navegador se fecha (e também se o navegador nunca chegar a conectar, após 3 minutos); recarregar a página, suspender o computador ou uma queda curta não encerram. O botão **Sair** (canto superior direito) encerra na hora. Com o `abrir_app.bat` a janela preta também fecha sozinha ao terminar (só pede uma tecla se o R terminar com erro). A primeira vez (ou se o R não for achado) abre o `abrir_app.bat` com janela, que instala o que falta.
+- **Endereço:** `http://127.0.0.1:8421` (porta fixa; se estiver ocupada o app escolhe outra e mostra o endereço). Antes era `cinabro.localhost`, que podia falhar com proxy da empresa ou IPv6.
 - **No R:** `source("app_shiny/iniciar.R"); iniciar_gerador()` (com `encerrar_ao_fechar = TRUE` o R fecha junto com a aba). A prévia do `visualizar()` agora grava `previa_do_grafico.html` (nome fixo, não números aleatórios).
 
 ## Legenda como caixa ajustável

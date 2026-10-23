@@ -6624,9 +6624,12 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
 # =============================================================================
 
 .cache_imagens <- new.env()
+.cache_ordem <- character(0)      # ordem de leitura (a cache guarda no máximo 3 figuras: a mais antiga sai)
 .IMAGEM_MAX_PX <- 2400            # lado maior; figuras maiores são reduzidas (só para desenhar)
 
-# Lê a figura. Sai: list(r, g, b, a, alt, larg) — canais de 0 a 1 em matrizes (altura x largura).
+# Lê a figura como "nativeRaster" (4 bytes por pixel: uma figura de 4 megapixels fica com ~17 MB; antes ficava com 138 MB em quatro matrizes de
+# números, que nunca saíam da memória, e a conversão para desenhar levava 4 s a CADA atualização do gráfico).
+# Sai: list(nat, alt, larg).
 .ler_imagem <- function(arq) {
   if (is.null(arq) || !is.character(arq) || length(arq) != 1 || !nzchar(arq)) .erro("cfg$imagens: cada figura precisa de 'arquivo' (caminho de um PNG ou JPEG).")
   if (!file.exists(arq)) .erro("cfg$imagens: não achei a figura '", arq, "'.")
@@ -6636,23 +6639,30 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
   if (!ext %in% c("png", "jpg", "jpeg")) .erro("cfg$imagens: formato '.", ext, "' não é aceito; use PNG ou JPEG.")
   pk <- if (ext == "png") "png" else "jpeg"
   if (!.tem(pk)) .erro("Para usar figuras é preciso o pacote ", pk, ": rode install.packages(\"", pk, "\") (ou 00_instalar_pacotes.R).")
-  a <- tryCatch(if (ext == "png") png::readPNG(arq) else jpeg::readJPEG(arq), error = function(e) .erro("cfg$imagens: não consegui ler '", arq, "' (arquivo corrompido?)."))
-  d <- dim(a)
-  if (length(d) == 2) a <- array(a, c(d, 1)); d <- dim(a)
-  ch <- d[3]
-  canal <- function(i) a[, , i]
-  R <- G <- B <- NULL; A <- matrix(1, d[1], d[2])
-  if (ch %in% c(1, 2)) { R <- G <- B <- canal(1); if (ch == 2) A <- canal(2) } else { R <- canal(1); G <- canal(2); B <- canal(3); if (ch >= 4) A <- canal(4) }
+  nat <- tryCatch(if (ext == "png") png::readPNG(arq, native = TRUE) else jpeg::readJPEG(arq, native = TRUE),
+                  error = function(e) .erro("cfg$imagens: não consegui ler '", arq, "' (arquivo corrompido?)."))
+  d <- dim(nat)
   passo <- ceiling(max(d[1:2]) / .IMAGEM_MAX_PX)
-  if (passo > 1) { i <- seq(1, d[1], by = passo); j <- seq(1, d[2], by = passo); R <- R[i, j, drop = FALSE]; G <- G[i, j, drop = FALSE]; B <- B[i, j, drop = FALSE]; A <- A[i, j, drop = FALSE] }
-  out <- list(r = R, g = G, b = B, a = A, alt = nrow(R), larg = ncol(R))
+  if (passo > 1) {
+    i <- seq(1, d[1], by = passo); j <- seq(1, d[2], by = passo)
+    nat <- structure(unclass(nat)[i, j, drop = FALSE], class = "nativeRaster", channels = 4L)
+  }
+  out <- list(nat = nat, alt = nrow(nat), larg = ncol(nat))
   .cache_imagens[[chave]] <- out
+  ordem <- c(setdiff(.cache_ordem, chave), chave)
+  if (length(ordem) > 3) { rm(list = ordem[1], envir = .cache_imagens); ordem <- ordem[-1] }
+  .cache_ordem <<- ordem
   out
 }
 
-# Raster (matriz de cores) com a opacidade pedida.
+# Raster pronto para desenhar, com a opacidade pedida (só o byte de transparência é mexido; opacidade 1 devolve a própria figura).
 .raster_imagem <- function(im, opacidade = 1) {
-  matrix(grDevices::rgb(as.vector(im$r), as.vector(im$g), as.vector(im$b), alpha = pmin(pmax(as.vector(im$a) * opacidade, 0), 1)), nrow = im$alt)
+  if (!is.finite(opacidade) || opacidade >= 1) return(im$nat)
+  x <- unclass(im$nat); dd <- dim(x)
+  b <- writeBin(as.integer(x), raw()); k <- seq(4L, length(b), by = 4L)
+  b[k] <- as.raw(pmin(pmax(round(as.integer(b[k]) * max(opacidade, 0)), 0), 255))
+  y <- readBin(b, "integer", n = length(x)); dim(y) <- dd
+  structure(y, class = "nativeRaster", channels = 4L)
 }
 
 # Grob que mantém a proporção da figura: a largura vem do painel (npc) e a altura é calculada na hora de desenhar.

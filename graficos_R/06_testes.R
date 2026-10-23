@@ -1111,6 +1111,13 @@ if (.tem("png") && .tem("jpeg")) {
     a && b && d && e })
   teste("figura: a proporção é mantida quando só a largura é dada (mesma imagem 2:1 sai com altura = metade da largura)", {
     im <- .ler_imagem(f_png); abs(im$alt / im$larg - 0.5) < 1e-9 && identical(dim(.raster_imagem(im, 0.5)), c(40L, 80L)) })
+  teste("figura: fica em formato leve (nativeRaster: 4 bytes por pixel), a cache guarda no máximo 3 figuras e as cores e a opacidade saem certas", {
+    fv <- tempfile(fileext = ".png"); png::writePNG(array(c(rep(1, 16), rep(0, 32)), c(4, 4, 3)), fv)          # 4x4 vermelho puro
+    im <- .ler_imagem(fv); r1 <- .raster_imagem(im, 1); r5 <- .raster_imagem(im, 0.5)
+    b1 <- writeBin(as.integer(unclass(r1)[1]), raw()); b5 <- writeBin(as.integer(unclass(r5)[1]), raw())
+    for (k in 1:4) { f2 <- tempfile(fileext = ".png"); png::writePNG(array(runif(12), c(2, 2, 3)), f2); invisible(.ler_imagem(f2)) }
+    inherits(im$nat, "nativeRaster") && identical(as.integer(b1), c(255L, 0L, 0L, 255L)) && identical(as.integer(b5), c(255L, 0L, 0L, 128L)) && identical(.raster_imagem(im, 1), im$nat) &&
+      length(ls(.cache_imagens)) <= 3 })
   teste("figura: com a quebra de eixo, a figura em fração fica só na parte de cima", {
     dq <- data.frame(x = 1:20, A = c(1:10, 1001:1010)); cq <- ci; cq$grafico$colunas_y <- "A"; cq$quebra <- utils::modifyList(ci$quebra, list(ativo = TRUE, de = 100, ate = 900))
     cq$imagens <- list(list(arquivo = f_png)); pt <- attr(suppressWarnings(plotar(dq, cq)), "partes"); monta(pt[[1]]) && monta(pt[[2]]) })

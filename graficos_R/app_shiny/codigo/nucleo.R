@@ -41,11 +41,31 @@ valor_inicial <- function(campo, cfg0) {
 }
 
 # Converte o que está na tela no valor do painel. NULL = "não mexer" (vale o padrão do template).
-ler_valor <- function(campo, v, cfg0) {
+# Limites de um campo numérico. O que o campo declara (min, max) vale também no servidor: o navegador deixa digitar qualquer número, e um
+# valor absurdo (10 milhões de traços menores, tamanho de letra negativo) travava o R ou o enchia de memória. Sem máximo declarado:
+# 500 pt para tamanhos em pt, 300 cm para tamanhos em cm, 1e9 para o resto (coordenadas e valores dos dados).
+limites_do_campo <- function(campo) {
+  mn <- if (is.null(campo$min) || is.na(campo$min)) NA_real_ else campo$min
+  mx <- if (is.null(campo$max) || is.na(campo$max)) NA_real_ else campo$max
+  if (is.na(mx)) mx <- if (grepl("_pt$", campo$id)) 500 else if (grepl("_cm$", campo$id)) 300 else 1e9
+  c(mn, mx)
+}
+# Põe v dentro dos limites. 'reg' (um ambiente com $m) anota o que foi limitado, para o app avisar.
+limitar_numero <- function(campo, v, reg = NULL) {
+  lim <- limites_do_campo(campo); novo <- v
+  if (!is.na(lim[1]) && novo < lim[1]) novo <- lim[1]
+  if (novo > lim[2]) novo <- lim[2]
+  if (!isTRUE(novo == v) && !is.null(reg))
+    reg$m[[campo$id]] <- sprintf("O campo \"%s\" ficou em %s: ele só aceita %s.", campo$rotulo, format(novo, scientific = FALSE, trim = TRUE),
+                                 if (is.na(lim[1])) paste0("até ", format(lim[2], scientific = FALSE, trim = TRUE)) else paste0("de ", format(lim[1], trim = TRUE), " a ", format(lim[2], scientific = FALSE, trim = TRUE)))
+  novo
+}
+
+ler_valor <- function(campo, v, cfg0, reg = NULL) {
   d <- padrao_do_campo(campo, cfg0)
   iguais <- function(a, b) !is.null(a) && !is.null(b) && isTRUE(all.equal(a, b))
   out <- switch(campo$tipo,
-    num = , int = { if (is.null(v) || length(v) != 1 || is.na(v)) NULL else if (campo$tipo == "int") as.integer(round(v)) else as.numeric(v) },
+    num = , int = { if (is.null(v) || length(v) != 1 || is.na(v)) NULL else { v <- limitar_numero(campo, as.numeric(v), reg); if (campo$tipo == "int") as.integer(round(v)) else v } },
     txt = { v <- trimws(v %||% ""); if (!nzchar(v)) NULL else if (grepl("^-?[0-9.]+$", v)) as.numeric(v) else v },
     area = { v <- trimws(v %||% ""); if (!nzchar(v)) NULL else v },
     chk = if (is.null(v)) NULL else isTRUE(v),
@@ -71,11 +91,11 @@ ler_valor <- function(campo, v, cfg0) {
 
 # ---- cartões dos blocos 13 e 14 (ajustes, marcas, caixas de estatística, formas): da tela para a lista do painel ----------------
 # Valor de um campo de cartão. NULL = "não mexer" (vale o padrão do motor).
-ler_valor_slot <- function(campo, v) {
+ler_valor_slot <- function(campo, v, reg = NULL) {
   d <- campo$padrao
   switch(campo$tipo,
-    num = , int = { if (is.null(v) || length(v) != 1 || is.na(v)) NULL else if (!is.null(d) && isTRUE(all.equal(as.numeric(v), as.numeric(d)))) NULL
-                    else if (campo$tipo == "int") as.integer(round(v)) else as.numeric(v) },
+    num = , int = { if (is.null(v) || length(v) != 1 || is.na(v)) NULL else { v <- limitar_numero(campo, as.numeric(v), reg)
+                    if (!is.null(d) && isTRUE(all.equal(v, as.numeric(d)))) NULL else if (campo$tipo == "int") as.integer(round(v)) else v } },
     txt = , area = { v <- trimws(v %||% ""); if (!nzchar(v)) NULL else v },
     sel = { v <- as.character(v %||% ""); if (!nzchar(v) || (!is.null(d) && identical(v, as.character(d)))) NULL else v },
     cor = { v <- as.character(v %||% ""); if (!nzchar(v)) NULL else v },
@@ -94,7 +114,7 @@ ler_inicio <- function(txt) {
   stats::setNames(as.numeric(vapply(m, `[`, "", 3)), vapply(m, `[`, "", 2))
 }
 IDS_SLOT <- local({ ids <- names(ESPEC_CAMPOS); ids[vapply(ESPEC_CAMPOS, function(c) !is.null(c$chave), NA)] })
-montar_slots <- function(v) {
+montar_slots <- function(v, reg = NULL) {
   out <- list()
   for (g in names(SLOTS)) {
     itens <- list(); pref <- SLOTS[[g]]$pref
@@ -103,7 +123,7 @@ montar_slots <- function(v) {
       it <- list()
       for (c in SLOT_CAMPOS[[g]][[k]]) {
         if (c$chave == "ativo") next
-        val <- ler_valor_slot(c, v[[c$id]])
+        val <- ler_valor_slot(c, v[[c$id]], reg)
         if (!is.null(val)) it[[c$chave]] <- val
       }
       if (!is.null(it$inicio)) { ini <- ler_inicio(it$inicio); it$inicio <- NULL; if (!is.null(ini)) it$inicio <- ini }
@@ -129,14 +149,14 @@ names(SLOT_CAMPOS) <- names(SLOTS)
 # Todas as variáveis do painel a partir dos valores da tela.
 #   v: lista id -> valor (a tela); series: data.frame com uma linha por série (nome, cor, forma, tamanho, linha, borda, legenda)
 montar_variaveis <- function(v, cfg0, series = NULL) {
-  vars <- list()
+  vars <- list(); reg <- new.env(); reg$m <- list()           # reg: campos cujo número foi limitado (vira aviso)
   for (id in names(ESPEC_CAMPOS)) {
     campo <- ESPEC_CAMPOS[[id]]
     if (id %in% c("simbolo_modo", "legenda_sombra_dx", "legenda_sombra_dy") || id %in% IDS_SLOT) next
-    val <- ler_valor(campo, v[[id]], cfg0)
+    val <- ler_valor(campo, v[[id]], cfg0, reg)
     if (!is.null(val)) vars[[id]] <- val
   }
-  vars <- c(vars, montar_slots(v))                   # ajustes, marcas, caixas de estatística e formas
+  vars <- c(vars, montar_slots(v, reg))                   # ajustes, marcas, caixas de estatística e formas
   # paleta própria (a do editor ou uma guardada) = cores personalizadas
   pal <- vars$cores_paleta
   if (identical(pal, "propria") || (is.character(pal) && startsWith(pal, "salva:"))) {
@@ -171,18 +191,54 @@ montar_variaveis <- function(v, cfg0, series = NULL) {
     bp <- por("borda"); if (!is.null(bp)) vars$simbolo_borda_por_serie <- bp
     np <- por("legenda", "txt"); if (!is.null(np)) { np <- np[names(np) != unname(np)]; if (length(np)) vars$legenda_nomes <- np }
   }
+  if (length(reg$m)) attr(vars, "limitados") <- reg$m
   vars
+}
+
+# Prévia mais leve para dados com muitas linhas. Acima de LIMITE_PREVIA_LINHAS linhas, a PRÉVIA desenha só uma amostra que guarda os picos e
+# os vales (em cada trecho de linhas vizinhas fica a linha do mínimo e a do máximo de cada coluna numérica; em "só pontos", uma amostra
+# espaçada mais as linhas dos extremos). Na auditoria, 50 mil linhas levavam ~30 s por atualização; com a amostra, cerca de 1 s. Os arquivos
+# baixados (PNG, PDF...) e as tabelas de estatística usam SEMPRE todas as linhas. Não reduz quando há ajuste, média ± DP ou caixa de
+# estatística (os números precisam sair dos dados completos) nem fora dos gráficos de linha, área e pontos.
+LIMITE_PREVIA_LINHAS <- 5000
+ALVO_PREVIA_LINHAS <- 3000
+reduzir_previa <- function(dados, cfg, limite = LIMITE_PREVIA_LINHAS, alvo = ALVO_PREVIA_LINHAS) {
+  n <- nrow(dados)
+  if (is.null(n) || n <= limite || !(cfg$grafico$tipo %in% c("linha_pontos", "linha", "pontos", "area", "area_empilhada"))) return(NULL)
+  ativo <- function(l) any(vapply(l %||% list(), function(it) !isFALSE(it$ativo), NA))
+  if (ativo(cfg$ajustes) || ativo(cfg$marcas_estatisticas) || ativo(cfg$caixas_estatisticas)) return(NULL)
+  cols <- Filter(function(v) is.numeric(v) || inherits(v, c("Date", "POSIXct")), as.list(dados))
+  if (!length(cols)) return(NULL)
+  extremos <- unique(unlist(lapply(cols, function(v) { v <- as.numeric(v); ok <- which(is.finite(v)); if (length(ok)) c(ok[which.min(v[ok])], ok[which.max(v[ok])]) })))
+  if (identical(cfg$grafico$tipo, "pontos")) {
+    idx <- unique(c(round(seq(1, n, length.out = alvo)), extremos))
+  } else {
+    nb <- max(100L, floor(alvo / (2 * length(cols) + 1))); bin <- ceiling(seq_len(n) / n * nb)
+    idx <- c(1L, n, extremos)
+    for (v in cols) {
+      v <- as.numeric(v); ok <- which(is.finite(v)); if (!length(ok)) next
+      oo <- ok[order(bin[ok], v[ok])]; b <- bin[oo]
+      idx <- c(idx, oo[!duplicated(b)], oo[!duplicated(b, fromLast = TRUE)])
+    }
+  }
+  idx <- sort(unique(as.integer(idx)))
+  if (length(idx) >= 0.9 * n) return(NULL)
+  extras <- attributes(dados)[setdiff(names(attributes(dados)), c("names", "row.names", "class"))]
+  d2 <- dados[idx, , drop = FALSE]; rownames(d2) <- NULL
+  for (a in names(extras)) attr(d2, a) <- extras[[a]]
+  list(dados = d2, de = n, para = length(idx))
 }
 
 # Aplica as variáveis ao cfg base e monta o gráfico. Sai: list(g, cfg, aplicado, avisos) ou list(erro = "...").
 construir_grafico <- function(dados, vars, cfg0, preview = TRUE, idioma = "pt") {
-  avisos <- character(0); aplicado <- character(0)
+  avisos <- as.character(unlist(attr(vars, "limitados"))); aplicado <- character(0)
   env <- list2env(vars, parent = emptyenv())
   res <- tryCatch(withCallingHandlers(com_idioma(idioma, {
     cfg <- aplicar_painel(cfg0, painel = env, dados = dados)
     if (preview) cfg$exportacao$formatos <- "png"
-    g <- plotar(dados, cfg)
-    list(g = g, cfg = cfg)
+    red <- if (preview) reduzir_previa(dados, cfg)
+    g <- plotar(if (is.null(red)) dados else red$dados, cfg)
+    list(g = g, cfg = cfg, decimado = if (!is.null(red)) c(de = red$de, para = red$para))
   }), warning = function(w) { avisos <<- c(avisos, conditionMessage(w)); invokeRestart("muffleWarning") },
      message = function(m) {
        t <- conditionMessage(m)
