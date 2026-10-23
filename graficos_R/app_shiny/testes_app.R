@@ -26,6 +26,11 @@ teste("projeto: os dados vão dentro do arquivo e voltam idênticos (byte a byte
       identical(pj2$tipo_arquivo, "cinabro-projeto") && identical(pj2$valores$tipo_grafico, "pontos") && identical(readBin(volta, "raw", 200), readBin(csv_t, "raw", 200)))
 teste("projeto: sem dados dentro (só configuração) não dá erro", is.null(extrair_dados_projeto(list(valores = list()), tempfile())))
 
+bat_txt <- paste(readLines(file.path(raiz, "abrir_app.bat"), warn = FALSE), collapse = "\n")
+teste("abrir_app.bat cria sozinho o atalho da área de trabalho (criar_atalho.vbs) na 1ª vez e se a pasta mudar, sem blocos que quebram com parênteses no caminho",
+      grepl("criar_atalho.vbs", bat_txt, fixed = TRUE) && grepl("app_shiny\\.atalho", bat_txt, fixed = TRUE) && grepl("goto :atalho_ok", bat_txt, fixed = TRUE) &&
+      file.exists(file.path(raiz, "criar_atalho.vbs")) && grepl("icone.ico", paste(readLines(file.path(raiz, "criar_atalho.vbs"), warn = FALSE), collapse = " "), fixed = TRUE))
+
 # ---- pacotes: o que o código usa está na lista que o abrir_app.bat instala sozinho ------------------------------------------
 source("pacotes.R", encoding = "UTF-8")
 fontes_r <- c(list.files(file.path(raiz, "R"), "\\.R$", full.names = TRUE), list.files("codigo", "\\.R$", full.names = TRUE),

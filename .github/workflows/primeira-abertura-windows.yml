@@ -57,6 +57,12 @@ jobs:
           if (-not $ok) { throw "o app não abriu na 1ª vez" }
           if (-not (Test-Path C:/u/graficos_R/app_shiny/.pronto)) { throw "faltou o marcador .pronto" }
           Write-Host "Cinabro abriu na 1ª vez."
+          $lnk = Join-Path ([Environment]::GetFolderPath("Desktop")) "Cinabro.lnk"
+          if (-not (Test-Path $lnk)) { throw "o abrir_app.bat não criou o atalho na área de trabalho" }
+          $sc = (New-Object -ComObject WScript.Shell).CreateShortcut($lnk)
+          Write-Host "Atalho: $($sc.TargetPath) $($sc.Arguments) | ícone: $($sc.IconLocation)"
+          if ($sc.IconLocation -notmatch "icone\.ico") { throw "o atalho não usa o ícone do Cinabro" }
+          if (-not (Test-Path C:/u/graficos_R/app_shiny/.atalho)) { throw "faltou o marcador .atalho" }
           Get-Process Rscript -ErrorAction SilentlyContinue | Stop-Process -Force
           Start-Sleep -Seconds 2
 

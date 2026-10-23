@@ -64,8 +64,18 @@ exit /b 1
 :rodar
 echo.
 echo R encontrado: %RS%
+rem Atalho "Cinabro" (com icone) na area de trabalho e no menu Iniciar: criado sozinho na primeira vez (e de novo se a pasta mudar de lugar).
+set "MARCA=app_shiny\.atalho"
+set "ANTES="
+if exist "%MARCA%" set /p ANTES=<"%MARCA%"
+if /i "%ANTES%"=="%CD%" goto :atalho_ok
+cscript //nologo "%~dp0criar_atalho.vbs" >nul 2>&1
+if errorlevel 1 goto :atalho_ok
+> "%MARCA%" echo %CD%
+echo Atalho "Cinabro" criado na area de trabalho e no menu Iniciar.
+:atalho_ok
 echo Abrindo o Cinabro no navegador (http://127.0.0.1:8421)...
-echo Esta janela fecha sozinha 10 minutos depois que voce fechar a aba do navegador (ou na hora, pelo botao Sair do Cinabro). Para nao ver a janela, use Criar_atalho_na_area_de_trabalho.bat.
+echo Esta janela fecha sozinha 10 minutos depois que voce fechar a aba do navegador (ou na hora, pelo botao Sair do Cinabro). Da proxima vez, use o atalho Cinabro da area de trabalho (abre sem esta janela).
 "%RS%" -e "source('app_shiny/pacotes.R', encoding='UTF-8'); if (!garantir_pacotes()) quit(status = 1); file.create('app_shiny/.pronto'); source('app_shiny/iniciar.R', encoding='UTF-8'); iniciar_gerador(encerrar_ao_fechar = TRUE)"
 if errorlevel 1 (
   echo.

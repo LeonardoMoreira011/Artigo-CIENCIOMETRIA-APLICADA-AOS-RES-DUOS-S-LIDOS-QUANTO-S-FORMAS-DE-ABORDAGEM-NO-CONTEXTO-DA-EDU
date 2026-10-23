@@ -321,3 +321,6 @@ No painel **Análise**, botão **Tabelas e testes**, escolha em "Testes na tabel
 
 ## Cor da barra de erro
 Em **Cor da barra de erro** (painel Dados, aparece com as colunas de erro) a barra pode ter uma cor própria, **independente da cor dos pontos/linhas**; vazio = a cor de cada série. No script: `erro_cor <- "#20242B"`.
+
+## Atalho na área de trabalho
+Ao dar dois cliques no **`abrir_app.bat`** pela primeira vez, ele já cria sozinho o atalho **Cinabro** (com o ícone, sem janela de comando) na **área de trabalho e no menu Iniciar** — não precisa mais rodar o `Criar_atalho_na_area_de_trabalho.bat` (que continua existindo, para recriar o atalho à mão). Se você mover a pasta do Cinabro, o próximo `abrir_app.bat` recria o atalho no lugar certo. O **ícone agora tem fundo creme** (antes era transparente): `app_shiny/www/icone.ico`, gerado por `ferramentas/gerar_icone.py`. Se o Windows ainda mostrar o ícone antigo, é o cache de ícones: apague o atalho antigo e abra o `abrir_app.bat` de novo (ou reinicie o Explorer).
