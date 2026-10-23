@@ -7,7 +7,7 @@ Princípio: **menos é mais — o simples, objetivo e bem feito.** Nada foi cort
 | | |
 |---|---|
 | **Medido (sandbox Linux, 4 núcleos, R 4.4.3, ggplot2 4.0.3 / 3.5.2)** | tempo de cada etapa do gráfico, montagem da tela, navegador (Chromium com CPU 4× mais lenta), memória em sessão longa, escala de dados, figuras anexadas, arquivos CSV estranhos, 2.027 valores hostis nos campos |
-| **Não medido** | o **seu PC com Windows**. Nenhum `diagnostico_cinabro_resultado.txt` nem `app.log` chegou até aqui. Tudo abaixo é código + medição no sandbox; o Windows deve ser 1,5–3× mais lento, e os números relativos (quem custa mais) valem igual |
+| **Seu PC (diagnóstico de 23/10, seção 2.6)** | ambiente e tempos de gráficos pequenos medidos. **Ainda falta o `app.log` de uso real** e o tamanho típico dos seus CSVs |
 | **Não dá para medir** | *quais recursos o time usa*. O registro de uso grava tempos e erros, mas não grava quais campos são mexidos. Sem isso, "uso" na tabela da seção 5 é julgamento meu, não dado |
 
 ## 1. Veredito em uma tela
@@ -60,6 +60,23 @@ Um PNG de 4,3 MP (13 MB): fica **138 MB em memória para sempre** (a cache nunca
 ### 2.5 Sessão longa
 60 atualizações seguidas: memória 123 → 124 MB, 1 arquivo temporário, 1 dispositivo gráfico. **Sem vazamento** (o vazamento de PNGs da prévia foi corrigido antes desta auditoria).
 
+### 2.6 Medido no seu PC (diagnóstico de 23/10/2026)
+| Item | Seu PC (R 4.6.1, Win 10, 8 núcleos, 15,7 GB) | Sandbox |
+|---|---|---|
+| Pacotes | ggplot2 4.0.3, ragg 1.5.2, systemfonts 1.3.2, shiny 1.14.0, todos únicos e atuais | — |
+| Carregar o motor | 0,15 s | — |
+| Linha com pontos (dados de exemplo) | 0,53 s | ~1,15 s* |
+| Barras | 0,43 s | — |
+| Dois eixos Y + quebra | 0,91 s | — |
+| Ajuste + caixa de estatística + forma | 0,74 s | — |
+| Montar variáveis de 646 campos | 14,8 ms | 9 ms |
+| Memória do processo em 25 usos | 414 → 417 MB (estável) | estável |
+| Arquivos temporários | +1 por uso (0,04 MB cada) | — |
+
+\* o sandbox media sob carga simultânea; o seu PC é **tão rápido quanto** ele, ou melhor. **A máquina não é o problema.**
+Os arquivos temporários crescem porque o próprio script de diagnóstico não apaga as prévias que desenha; o app apaga (corrigido e testado antes da auditoria).
+**Limite deste teste:** usa só os 4 cenários de exemplo (poucos pontos). Com os seus CSVs reais o custo de montar 4 vezes (seção 2.2) é o que aparece.
+
 ## 3. Robustez (o que derruba ou congela)
 
 **Confirmado (reproduzido):**
@@ -85,7 +102,7 @@ Leitura: o programa trata bem texto e dado ruim, mas **não valida número**. Um
 | # | Hipótese | Evidência | Como confirmar no seu PC |
 |---|---|---|---|
 | 1 | **R encerrado pelo próprio atalho** 6 s após a aba desconectar (PC suspenso, aba dormindo, antivírus) | código (`servidor.R`, `iniciar.R`); o cinza do Shiny aparece quando a sessão acaba | `app.log`: "sessão fechada" sem você ter fechado a aba; depois a janela do R some |
-| 2 | **Ambiente velho/misturado**: R 4.2.1, `shiny` ausente, ggplot2 3.3.6 carregado junto com 3.5.1 instalado, ragg 1.2.2 (< 1.5, com bug conhecido) | seu diagnóstico anterior | instalar R ≥ 4.5 e `00_instalar_pacotes.R`; refazer o diagnóstico |
+| 2 | ~~Ambiente velho/misturado~~ (R 4.2.1, `shiny` ausente, ggplot2 duplicado, ragg 1.2.2) | **RESOLVIDO**: o diagnóstico de 23/10 mostra R 4.6.1 e todos os pacotes atuais e únicos | nada a fazer |
 | 3 | **Dados grandes**: 30–76 s por clique, fila de cliques atrás | seção 2.2 | `app.log`: tempos "montar/total" altos; quantas linhas tem o seu CSV típico? |
 | 4 | **Valor numérico absurdo** num campo (9 campos estouram memória; fonte negativa trava 14–19 s) | seção 3 | `app.log` termina sem "sessão fechada"; memória do R alta no Gerenciador de Tarefas |
 | 5 | **Figura grande anexada**: 4 s por clique + centenas de MB | seção 2.4 | PNG/JPEG de vários MP no bloco 14 |
