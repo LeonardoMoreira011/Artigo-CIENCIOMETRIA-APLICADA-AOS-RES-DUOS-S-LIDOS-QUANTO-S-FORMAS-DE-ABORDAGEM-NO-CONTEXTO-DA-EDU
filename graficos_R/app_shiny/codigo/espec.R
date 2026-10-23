@@ -163,7 +163,8 @@ opcoes_paletas <- function(guardadas = character(0)) {
                             "Teste F de variâncias (duas séries)" = "var_test", "ANOVA de um fator (séries)" = "anova", "Kruskal-Wallis (séries)" = "kruskal",
                             "Tukey (comparações duas a duas)" = "tukey", "Bartlett (variâncias iguais)" = "bartlett", "Fligner-Killeen (variâncias iguais)" = "fligner"))
 .AJUSTES_OPC <- c("Linear (reta)" = "linear", "Exponencial (y = a·e^(bx))" = "exponencial", "Potência (y = a·x^b)" = "potencia", "Logarítmico (y = a + b·ln x)" = "logaritmico",
-                  "Polinomial (grau 2, 3...)" = "polinomial", "Suavizado (loess)" = "loess", "Fórmula livre (a sua)" = "formula")
+                  "Polinomial (grau 2, 3...)" = "polinomial", "Suavizado (loess)" = "loess", "Fórmula livre (a sua)" = "formula",
+                  "Curva externa (pontos X,Y ou equação com valores prontos)" = "externa")
 .CANTOS9 <- c("Em cima, à esquerda" = "sup_esq", "Em cima, no centro" = "sup_centro", "Em cima, à direita" = "sup_dir", "No meio, à esquerda" = "centro_esq",
               "No centro" = "centro", "No meio, à direita" = "centro_dir", "Embaixo, à esquerda" = "inf_esq", "Embaixo, no centro" = "inf_centro", "Embaixo, à direita" = "inf_dir")
 .TIPOS_FORMA <- c("Caixa de texto" = "texto", "Retângulo" = "retangulo", "Retângulo de cantos arredondados" = "retangulo_arredondado", "Elipse / círculo" = "elipse",
@@ -182,8 +183,11 @@ opcoes_paletas <- function(guardadas = character(0)) {
 }
 .campos_ajuste <- function(cs) list(
   cs("serie", "sel", "Série", "Qual série recebe a curva (ou uma curva para cada série).", opcoes = .SERIES_TODAS, padrao = "todas"),
-  cs("tipo", "sel", "Tipo de ajuste", "A equação e o R² aparecem nas caixas de estatística (abaixo).", opcoes = .AJUSTES_OPC, padrao = "linear"),
-  cs("formula", "txt", "Fórmula (use x e letras para os parâmetros)", "Ex.: a*exp(-b*x) + c   |   a/(1 + exp(-k*(x - x0)))   |   a*sin(b*x) + c. Funções: exp, log, log10, sqrt, sin, cos, tan, abs, ^ ...", se = "{tipo} == 'formula'", largura = 12),
+  cs("tipo", "sel", "Tipo de ajuste", "A equação e o R² aparecem numa caixa de estatística, que você move e edita à parte. Curva externa = uma curva que você já tem (de outro programa ou de um artigo): é só desenhada por cima dos dados, sem ajustar.", opcoes = .AJUSTES_OPC, padrao = "linear"),
+  cs("formula", "txt", "Fórmula (use x e letras para os parâmetros)", "Ex.: a*exp(-b*x) + c   |   a/(1 + exp(-k*(x - x0)))   |   a*sin(b*x) + c. Funções: exp, log, log10, sqrt, sin, cos, tan, abs, ^ ... Na curva externa pode ser uma conta pronta, sem letras: 2.5*exp(-0.3*x) + 1.", se = "{tipo} == 'formula' || {tipo} == 'externa'", largura = 12),
+  cs("parametros", "txt", "Valores dos parâmetros (curva externa)", "Ex.: a=2.5, b=0.3. Cada letra da fórmula precisa de um valor. Se a fórmula não tem letras, deixe vazio.", se = "{tipo} == 'externa'", largura = 12),
+  cs("pontos", "area", "Pontos X,Y da curva externa (opcional)", "Cole duas colunas do Excel/Origin (X e Y, um ponto por linha; vírgula decimal vale) ou escreva 0,10; 5,18; 10,25. Se preencher, vale no lugar da fórmula.", se = "{tipo} == 'externa'", largura = 12),
+  cs("interpolacao", "sel", "Ligar os pontos", NULL, opcoes = c("Com retas" = "linear", "Com curva lisa" = "suave"), padrao = "linear", se = "{tipo} == 'externa'"),
   cs("inicio", "txt", "Valores iniciais (opcional)", "Ex.: a=5, b=0.1, c=0. Vazio = o programa tenta vários sozinho.", se = "{tipo} == 'formula'", largura = 12),
   cs("grau", "int", "Grau do polinômio", "2 = parábola, 3 = cúbica...", min = 1, max = 8, padrao = 2, se = "{tipo} == 'polinomial'"),
   cs("suavizacao", "num", "Suavização (0.2 a 1)", "Maior = curva mais lisa.", min = 0.1, max = 1, passo = 0.05, padrao = 0.75, se = "{tipo} == 'loess'"),
@@ -191,7 +195,7 @@ opcoes_paletas <- function(guardadas = character(0)) {
   cs("cor", "cor", "Cor da curva", "Vazio = a cor da série."),
   cs("tipo_linha", "sel", "Tipo de linha", NULL, opcoes = .LINHAS, padrao = "dashed"),
   cs("espessura_pt", "num", "Grossura da linha (pt)", NULL, min = 0, passo = 0.25, padrao = 1.2),
-  cs("banda", "chk", "Faixa do intervalo de confiança da curva", NULL, largura = 12),
+  cs("banda", "chk", "Faixa do intervalo de confiança da curva", NULL, se = "{tipo} != 'externa'", largura = 12),
   cs("banda_nivel", "num", "Nível da faixa (0 a 1)", "0.95 = 95%.", min = 0.5, max = 0.999, passo = 0.01, padrao = 0.95, se = "{banda}"),
   cs("banda_opacidade", "num", "Opacidade da faixa", NULL, min = 0, max = 1, passo = 0.05, padrao = 0.18, se = "{banda}"),
   cs("estender", "chk", "Estender a curva até as bordas do eixo X", "Desmarcado: só no trecho dos dados.", largura = 12, mais = TRUE),
@@ -216,7 +220,7 @@ opcoes_paletas <- function(guardadas = character(0)) {
   cs("faixa_tipo", "sel", "Tipo dos traços da faixa", NULL, opcoes = .LINHAS, padrao = "dotted"),
   cs("preencher", "chk", "Pintar a área da faixa", NULL, se = "{modo} == 'linhas'", largura = 12),
   cs("preencher_opacidade", "num", "Opacidade da área pintada", NULL, min = 0, max = 1, passo = 0.05, padrao = 0.15, se = "{modo} == 'linhas' && {preencher}"),
-  cs("rotulo", "chk", "Escrever o valor ao lado de cada traço", NULL, padrao = TRUE, se = "{modo} == 'linhas'", largura = 12),
+  cs("rotulo", "chk", "Escrever o valor ao lado de cada traço", "Desligado: os valores (média, DP...) vão numa caixa de estatística à parte, que você move e edita.", padrao = FALSE, se = "{modo} == 'linhas'", largura = 12),
   cs("rotulo_tamanho_pt", "num", "Tamanho do texto (pt)", NULL, min = 4, padrao = 8, se = "{modo} == 'linhas' && {rotulo}"),
   cs("casas", "int", "Casas decimais", NULL, min = 0, max = 10, se = "{modo} == 'linhas'"),
   cs("opacidade", "num", "Opacidade dos traços", NULL, min = 0, max = 1, passo = 0.05, padrao = 1, mais = TRUE),

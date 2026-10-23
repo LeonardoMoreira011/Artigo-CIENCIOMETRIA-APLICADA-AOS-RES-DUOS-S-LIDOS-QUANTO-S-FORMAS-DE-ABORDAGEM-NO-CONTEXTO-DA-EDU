@@ -1315,10 +1315,15 @@ cfg$anotacoes <- list(
 #  Lista de ajustes. Cada item (todas as chaves são opcionais, menos 'tipo' quando não for linear):
 #    serie        nome da série (coluna Y) ou "todas" (uma curva para cada série; padrão)
 #    tipo         "linear" | "exponencial" (y = a·exp(b·x)) | "potencia" (y = a·x^b) | "logaritmico" (y = a + b·ln x) |
-#                 "polinomial" (com 'grau') | "loess" (suavizado, com 'suavizacao') | "formula" (com 'formula')
+#                 "polinomial" (com 'grau') | "loess" (suavizado, com 'suavizacao') | "formula" (com 'formula') |
+#                 "externa" (curva que você já tem: NÃO ajusta, só desenha por cima dos dados; veja 'pontos' e 'parametros')
 #    formula      só para tipo "formula": use x e nomes de parâmetros livres. EX.: "a*exp(-b*x) + c"  ou  "a/(1 + exp(-k*(x - x0)))"
 #                 Permitido: + - * / ^ ( ) e exp, log, log10, log2, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, abs, pi
 #    inicio       chutes iniciais dos parâmetros da fórmula. EX.: c(a = 5, b = 0.1, c = 0)   (vazio = o programa tenta vários)
+#    pontos       só para "externa": pontos X,Y da curva (matriz n x 2, ou texto "0,10; 5,18; 10,25", ou duas colunas coladas do Excel);
+#                 a curva liga os pontos (interpolacao = "suave" faz uma curva lisa). Vale no lugar da fórmula.
+#    parametros   só para "externa" com 'formula': os valores prontos. EX.: formula = "a*exp(-b*x)", parametros = c(a = 2.5, b = 0.3)
+#                 (uma fórmula sem letras, como "2.5*exp(-0.3*x) + 1", dispensa 'parametros'). R², RMSE e n comparam a curva com os dados.
 #    grau         só para "polinomial" (1 a 8; padrão 2)
 #    intercepto_zero  só para "linear": força a reta a passar pela origem
 #    cor          cor da curva (vazio = a cor da série)       tipo_linha  "solid" | "dashed" | "dotted" | "dotdash" | "longdash" | "twodash"
@@ -2184,6 +2189,9 @@ suppressPackageStartupMessages({
     "cfg$formas: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\")." = "cfg$formas: in data units, provide width and height (or use unidade = \"fracao\").",
     "poucos pontos (" = "too few points (",
     "exige X > 0" = "requires X > 0",
+    "faltam os valores de: " = "missing values for: ",
+    " (campo 'parametros')" = " ('parametros' field)",
+    "informe 'pontos' (X,Y) ou 'formula' com 'parametros'" = "give 'pontos' (X,Y) or 'formula' with 'parametros'",
     "o suavizado (loess) não convergiu" = "the smoothed fit (loess) did not converge",
     "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "the fit did not converge (provide initial values in 'inicio')",
     "cfg$imagens: cada figura precisa de 'arquivo' (caminho de um PNG ou JPEG)." = "cfg$imagens: each picture needs 'arquivo' (the path of a PNG or JPEG).",
@@ -2424,6 +2432,9 @@ suppressPackageStartupMessages({
     "cfg$formas: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\")." = "cfg$formas: en unidades de los datos, indica el ancho y el alto (o usa unidade = \"fracao\").",
     "poucos pontos (" = "pocos puntos (",
     "exige X > 0" = "requiere X > 0",
+    "faltam os valores de: " = "faltan los valores de: ",
+    " (campo 'parametros')" = " (campo 'parametros')",
+    "informe 'pontos' (X,Y) ou 'formula' com 'parametros'" = "indica 'pontos' (X,Y) o 'formula' con 'parametros'",
     "o suavizado (loess) não convergiu" = "el suavizado (loess) no convergió",
     "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "el ajuste no convergió (indica valores iniciales en 'inicio')",
     "cfg$imagens: cada figura precisa de 'arquivo' (caminho de um PNG ou JPEG)." = "cfg$imagens: cada imagen necesita 'arquivo' (la ruta de un PNG o JPEG).",
@@ -2823,17 +2834,17 @@ colunas <- function(dados) {
   setas = c("x", "y", "x_fim", "y_fim", "cor", "espessura_pt", "tamanho_ponta_pt"),
   faixas = c("eixo", "de", "ate", "cor", "opacidade"),
   ajustes = c("serie", "tipo", "formula", "inicio", "grau", "suavizacao", "intercepto_zero", "cor", "tipo_linha", "espessura_pt", "opacidade", "de", "ate",
-              "estender", "banda", "banda_nivel", "banda_opacidade", "nome", "casas", "n_pontos", "ativo"),
+              "estender", "banda", "banda_nivel", "banda_opacidade", "nome", "casas", "n_pontos", "pontos", "parametros", "interpolacao", "cartao", "ativo"),
   marcas_estatisticas = c("serie", "eixo", "centro", "faixa", "multiplo", "cor", "opacidade", "centro_espessura_pt", "centro_tipo", "faixa_espessura_pt",
                           "faixa_tipo", "preencher", "preencher_opacidade", "rotulo", "rotulo_tamanho_pt", "casas", "modo", "ponto_media", "ponto_tamanho_pt",
-                          "chapeu_percentual", "ativo"),
+                          "chapeu_percentual", "cartao", "ativo"),
   caixas_estatisticas = c("series", "titulo", "itens", "ajustes", "casas", "x", "y", "ancora", "tamanho_pt", "cor_texto", "negrito", "italico", "alinhamento",
                           "colorir_serie", "mostrar_nome_serie", "fundo", "opacidade_fundo", "borda", "borda_cor", "borda_pt", "borda_tipo", "cantos", "raio_pt",
-                          "margem_pt", "sombra", "sombra_cor", "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "ativo"),
-  imagens = c("arquivo", "x", "y", "largura", "altura", "unidade", "ancora", "opacidade", "angulo", "borda_cor", "borda_pt", "borda_tipo", "camada", "ativo"),
+                          "margem_pt", "sombra", "sombra_cor", "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "cartao", "ativo"),
+  imagens = c("arquivo", "x", "y", "largura", "altura", "unidade", "ancora", "opacidade", "angulo", "borda_cor", "borda_pt", "borda_tipo", "camada", "cartao", "ativo"),
   formas = c("tipo", "x", "y", "unidade", "largura", "altura", "vertices", "texto", "tamanho_pt", "cor_texto", "negrito", "italico", "alinhamento", "angulo",
              "fundo", "opacidade_fundo", "borda", "borda_cor", "borda_pt", "borda_tipo", "raio_pt", "cantos", "margem_pt", "sombra", "sombra_cor",
-             "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "camada", "ancora", "ativo"))
+             "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "camada", "ancora", "cartao", "ativo"))
 
 # Avisa chave digitada errado dentro dos itens (ex.: tamanho_ptt), que antes era ignorada em silêncio.
 .checar_itens <- function(cfg) {
@@ -6240,10 +6251,10 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
 # Onde a legenda "dentro" fica na figura, para o app desenhar uma caixa que se arrasta sobre a prévia.
 # Entra: g (de plotar) e cfg. Sai: NULL (sem legenda dentro) ou list(pagina = c(larg, alt) em polegadas,
 #   painel = c(esq, topo, larg, alt) e legenda = c(esq, topo, larg, alt), todos em FRAÇÃO da página (topo = a partir de cima)).
-.geometria_legenda <- function(g, cfg) {
+.geometria_legenda <- function(g, cfg, prep = NULL) {
   lg <- cfg$legenda
   if (!identical(lg$posicao, "dentro") || isFALSE(lg$mostrar)) return(NULL)
-  prep <- .preparar_saida(g, cfg)
+  prep <- prep %||% .preparar_saida(g, cfg)                       # o app passa o 'prep' já calculado: o gráfico é montado uma vez só
   dtmp <- .abrir_dispositivo_tmp(prep$larg, prep$alt); on.exit(grDevices::dev.off(dtmp), add = TRUE)
   gt <- prep$grob %||% attr(g, "gt") %||% ggplot2::ggplotGrob(g)
   k <- which(gt$layout$name == "guide-box-inside")
@@ -6274,8 +6285,8 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
 
 # Onde estão o título do gráfico e os títulos dos eixos na página (frações da página: x, y de cima, largura, altura), para o app
 # desenhar zonas clicáveis sobre a prévia. Título ausente: uma faixa logo acima do painel. Sai NULL se não for possível medir.
-.geometria_zonas <- function(g, cfg) {
-  prep <- .preparar_saida(g, cfg)
+.geometria_zonas <- function(g, cfg, prep = NULL) {
+  prep <- prep %||% .preparar_saida(g, cfg)
   dtmp <- .abrir_dispositivo_tmp(prep$larg, prep$alt); on.exit(grDevices::dev.off(dtmp), add = TRUE)
   gt <- prep$grob %||% attr(g, "gt") %||% ggplot2::ggplotGrob(g)
   if (!inherits(gt, "gtable") || !"panel" %in% gt$layout$name) return(NULL)
@@ -6300,6 +6311,42 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
   out
 }
 
+# Onde está cada caixa móvel (caixa de estatística, texto, forma, figura anexada) na página, para o app desenhar uma moldura que se arrasta
+# e se estica sobre a prévia. Só vale para caixas em "fração da caixa do gráfico" (as em unidades dos eixos ficam de fora) e para gráficos
+# de um painel só (sem quebra de eixo). Sai NULL ou list(painel = c(esq, topo, larg, alt), itens = lista); tudo em fração da página (topo = de cima).
+# Cada item: id ("cx1", "fm2", "im1": prefixo + número do cartão no app), grupo, tipo ("estatistica" | "texto" | "forma" | "figura"), forma, rect,
+# jx/jy (ponto da caixa que fica em x,y), auto (a caixa tem o tamanho do texto/da figura: esticar muda o tamanho da letra / mantém a proporção), tam (pt) e vert.
+.geometria_caixas <- function(g, cfg, prep = NULL) {
+  if (!is.null(attr(g, "partes")) || inherits(g, "patchwork") || is.null(g$layers)) return(NULL)
+  ls <- Filter(function(l) !is.null(attr(l, "caixa")) && isTRUE(attr(l, "caixa")$fracao), g$layers)
+  if (!length(ls)) return(NULL)
+  prep <- prep %||% .preparar_saida(g, cfg)
+  dtmp <- .abrir_dispositivo_tmp(prep$larg, prep$alt); on.exit(grDevices::dev.off(dtmp), add = TRUE)
+  gt <- prep$grob %||% attr(g, "gt") %||% ggplot2::ggplotGrob(g)
+  if (!inherits(gt, "gtable") || sum(gt$layout$name == "panel") != 1) return(NULL)
+  tam <- function(u, total_in, conv) {
+    nulo <- grid::unitType(u) == "null"; r <- numeric(length(u))
+    if (any(!nulo)) r[!nulo] <- conv(u[!nulo], "in", valueOnly = TRUE)
+    if (any(nulo)) { v <- as.numeric(u[nulo]); r[nulo] <- max(total_in - sum(r[!nulo]), 0) * v / sum(v) }
+    r
+  }
+  w <- tam(gt$widths, prep$larg, grid::convertWidth); h <- tam(gt$heights, prep$alt, grid::convertHeight)
+  lay <- gt$layout[gt$layout$name == "panel", ]
+  pl <- sum(w[seq_len(lay$l - 1)]); pt <- sum(h[seq_len(lay$t - 1)]); pw <- sum(w[lay$l:lay$r]); ph <- sum(h[lay$t:lay$b])
+  grid::pushViewport(grid::viewport(width = grid::unit(pw, "in"), height = grid::unit(ph, "in")))
+  pg <- c(prep$larg, prep$alt)
+  itens <- lapply(ls, function(l) {
+    d <- attr(l, "caixa")
+    bw <- grid::convertWidth(d$W, "in", valueOnly = TRUE)
+    bh <- if (!is.null(d$H)) grid::convertHeight(d$H, "in", valueOnly = TRUE) else bw * d$prop
+    esq <- pl + d$cx * pw - d$jx * bw; base <- d$cy * ph - d$jy * bh
+    Filter(Negate(is.null), list(id = d$id, grupo = d$grupo, tipo = d$tipo, forma = d$forma, jx = d$jx, jy = d$jy, auto = isTRUE(d$auto), tam = d$tam,
+         rect = round(c(esq / pg[1], (pt + ph - base - bh) / pg[2], bw / pg[1], bh / pg[2]), 5),
+         vert = if (!is.null(d$vert)) unname(split(round(d$vert, 5), row(d$vert)))))
+  })
+  list(painel = round(c(pl / pg[1], pt / pg[2], pw / pg[1], ph / pg[2]), 5), itens = unname(itens))
+}
+
 # -----------------------------------------------------------------------------
 #  21_ajustes.R
 # -----------------------------------------------------------------------------
@@ -6316,7 +6363,7 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
 #  estatisticas(dados, cfg) devolve as mesmas tabelas em data.frames (para colar em relatório).
 # =============================================================================
 
-.AJUSTES_TIPOS <- c("linear", "exponencial", "potencia", "logaritmico", "polinomial", "loess", "formula")
+.AJUSTES_TIPOS <- c("linear", "exponencial", "potencia", "logaritmico", "polinomial", "loess", "formula", "externa")
 .EST_ITENS_DESC <- c("n", "media", "mediana", "dp", "ep", "soma", "minimo", "maximo", "amplitude", "variancia", "cv", "q1", "q3", "ic95")
 .EST_ITENS_AJUSTE <- c("equacao", "r2", "r2_aj", "rmse", "aic", "bic", "p_modelo", "parametros", "p_parametros", "shapiro_residuos")
 .EST_ITENS_TESTE <- c("pearson", "spearman", "kendall", "shapiro", "ttest", "wilcoxon", "var_test", "anova", "kruskal", "tukey", "bartlett", "fligner")
@@ -6340,6 +6387,7 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
   linear = c("Linear", "Linear", "Lineal"), exponencial = c("Exponencial", "Exponential", "Exponencial"), potencia = c("Potência", "Power", "Potencia"),
   logaritmico = c("Logarítmico", "Logarithmic", "Logarítmico"), polinomial = c("Polinomial", "Polynomial", "Polinómico"),
   loess = c("Suavizado (loess)", "Smoothed (loess)", "Suavizado (loess)"), formula = c("Fórmula livre", "Free formula", "Fórmula libre"),
+  externa = c("Curva externa", "External curve", "Curva externa"),
   gl = c("gl", "df", "gl"))
 .re <- function(id) { r <- .ROT_EST[[id]]; if (is.null(r)) id else r[match(.idioma(), c("pt", "en", "es"))] }
 
@@ -6357,7 +6405,7 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
 
 # ---- fórmula livre (só funções matemáticas permitidas) --------------------------------------------------------------------
 .FUNCS_FORMULA <- c("exp", "log", "log10", "log2", "sqrt", "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", "abs", "(", "+", "-", "*", "/", "^")
-.ler_formula <- function(txt) {
+.ler_formula <- function(txt, exigir_param = TRUE) {
   if (is.null(txt) || !is.character(txt) || length(txt) != 1 || !nzchar(trimws(txt)))
     .erro("cfg$ajustes: o tipo \"formula\" precisa de 'formula' (ex.: \"a*exp(-b*x) + c\").")
   t <- gsub("\\*\\*", "^", trimws(txt)); t <- sub("^y\\s*(=|~)\\s*", "", t); t <- sub("^~\\s*", "", t)
@@ -6386,7 +6434,7 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
   }
   anda(e)
   if (!usa_x) .erro("cfg$ajustes: a fórmula precisa usar x (o eixo X).")
-  if (!length(params)) .erro("cfg$ajustes: a fórmula precisa de pelo menos um parâmetro a ajustar (a, b, c...).")
+  if (!length(params) && exigir_param) .erro("cfg$ajustes: a fórmula precisa de pelo menos um parâmetro a ajustar (a, b, c...).")
   if (length(params) > 8) .erro("cfg$ajustes: a fórmula tem parâmetros demais (máximo 8).")
   list(expr = e, params = params, texto = t)
 }
@@ -6398,10 +6446,62 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
   s <- .nf(abs(v), casas)
   if (primeiro) paste0(if (v < 0) "-" else "", s, sufixo) else paste0(if (v < 0) " - " else " + ", s, sufixo)
 }
+# Pontos X,Y de uma curva externa: texto ("1,2; 3,4" | uma linha por ponto, colunas coladas do Excel com tab ou espaço e vírgula
+# decimal) | matriz ou data.frame n x 2 | vetor x1,y1,x2,y2... Sai: matriz n x 2 ordenada por X (sem X repetido) ou NULL.
+.ler_pontos <- function(p) {
+  if (is.null(p) || (is.character(p) && !any(nzchar(trimws(p))))) return(NULL)
+  m <- NULL
+  if (is.data.frame(p)) p <- as.matrix(p)
+  if (is.matrix(p) && ncol(p) == 2) m <- p
+  else if (is.numeric(p) || (is.list(p) && !is.character(p))) { v <- as.numeric(unlist(p)); if (length(v) >= 4 && length(v) %% 2 == 0) m <- matrix(v, ncol = 2, byrow = TRUE) }
+  else if (is.character(p)) {
+    linhas <- trimws(strsplit(paste(p, collapse = "\n"), "[;\n]")[[1]]); linhas <- linhas[nzchar(linhas)]
+    par <- lapply(linhas, function(l) {
+      cols <- if (grepl("[\t ]", l)) strsplit(gsub(",", ".", l), "[\t ]+")[[1]] else strsplit(l, ",")[[1]]
+      suppressWarnings(as.numeric(trimws(cols)))
+    })
+    if (all(lengths(par) == 2) && !anyNA(unlist(par))) m <- do.call(rbind, par)
+  }
+  if (is.null(m) || nrow(m) < 2 || anyNA(m)) return(NULL)
+  m <- m[order(m[, 1]), , drop = FALSE]; m[!duplicated(m[, 1]), , drop = FALSE]
+}
+
+# Curva que veio de fora (ajustada em outro programa, ou a equação de um artigo): desenhada sobre os dados SEM ajustar nada.
+#   aj$pontos  = pontos X,Y (a curva liga os pontos; aj$interpolacao = "suave" faz uma curva lisa entre eles)
+#   aj$formula + aj$parametros  = equação com os valores já conhecidos (ex.: formula "a*exp(-b*x)", parametros c(a = 2.5, b = 0.3)); uma
+#   fórmula sem letras (ex.: "2.5*exp(-0.3*x)+1") também vale. R², RMSE e n comparam a curva com os dados da série.
+.curva_externa <- function(x, y, aj, casas = NULL) {
+  aj <- .ex(aj); ok <- is.finite(x) & is.finite(y); x <- x[ok]; y <- y[ok]
+  falha <- function(msg) list(ok = FALSE, tipo = "externa", msg = msg, n = length(x))
+  pts <- .ler_pontos(aj$pontos); eq <- NA_character_; xr <- NULL
+  if (!is.null(pts)) {
+    f0 <- if (identical(aj$interpolacao, "suave") && nrow(pts) >= 4) stats::splinefun(pts[, 1], pts[, 2], method = "natural")
+          else stats::approxfun(pts[, 1], pts[, 2], rule = 1)
+    lim <- range(pts[, 1]); f <- function(xn) { r <- as.numeric(f0(xn)); r[xn < lim[1] | xn > lim[2]] <- NA_real_; r }
+    xr <- lim; eq <- paste0("(", .re("externa"), ": ", nrow(pts), " pts)")
+  } else if (!is.null(aj$formula) && nzchar(aj$formula)) {
+    F <- .ler_formula(aj$formula, exigir_param = FALSE)
+    par <- aj$parametros; if (!is.null(par) && is.null(names(par))) par <- stats::setNames(rep_len(par, length(F$params)), F$params)
+    faltam <- setdiff(F$params, names(par))
+    if (length(faltam)) return(falha(paste0("faltam os valores de: ", paste(faltam, collapse = ", "), " (campo 'parametros')")))
+    pv <- as.list(par[F$params]); ex <- F$expr
+    f <- function(xn) as.numeric(eval(ex, c(pv, list(x = xn, pi = pi)), baseenv()))
+    tx <- F$texto; for (nm in F$params) tx <- gsub(paste0("\\b", nm, "\\b"), .nf(pv[[nm]], casas), tx)
+    eq <- paste0("y = ", tx)
+  } else return(falha("informe 'pontos' (X,Y) ou 'formula' com 'parametros'"))
+  pr <- if (length(x)) f(x) else numeric(0); k <- is.finite(pr) & is.finite(y); res <- (y - pr)[k]; nn <- length(res)
+  tss <- if (nn > 1) sum((y[k] - mean(y[k]))^2) else NA_real_
+  r2 <- if (nn > 1 && is.finite(tss) && tss > 0) 1 - sum(res^2) / tss else NA_real_
+  list(ok = TRUE, tipo = "externa", n = nn, eq = eq, par = NULL, r2 = r2, r2_aj = NA_real_, rmse = if (nn) sqrt(mean(res^2)) else NA_real_, sigma = NA_real_,
+       aic = NA_real_, bic = NA_real_, p = NA_real_, F = NA_real_, gl = NA_real_, npar = 0, residuos = as.numeric(res), pred = f,
+       banda = function(xn, nivel = 0.95) NULL, xrange = xr)
+}
+
 .ajustar <- function(x, y, aj, casas = NULL) {
   aj <- .ex(aj)
   ok <- is.finite(x) & is.finite(y); x <- x[ok]; y <- y[ok]; n <- length(x)
   tipo <- aj$tipo %||% "linear"
+  if (identical(tipo, "externa")) return(.curva_externa(x, y, aj, casas))      # curva que veio de fora: não ajusta, só desenha e compara com os dados
   if (!tipo %in% .AJUSTES_TIPOS) .erro("cfg$ajustes: tipo '", tipo, "' não é válido.\n  OPÇÕES: ", paste0('"', .AJUSTES_TIPOS, '"', collapse = " | "))
   falha <- function(msg) list(ok = FALSE, tipo = tipo, msg = msg, n = n)
   minimo <- switch(tipo, linear = 2, exponencial = 3, potencia = 3, logaritmico = 3, polinomial = (aj$grau %||% 2) + 2, loess = 6, formula = 4)
@@ -6611,6 +6711,7 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
     aj <- .ex(cfg$ajustes[[i]]); if (isFALSE(aj$ativo)) next
     alvo <- aj$serie %||% "todas"
     alvo <- if (identical(alvo, "todas")) ss else intersect(alvo, ss)
+    if (identical(aj$tipo, "externa") && identical(aj$serie %||% "todas", "todas")) alvo <- head(alvo, 1)    # curva externa: uma só (vale para o gráfico todo); R² compara com a 1ª série
     if (!length(alvo) && !isTRUE(cfg$paineis$ativo) && !identical(aj$serie %||% "todas", "todas"))
       .aviso("cfg$ajustes[[", i, "]]: a série '", paste(aj$serie, collapse = ", "), "' não existe no gráfico.")
     for (s in alvo) out[[length(out) + 1]] <- list(aj = aj, serie = s, indice = i)
@@ -6649,7 +6750,7 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
     cor_s <- if (isTRUE(cx$colorir_serie %||% TRUE) && !is.null(cor_ser[[s]])) cor_ser[[s]] else NULL
     if (com_nome) add(s, cor_s, TRUE)
     if (!is.null(de)) for (id in desc_ids) add(.linha_desc(id, de, casas), if (isTRUE(cx$colorir_serie %||% TRUE) && !com_nome) cor_s else NULL)
-    meus <- Filter(function(f) identical(f$serie, s) && f$fit$ok && (is.null(cx$ajustes) || f$indice %in% cx$ajustes), fits)
+    meus <- Filter(function(f) identical(f$serie, s) && f$fit$ok && (is.null(cx$ajustes) || (f$aj$cartao %||% f$indice) %in% cx$ajustes), fits)
     for (f in meus) {
       ft <- f$fit
       if (length(aj_ids) && length(meus) > 1) add(f$nome, NULL, TRUE)
@@ -6722,10 +6823,11 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
         lc <- .linhas_caixa(cx, cfg, info, fits); if (is.null(lc)) next
         it <- utils::modifyList(list(tipo = "texto", unidade = "fracao", x = 0.03, y = 0.97, ancora = "sup_esq", fundo = "white", opacidade_fundo = 0.9,
                                      borda = TRUE, borda_cor = "grey40", borda_pt = 0.6, raio_pt = if (identical(cx$cantos, "reto")) 0 else 5, margem_pt = 5),
-                                unclass(cx)[setdiff(names(cx), c("itens", "series", "ajustes", "titulo", "casas", "colorir_serie", "mostrar_nome_serie", "ativo", "cantos"))])
+                                unclass(cx)[setdiff(names(cx), c("itens", "series", "ajustes", "titulo", "casas", "colorir_serie", "mostrar_nome_serie", "ativo", "cantos", "cartao"))])
         if (identical(cx$cantos, "reto")) it$raio_pt <- 0
         f <- .grob_forma(it, cfg, linhas = lc$linhas, cores = lc$cores, negritos = lc$negritos)
-        depois[[length(depois) + 1]] <- .ann_forma(f, info)
+        ac <- .ann_forma(f, info); attr(ac, "caixa") <- c(f$caixa, list(grupo = "caixas_estatisticas", id = paste0("cx", cx$cartao %||% i)))
+        depois[[length(depois) + 1]] <- ac
       }
   }
   list(antes = antes, depois = depois)
@@ -6734,7 +6836,7 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
 .camada_curva <- function(cfg, info, f) {
   aj <- .ex(f$aj); ft <- f$fit; s <- f$serie
   d <- .dados_serie(info, s); ax <- info$ax_x
-  de <- aj$de %||% (if (isTRUE(aj$estender)) ax$limites[1] else min(d$x)); ate <- aj$ate %||% (if (isTRUE(aj$estender)) ax$limites[2] else max(d$x))
+  de <- aj$de %||% (if (isTRUE(aj$estender)) ax$limites[1] else (ft$xrange[1] %||% min(d$x))); ate <- aj$ate %||% (if (isTRUE(aj$estender)) ax$limites[2] else (ft$xrange[2] %||% max(d$x)))
   if (!is.finite(de) || !is.finite(ate) || de >= ate) return(list())
   npt <- aj$n_pontos %||% 200
   xs <- if (!is.na(.base_log(ax$escala %||% "linear")) && de > 0) exp(seq(log(de), log(ate), length.out = npt)) else seq(de, ate, length.out = npt)
@@ -6769,8 +6871,8 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
   if (!faixa %in% c("dp", "ep", "ic95", "minmax", "nenhuma")) .erro("cfg$marcas_estatisticas: faixa '", faixa, "' não é válida.\n  OPÇÕES: \"dp\" | \"ep\" | \"ic95\" | \"minmax\" | \"nenhuma\"")
   if (!centro %in% c("media", "mediana", "nenhum")) .erro("cfg$marcas_estatisticas: centro '", centro, "' não é válido.\n  OPÇÕES: \"media\" | \"mediana\" | \"nenhum\"")
   if (identical(mk$modo, "barras_por_x")) {
-    a <- stats::aggregate(d$y, list(x = d$x), function(v) c(m = mean(v), n = length(v), dp = stats::sd(v)))
-    a <- data.frame(x = a$x, m = a$x.m, n = a$x.n, dp = a$x.dp)
+    ux <- sort(unique(d$x)); ix <- match(d$x, ux)                                # média, n e DP em cada X (sem depender dos nomes que o aggregate dá às colunas)
+    a <- data.frame(x = ux, m = as.numeric(tapply(d$y, ix, mean)), n = as.numeric(tapply(d$y, ix, length)), dp = as.numeric(tapply(d$y, ix, stats::sd)))
     a$disp <- switch(faixa, dp = a$dp, ep = a$dp / sqrt(a$n), ic95 = stats::qt(0.975, pmax(a$n - 1, 1)) * a$dp / sqrt(a$n), minmax = NA_real_, nenhuma = NA_real_) * mult
     a <- a[is.finite(a$disp), ]
     if (!nrow(a)) return(list(antes = antes, depois = depois))
@@ -6794,7 +6896,7 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
     cam <- if (horiz) geom_hline(yintercept = conv(val), colour = cor, linewidth = .lw(esp), linetype = tp, alpha = mk$opacidade %||% 1)
            else geom_vline(xintercept = val, colour = cor, linewidth = .lw(esp), linetype = tp, alpha = mk$opacidade %||% 1)
     out <- list(cam)
-    if (isTRUE(mk$rotulo %||% TRUE) && !is.null(rot)) {
+    if (isTRUE(mk$rotulo %||% FALSE) && !is.null(rot)) {
       tam <- .tx(mk$rotulo_tamanho_pt %||% 8)
       out[[2]] <- if (horiz) annotate("text", x = if (isTRUE(info$flip)) -Inf else Inf, y = conv(val), label = rot, hjust = 1.05, vjust = -0.4, colour = cor, size = tam, family = fonte)
                   else annotate("text", x = val, y = Inf, label = rot, hjust = 1.05, vjust = -0.4, angle = 90, colour = cor, size = tam, family = fonte)
@@ -6998,8 +7100,12 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
   if (tipo != "texto" || !(length(fill) == 1 && is.na(fill)) || com_borda) fil[[length(fil) + 1]] <- desenho(0, 0, gp_forma)
   fil <- c(fil, filhos_txt)
   vp <- viewport(x = unit(cx, "npc"), y = unit(cy, "npc"), width = W, height = H, just = c(jx, jy), angle = it$angulo %||% 0)
+  # descrição da caixa (para o app saber onde ela fica e poder movê-la/redimensioná-la com o mouse; só em fração da caixa do gráfico)
+  caixa <- list(W = W, H = H, cx = cx, cy = cy, jx = jx, jy = jy, fracao = identical(un, "fracao"), tipo = if (!is.null(linhas)) "estatistica" else if (tipo == "texto") "texto" else "forma",
+                forma = tipo, tam = tam, auto = tipo != "poligono" && tem_texto && is.null(largura) && is.null(altura),
+                vert = if (tipo == "poligono" && un == "fracao") vv else NULL)
   list(grob = gTree(children = gList(gTree(children = do.call(gList, fil), vp = vp))),   # (o annotation_custom troca o vp do grob de fora)
-        xmin = lim$xmin, xmax = lim$xmax, ymin = lim$ymin, ymax = lim$ymax)
+        xmin = lim$xmin, xmax = lim$xmax, ymin = lim$ymin, ymax = lim$ymax, caixa = caixa)
 }
 
 # Camadas (annotation_custom) de uma lista de formas. Sai: list(antes, depois).
@@ -7010,7 +7116,7 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
     it <- .ex(cfg$formas[[i]])
     if (identical(parte, "inferior") && identical(it$unidade %||% "fracao", "fracao")) next      # quebra de eixo: formas em fração ficam na parte de cima
     f <- .grob_forma(it, cfg)
-    ac <- .ann_forma(f, info)
+    ac <- .ann_forma(f, info); attr(ac, "caixa") <- c(f$caixa, list(grupo = "formas", id = paste0("fm", it$cartao %||% i)))
     if (identical(it$camada, "atras")) antes[[length(antes) + 1]] <- ac else depois[[length(depois) + 1]] <- ac
   }
   im <- .camadas_imagens(cfg, info)                  # figuras anexadas (R/23_imagens.R)
@@ -7089,7 +7195,7 @@ if (requireNamespace("grid", quietly = TRUE)) registerS3method("makeContent", "i
     if (is.null(it$largura) || is.null(it$altura)) .erro("cfg$imagens: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\").")
     f <- gList(rasterGrob(r, width = unit(1, "npc"), height = unit(1, "npc"), interpolate = TRUE), if (!is.null(gp_b)) rectGrob(gp = gp_b))
     g <- gTree(children = gList(gTree(children = f, vp = viewport(angle = ang))))
-    return(list(grob = g, xmin = cx - it$largura / 2, xmax = cx + it$largura / 2, ymin = cy - it$altura / 2, ymax = cy + it$altura / 2))
+    return(list(grob = g, xmin = cx - it$largura / 2, xmax = cx + it$largura / 2, ymin = cy - it$altura / 2, ymax = cy + it$altura / 2, caixa = list(fracao = FALSE)))
   }
   larg <- it$largura %||% 0.2
   if (!is.null(it$altura)) {                     # largura e altura dadas: preenche o retângulo (pode deformar)
@@ -7097,7 +7203,9 @@ if (requireNamespace("grid", quietly = TRUE)) registerS3method("makeContent", "i
     f <- gList(rasterGrob(r, width = unit(1, "npc"), height = unit(1, "npc"), interpolate = TRUE), if (!is.null(gp_b)) rectGrob(gp = gp_b))
     g <- gTree(children = gList(gTree(children = f, vp = vp)))
   } else g <- gTree(children = gList(.grob_imagem_prop(r, prop, unit(larg, "npc"), unit(cx, "npc"), unit(cy, "npc"), a, ang, gp_b)))
-  list(grob = g, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
+  list(grob = g, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
+       caixa = list(W = unit(larg, "npc"), H = if (!is.null(it$altura)) unit(it$altura, "npc"), prop = prop, cx = cx, cy = cy, jx = a[1], jy = a[2], fracao = TRUE,
+                    tipo = "figura", forma = "figura", auto = is.null(it$altura)))
 }
 
 # Camadas das figuras. Sai: list(antes, depois).
@@ -7106,7 +7214,8 @@ if (requireNamespace("grid", quietly = TRUE)) registerS3method("makeContent", "i
   for (i in seq_along(cfg$imagens)) {
     it <- .ex(cfg$imagens[[i]]); if (isFALSE(it$ativo)) next
     if (identical(parte, "inferior") && identical(it$unidade %||% "fracao", "fracao")) next
-    ac <- .ann_forma(.grob_imagem(it, cfg), info)
+    f <- .grob_imagem(it, cfg)
+    ac <- .ann_forma(f, info); attr(ac, "caixa") <- c(f$caixa, list(grupo = "imagens", id = paste0("im", it$cartao %||% i)))
     if (identical(it$camada, "atras")) antes[[length(antes) + 1]] <- ac else depois[[length(depois) + 1]] <- ac
   }
   list(antes = antes, depois = depois)
@@ -10529,7 +10638,8 @@ pasta_saida  <- NULL       # EX.: "C:/pasta/figuras"  (padrão: pasta saida/)
 #  Cada variável é uma LISTA de itens (veja as opções completas em 01_config.R: cfg$ajustes, cfg$marcas_estatisticas, cfg$caixas_estatisticas).
 ajustes <- NULL            # curvas de ajuste. EX.: list(list(serie = "Y1", tipo = "linear", cor = "red", tipo_linha = "dashed"),
                            #                              list(serie = "Y2", tipo = "formula", formula = "a*exp(-b*x) + c", banda = TRUE))
-                           #   tipos: "linear" | "exponencial" | "potencia" | "logaritmico" | "polinomial" (grau) | "loess" | "formula"
+                           #   tipos: "linear" | "exponencial" | "potencia" | "logaritmico" | "polinomial" (grau) | "loess" | "formula" | "externa" (curva pronta: pontos = "0,10; 5,18"
+                           #          ou formula = "a*exp(-b*x)" com parametros = c(a = 2.5, b = 0.3); só desenha e compara com os dados)
 marcas_estatisticas <- NULL  # traços de média / mediana e faixas de DP, EP, IC 95%.
                            #   EX.: list(list(serie = "Y1", centro = "media", faixa = "dp", cor = "grey30", preencher = TRUE))
 caixas_estatisticas <- NULL  # caixas de texto com números (como a legenda). EX.: list(list(series = "Y1", x = 0.05, y = 0.95, sombra = TRUE,

@@ -173,6 +173,17 @@ pre { background: var(--tinta); color: var(--creme); border-radius: 10px; paddin
 #legenda-caixa .legenda-alca { position: absolute; right: -6px; top: 0; bottom: 0; width: 12px; cursor: ew-resize; }
 #legenda-caixa .legenda-alca::after { content: ''; position: absolute; right: 4px; top: calc(50% - 14px); width: 4px; height: 28px; border-radius: 3px; background: var(--petroleo); }
 
+/* ---- caixas móveis sobre a prévia (estatística, texto, forma, figura): arrastar, puxar o canto, clicar para editar ---- */
+.caixa-movel { position: absolute; z-index: 6; box-sizing: border-box; cursor: move; touch-action: none; border: 1.5px dashed transparent; border-radius: 3px; }
+.caixa-movel:hover, .caixa-movel.ativa { border-color: var(--petroleo); background: rgba(47,102,112,.10); }
+.caixa-movel .cm-rot { position: absolute; left: -1px; top: -18px; font-size: 10.5px; font-weight: 700; color: var(--creme); background: var(--petroleo);
+                       padding: 1px 7px; border-radius: 4px 4px 0 0; pointer-events: none; white-space: nowrap; display: none; }
+.caixa-movel:hover .cm-rot, .caixa-movel.ativa .cm-rot { display: block; }
+.caixa-movel .cm-alca { position: absolute; right: -7px; bottom: -7px; width: 13px; height: 13px; box-sizing: border-box; border: 2px solid #fff; border-radius: 3px;
+                        background: var(--vermelho); cursor: nwse-resize; display: none; box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+.caixa-movel:hover .cm-alca, .caixa-movel.ativa .cm-alca { display: block; }
+#popover-edicao .pop-mais { margin-top: 6px; font-size: 12px; background: none; border: 0; color: var(--petroleo); text-decoration: underline; cursor: pointer; padding: 0; }
+
 /* listas suspensas (selectize) ficam por cima de tudo, sem serem cortadas pelo bloco */
 .selectize-dropdown { z-index: 5000 !important; border-radius: 9px; border: 1px solid var(--linha-forte); box-shadow: 0 8px 24px rgba(32,36,43,.18); font-family: inherit; }
 .selectize-dropdown .selectize-dropdown-content { max-height: 280px; }

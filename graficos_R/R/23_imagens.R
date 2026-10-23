@@ -67,7 +67,7 @@ if (requireNamespace("grid", quietly = TRUE)) registerS3method("makeContent", "i
     if (is.null(it$largura) || is.null(it$altura)) .erro("cfg$imagens: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\").")
     f <- gList(rasterGrob(r, width = unit(1, "npc"), height = unit(1, "npc"), interpolate = TRUE), if (!is.null(gp_b)) rectGrob(gp = gp_b))
     g <- gTree(children = gList(gTree(children = f, vp = viewport(angle = ang))))
-    return(list(grob = g, xmin = cx - it$largura / 2, xmax = cx + it$largura / 2, ymin = cy - it$altura / 2, ymax = cy + it$altura / 2))
+    return(list(grob = g, xmin = cx - it$largura / 2, xmax = cx + it$largura / 2, ymin = cy - it$altura / 2, ymax = cy + it$altura / 2, caixa = list(fracao = FALSE)))
   }
   larg <- it$largura %||% 0.2
   if (!is.null(it$altura)) {                     # largura e altura dadas: preenche o retângulo (pode deformar)
@@ -75,7 +75,9 @@ if (requireNamespace("grid", quietly = TRUE)) registerS3method("makeContent", "i
     f <- gList(rasterGrob(r, width = unit(1, "npc"), height = unit(1, "npc"), interpolate = TRUE), if (!is.null(gp_b)) rectGrob(gp = gp_b))
     g <- gTree(children = gList(gTree(children = f, vp = vp)))
   } else g <- gTree(children = gList(.grob_imagem_prop(r, prop, unit(larg, "npc"), unit(cx, "npc"), unit(cy, "npc"), a, ang, gp_b)))
-  list(grob = g, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf)
+  list(grob = g, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf,
+       caixa = list(W = unit(larg, "npc"), H = if (!is.null(it$altura)) unit(it$altura, "npc"), prop = prop, cx = cx, cy = cy, jx = a[1], jy = a[2], fracao = TRUE,
+                    tipo = "figura", forma = "figura", auto = is.null(it$altura)))
 }
 
 # Camadas das figuras. Sai: list(antes, depois).
@@ -84,7 +86,8 @@ if (requireNamespace("grid", quietly = TRUE)) registerS3method("makeContent", "i
   for (i in seq_along(cfg$imagens)) {
     it <- .ex(cfg$imagens[[i]]); if (isFALSE(it$ativo)) next
     if (identical(parte, "inferior") && identical(it$unidade %||% "fracao", "fracao")) next
-    ac <- .ann_forma(.grob_imagem(it, cfg), info)
+    f <- .grob_imagem(it, cfg)
+    ac <- .ann_forma(f, info); attr(ac, "caixa") <- c(f$caixa, list(grupo = "imagens", id = paste0("im", it$cartao %||% i)))
     if (identical(it$camada, "atras")) antes[[length(antes) + 1]] <- ac else depois[[length(depois) + 1]] <- ac
   }
   list(antes = antes, depois = depois)

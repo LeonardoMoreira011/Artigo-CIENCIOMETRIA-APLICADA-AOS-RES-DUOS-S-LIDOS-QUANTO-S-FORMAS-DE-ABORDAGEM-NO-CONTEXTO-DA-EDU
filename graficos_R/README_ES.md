@@ -31,6 +31,8 @@ La página se abre en `http://cinabro.localhost:8421`. El proceso de R se cierra
 - **Exportación:** elige uno o más tipos de archivo; fondo transparente; resolución; guardar/cargar configuración (JSON); "código equivalente" para el script.
 
 ## Paletas y licencias
+Las figuras, textos, formas, cuadros de estadística y la leyenda se mueven con el ratón: arrastra para mover, tira del cuadradito rojo de la esquina para cambiar el tamaño, haz clic para editar. Un ajuste de curva o Media ± DE recibe su propio cuadro de estadística (ecuación, R², media, DE), separado de la línea. *Curva externa* (menú Ajuste de curva): dibuja sobre los datos una curva que ya tienes (puntos X,Y pegados, o una fórmula con valores de parámetros listos) sin ajustar nada.
+
 Solo se incluyen paletas de trabajos con licencia libre — ninguna con nombre de programa, marca o revista. 12 paletas: la original `cinabro` (por defecto; los colores de la marca y variaciones), seis degradados (Brewer Reds, Purples, YlGnBu, YlOrRd; cmocean algae; Crameri oslo), dos divergentes (Brewer `brewer_RdYlGn`, de rojo oscuro a verde, y Spectral) y tres continuas (magma, inferno, turbo de viridisLite). Los nombres de paletas retiradas siguen funcionando: se usa la más parecida que quedó, con un aviso. Los créditos y avisos de licencia están en `NOTICE.md`. La fuente es Barlow (SIL Open Font License; `fontes/Barlow/OFL.txt`).
 
 ## Nuevo diseño: el gráfico primero

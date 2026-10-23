@@ -204,7 +204,14 @@ teste("cartões desligados não geram nada; ligados geram só o que difere do pa
   length(montar_variaveis(vs, CFG0)[names(SLOTS)]) == length(SLOTS) && all(vapply(montar_variaveis(vs, CFG0)[names(SLOTS)], is.null, NA)) && {
     v1 <- vs; v1$aj1_ativo <- TRUE; v1$aj1_tipo <- "formula"; v1$aj1_formula <- "a*exp(-b*x)+c"; v1$aj1_inicio <- "a=5, b=0.1, c=0"; v1$fm1_ativo <- TRUE; v1$fm1_sem_fundo <- TRUE; v1$fm1_tipo <- "elipse"
     r <- montar_variaveis(v1, CFG0)
-    identical(r$ajustes[[1]], list(tipo = "formula", formula = "a*exp(-b*x)+c", inicio = c(a = 5, b = 0.1, c = 0))) && identical(r$formas[[1]], list(tipo = "elipse", fundo = NA)) } })
+    identical(r$ajustes[[1]], list(tipo = "formula", formula = "a*exp(-b*x)+c", inicio = c(a = 5, b = 0.1, c = 0), cartao = 1L)) && identical(r$formas[[1]], list(tipo = "elipse", fundo = NA, cartao = 1L)) } })
+teste("cada item de cartão leva o número do cartão (para ligar a caixa móvel ao cartão), mas o código equivalente não mostra esse número", {
+  v2 <- vs; v2$aj2_ativo <- TRUE; v2$aj1_ativo <- FALSE; v2$aj2_tipo <- "externa"; v2$aj2_formula <- "a*x+b"; v2$aj2_parametros <- "a=2, b=1"; v2$aj2_pontos <- "0 1\n5 11"
+  r2 <- montar_variaveis(v2, CFG0); cod <- paste(gerar_codigo(r2), collapse = "")
+  identical(r2$ajustes[[1]]$cartao, 2L) && identical(r2$ajustes[[1]]$parametros, c(a = 2, b = 1)) && identical(r2$ajustes[[1]]$pontos, "0 1\n5 11") && !grepl("cartao", cod, fixed = TRUE) && grepl("externa", cod, fixed = TRUE) })
+teste("curva externa: campos de fórmula, valores e pontos (caixa de texto grande) existem e só aparecem com o tipo 'Curva externa'; 'Curva externa' está no menu rápido", {
+  cp <- ESPEC_CAMPOS$aj1_pontos; identical(cp$tipo, "area") && grepl("externa", cp$se, fixed = TRUE) && grepl("externa", ESPEC_CAMPOS$aj1_parametros$se, fixed = TRUE) && "externa" %in% .AJUSTES_OPC &&
+    grepl("externa", paste(as.character(ui_faixa()), collapse = ""), fixed = TRUE) && grepl("<textarea", paste(as.character(ui_campo(cp, CFG0)), collapse = ""), fixed = TRUE) })
 erros_slot <- character(0)
 for (id in IDS_SLOT[!grepl("_ativo$", IDS_SLOT)]) {                  # cada campo de cada cartão, com o cartão ligado
   vc <- vs; for (a in grep("_ativo$", IDS_SLOT, value = TRUE)) vc[[a]] <- TRUE
@@ -235,7 +242,7 @@ teste("desenhar_previa ajusta a resolução à largura do palco (entre 96 e 300 
 teste("o campo de figura (PNG/JPEG) existe nos 3 cartões, como campo de arquivo, e vira 'arquivo' na lista imagens", {
   vi <- vs; vi$im1_ativo <- TRUE; vi$im1_arquivo <- "/tmp/x.png"; vi$im1_ancora <- "sup_dir"; vi$im1_largura <- 0.3
   length(IDS_ARQUIVO) == 3 && all(vapply(ESPEC_CAMPOS[IDS_ARQUIVO], function(c) c$tipo == "arquivo", NA)) &&
-    identical(montar_variaveis(vi, CFG0)$imagens, list(list(arquivo = "/tmp/x.png", largura = 0.3, ancora = "sup_dir"))) &&
+    identical(montar_variaveis(vi, CFG0)$imagens, list(list(arquivo = "/tmp/x.png", largura = 0.3, ancora = "sup_dir", cartao = 1L))) &&
     grepl("fileInput|im1_arquivo", paste(as.character(ui_campo(ESPEC_CAMPOS$im1_arquivo, CFG0)), collapse = ""))
 })
 
@@ -297,13 +304,17 @@ testServer(servidor, {
   if (requireNamespace("png", quietly = TRUE)) {
     f_fig <- tempfile(fileext = ".png"); png::writePNG(array(runif(30 * 60 * 4), c(30, 60, 4)), f_fig)
     rv$img[["im1_arquivo"]] <- list(nome = "logo.png", caminho = f_fig)
-    session$setInputs(im1_ativo = TRUE, im1_largura = 0.3, atualizar = 40)
+    session$setInputs(quebra_ativar = FALSE, im1_ativo = TRUE, im1_largura = 0.3, atualizar = 40)
     teste("servidor: a figura anexada aparece no gráfico (cfg$imagens) e o código equivalente usa o nome do arquivo enviado", is.null(rv$erro) && length(rv$res$cfg$imagens) == 1 &&
           grepl('arquivo = "logo.png"', paste(gerar_codigo(vars_codigo()), collapse = ""), fixed = TRUE) && !"im1_arquivo" %in% names(modelo_lista()$valores))
+    gcx <- .geometria_caixas(rv$res$g, rv$res$cfg)
+    teste("servidor: a figura anexada vira uma caixa móvel 'im1' (id = cartão) com posição e tamanho medidos no gráfico", !is.null(gcx) && { ids <- vapply(gcx$itens, function(i) i$id, ""); k <- which(ids == "im1"); length(k) == 1 &&
+          all(gcx$itens[[k]]$rect > 0) && gcx$itens[[k]]$tipo == "figura" && isTRUE(gcx$itens[[k]]$auto) } )
   }
   ant <- rv$previa$arquivo; session$setInputs(atualizar = 39)
   teste("servidor: a prévia anterior é apagada quando a nova é desenhada", !is.null(ant) && !identical(ant, rv$previa$arquivo) && !file.exists(ant) && file.exists(rv$previa$arquivo))
   session$setInputs(rapido = list(acao = "ajuste", tipo = "exponencial", t = 1), palco_larg = 1000, atualizar = 41)
+  session$setInputs(rapido = list(acao = "marca", t = 2), atualizar = 42); session$setInputs(rapido = list(acao = "ajuste", tipo = "externa", t = 3), atualizar = 43)
   teste("servidor: a faixa de ferramentas (clique rápido) e a largura do palco rodam sem erro", is.null(rv$erro) && identical(rv$palco_larg, 1000))
   session$setInputs(aba_nova = 1)
   teste("servidor: aba nova começa sem dados e mantém só o que estava congelado", length(rv$abas) == 2 && rv$aba == 2 && is.null(rv$dados) && is.null(rv$abas[[2]]$snap$valores$aj1_ativo) &&

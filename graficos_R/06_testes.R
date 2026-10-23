@@ -943,6 +943,63 @@ teste("paletas retiradas (okabe_ito, marca, tol_*, brewer_Set*, viridis, tableau
 teste("paleta desconhecida dá erro com a lista de opções", da_erro(.paleta("nao_existe", 3, c0$cores), "Opções:"))
 teste("paletas: mostrar_paletas() desenha todas sem erro", { g <- .grafico_paletas(6); inherits(g, "gg") && monta(g) })
 
+cat("--- curva externa, caixas móveis e a regra dos números fora da linha ---\n")
+teste("curva externa: pontos colados do Excel (tab/espaço, vírgula decimal), 'x,y; x,y', matriz e vetor viram a mesma matriz ordenada por X",
+      identical(.ler_pontos("0\t1,5\n2\t3,5\n1\t2"), matrix(c(0, 1, 2, 1.5, 2, 3.5), ncol = 2)) &&
+      identical(.ler_pontos("0,1; 1,2; 2,4"), matrix(c(0, 1, 2, 1, 2, 4), ncol = 2)) &&
+      identical(.ler_pontos(matrix(c(2, 1, 4, 2), ncol = 2)), matrix(c(1, 2, 2, 4), ncol = 2)) && is.null(.ler_pontos("a b")) && is.null(.ler_pontos("1 2")))
+xx <- 1:12; yy <- 3 * xx + 2 + c(0.5, -0.4, 0.3, -0.2, 0.1, 0, -0.1, 0.2, -0.3, 0.4, -0.5, 0.2)
+f1 <- .ajustar(xx, yy, list(tipo = "externa", formula = "3*x + 2"))
+teste("curva externa: fórmula pronta (sem letras) não ajusta nada e compara com os dados (R² alto, n = 12, sem parâmetros)",
+      f1$ok && f1$n == 12 && is.null(f1$par) && f1$npar == 0 && f1$r2 > 0.99 && abs(f1$pred(2) - 8) < 1e-9 && identical(f1$eq, "y = 3*x + 2"))
+f2 <- .ajustar(xx, yy, list(tipo = "externa", formula = "a*x + b", parametros = c(a = 3, b = 2)))
+teste("curva externa: fórmula com letras e valores prontos (parametros); a equação sai com os valores no lugar das letras",
+      f2$ok && abs(f2$pred(10) - 32) < 1e-9 && grepl("3\\*x \\+ 2", f2$eq) && abs(f2$r2 - f1$r2) < 1e-12)
+teste("curva externa: faltou o valor de um parâmetro, ou não deu nem pontos nem fórmula = falha avisada (sem erro que derruba)",
+      !.ajustar(xx, yy, list(tipo = "externa", formula = "a*x + b", parametros = c(a = 3)))$ok && !.ajustar(xx, yy, list(tipo = "externa"))$ok)
+f3 <- .ajustar(xx, yy, list(tipo = "externa", pontos = "1 5\n6 20\n12 38"))
+teste("curva externa: por pontos liga os pontos, fica NA fora do intervalo deles, guarda a faixa de X e dá R² contra os dados",
+      f3$ok && is.na(f3$pred(0)) && is.na(f3$pred(13)) && abs(f3$pred(3.5) - 12.5) < 1e-9 && identical(f3$xrange, c(1, 12)) && is.finite(f3$r2) &&
+      .ajustar(xx, yy, list(tipo = "externa", pontos = "1 5\n3 9\n6 20\n9 29\n12 38", interpolacao = "suave"))$ok)
+dce <- data.frame(t = xx, A = yy, B = yy * 0.5)
+cce <- c0; cce$grafico <- utils::modifyList(cce$grafico, list(tipo = "pontos", coluna_x = 1, colunas_y = c("A", "B")))
+cce$ajustes <- list(list(tipo = "externa", pontos = "1 5\n6 20\n12 38", cartao = 2), list(tipo = "linear", serie = "B", cartao = 4))
+cce$caixas_estatisticas <- list(list(itens = c("equacao", "r2"), ajustes = 4, cartao = 3), list(itens = c("equacao", "r2"), ajustes = 2, cartao = 1))
+gce <- plotar(dce, cce); ice <- attr(gce, "info"); fce <- .calcular_ajustes(cce, ice)
+teste("curva externa: com serie 'todas' desenha UMA curva só (na 1ª série) e a caixa de estatística escolhe o ajuste pelo NÚMERO DO CARTÃO",
+      length(fce) == 2 && identical(vapply(fce, function(f) f$serie, ""), c("A", "B")) &&
+      any(grepl("^y = ", .linhas_caixa(cce$caixas_estatisticas[[1]], cce, ice, fce)$linhas)) && !any(grepl("Curva externa", .linhas_caixa(cce$caixas_estatisticas[[1]], cce, ice, fce)$linhas)) &&
+      any(grepl("Curva externa", .linhas_caixa(cce$caixas_estatisticas[[2]], cce, ice, fce)$linhas)))
+teste("curva externa e a chave 'cartao' são aceitas sem aviso e o gráfico monta e imprime", length(avisos_de(monta(plotar(dce, cce)))) == 0)
+gm <- function(rot) { cm <- c0; cm$grafico <- utils::modifyList(cm$grafico, list(tipo = "pontos", coluna_x = 1, colunas_y = "A"))
+                      cm$marcas_estatisticas <- list(list(serie = "A", rotulo = rot)); length(plotar(dce, cm)$layers) }
+teste("números fora da linha: 'Média ± DP' não escreve o valor ao lado dos traços por padrão (só se rotulo = TRUE)", gm(NULL) == gm(FALSE) && gm(TRUE) > gm(NULL))
+png_g <- tempfile(fileext = ".png"); png::writePNG(array(0.5, c(30, 60, 3)), png_g)
+cgm <- c0; cgm$grafico <- utils::modifyList(cgm$grafico, list(tipo = "pontos", coluna_x = 1, colunas_y = "A"))
+cgm$caixas_estatisticas <- list(list(itens = c("media", "dp"), cartao = 2, tamanho_pt = 9))
+cgm$formas <- list(list(tipo = "texto", texto = "Nota", x = 0.4, y = 0.8, cartao = 1),
+                   list(tipo = "retangulo", x = 0.5, y = 0.5, largura = 0.2, altura = 0.1, ancora = "sup_esq", cartao = 3),
+                   list(tipo = "poligono", vertices = "0.6,0.2; 0.8,0.2; 0.7,0.4", cartao = 4),
+                   list(tipo = "retangulo", unidade = "dados", x = 5, y = 20, largura = 2, altura = 5, cartao = 5))
+cgm$imagens <- list(list(arquivo = png_g, x = 0.2, y = 0.3, largura = 0.25, cartao = 2))
+ggm <- suppressWarnings(plotar(dce, cgm)); gcx <- .geometria_caixas(ggm, cgm)
+ids_g <- vapply(gcx$itens, function(i) i$id, "")
+teste("caixas móveis: cada caixa em fração do gráfico aparece com id = prefixo + número do cartão (cx2, fm1, fm3, fm4, im2); a em unidades dos eixos fica de fora",
+      identical(sort(ids_g), c("cx2", "fm1", "fm3", "fm4", "im2")))
+teste("caixas móveis: os retângulos (em fração da página) estão dentro da página, o painel também, e a figura mantém a proporção 2:1",
+      all(vapply(gcx$itens, function(i) all(i$rect >= 0) && i$rect[1] + i$rect[3] <= 1 && i$rect[2] + i$rect[4] <= 1, NA)) && gcx$painel[3] > 0.3 &&
+      { im <- gcx$itens[[which(ids_g == "im2")]]; pp <- .preparar_saida(ggm, cgm); abs((im$rect[3] * pp$larg) / (im$rect[4] * pp$alt) - 2) < 0.02 })
+teste("caixas móveis: tipo, ancora e 'auto' (esticar muda a letra) vêm certos; o polígono traz os vértices; texto e figura são 'auto', retângulo com tamanho não",
+      { g1 <- function(id) gcx$itens[[which(ids_g == id)]]
+        g1("cx2")$tipo == "estatistica" && g1("cx2")$auto && g1("cx2")$tam == 9 && g1("fm1")$tipo == "texto" && g1("fm1")$auto && !g1("fm3")$auto &&
+        g1("fm3")$jx == 0 && g1("fm3")$jy == 1 && length(g1("fm4")$vert) == 3 && g1("im2")$tipo == "figura" && g1("im2")$auto })
+teste("caixas móveis: x e y da caixa de texto batem com o desenho (a âncora da caixa fica em x,y do painel)",
+      { t1 <- gcx$itens[[which(ids_g == "fm3")]]; pn <- gcx$painel
+        abs((t1$rect[1] - pn[1]) / pn[3] - 0.5) < 0.005 && abs((pn[2] + pn[4] - t1$rect[2]) / pn[4] - 0.5) < 0.005 })
+cq <- cgm; cq$quebra <- utils::modifyList(cq$quebra, list(ativo = TRUE, de = 14, ate = 30))
+teste("caixas móveis: sem caixas, ou com quebra de eixo, devolve NULL (o app só não desenha as molduras)",
+      is.null(.geometria_caixas(suppressWarnings(plotar(dce, c0)), c0)) && is.null(.geometria_caixas(suppressWarnings(plotar(dce, cq)), cq)))
+
 cat("--- quebra: traços pequenos por parte ---\n")
 cqm <- suppressMessages(aplicar_painel(c0, pq, dados = aq)); cqm$eixo_y2$ativo <- FALSE; cqm$series[["POP"]] <- NULL; cqm$grafico$colunas_y <- c("WORLD", "BRAZIL")
 cqm$quebra$y2_de <- NULL; cqm$quebra$y2_ate <- NULL; cqm$quebra$y2_incremento_inferior <- NULL; cqm$quebra$y2_incremento_superior <- NULL

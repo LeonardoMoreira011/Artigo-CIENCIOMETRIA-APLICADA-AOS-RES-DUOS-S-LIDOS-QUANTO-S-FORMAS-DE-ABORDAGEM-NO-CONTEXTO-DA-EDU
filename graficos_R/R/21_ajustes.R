@@ -11,7 +11,7 @@
 #  estatisticas(dados, cfg) devolve as mesmas tabelas em data.frames (para colar em relatório).
 # =============================================================================
 
-.AJUSTES_TIPOS <- c("linear", "exponencial", "potencia", "logaritmico", "polinomial", "loess", "formula")
+.AJUSTES_TIPOS <- c("linear", "exponencial", "potencia", "logaritmico", "polinomial", "loess", "formula", "externa")
 .EST_ITENS_DESC <- c("n", "media", "mediana", "dp", "ep", "soma", "minimo", "maximo", "amplitude", "variancia", "cv", "q1", "q3", "ic95")
 .EST_ITENS_AJUSTE <- c("equacao", "r2", "r2_aj", "rmse", "aic", "bic", "p_modelo", "parametros", "p_parametros", "shapiro_residuos")
 .EST_ITENS_TESTE <- c("pearson", "spearman", "kendall", "shapiro", "ttest", "wilcoxon", "var_test", "anova", "kruskal", "tukey", "bartlett", "fligner")
@@ -35,6 +35,7 @@
   linear = c("Linear", "Linear", "Lineal"), exponencial = c("Exponencial", "Exponential", "Exponencial"), potencia = c("Potência", "Power", "Potencia"),
   logaritmico = c("Logarítmico", "Logarithmic", "Logarítmico"), polinomial = c("Polinomial", "Polynomial", "Polinómico"),
   loess = c("Suavizado (loess)", "Smoothed (loess)", "Suavizado (loess)"), formula = c("Fórmula livre", "Free formula", "Fórmula libre"),
+  externa = c("Curva externa", "External curve", "Curva externa"),
   gl = c("gl", "df", "gl"))
 .re <- function(id) { r <- .ROT_EST[[id]]; if (is.null(r)) id else r[match(.idioma(), c("pt", "en", "es"))] }
 
@@ -52,7 +53,7 @@
 
 # ---- fórmula livre (só funções matemáticas permitidas) --------------------------------------------------------------------
 .FUNCS_FORMULA <- c("exp", "log", "log10", "log2", "sqrt", "sin", "cos", "tan", "asin", "acos", "atan", "sinh", "cosh", "tanh", "abs", "(", "+", "-", "*", "/", "^")
-.ler_formula <- function(txt) {
+.ler_formula <- function(txt, exigir_param = TRUE) {
   if (is.null(txt) || !is.character(txt) || length(txt) != 1 || !nzchar(trimws(txt)))
     .erro("cfg$ajustes: o tipo \"formula\" precisa de 'formula' (ex.: \"a*exp(-b*x) + c\").")
   t <- gsub("\\*\\*", "^", trimws(txt)); t <- sub("^y\\s*(=|~)\\s*", "", t); t <- sub("^~\\s*", "", t)
@@ -81,7 +82,7 @@
   }
   anda(e)
   if (!usa_x) .erro("cfg$ajustes: a fórmula precisa usar x (o eixo X).")
-  if (!length(params)) .erro("cfg$ajustes: a fórmula precisa de pelo menos um parâmetro a ajustar (a, b, c...).")
+  if (!length(params) && exigir_param) .erro("cfg$ajustes: a fórmula precisa de pelo menos um parâmetro a ajustar (a, b, c...).")
   if (length(params) > 8) .erro("cfg$ajustes: a fórmula tem parâmetros demais (máximo 8).")
   list(expr = e, params = params, texto = t)
 }
@@ -93,10 +94,62 @@
   s <- .nf(abs(v), casas)
   if (primeiro) paste0(if (v < 0) "-" else "", s, sufixo) else paste0(if (v < 0) " - " else " + ", s, sufixo)
 }
+# Pontos X,Y de uma curva externa: texto ("1,2; 3,4" | uma linha por ponto, colunas coladas do Excel com tab ou espaço e vírgula
+# decimal) | matriz ou data.frame n x 2 | vetor x1,y1,x2,y2... Sai: matriz n x 2 ordenada por X (sem X repetido) ou NULL.
+.ler_pontos <- function(p) {
+  if (is.null(p) || (is.character(p) && !any(nzchar(trimws(p))))) return(NULL)
+  m <- NULL
+  if (is.data.frame(p)) p <- as.matrix(p)
+  if (is.matrix(p) && ncol(p) == 2) m <- p
+  else if (is.numeric(p) || (is.list(p) && !is.character(p))) { v <- as.numeric(unlist(p)); if (length(v) >= 4 && length(v) %% 2 == 0) m <- matrix(v, ncol = 2, byrow = TRUE) }
+  else if (is.character(p)) {
+    linhas <- trimws(strsplit(paste(p, collapse = "\n"), "[;\n]")[[1]]); linhas <- linhas[nzchar(linhas)]
+    par <- lapply(linhas, function(l) {
+      cols <- if (grepl("[\t ]", l)) strsplit(gsub(",", ".", l), "[\t ]+")[[1]] else strsplit(l, ",")[[1]]
+      suppressWarnings(as.numeric(trimws(cols)))
+    })
+    if (all(lengths(par) == 2) && !anyNA(unlist(par))) m <- do.call(rbind, par)
+  }
+  if (is.null(m) || nrow(m) < 2 || anyNA(m)) return(NULL)
+  m <- m[order(m[, 1]), , drop = FALSE]; m[!duplicated(m[, 1]), , drop = FALSE]
+}
+
+# Curva que veio de fora (ajustada em outro programa, ou a equação de um artigo): desenhada sobre os dados SEM ajustar nada.
+#   aj$pontos  = pontos X,Y (a curva liga os pontos; aj$interpolacao = "suave" faz uma curva lisa entre eles)
+#   aj$formula + aj$parametros  = equação com os valores já conhecidos (ex.: formula "a*exp(-b*x)", parametros c(a = 2.5, b = 0.3)); uma
+#   fórmula sem letras (ex.: "2.5*exp(-0.3*x)+1") também vale. R², RMSE e n comparam a curva com os dados da série.
+.curva_externa <- function(x, y, aj, casas = NULL) {
+  aj <- .ex(aj); ok <- is.finite(x) & is.finite(y); x <- x[ok]; y <- y[ok]
+  falha <- function(msg) list(ok = FALSE, tipo = "externa", msg = msg, n = length(x))
+  pts <- .ler_pontos(aj$pontos); eq <- NA_character_; xr <- NULL
+  if (!is.null(pts)) {
+    f0 <- if (identical(aj$interpolacao, "suave") && nrow(pts) >= 4) stats::splinefun(pts[, 1], pts[, 2], method = "natural")
+          else stats::approxfun(pts[, 1], pts[, 2], rule = 1)
+    lim <- range(pts[, 1]); f <- function(xn) { r <- as.numeric(f0(xn)); r[xn < lim[1] | xn > lim[2]] <- NA_real_; r }
+    xr <- lim; eq <- paste0("(", .re("externa"), ": ", nrow(pts), " pts)")
+  } else if (!is.null(aj$formula) && nzchar(aj$formula)) {
+    F <- .ler_formula(aj$formula, exigir_param = FALSE)
+    par <- aj$parametros; if (!is.null(par) && is.null(names(par))) par <- stats::setNames(rep_len(par, length(F$params)), F$params)
+    faltam <- setdiff(F$params, names(par))
+    if (length(faltam)) return(falha(paste0("faltam os valores de: ", paste(faltam, collapse = ", "), " (campo 'parametros')")))
+    pv <- as.list(par[F$params]); ex <- F$expr
+    f <- function(xn) as.numeric(eval(ex, c(pv, list(x = xn, pi = pi)), baseenv()))
+    tx <- F$texto; for (nm in F$params) tx <- gsub(paste0("\\b", nm, "\\b"), .nf(pv[[nm]], casas), tx)
+    eq <- paste0("y = ", tx)
+  } else return(falha("informe 'pontos' (X,Y) ou 'formula' com 'parametros'"))
+  pr <- if (length(x)) f(x) else numeric(0); k <- is.finite(pr) & is.finite(y); res <- (y - pr)[k]; nn <- length(res)
+  tss <- if (nn > 1) sum((y[k] - mean(y[k]))^2) else NA_real_
+  r2 <- if (nn > 1 && is.finite(tss) && tss > 0) 1 - sum(res^2) / tss else NA_real_
+  list(ok = TRUE, tipo = "externa", n = nn, eq = eq, par = NULL, r2 = r2, r2_aj = NA_real_, rmse = if (nn) sqrt(mean(res^2)) else NA_real_, sigma = NA_real_,
+       aic = NA_real_, bic = NA_real_, p = NA_real_, F = NA_real_, gl = NA_real_, npar = 0, residuos = as.numeric(res), pred = f,
+       banda = function(xn, nivel = 0.95) NULL, xrange = xr)
+}
+
 .ajustar <- function(x, y, aj, casas = NULL) {
   aj <- .ex(aj)
   ok <- is.finite(x) & is.finite(y); x <- x[ok]; y <- y[ok]; n <- length(x)
   tipo <- aj$tipo %||% "linear"
+  if (identical(tipo, "externa")) return(.curva_externa(x, y, aj, casas))      # curva que veio de fora: não ajusta, só desenha e compara com os dados
   if (!tipo %in% .AJUSTES_TIPOS) .erro("cfg$ajustes: tipo '", tipo, "' não é válido.\n  OPÇÕES: ", paste0('"', .AJUSTES_TIPOS, '"', collapse = " | "))
   falha <- function(msg) list(ok = FALSE, tipo = tipo, msg = msg, n = n)
   minimo <- switch(tipo, linear = 2, exponencial = 3, potencia = 3, logaritmico = 3, polinomial = (aj$grau %||% 2) + 2, loess = 6, formula = 4)
@@ -306,6 +359,7 @@
     aj <- .ex(cfg$ajustes[[i]]); if (isFALSE(aj$ativo)) next
     alvo <- aj$serie %||% "todas"
     alvo <- if (identical(alvo, "todas")) ss else intersect(alvo, ss)
+    if (identical(aj$tipo, "externa") && identical(aj$serie %||% "todas", "todas")) alvo <- head(alvo, 1)    # curva externa: uma só (vale para o gráfico todo); R² compara com a 1ª série
     if (!length(alvo) && !isTRUE(cfg$paineis$ativo) && !identical(aj$serie %||% "todas", "todas"))
       .aviso("cfg$ajustes[[", i, "]]: a série '", paste(aj$serie, collapse = ", "), "' não existe no gráfico.")
     for (s in alvo) out[[length(out) + 1]] <- list(aj = aj, serie = s, indice = i)
@@ -344,7 +398,7 @@
     cor_s <- if (isTRUE(cx$colorir_serie %||% TRUE) && !is.null(cor_ser[[s]])) cor_ser[[s]] else NULL
     if (com_nome) add(s, cor_s, TRUE)
     if (!is.null(de)) for (id in desc_ids) add(.linha_desc(id, de, casas), if (isTRUE(cx$colorir_serie %||% TRUE) && !com_nome) cor_s else NULL)
-    meus <- Filter(function(f) identical(f$serie, s) && f$fit$ok && (is.null(cx$ajustes) || f$indice %in% cx$ajustes), fits)
+    meus <- Filter(function(f) identical(f$serie, s) && f$fit$ok && (is.null(cx$ajustes) || (f$aj$cartao %||% f$indice) %in% cx$ajustes), fits)
     for (f in meus) {
       ft <- f$fit
       if (length(aj_ids) && length(meus) > 1) add(f$nome, NULL, TRUE)
@@ -417,10 +471,11 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
         lc <- .linhas_caixa(cx, cfg, info, fits); if (is.null(lc)) next
         it <- utils::modifyList(list(tipo = "texto", unidade = "fracao", x = 0.03, y = 0.97, ancora = "sup_esq", fundo = "white", opacidade_fundo = 0.9,
                                      borda = TRUE, borda_cor = "grey40", borda_pt = 0.6, raio_pt = if (identical(cx$cantos, "reto")) 0 else 5, margem_pt = 5),
-                                unclass(cx)[setdiff(names(cx), c("itens", "series", "ajustes", "titulo", "casas", "colorir_serie", "mostrar_nome_serie", "ativo", "cantos"))])
+                                unclass(cx)[setdiff(names(cx), c("itens", "series", "ajustes", "titulo", "casas", "colorir_serie", "mostrar_nome_serie", "ativo", "cantos", "cartao"))])
         if (identical(cx$cantos, "reto")) it$raio_pt <- 0
         f <- .grob_forma(it, cfg, linhas = lc$linhas, cores = lc$cores, negritos = lc$negritos)
-        depois[[length(depois) + 1]] <- .ann_forma(f, info)
+        ac <- .ann_forma(f, info); attr(ac, "caixa") <- c(f$caixa, list(grupo = "caixas_estatisticas", id = paste0("cx", cx$cartao %||% i)))
+        depois[[length(depois) + 1]] <- ac
       }
   }
   list(antes = antes, depois = depois)
@@ -429,7 +484,7 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
 .camada_curva <- function(cfg, info, f) {
   aj <- .ex(f$aj); ft <- f$fit; s <- f$serie
   d <- .dados_serie(info, s); ax <- info$ax_x
-  de <- aj$de %||% (if (isTRUE(aj$estender)) ax$limites[1] else min(d$x)); ate <- aj$ate %||% (if (isTRUE(aj$estender)) ax$limites[2] else max(d$x))
+  de <- aj$de %||% (if (isTRUE(aj$estender)) ax$limites[1] else (ft$xrange[1] %||% min(d$x))); ate <- aj$ate %||% (if (isTRUE(aj$estender)) ax$limites[2] else (ft$xrange[2] %||% max(d$x)))
   if (!is.finite(de) || !is.finite(ate) || de >= ate) return(list())
   npt <- aj$n_pontos %||% 200
   xs <- if (!is.na(.base_log(ax$escala %||% "linear")) && de > 0) exp(seq(log(de), log(ate), length.out = npt)) else seq(de, ate, length.out = npt)
@@ -464,8 +519,8 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
   if (!faixa %in% c("dp", "ep", "ic95", "minmax", "nenhuma")) .erro("cfg$marcas_estatisticas: faixa '", faixa, "' não é válida.\n  OPÇÕES: \"dp\" | \"ep\" | \"ic95\" | \"minmax\" | \"nenhuma\"")
   if (!centro %in% c("media", "mediana", "nenhum")) .erro("cfg$marcas_estatisticas: centro '", centro, "' não é válido.\n  OPÇÕES: \"media\" | \"mediana\" | \"nenhum\"")
   if (identical(mk$modo, "barras_por_x")) {
-    a <- stats::aggregate(d$y, list(x = d$x), function(v) c(m = mean(v), n = length(v), dp = stats::sd(v)))
-    a <- data.frame(x = a$x, m = a$x.m, n = a$x.n, dp = a$x.dp)
+    ux <- sort(unique(d$x)); ix <- match(d$x, ux)                                # média, n e DP em cada X (sem depender dos nomes que o aggregate dá às colunas)
+    a <- data.frame(x = ux, m = as.numeric(tapply(d$y, ix, mean)), n = as.numeric(tapply(d$y, ix, length)), dp = as.numeric(tapply(d$y, ix, stats::sd)))
     a$disp <- switch(faixa, dp = a$dp, ep = a$dp / sqrt(a$n), ic95 = stats::qt(0.975, pmax(a$n - 1, 1)) * a$dp / sqrt(a$n), minmax = NA_real_, nenhuma = NA_real_) * mult
     a <- a[is.finite(a$disp), ]
     if (!nrow(a)) return(list(antes = antes, depois = depois))
@@ -489,7 +544,7 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
     cam <- if (horiz) geom_hline(yintercept = conv(val), colour = cor, linewidth = .lw(esp), linetype = tp, alpha = mk$opacidade %||% 1)
            else geom_vline(xintercept = val, colour = cor, linewidth = .lw(esp), linetype = tp, alpha = mk$opacidade %||% 1)
     out <- list(cam)
-    if (isTRUE(mk$rotulo %||% TRUE) && !is.null(rot)) {
+    if (isTRUE(mk$rotulo %||% FALSE) && !is.null(rot)) {
       tam <- .tx(mk$rotulo_tamanho_pt %||% 8)
       out[[2]] <- if (horiz) annotate("text", x = if (isTRUE(info$flip)) -Inf else Inf, y = conv(val), label = rot, hjust = 1.05, vjust = -0.4, colour = cor, size = tam, family = fonte)
                   else annotate("text", x = val, y = Inf, label = rot, hjust = 1.05, vjust = -0.4, angle = 90, colour = cor, size = tam, family = fonte)

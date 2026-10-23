@@ -77,11 +77,12 @@
   }
   $(document).on('click', '#maximizar', function () { if (!$(this).data('max')) { $(this).data('max', $(this).text()); } maximizar(); });
   $(document).on('keydown', function (e) { if (e.key === 'Escape' && $('.estudio').hasClass('max')) maximizar(false); });
-  Shiny.addCustomMessageHandler('abrir_painel', function (m) {
-    abrirPainel(m.id, true);
-    if (m.cartao) setTimeout(function () { var el = document.getElementById(m.cartao); if (!el) return; var $g = $(el).closest('.grupo'); $g[0] && $g[0].scrollIntoView({ block: 'center' }); $g.addClass('flash'); setTimeout(function () { $g.removeClass('flash'); }, 1600); }, 350);
+  function irParaCartao(painel, cartao) {
+    abrirPainel(painel, true);
+    if (cartao) setTimeout(function () { var el = document.getElementById(cartao); if (!el) return; var $g = $(el).closest('.grupo'); $g[0] && $g[0].scrollIntoView({ block: 'center' }); $g.addClass('flash'); setTimeout(function () { $g.removeClass('flash'); }, 1600); }, 350);
     avisarPalco();
-  });
+  }
+  Shiny.addCustomMessageHandler('abrir_painel', function (m) { irParaCartao(m.id, m.cartao); });
   $(function () { ajustarTopo(); abrirPainel('dados', true); setTimeout(function () { ajustarTopo(); avisarPalco(); }, 700); });
   $(window).on('resize', function () { ajustarTopo(); clearTimeout(window.__rz); window.__rz = setTimeout(function () { var w = $('.previa-quadro').innerWidth(); if (w) Shiny.setInputValue('palco_larg', Math.round(w), { priority: 'event' }); }, 500); });
   $(document).on('shiny:connected', function () { setTimeout(avisarPalco, 600); });
@@ -90,11 +91,12 @@
   var geo = null, ar = null;
   function host() { return document.querySelector('.previa-quadro'); }
   function imagem() { return document.querySelector('#previa img'); }
-  function medidas() {
-    var im = imagem(), h = host(); if (!im || !h || !geo || !geo.ok) return null;
+  function medidasImg() {
+    var im = imagem(), h = host(); if (!im || !h || !geo) return null;
     var r = im.getBoundingClientRect(), hr = h.getBoundingClientRect();
     return { W: r.width, H: r.height, ox: r.left - hr.left + h.scrollLeft, oy: r.top - hr.top + h.scrollTop };
   }
+  function medidas() { return geo && geo.ok ? medidasImg() : null; }
   // ---- edição dentro do gráfico: zonas clicáveis sobre os títulos; clicar abre uma caixa com o texto, o negrito e o tamanho ----------------
   var EDIT = { titulo: ['titulo_grafico', 'titulo_grafico_negrito', 'titulo_grafico_tamanho_pt'],
                xlab: ['x_titulo', 'eixos_titulo_negrito', 'x_titulo_tamanho_pt'],
@@ -108,21 +110,22 @@
   }
   function reposicionarPopover() {
     if (!pop) return;
-    var $z = $('.zona[data-z="' + pop.k + '"]'), $p = $('#popover-edicao'), h = host(); if (!$z.length || !$p.length) return;
+    var $z = pop.k.indexOf('caixa:') === 0 ? $('.caixa-movel[data-id="' + pop.k.slice(6) + '"]') : $('.zona[data-z="' + pop.k + '"]'), $p = $('#popover-edicao'), h = host(); if (!$z.length || !$p.length) return;
     var zl = parseFloat($z.css('left')), zt = parseFloat($z.css('top')), zh = $z.outerHeight();
     var esq = Math.max(6, Math.min(zl, h.scrollLeft + h.clientWidth - $p.outerWidth() - 6)), topo = zt + zh + 6;
     if (topo + $p.outerHeight() > h.scrollTop + h.clientHeight) topo = Math.max(zt - $p.outerHeight() - 6, 6);
     $p.css({ left: esq, top: topo });
   }
-  function abrirPopover(k) {
+  function abrirPopover(k, ids, titulo, cartao) {
     fecharPopover();
     var $p = $('<div id="popover-edicao"><div class="pop-cab"><b></b><button type="button" class="pop-x">&times;</button></div><div class="pop-corpo"></div></div>');
-    $p.find('b').text(rotulo(k)); $p.find('.pop-x').attr('title', rotulo('fechar'));
+    $p.find('b').text(titulo || rotulo(k)); $p.find('.pop-x').attr('title', rotulo('fechar'));
     var itens = [];
-    EDIT[k].forEach(function (id) {
+    (ids || EDIT[k]).forEach(function (id) {
       var node = $('#' + id).closest('.campo')[0]; if (!node) return;
       itens.push({ node: node, parent: node.parentNode, next: node.nextSibling }); $p.find('.pop-corpo').append(node);
     });
+    if (cartao) $('<button type="button" class="pop-mais"></button>').text(rotulo('cx_mais')).on('click', function () { fecharPopover(); irParaCartao(cartao.painel, cartao.ativo); }).appendTo($p.find('.pop-corpo'));
     $(host()).append($p); pop = { k: k, itens: itens }; reposicionarPopover();
     setTimeout(function () { $p.find('input[type=text], input:not([type])').first().focus(); }, 60);
   }
@@ -140,12 +143,82 @@
   $(document).on('click', '.zona', function (e) { abrirPopover($(this).data('z')); e.stopPropagation(); });
   $(document).on('click', '.pop-x', fecharPopover);
   $(document).on('mousedown', function (e) {
-    if (pop && !$(e.target).closest('#popover-edicao, .zona, .selectize-dropdown, .modal').length) fecharPopover();
+    if (pop && !$(e.target).closest('#popover-edicao, .zona, .caixa-movel, .selectize-dropdown, .modal').length) fecharPopover();
   });
   $(document).on('keydown', function (e) { if (e.key === 'Escape' && pop) { fecharPopover(); e.stopImmediatePropagation(); } });
 
+  // ---- caixas móveis (estatística, texto, forma, figura): arrastar, puxar o canto (tamanho) e clicar (editar) ------------------------------
+  var PAINEL_DE = { cx: 'estatistica', fm: 'formas', im: 'formas' };
+  var CAMPOS_RAPIDOS = { estatistica: ['itens', 'tamanho_pt', 'negrito', 'casas'], texto: ['texto', 'tamanho_pt', 'negrito', 'fundo'],
+                         forma: ['texto', 'tamanho_pt', 'fundo', 'borda_cor'], figura: ['largura', 'opacidade', 'angulo'] };
+  var cm = null;                                                     // gesto em andamento
+  function setCampo(id, v) { var $e = $('#' + id); if ($e.length) $e.val(v).trigger('input').trigger('change'); }
+  function arred(v, n) { var f = Math.pow(10, n); return Math.round(v * f) / f; }
+  function pixelsPainel(m) { var p = geo.caixas.painel; return { l: m.ox + p[0] * m.W, t: m.oy + p[1] * m.H, w: p[2] * m.W, h: p[3] * m.H }; }
+  function colocarCaixas() {
+    $('.caixa-movel').remove();
+    var m = medidasImg(); if (!m || !geo.caixas || !geo.caixas.itens || !$('#arrastar').is(':checked')) { return; }
+    geo.caixas.itens.forEach(function (it) {
+      var $b = $('<div class="caixa-movel" data-id="' + it.id + '"><span class="cm-rot"></span><i class="cm-alca"></i></div>');
+      $b.find('.cm-rot').text(rotulo('cx_' + it.tipo)); $b.attr('title', rotulo('cx_dica')).data('it', it);
+      $b.css({ left: m.ox + it.rect[0] * m.W, top: m.oy + it.rect[1] * m.H, width: Math.max(it.rect[2] * m.W, 14), height: Math.max(it.rect[3] * m.H, 14) });
+      $(host()).append($b);
+    });
+    reposicionarPopover();
+  }
+  $(document).on('pointerdown', '.caixa-movel', function (e) {
+    var m = medidasImg(); if (!m || !geo.caixas) return;
+    var $b = $(this), it = $b.data('it');
+    cm = { modo: $(e.target).hasClass('cm-alca') ? 'tam' : 'mover', x0: e.clientX, y0: e.clientY, l0: parseFloat($b.css('left')), t0: parseFloat($b.css('top')),
+           w0: $b.outerWidth(), h0: $b.outerHeight(), m: m, it: it, moveu: false };
+    $('.caixa-movel').removeClass('ativa'); $b.addClass('ativa');
+    this.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  $(document).on('pointermove', '.caixa-movel', function (e) {
+    if (!cm || cm.it.id !== $(this).data('it').id) return;
+    var dx = e.clientX - cm.x0, dy = e.clientY - cm.y0, P = pixelsPainel(cm.m), $b = $(this);
+    if (Math.abs(dx) + Math.abs(dy) > 3) cm.moveu = true;
+    if (cm.modo === 'mover') {
+      $b.css({ left: Math.min(Math.max(cm.l0 + dx, P.l), Math.max(P.l, P.l + P.w - cm.w0)) + 'px', top: Math.min(Math.max(cm.t0 + dy, P.t), Math.max(P.t, P.t + P.h - cm.h0)) + 'px' });
+    } else {
+      var w = Math.min(Math.max(cm.w0 + dx, 16), Math.max(16, P.l + P.w - cm.l0)), h = Math.min(Math.max(cm.h0 + dy, 12), Math.max(12, P.t + P.h - cm.t0));
+      if (cm.it.auto) h = w * cm.h0 / cm.w0;      // texto e figura mantêm a proporção
+      $b.css({ width: w + 'px', height: h + 'px' });
+    }
+  });
+  $(document).on('pointerup pointercancel', '.caixa-movel', function (e) {
+    if (!cm) return;
+    var g = cm, $b = $(this), it = g.it; cm = null;
+    if (!g.moveu) {                                                   // um clique: abre a edição rápida
+      var pref = it.id.replace(/[0-9]+$/, ''), ids = (CAMPOS_RAPIDOS[it.tipo] || []).map(function (c) { return it.id + '_' + c; });
+      abrirPopover('caixa:' + it.id, ids, rotulo('cx_' + it.tipo), { painel: PAINEL_DE[pref], ativo: it.id + '_ativo' });
+      return;
+    }
+    var m = g.m, P = pixelsPainel(m), l = parseFloat($b.css('left')), t = parseFloat($b.css('top')), w = $b.outerWidth(), h = $b.outerHeight();
+    var redim = g.modo === 'tam';
+    var ax = (l + it.jx * w - P.l) / P.w, ay = ((P.t + P.h) - (t + (1 - it.jy) * h)) / P.h;
+    if (it.forma === 'poligono' && it.vert) {
+      var nv = it.vert.map(function (v) {
+        var px = P.l + v[0] * P.w, py = P.t + (1 - v[1]) * P.h;
+        var nx = l + (px - g.l0) * (w / g.w0), ny = t + (py - g.t0) * (h / g.h0);
+        return arred((nx - P.l) / P.w, 4) + ',' + arred(1 - (ny - P.t) / P.h, 4);
+      });
+      setCampo(it.id + '_vertices', nv.join('; '));
+      return;
+    }
+    setCampo(it.id + '_x', arred(ax, 3)); setCampo(it.id + '_y', arred(ay, 3));
+    if (!redim) return;
+    if (it.tipo === 'figura') {
+      setCampo(it.id + '_largura', arred(w / P.w, 3)); if (!it.auto) setCampo(it.id + '_altura', arred(h / P.h, 3));
+    } else if (it.auto) {
+      setCampo(it.id + '_tamanho_pt', Math.max(4, arred((it.tam || 11) * (w / g.w0), 1)));
+    } else {
+      setCampo(it.id + '_largura', arred(w / P.w, 3)); setCampo(it.id + '_altura', arred(h / P.h, 3));
+    }
+  });
+
   function colocar() {
-    colocarZonas();
+    colocarZonas(); colocarCaixas();
     var $b = $('#legenda-caixa'), m = medidas();
     if (!m || !$('#arrastar').is(':checked')) { $b.hide(); return; }
     $b.css({ display: 'block', left: (m.ox + geo.legenda[0] * m.W) + 'px', top: (m.oy + geo.legenda[1] * m.H) + 'px',

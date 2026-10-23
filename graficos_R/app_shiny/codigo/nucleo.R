@@ -37,7 +37,7 @@ valor_inicial <- function(campo, cfg0) {
     sel = , tri = , selbusca = { o <- unname(unlist(campo$opcoes)); if (!is.null(d) && length(d) == 1 && as.character(d) %in% o) as.character(d) else o[1] },
     cor = "", arquivo = "",
     chkgrupo = as.character(d),
-    vec = "", selmulti = character(0), colx = "", colsy = character(0), colsy2 = character(0), NULL)
+    vec = "", area = "", selmulti = character(0), colx = "", colsy = character(0), colsy2 = character(0), NULL)
 }
 
 # Converte o que está na tela no valor do painel. NULL = "não mexer" (vale o padrão do template).
@@ -47,6 +47,7 @@ ler_valor <- function(campo, v, cfg0) {
   out <- switch(campo$tipo,
     num = , int = { if (is.null(v) || length(v) != 1 || is.na(v)) NULL else if (campo$tipo == "int") as.integer(round(v)) else as.numeric(v) },
     txt = { v <- trimws(v %||% ""); if (!nzchar(v)) NULL else if (grepl("^-?[0-9.]+$", v)) as.numeric(v) else v },
+    area = { v <- trimws(v %||% ""); if (!nzchar(v)) NULL else v },
     chk = if (is.null(v)) NULL else isTRUE(v),
     sel = , selbusca = { v <- as.character(v %||% ""); ini <- valor_inicial(campo, cfg0)    # igual ao que a tela mostrava no começo = padrão
             if (!nzchar(v) || iguais(v, as.character(ini))) NULL else v },
@@ -75,7 +76,7 @@ ler_valor_slot <- function(campo, v) {
   switch(campo$tipo,
     num = , int = { if (is.null(v) || length(v) != 1 || is.na(v)) NULL else if (!is.null(d) && isTRUE(all.equal(as.numeric(v), as.numeric(d)))) NULL
                     else if (campo$tipo == "int") as.integer(round(v)) else as.numeric(v) },
-    txt = { v <- trimws(v %||% ""); if (!nzchar(v)) NULL else v },
+    txt = , area = { v <- trimws(v %||% ""); if (!nzchar(v)) NULL else v },
     sel = { v <- as.character(v %||% ""); if (!nzchar(v) || (!is.null(d) && identical(v, as.character(d)))) NULL else v },
     cor = { v <- as.character(v %||% ""); if (!nzchar(v)) NULL else v },
     chk = { if (is.null(v)) NULL else if (isTRUE(v) != isTRUE(d)) isTRUE(v) else NULL },
@@ -106,6 +107,7 @@ montar_slots <- function(v) {
         if (!is.null(val)) it[[c$chave]] <- val
       }
       if (!is.null(it$inicio)) { ini <- ler_inicio(it$inicio); it$inicio <- NULL; if (!is.null(ini)) it$inicio <- ini }
+      if (!is.null(it$parametros)) { pa <- ler_inicio(it$parametros); it$parametros <- NULL; if (!is.null(pa)) it$parametros <- pa }
       if (isTRUE(it$sem_fundo)) it$fundo <- NA
       it$sem_fundo <- NULL
       if (identical(it$serie, "todas")) it$serie <- NULL
@@ -113,6 +115,8 @@ montar_slots <- function(v) {
       # cartão ligado mas ainda incompleto (figura sem arquivo, fórmula sem fórmula): espera ser preenchido, sem dar erro
       if (g == "imagens" && is.null(it$arquivo)) next
       if (g == "ajustes" && identical(it$tipo, "formula") && is.null(it$formula)) next
+      if (g == "ajustes" && identical(it$tipo, "externa") && is.null(it$formula) && is.null(it$pontos)) next
+      it$cartao <- k                                    # número do cartão no app: liga a caixa móvel ao cartão e as caixas de estatística aos ajustes
       itens[[length(itens) + 1]] <- it
     }
     if (length(itens)) out[[g]] <- itens
@@ -191,8 +195,8 @@ construir_grafico <- function(dados, vars, cfg0, preview = TRUE, idioma = "pt") 
 }
 
 # Desenha o gráfico numa imagem PNG para a prévia. Sai: list(arquivo, larg_px, alt_px).
-desenhar_previa <- function(g, cfg, dpi = 130, arq = tempfile("previa_", fileext = ".png"), alvo_px = NULL) {
-  prep <- .preparar_saida(g, cfg)
+desenhar_previa <- function(g, cfg, dpi = 130, arq = tempfile("previa_", fileext = ".png"), alvo_px = NULL, prep = NULL) {
+  prep <- prep %||% .preparar_saida(g, cfg)
   if (!is.null(alvo_px) && is.finite(alvo_px) && alvo_px > 200) dpi <- min(max(alvo_px / prep$larg, 96), 300, 2400 / prep$larg)   # o gráfico ocupa a largura do palco
   .abrir_dispositivo("png", arq, prep$larg, prep$alt, dpi, "white", usar_ragg = .ragg_ok(cfg))
   disp <- grDevices::dev.cur()
@@ -202,6 +206,7 @@ desenhar_previa <- function(g, cfg, dpi = 130, arq = tempfile("previa_", fileext
 
 # Texto do código do painel (para colar no painel_de_ajustes.R ou usar como script).
 gerar_codigo <- function(vars, arquivo_csv = NULL, script_completo = FALSE) {
+  vars <- lapply(vars, function(x) if (is.list(x) && length(x) && all(vapply(x, is.list, NA))) lapply(x, function(it) it[setdiff(names(it), "cartao")]) else x)   # o número do cartão é do app
   lin <- vapply(names(vars), function(n) {
     x <- vars[[n]]
     txt <- if (!is.null(names(x))) paste0("c(", paste(sprintf("%s = %s", vapply(names(x), function(k) deparse(k), ""),

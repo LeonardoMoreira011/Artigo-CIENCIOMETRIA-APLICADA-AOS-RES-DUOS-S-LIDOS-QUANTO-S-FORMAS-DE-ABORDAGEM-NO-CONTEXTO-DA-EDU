@@ -129,10 +129,10 @@
 # Onde a legenda "dentro" fica na figura, para o app desenhar uma caixa que se arrasta sobre a prévia.
 # Entra: g (de plotar) e cfg. Sai: NULL (sem legenda dentro) ou list(pagina = c(larg, alt) em polegadas,
 #   painel = c(esq, topo, larg, alt) e legenda = c(esq, topo, larg, alt), todos em FRAÇÃO da página (topo = a partir de cima)).
-.geometria_legenda <- function(g, cfg) {
+.geometria_legenda <- function(g, cfg, prep = NULL) {
   lg <- cfg$legenda
   if (!identical(lg$posicao, "dentro") || isFALSE(lg$mostrar)) return(NULL)
-  prep <- .preparar_saida(g, cfg)
+  prep <- prep %||% .preparar_saida(g, cfg)                       # o app passa o 'prep' já calculado: o gráfico é montado uma vez só
   dtmp <- .abrir_dispositivo_tmp(prep$larg, prep$alt); on.exit(grDevices::dev.off(dtmp), add = TRUE)
   gt <- prep$grob %||% attr(g, "gt") %||% ggplot2::ggplotGrob(g)
   k <- which(gt$layout$name == "guide-box-inside")
@@ -163,8 +163,8 @@
 
 # Onde estão o título do gráfico e os títulos dos eixos na página (frações da página: x, y de cima, largura, altura), para o app
 # desenhar zonas clicáveis sobre a prévia. Título ausente: uma faixa logo acima do painel. Sai NULL se não for possível medir.
-.geometria_zonas <- function(g, cfg) {
-  prep <- .preparar_saida(g, cfg)
+.geometria_zonas <- function(g, cfg, prep = NULL) {
+  prep <- prep %||% .preparar_saida(g, cfg)
   dtmp <- .abrir_dispositivo_tmp(prep$larg, prep$alt); on.exit(grDevices::dev.off(dtmp), add = TRUE)
   gt <- prep$grob %||% attr(g, "gt") %||% ggplot2::ggplotGrob(g)
   if (!inherits(gt, "gtable") || !"panel" %in% gt$layout$name) return(NULL)
@@ -187,4 +187,40 @@
   xl <- caixa("xlab-b"); if (!is.null(xl) && !xl$vazio && xl$h > 0.05) out$xlab <- fr(xl)
   yl <- caixa("ylab-l"); if (!is.null(yl) && !yl$vazio && yl$w > 0.05) out$ylab <- fr(yl)
   out
+}
+
+# Onde está cada caixa móvel (caixa de estatística, texto, forma, figura anexada) na página, para o app desenhar uma moldura que se arrasta
+# e se estica sobre a prévia. Só vale para caixas em "fração da caixa do gráfico" (as em unidades dos eixos ficam de fora) e para gráficos
+# de um painel só (sem quebra de eixo). Sai NULL ou list(painel = c(esq, topo, larg, alt), itens = lista); tudo em fração da página (topo = de cima).
+# Cada item: id ("cx1", "fm2", "im1": prefixo + número do cartão no app), grupo, tipo ("estatistica" | "texto" | "forma" | "figura"), forma, rect,
+# jx/jy (ponto da caixa que fica em x,y), auto (a caixa tem o tamanho do texto/da figura: esticar muda o tamanho da letra / mantém a proporção), tam (pt) e vert.
+.geometria_caixas <- function(g, cfg, prep = NULL) {
+  if (!is.null(attr(g, "partes")) || inherits(g, "patchwork") || is.null(g$layers)) return(NULL)
+  ls <- Filter(function(l) !is.null(attr(l, "caixa")) && isTRUE(attr(l, "caixa")$fracao), g$layers)
+  if (!length(ls)) return(NULL)
+  prep <- prep %||% .preparar_saida(g, cfg)
+  dtmp <- .abrir_dispositivo_tmp(prep$larg, prep$alt); on.exit(grDevices::dev.off(dtmp), add = TRUE)
+  gt <- prep$grob %||% attr(g, "gt") %||% ggplot2::ggplotGrob(g)
+  if (!inherits(gt, "gtable") || sum(gt$layout$name == "panel") != 1) return(NULL)
+  tam <- function(u, total_in, conv) {
+    nulo <- grid::unitType(u) == "null"; r <- numeric(length(u))
+    if (any(!nulo)) r[!nulo] <- conv(u[!nulo], "in", valueOnly = TRUE)
+    if (any(nulo)) { v <- as.numeric(u[nulo]); r[nulo] <- max(total_in - sum(r[!nulo]), 0) * v / sum(v) }
+    r
+  }
+  w <- tam(gt$widths, prep$larg, grid::convertWidth); h <- tam(gt$heights, prep$alt, grid::convertHeight)
+  lay <- gt$layout[gt$layout$name == "panel", ]
+  pl <- sum(w[seq_len(lay$l - 1)]); pt <- sum(h[seq_len(lay$t - 1)]); pw <- sum(w[lay$l:lay$r]); ph <- sum(h[lay$t:lay$b])
+  grid::pushViewport(grid::viewport(width = grid::unit(pw, "in"), height = grid::unit(ph, "in")))
+  pg <- c(prep$larg, prep$alt)
+  itens <- lapply(ls, function(l) {
+    d <- attr(l, "caixa")
+    bw <- grid::convertWidth(d$W, "in", valueOnly = TRUE)
+    bh <- if (!is.null(d$H)) grid::convertHeight(d$H, "in", valueOnly = TRUE) else bw * d$prop
+    esq <- pl + d$cx * pw - d$jx * bw; base <- d$cy * ph - d$jy * bh
+    Filter(Negate(is.null), list(id = d$id, grupo = d$grupo, tipo = d$tipo, forma = d$forma, jx = d$jx, jy = d$jy, auto = isTRUE(d$auto), tam = d$tam,
+         rect = round(c(esq / pg[1], (pt + ph - base - bh) / pg[2], bw / pg[1], bh / pg[2]), 5),
+         vert = if (!is.null(d$vert)) unname(split(round(d$vert, 5), row(d$vert)))))
+  })
+  list(painel = round(c(pl / pg[1], pt / pg[2], pw / pg[1], ph / pg[2]), 5), itens = unname(itens))
 }

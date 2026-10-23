@@ -281,7 +281,8 @@ pasta_saida  <- NULL       # EX.: "C:/pasta/figuras"  (padrão: pasta saida/)
 #  Cada variável é uma LISTA de itens (veja as opções completas em 01_config.R: cfg$ajustes, cfg$marcas_estatisticas, cfg$caixas_estatisticas).
 ajustes <- NULL            # curvas de ajuste. EX.: list(list(serie = "Y1", tipo = "linear", cor = "red", tipo_linha = "dashed"),
                            #                              list(serie = "Y2", tipo = "formula", formula = "a*exp(-b*x) + c", banda = TRUE))
-                           #   tipos: "linear" | "exponencial" | "potencia" | "logaritmico" | "polinomial" (grau) | "loess" | "formula"
+                           #   tipos: "linear" | "exponencial" | "potencia" | "logaritmico" | "polinomial" (grau) | "loess" | "formula" | "externa" (curva pronta: pontos = "0,10; 5,18"
+                           #          ou formula = "a*exp(-b*x)" com parametros = c(a = 2.5, b = 0.3); só desenha e compara com os dados)
 marcas_estatisticas <- NULL  # traços de média / mediana e faixas de DP, EP, IC 95%.
                            #   EX.: list(list(serie = "Y1", centro = "media", faixa = "dp", cor = "grey30", preencher = TRUE))
 caixas_estatisticas <- NULL  # caixas de texto com números (como a legenda). EX.: list(list(series = "Y1", x = 0.05, y = 0.95, sombra = TRUE,

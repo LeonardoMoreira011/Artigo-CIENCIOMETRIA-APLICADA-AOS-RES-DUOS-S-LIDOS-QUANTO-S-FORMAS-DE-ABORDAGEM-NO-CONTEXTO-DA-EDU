@@ -1196,10 +1196,15 @@ cfg$anotacoes <- list(
 #  Lista de ajustes. Cada item (todas as chaves são opcionais, menos 'tipo' quando não for linear):
 #    serie        nome da série (coluna Y) ou "todas" (uma curva para cada série; padrão)
 #    tipo         "linear" | "exponencial" (y = a·exp(b·x)) | "potencia" (y = a·x^b) | "logaritmico" (y = a + b·ln x) |
-#                 "polinomial" (com 'grau') | "loess" (suavizado, com 'suavizacao') | "formula" (com 'formula')
+#                 "polinomial" (com 'grau') | "loess" (suavizado, com 'suavizacao') | "formula" (com 'formula') |
+#                 "externa" (curva que você já tem: NÃO ajusta, só desenha por cima dos dados; veja 'pontos' e 'parametros')
 #    formula      só para tipo "formula": use x e nomes de parâmetros livres. EX.: "a*exp(-b*x) + c"  ou  "a/(1 + exp(-k*(x - x0)))"
 #                 Permitido: + - * / ^ ( ) e exp, log, log10, log2, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, abs, pi
 #    inicio       chutes iniciais dos parâmetros da fórmula. EX.: c(a = 5, b = 0.1, c = 0)   (vazio = o programa tenta vários)
+#    pontos       só para "externa": pontos X,Y da curva (matriz n x 2, ou texto "0,10; 5,18; 10,25", ou duas colunas coladas do Excel);
+#                 a curva liga os pontos (interpolacao = "suave" faz uma curva lisa). Vale no lugar da fórmula.
+#    parametros   só para "externa" com 'formula': os valores prontos. EX.: formula = "a*exp(-b*x)", parametros = c(a = 2.5, b = 0.3)
+#                 (uma fórmula sem letras, como "2.5*exp(-0.3*x) + 1", dispensa 'parametros'). R², RMSE e n comparam a curva com os dados.
 #    grau         só para "polinomial" (1 a 8; padrão 2)
 #    intercepto_zero  só para "linear": força a reta a passar pela origem
 #    cor          cor da curva (vazio = a cor da série)       tipo_linha  "solid" | "dashed" | "dotted" | "dotdash" | "longdash" | "twodash"

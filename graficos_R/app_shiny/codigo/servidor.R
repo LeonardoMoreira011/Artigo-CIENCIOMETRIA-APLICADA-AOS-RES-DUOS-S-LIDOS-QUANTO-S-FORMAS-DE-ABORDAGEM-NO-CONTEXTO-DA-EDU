@@ -24,6 +24,7 @@ atualizar_campo <- function(session, campo, valor, cfg0, colunas = NULL) {
   switch(campo$tipo,
     num = , int = updateNumericInput(session, id, value = if (is.null(valor) || length(valor) != 1) NA else valor),
     txt = , vec = updateTextInput(session, id, value = paste(valor, collapse = ", ")),
+    area = updateTextAreaInput(session, id, value = paste(valor, collapse = "\n")),
     sel = , tri = , selbusca = updateSelectInput(session, id, selected = as.character(valor)),
     chk = updateCheckboxInput(session, id, value = isTRUE(valor)),
     cor = session$sendCustomMessage("set_cor", list(id = id, valor = as.character(valor %||% ""))),
@@ -220,7 +221,8 @@ servidor <- function(input, output, session) {
       t_mont <- as.numeric(difftime(Sys.time(), t_ini, units = "secs"))
       if (!is.null(r$erro)) { rv$erro <- r$erro; rv$res <- r; registrar_log("gráfico com erro (", sprintf("%.2f", t_mont), " s): ", substr(r$erro, 1, 200)); return(invisible()) }
       incProgress(0.3)
-      p <- tryCatch(desenhar_previa(r$g, r$cfg, dpi = 130, alvo_px = if (!is.null(rv$palco_larg)) rv$palco_larg - 30), error = function(e) { rv$erro <- conditionMessage(e); NULL })
+      prep <- tryCatch(.preparar_saida(r$g, r$cfg), error = function(e) NULL)                # o gráfico é montado uma vez e serve ao desenho e às medidas
+      p <- tryCatch(desenhar_previa(r$g, r$cfg, dpi = 130, alvo_px = if (!is.null(rv$palco_larg)) rv$palco_larg - 30, prep = prep), error = function(e) { rv$erro <- conditionMessage(e); NULL })
       if (!is.null(p)) rv$palco_usado <- rv$palco_larg
       registrar_log("gráfico: montar ", sprintf("%.2f", t_mont), " s, total ", sprintf("%.2f", as.numeric(difftime(Sys.time(), t_ini, units = "secs"))),
                     " s; ", length(vars_atual()), " ajustes ativos; memória do R ", round(sum(gc()[, 2])), " MB; pasta temporária ",
@@ -228,11 +230,12 @@ servidor <- function(input, output, session) {
       if (!is.null(p)) {
         if (!is.null(rv$previa$arquivo)) unlink(rv$previa$arquivo)          # a prévia anterior não fica acumulando na pasta temporária
         rv$res <- r; rv$previa <- p; rv$erro <- NULL
-        geo <- tryCatch(.geometria_legenda(r$g, r$cfg), error = function(e) NULL)   # onde está a legenda (caixa que se arrasta)
+        geo <- tryCatch(.geometria_legenda(r$g, r$cfg, prep), error = function(e) NULL)   # onde está a legenda (caixa que se arrasta)
         rv$geo <- geo
-        zonas <- tryCatch(.geometria_zonas(r$g, r$cfg), error = function(e) NULL)       # títulos clicáveis sobre a prévia
-        session$sendCustomMessage("legenda_geom", if (is.null(geo)) list(ok = FALSE, zonas = zonas)
-                                  else list(ok = TRUE, painel = geo$painel, legenda = geo$legenda, pagina = geo$pagina, zonas = zonas))
+        zonas <- tryCatch(.geometria_zonas(r$g, r$cfg, prep), error = function(e) NULL)       # títulos clicáveis sobre a prévia
+        caixas <- tryCatch(.geometria_caixas(r$g, r$cfg, prep), error = function(e) NULL)     # figuras, textos, formas e caixas de estatística que se movem
+        session$sendCustomMessage("legenda_geom", if (is.null(geo)) list(ok = FALSE, zonas = zonas, caixas = caixas)
+                                  else list(ok = TRUE, painel = geo$painel, legenda = geo$legenda, pagina = geo$pagina, zonas = zonas, caixas = caixas))
       }
     })
   }
@@ -349,6 +352,22 @@ servidor <- function(input, output, session) {
     }
     id <- function(ch) paste0(pref, livre, "_", ch)
     updateCheckboxInput(session, id("ativo"), value = TRUE)
+    # regra: ajuste e média ± DP não escrevem números colados na linha; cada um ganha a sua caixa de estatística, que se move e se edita à parte
+    criar_caixa <- function(itens, ajuste = NULL) {
+      g2 <- SLOTS$caixas_estatisticas; p2 <- g2$pref; k2 <- NULL
+      for (kk in seq_len(g2$n)) if (!isTRUE(input[[paste0(p2, kk, "_ativo")]])) { k2 <- kk; break }
+      if (is.null(k2)) { showNotification(T("Todos os cartões de caixa de estatística já estão em uso: o resultado não ganhou caixa. Desligue um para reaproveitar."), type = "warning"); return(invisible()) }
+      id2 <- function(ch) paste0(p2, k2, "_", ch)
+      usadas <- sum(vapply(seq_len(g2$n), function(kk) isTRUE(input[[paste0(p2, kk, "_ativo")]]), NA))
+      updateCheckboxInput(session, id2("ativo"), value = TRUE)
+      updateSelectInput(session, id2("itens"), selected = itens)
+      if (!is.null(ajuste)) updateTextInput(session, id2("ajustes"), value = as.character(ajuste))
+      updateSelectInput(session, id2("ancora"), selected = "inf_dir"); updateNumericInput(session, id2("x"), value = 0.97)       # canto de baixo, à direita; cada caixa nova sobe um pouco
+      updateNumericInput(session, id2("y"), value = round(min(0.04 + 0.2 * usadas, 0.8), 2))
+      updateNumericInput(session, id2("tamanho_pt"), value = 8)                 # começa pequena; a alça do canto muda o tamanho
+    }
+    if (acao == "ajuste") criar_caixa(if (identical(r$tipo, "externa")) c("equacao", "r2", "rmse") else c("equacao", "r2"), ajuste = livre)
+    if (acao == "marca") criar_caixa(c("n", "media", "dp"))
     switch(acao,
       ajuste = updateSelectInput(session, id("tipo"), selected = r$tipo),
       marca = updateCheckboxInput(session, id("preencher"), value = TRUE),

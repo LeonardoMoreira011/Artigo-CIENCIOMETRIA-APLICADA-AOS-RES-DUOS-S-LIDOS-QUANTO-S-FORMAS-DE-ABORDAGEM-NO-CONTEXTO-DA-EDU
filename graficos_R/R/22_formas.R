@@ -180,8 +180,12 @@
   if (tipo != "texto" || !(length(fill) == 1 && is.na(fill)) || com_borda) fil[[length(fil) + 1]] <- desenho(0, 0, gp_forma)
   fil <- c(fil, filhos_txt)
   vp <- viewport(x = unit(cx, "npc"), y = unit(cy, "npc"), width = W, height = H, just = c(jx, jy), angle = it$angulo %||% 0)
+  # descrição da caixa (para o app saber onde ela fica e poder movê-la/redimensioná-la com o mouse; só em fração da caixa do gráfico)
+  caixa <- list(W = W, H = H, cx = cx, cy = cy, jx = jx, jy = jy, fracao = identical(un, "fracao"), tipo = if (!is.null(linhas)) "estatistica" else if (tipo == "texto") "texto" else "forma",
+                forma = tipo, tam = tam, auto = tipo != "poligono" && tem_texto && is.null(largura) && is.null(altura),
+                vert = if (tipo == "poligono" && un == "fracao") vv else NULL)
   list(grob = gTree(children = gList(gTree(children = do.call(gList, fil), vp = vp))),   # (o annotation_custom troca o vp do grob de fora)
-        xmin = lim$xmin, xmax = lim$xmax, ymin = lim$ymin, ymax = lim$ymax)
+        xmin = lim$xmin, xmax = lim$xmax, ymin = lim$ymin, ymax = lim$ymax, caixa = caixa)
 }
 
 # Camadas (annotation_custom) de uma lista de formas. Sai: list(antes, depois).
@@ -192,7 +196,7 @@
     it <- .ex(cfg$formas[[i]])
     if (identical(parte, "inferior") && identical(it$unidade %||% "fracao", "fracao")) next      # quebra de eixo: formas em fração ficam na parte de cima
     f <- .grob_forma(it, cfg)
-    ac <- .ann_forma(f, info)
+    ac <- .ann_forma(f, info); attr(ac, "caixa") <- c(f$caixa, list(grupo = "formas", id = paste0("fm", it$cartao %||% i)))
     if (identical(it$camada, "atras")) antes[[length(antes) + 1]] <- ac else depois[[length(depois) + 1]] <- ac
   }
   im <- .camadas_imagens(cfg, info)                  # figuras anexadas (R/23_imagens.R)

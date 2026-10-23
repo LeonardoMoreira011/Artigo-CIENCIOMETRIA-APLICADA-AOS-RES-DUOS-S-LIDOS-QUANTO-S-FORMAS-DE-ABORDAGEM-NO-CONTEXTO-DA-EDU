@@ -46,6 +46,8 @@ Colors `#B3262E` (cinnabar red), `#F5EBDD` (cream: page background; white only i
 - The `marca` palette was reordered so the first four colors are the most distinct (also for color-blind viewers).
 
 ## Palettes and licenses
+Figures, texts, shapes, statistics boxes and the legend move with the mouse: drag to move, pull the red square in the corner to resize, click to edit. A curve fit or Mean ± SD gets its own statistics box (equation, R², mean, SD), separate from the line. *External curve* (Curve fit menu): draw a curve you already have (pasted X,Y points, or a formula with ready parameter values) over the data without fitting anything.
+
 Only palettes from freely licensed work are included — no palettes named after programs, brands or journals. 12 palettes: the original `cinabro` (default; the brand colors and variations of them), six gradients (Brewer Reds, Purples, YlGnBu, YlOrRd; cmocean algae; Crameri oslo), two diverging (Brewer `brewer_RdYlGn`, dark red to green, and Spectral) and three continuous (magma, inferno, turbo from viridisLite). Names of removed palettes still work: the closest remaining one is used, with a warning. Credits and license notices are in `NOTICE.md`. The font is Barlow (SIL Open Font License; `fontes/Barlow/OFL.txt`).
 
 ## Tests

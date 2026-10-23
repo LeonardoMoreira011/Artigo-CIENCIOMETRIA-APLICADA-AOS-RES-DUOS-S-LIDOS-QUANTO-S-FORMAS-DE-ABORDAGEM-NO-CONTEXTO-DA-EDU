@@ -115,17 +115,17 @@
   setas = c("x", "y", "x_fim", "y_fim", "cor", "espessura_pt", "tamanho_ponta_pt"),
   faixas = c("eixo", "de", "ate", "cor", "opacidade"),
   ajustes = c("serie", "tipo", "formula", "inicio", "grau", "suavizacao", "intercepto_zero", "cor", "tipo_linha", "espessura_pt", "opacidade", "de", "ate",
-              "estender", "banda", "banda_nivel", "banda_opacidade", "nome", "casas", "n_pontos", "ativo"),
+              "estender", "banda", "banda_nivel", "banda_opacidade", "nome", "casas", "n_pontos", "pontos", "parametros", "interpolacao", "cartao", "ativo"),
   marcas_estatisticas = c("serie", "eixo", "centro", "faixa", "multiplo", "cor", "opacidade", "centro_espessura_pt", "centro_tipo", "faixa_espessura_pt",
                           "faixa_tipo", "preencher", "preencher_opacidade", "rotulo", "rotulo_tamanho_pt", "casas", "modo", "ponto_media", "ponto_tamanho_pt",
-                          "chapeu_percentual", "ativo"),
+                          "chapeu_percentual", "cartao", "ativo"),
   caixas_estatisticas = c("series", "titulo", "itens", "ajustes", "casas", "x", "y", "ancora", "tamanho_pt", "cor_texto", "negrito", "italico", "alinhamento",
                           "colorir_serie", "mostrar_nome_serie", "fundo", "opacidade_fundo", "borda", "borda_cor", "borda_pt", "borda_tipo", "cantos", "raio_pt",
-                          "margem_pt", "sombra", "sombra_cor", "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "ativo"),
-  imagens = c("arquivo", "x", "y", "largura", "altura", "unidade", "ancora", "opacidade", "angulo", "borda_cor", "borda_pt", "borda_tipo", "camada", "ativo"),
+                          "margem_pt", "sombra", "sombra_cor", "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "cartao", "ativo"),
+  imagens = c("arquivo", "x", "y", "largura", "altura", "unidade", "ancora", "opacidade", "angulo", "borda_cor", "borda_pt", "borda_tipo", "camada", "cartao", "ativo"),
   formas = c("tipo", "x", "y", "unidade", "largura", "altura", "vertices", "texto", "tamanho_pt", "cor_texto", "negrito", "italico", "alinhamento", "angulo",
              "fundo", "opacidade_fundo", "borda", "borda_cor", "borda_pt", "borda_tipo", "raio_pt", "cantos", "margem_pt", "sombra", "sombra_cor",
-             "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "camada", "ancora", "ativo"))
+             "sombra_opacidade", "sombra_dx_pt", "sombra_dy_pt", "camada", "ancora", "cartao", "ativo"))
 
 # Avisa chave digitada errado dentro dos itens (ex.: tamanho_ptt), que antes era ignorada em silêncio.
 .checar_itens <- function(cfg) {
