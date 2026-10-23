@@ -306,3 +306,14 @@
     try { var o = JSON.parse(txt); if (Array.isArray(o)) o = {}; window.PALETAS_SALVAS = o; localStorage.setItem(CHAVE, JSON.stringify(o)); } catch (e) {}
   });
 })();
+
+
+// A conexão com o R caiu (computador suspenso, R encerrado...): mostra o que fazer, em vez de só deixar a tela cinza.
+$(document).on('shiny:disconnected', function () {
+  if (document.getElementById('cb-desconectado')) return;
+  var d = document.createElement('div'); d.id = 'cb-desconectado';
+  d.innerHTML = '<b>A conexão com o Cinabro caiu.</b> O seu último gráfico foi guardado sozinho. ' +
+                '<button type="button" onclick="location.reload()">Recarregar e retomar</button> ' +
+                '<span>(se não voltar, abra o Cinabro de novo pelo atalho)</span>';
+  document.body.appendChild(d);
+});

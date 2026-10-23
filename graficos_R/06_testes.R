@@ -353,6 +353,10 @@ dl_g <- data.frame(g = rep(c("A", "B", "C"), each = 10), v = c(rnorm(10, 5), rno
 el <- suppressWarnings(suppressMessages(estatisticas(dl_g, cl)))
 teste("estatísticas em boxplot no formato longo (coluna de grupo): um grupo por valor da coluna, e os testes padrão (Shapiro, ANOVA, Kruskal, Bartlett)",
       identical(el$descritiva$serie, c("A", "B", "C")) && all(c("shapiro", "anova", "kruskal", "bartlett") %in% el$testes$id))
+ce_cor <- suppressMessages(aplicar_painel(c0, list2env(list(tipo_grafico = "pontos", coluna_x = 1, erro_por_serie = c(Media = "DP"), erro_cor = "#20242B")), dados = dp))
+le_cor <- Filter(function(l) inherits(l$geom, "GeomErrorbar"), suppressWarnings(plotar(dp, ce_cor))$layers)
+teste("painel: erro_cor dá às barras de erro uma cor própria, independente da cor da série (sem erro_cor, vale a cor da série)",
+      length(le_cor) == 1 && identical(toupper(le_cor[[1]]$aes_params$colour), "#20242B") && is.null(le_cor[[1]]$mapping$colour) && !is.null(camadas_erro[[1]]$mapping$colour))
 teste("painel: erro_por_serie sem nomes dá erro claro", da_erro(aplicar_painel(c0, list2env(list(erro_por_serie = "DP"))), "nomes"))
 teste("painel: tudo NULL não muda nada (o cfg sai igual ao padrão)",
       identical(suppressMessages(aplicar_painel(c0, list2env(list()))), .completar_cfg(c0)))

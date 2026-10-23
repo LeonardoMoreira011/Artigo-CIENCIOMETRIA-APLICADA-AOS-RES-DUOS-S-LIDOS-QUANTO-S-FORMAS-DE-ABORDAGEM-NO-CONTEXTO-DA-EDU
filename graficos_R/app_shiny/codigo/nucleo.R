@@ -284,3 +284,19 @@ gerar_codigo <- function(vars, arquivo_csv = NULL, script_completo = FALSE) {
          'visualizar(g)\n',
          'salvar(g, cfg)\n')
 }
+
+
+# ---- projeto (.cinabro): configuração + dados num arquivo só, para retomar o trabalho depois ----------------------------------------
+# modelo: a lista do modelo_lista() (configuração); arquivo_bruto: o CSV como foi enviado (guardado byte a byte, qualquer codificação).
+montar_projeto <- function(modelo, arquivo_bruto = NULL) {
+  modelo$tipo_arquivo <- "cinabro-projeto"
+  if (!is.null(arquivo_bruto) && file.exists(arquivo_bruto))
+    modelo$dados_base64 <- jsonlite::base64_enc(readBin(arquivo_bruto, "raw", file.size(arquivo_bruto)))
+  modelo
+}
+projeto_json <- function(projeto) as.character(jsonlite::toJSON(projeto, auto_unbox = TRUE, null = "null", na = "null"))
+# grava os dados que vieram dentro do projeto; devolve o caminho (ou NULL se o projeto não tinha dados)
+extrair_dados_projeto <- function(j, destino) {
+  if (is.null(j$dados_base64) || !is.character(j$dados_base64) || !nzchar(j$dados_base64)) return(NULL)
+  writeBin(jsonlite::base64_dec(j$dados_base64), destino); destino
+}

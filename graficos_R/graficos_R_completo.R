@@ -409,6 +409,10 @@ cfg$linhas <- list(
   # erro_espessura_pt: espessura das barras de erro em pt.
   erro_espessura_pt = 1,
 
+  # erro_cor: cor das barras de erro. NULL (padrão) = a cor de cada série; com uma cor, todas as barras usam essa cor,
+  #   independente da cor dos pontos/linhas.    EX.: cfg$linhas$erro_cor <- "#20242B"
+  erro_cor = NULL,
+
   # erro_chapeu_percentual: largura do "chapéu" da barra de erro, em % da
   #   largura do eixo X. 0 = sem chapéu.
   #   OPÇÕES: número >= 0      EX.: cfg$linhas$erro_chapeu_percentual <- 1.5
@@ -3547,13 +3551,17 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
     larg <- if (ax_x$escala == "linear") L$erro_chapeu_percentual / 100 * diff(ax_x$limites) else 0
     de$ymin <- if (L$erro_lado == "superior") de$y else de$y - de$e_inf
     de$ymax <- if (L$erro_lado == "inferior") de$y else de$y + de$e_sup
-    cam[[length(cam) + 1]] <- geom_errorbar(data = de, aes(x = x, ymin = ymin, ymax = ymax, colour = serie),
+    cam[[length(cam) + 1]] <- if (is.null(L$erro_cor)) geom_errorbar(data = de, aes(x = x, ymin = ymin, ymax = ymax, colour = serie),
       width = larg, linewidth = .lw(L$erro_espessura_pt), show.legend = FALSE, inherit.aes = FALSE)
+    else geom_errorbar(data = de, aes(x = x, ymin = ymin, ymax = ymax),               # cor própria: não depende da cor da série
+      colour = .cor(L$erro_cor), width = larg, linewidth = .lw(L$erro_espessura_pt), show.legend = FALSE, inherit.aes = FALSE)
   }
   dx <- d[!is.na(d$e_x), ]
   if (nrow(dx)) {
     alt <- if (ax_y$escala == "linear") L$erro_chapeu_percentual / 100 * diff(ax_y$limites) else 0
-    cam[[length(cam) + 1]] <- geom_errorbar(data = dx, aes(y = y, xmin = x - e_x, xmax = x + e_x, colour = serie),
+    cam[[length(cam) + 1]] <- if (is.null(L$erro_cor)) geom_errorbar(data = dx, aes(y = y, xmin = x - e_x, xmax = x + e_x, colour = serie),
+      width = alt, orientation = "y", linewidth = .lw(L$erro_espessura_pt), show.legend = FALSE, inherit.aes = FALSE)
+    else geom_errorbar(data = dx, aes(y = y, xmin = x - e_x, xmax = x + e_x), colour = .cor(L$erro_cor),
       width = alt, orientation = "y", linewidth = .lw(L$erro_espessura_pt), show.legend = FALSE, inherit.aes = FALSE)
   }
   aes_leg <- character(0)
@@ -5202,7 +5210,7 @@ jsonlite_b64 <- function(txt) {
   recortar_nos_limites = c("caixa", "recortar"),
   # barras de erro (pontos e linhas): o desenho; a coluna de cada série vem em erro_por_serie
   erro_lado = c("linhas", "erro_lado"), erro_espessura_pt = c("linhas", "erro_espessura_pt"),
-  erro_chapeu_pct = c("linhas", "erro_chapeu_percentual"),
+  erro_chapeu_pct = c("linhas", "erro_chapeu_percentual"), erro_cor = c("linhas", "erro_cor"),
   # ticks
   x_primeiro_tick = c("eixo_x", "primeiro_tick"), x_ticks_menores = c("eixo_x", "n_menores"),
   x_ticks_direcao = c("eixo_x", "direcao_maiores"), x_ticks_menores_direcao = c("eixo_x", "direcao_menores"),
@@ -10057,6 +10065,7 @@ erro_por_serie      <- NULL   # BARRAS DE ERRO (±) nos pontos: a série e a col
                               # EX.: c("Média" = "DP")   (a coluna de erro não é desenhada como série)
 erro_lado           <- NULL   # "ambos" (padrão) | "superior" | "inferior"
 erro_espessura_pt   <- NULL   # grossura da barra de erro, pt. EX.: 1
+erro_cor            <- NULL   # cor das barras de erro, independente da cor da série. EX.: "#20242B"  (NULL = a cor de cada série)
 erro_chapeu_pct     <- NULL   # largura do "chapéu" da barra, % do eixo X. EX.: 2   (0 = sem chapéu)
 cores_gradiente     <- NULL   # TRUE = barras/áreas com degradê
 cores_gradiente_cor2 <- NULL  # cor final do degradê. EX.: "white"

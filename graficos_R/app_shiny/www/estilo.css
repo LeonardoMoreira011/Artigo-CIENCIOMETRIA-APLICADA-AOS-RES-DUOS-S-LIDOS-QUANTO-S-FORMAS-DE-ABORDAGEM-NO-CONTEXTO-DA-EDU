@@ -344,3 +344,9 @@ a:hover { color: var(--vermelho); }
 #popover-edicao .pop-x { border: none; background: transparent; color: var(--creme); font-size: 22px; line-height: 1; cursor: pointer; padding: 0 2px; }
 #popover-edicao .pop-corpo { padding: 10px 12px 6px; }
 #popover-edicao .campo { margin-bottom: 2px; }
+
+#cb-desconectado { position: fixed; top: 0; left: 0; right: 0; z-index: 2147483647; background: #B3262E; color: #fff; padding: 12px 16px; text-align: center; font-size: 14px; }
+#cb-desconectado button { margin: 0 8px; padding: 4px 12px; border-radius: 999px; border: 0; background: #F5EBDD; color: #20242B; font-weight: 700; cursor: pointer; }
+#cb-desconectado span { opacity: .85; font-size: 12px; }
+
+a.btn-topo, .topo-acoes button.btn-topo { display: inline-flex; align-items: center; margin: 0; vertical-align: middle; }

@@ -196,13 +196,17 @@
     larg <- if (ax_x$escala == "linear") L$erro_chapeu_percentual / 100 * diff(ax_x$limites) else 0
     de$ymin <- if (L$erro_lado == "superior") de$y else de$y - de$e_inf
     de$ymax <- if (L$erro_lado == "inferior") de$y else de$y + de$e_sup
-    cam[[length(cam) + 1]] <- geom_errorbar(data = de, aes(x = x, ymin = ymin, ymax = ymax, colour = serie),
+    cam[[length(cam) + 1]] <- if (is.null(L$erro_cor)) geom_errorbar(data = de, aes(x = x, ymin = ymin, ymax = ymax, colour = serie),
       width = larg, linewidth = .lw(L$erro_espessura_pt), show.legend = FALSE, inherit.aes = FALSE)
+    else geom_errorbar(data = de, aes(x = x, ymin = ymin, ymax = ymax),               # cor própria: não depende da cor da série
+      colour = .cor(L$erro_cor), width = larg, linewidth = .lw(L$erro_espessura_pt), show.legend = FALSE, inherit.aes = FALSE)
   }
   dx <- d[!is.na(d$e_x), ]
   if (nrow(dx)) {
     alt <- if (ax_y$escala == "linear") L$erro_chapeu_percentual / 100 * diff(ax_y$limites) else 0
-    cam[[length(cam) + 1]] <- geom_errorbar(data = dx, aes(y = y, xmin = x - e_x, xmax = x + e_x, colour = serie),
+    cam[[length(cam) + 1]] <- if (is.null(L$erro_cor)) geom_errorbar(data = dx, aes(y = y, xmin = x - e_x, xmax = x + e_x, colour = serie),
+      width = alt, orientation = "y", linewidth = .lw(L$erro_espessura_pt), show.legend = FALSE, inherit.aes = FALSE)
+    else geom_errorbar(data = dx, aes(y = y, xmin = x - e_x, xmax = x + e_x), colour = .cor(L$erro_cor),
       width = alt, orientation = "y", linewidth = .lw(L$erro_espessura_pt), show.legend = FALSE, inherit.aes = FALSE)
   }
   aes_leg <- character(0)

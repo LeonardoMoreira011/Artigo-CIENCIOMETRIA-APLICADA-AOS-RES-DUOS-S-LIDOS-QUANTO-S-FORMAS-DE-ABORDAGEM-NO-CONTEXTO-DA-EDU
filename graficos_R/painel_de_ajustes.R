@@ -177,6 +177,7 @@ erro_por_serie      <- NULL   # BARRAS DE ERRO (±) nos pontos: a série e a col
                               # EX.: c("Média" = "DP")   (a coluna de erro não é desenhada como série)
 erro_lado           <- NULL   # "ambos" (padrão) | "superior" | "inferior"
 erro_espessura_pt   <- NULL   # grossura da barra de erro, pt. EX.: 1
+erro_cor            <- NULL   # cor das barras de erro, independente da cor da série. EX.: "#20242B"  (NULL = a cor de cada série)
 erro_chapeu_pct     <- NULL   # largura do "chapéu" da barra, % do eixo X. EX.: 2   (0 = sem chapéu)
 cores_gradiente     <- NULL   # TRUE = barras/áreas com degradê
 cores_gradiente_cor2 <- NULL  # cor final do degradê. EX.: "white"

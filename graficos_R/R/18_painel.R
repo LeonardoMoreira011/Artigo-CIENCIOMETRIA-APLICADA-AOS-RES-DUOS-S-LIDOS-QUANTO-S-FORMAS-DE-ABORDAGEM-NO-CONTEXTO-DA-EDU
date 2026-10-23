@@ -18,7 +18,7 @@
   recortar_nos_limites = c("caixa", "recortar"),
   # barras de erro (pontos e linhas): o desenho; a coluna de cada série vem em erro_por_serie
   erro_lado = c("linhas", "erro_lado"), erro_espessura_pt = c("linhas", "erro_espessura_pt"),
-  erro_chapeu_pct = c("linhas", "erro_chapeu_percentual"),
+  erro_chapeu_pct = c("linhas", "erro_chapeu_percentual"), erro_cor = c("linhas", "erro_cor"),
   # ticks
   x_primeiro_tick = c("eixo_x", "primeiro_tick"), x_ticks_menores = c("eixo_x", "n_menores"),
   x_ticks_direcao = c("eixo_x", "direcao_maiores"), x_ticks_menores_direcao = c("eixo_x", "direcao_menores"),

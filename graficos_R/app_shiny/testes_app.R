@@ -10,12 +10,21 @@ teste <- function(nome, expr) {
 aqui <- normalizePath(if (file.exists("app.R")) "." else if (file.exists("app_shiny/app.R")) "app_shiny" else stop("rode a partir de graficos_R"), winslash = "/")
 setwd(aqui)
 suppressPackageStartupMessages(library(shiny))
-options(cinabro.sem_log = TRUE)                      # os testes não escrevem no registro de uso
+options(cinabro.sem_log = TRUE, cinabro.sem_sessao = TRUE)   # os testes não escrevem no registro de uso nem no salvamento automático
 raiz <- normalizePath("..", winslash = "/")
 source(file.path(raiz, "01_config.R"), encoding = "UTF-8"); suppressMessages(source(file.path(raiz, "02_motor.R"), encoding = "UTF-8"))
 CFG0 <- .completar_cfg(cfg)
 for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8")
 carregar_dicionarios("idiomas")             # (pasta ausente: só português)
+
+# ---- projeto (.cinabro): configuração + dados num arquivo só ---------------------------------------------------------------
+csv_t <- tempfile(fileext = ".csv"); writeBin(charToRaw("T;Valor\n1;2,5\n2;3,1\n3;ç\n"), csv_t)           # decimal com vírgula e acento: tem de voltar byte a byte
+pj <- montar_projeto(list(versao = 2, dados = "meu.csv", valores = list(tipo_grafico = "pontos")), csv_t)
+arq_pj <- tempfile(fileext = ".cinabro"); writeLines(projeto_json(pj), arq_pj, useBytes = TRUE)
+pj2 <- jsonlite::fromJSON(arq_pj, simplifyVector = TRUE); volta <- extrair_dados_projeto(pj2, tempfile(fileext = ".csv"))
+teste("projeto: os dados vão dentro do arquivo e voltam idênticos (byte a byte), junto com a configuração",
+      identical(pj2$tipo_arquivo, "cinabro-projeto") && identical(pj2$valores$tipo_grafico, "pontos") && identical(readBin(volta, "raw", 200), readBin(csv_t, "raw", 200)))
+teste("projeto: sem dados dentro (só configuração) não dá erro", is.null(extrair_dados_projeto(list(valores = list()), tempfile())))
 
 # ---- pacotes: o que o código usa está na lista que o abrir_app.bat instala sozinho ------------------------------------------
 source("pacotes.R", encoding = "UTF-8")

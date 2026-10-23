@@ -43,6 +43,13 @@ atualizar_campo <- function(session, campo, valor, cfg0, colunas = NULL) {
   ok <- tryCatch({ dir.create(d, recursive = TRUE, showWarnings = FALSE); dir.exists(d) }, error = function(e) FALSE)
   if (ok) file.path(d, "app.log") else NULL
 })
+# Salvamento automático: %LOCALAPPDATA%/Cinabro/sessao (ultima.json = configuração; dados_atual.csv = o CSV). Ao reabrir, o Cinabro oferece retomar.
+dir_sessao <- function() {
+  if (isTRUE(getOption("cinabro.sem_sessao"))) return(NULL)
+  base <- Sys.getenv("LOCALAPPDATA"); if (!nzchar(base)) base <- file.path(Sys.getenv("HOME"), ".local", "share")
+  d <- file.path(base, "Cinabro", "sessao")
+  if (tryCatch({ dir.create(d, recursive = TRUE, showWarnings = FALSE); dir.exists(d) }, error = function(e) FALSE)) d else NULL
+}
 registrar_log <- function(...) {
   if (is.null(.log_arq) || isTRUE(getOption("cinabro.sem_log"))) return(invisible())
   tryCatch({
@@ -64,6 +71,7 @@ servidor <- function(input, output, session) {
   .sessoes$n <- .sessoes$n + 1; .sessoes$visto <- TRUE
   registrar_log("sessão aberta (", .sessoes$n, " aberta(s) agora; R ", getRversion(), ", shiny ", utils::packageVersion("shiny"), ", ggplot2 ", utils::packageVersion("ggplot2"), ")")
   session$onSessionEnded(function() {
+    isolate(salvar_sessao())                                          # o que estava na tela fica guardado para retomar
     .sessoes$n <- .sessoes$n - 1
     registrar_log("sessão fechada (", .sessoes$n, " aberta(s) agora)")
     if (isTRUE(getOption("gerador_encerrar_ao_fechar")))          # espera 10 min: recarregar a página, suspender o PC ou uma queda curta não encerram o app
@@ -75,7 +83,7 @@ servidor <- function(input, output, session) {
     later::later(function() shiny::stopApp(), 1.5)
   })
   rv <- reactiveValues(dados = NULL, nome = NULL, res = NULL, previa = NULL, erro = NULL, pend_series = NULL, geo = NULL,
-                       paletas = list(), cartao_novo = NULL, pend_calc = FALSE, img = list(), palco_larg = NULL, palco_usado = NULL, abas = list(list(nome = NULL, snap = NULL)), aba = 1L, est = NULL)
+                       paletas = list(), cartao_novo = NULL, pend_calc = FALSE, img = list(), palco_larg = NULL, palco_usado = NULL, bruto = NULL, abas = list(list(nome = NULL, snap = NULL)), aba = 1L, est = NULL)
   dir_dados <- file.path(raiz, "dados")
   # Cartões sob demanda: a tela nasce sem cartões de ajuste, traços, caixa, forma e figura; cada um é montado (insertUI) quando o usuário adiciona
   # ou quando uma configuração/aba guardada precisa dele. 'criados' guarda os que já existem na tela desta sessão.
@@ -102,6 +110,7 @@ servidor <- function(input, output, session) {
       rv$erro <- paste0(T("Não consegui ler o arquivo: "), conditionMessage(e)); NULL })
     if (is.null(d)) return(invisible())
     rv$dados <- d; rv$nome <- nome; rv$erro <- NULL
+    rv$bruto <- guardar_bruto(caminho)
     definir_colunas(d)
     updateSelectInput(session, "simbolos_ordem", selected = character(0))
   }
@@ -440,6 +449,52 @@ servidor <- function(input, output, session) {
     if (!is.null(j$series) && length(j$series)) rv$pend_series <- as.data.frame(j$series)
     length(unique(congelados()))
   }
+  # ---- salvamento automático e projeto ------------------------------------------------------------------------------------------
+  guardar_bruto <- function(caminho) {                               # guarda uma cópia do CSV enviado (para o salvamento automático e para o projeto)
+    d <- dir_sessao(); if (is.null(d)) return(caminho)
+    dest <- file.path(d, "dados_atual.csv")
+    if (identical(normalizePath(caminho, mustWork = FALSE), normalizePath(dest, mustWork = FALSE))) return(dest)
+    if (isTRUE(tryCatch(file.copy(caminho, dest, overwrite = TRUE), error = function(e) FALSE))) dest else caminho
+  }
+  salvar_sessao <- function() {
+    d <- dir_sessao()
+    if (is.null(d) || is.null(rv$dados) || is.null(rv$bruto) || !file.exists(rv$bruto)) return(invisible())     # sem dados: não apaga o que estava salvo
+    tryCatch({
+      m <- modelo_lista(); m$salvo_em <- format(Sys.time(), "%d/%m/%Y %H:%M"); m$arquivo_dados <- basename(rv$bruto)
+      tmp <- file.path(d, "ultima.json.tmp")
+      writeLines(as.character(jsonlite::toJSON(m, auto_unbox = TRUE, null = "null", na = "null")), tmp, useBytes = TRUE)
+      file.rename(tmp, file.path(d, "ultima.json"))
+    }, error = function(e) registrar_log("salvamento automático falhou: ", conditionMessage(e)))
+    invisible()
+  }
+  ler_sessao_salva <- function() {
+    d <- dir_sessao(); if (is.null(d)) return(NULL)
+    arq <- file.path(d, "ultima.json"); if (!file.exists(arq)) return(NULL)
+    j <- ler_modelo(arq); if (is.null(j) || !file.exists(file.path(d, j$arquivo_dados %||% "dados_atual.csv"))) NULL else j
+  }
+  gatilho_sessao <- debounce(reactive({ valores(); rv$nome }), 4000)           # 4 s depois da última mudança
+  observeEvent(gatilho_sessao(), salvar_sessao(), ignoreInit = TRUE)
+  output$salvar_projeto <- downloadHandler(filename = function() paste0(tools::file_path_sans_ext(rv$nome %||% "cinabro"), ".cinabro"),
+    content = function(file) writeLines(projeto_json(montar_projeto(modelo_lista(), rv$bruto)), file, useBytes = TRUE))
+  observeEvent(input$abrir_projeto, {
+    j <- ler_modelo(input$abrir_projeto$datapath)
+    if (is.null(j)) { showNotification(T("Arquivo de projeto inválido."), type = "error"); return() }
+    tmp <- extrair_dados_projeto(j, tempfile(fileext = ".csv"))
+    if (!is.null(tmp)) carregar(tmp, j$dados %||% "dados.csv")
+    aplicar_config(j, respeitar = FALSE, com_congelados = TRUE)
+    showNotification(if (is.null(tmp)) T("Projeto aberto (sem dados dentro: carregue o CSV).") else T("Projeto aberto, com os dados e a configuração."), type = "message")
+  })
+  modal_retomar <- function(j) modalDialog(title = "Retomar de onde você parou?", easyClose = FALSE, size = "s",
+    footer = tagList(actionButton("retomar_nao", "Começar do zero"), actionButton("retomar_sim", "Retomar", class = "btn-verde")),
+    tags$p("O Cinabro guardou sozinho o seu último gráfico:"),
+    tags$p(tags$b(j$dados %||% "dados"), tags$br(), tags$span(class = "ajuda", paste("salvo em", j$salvo_em %||% ""))))
+  observeEvent(input$retomar_nao, removeModal())
+  observeEvent(input$retomar_sim, {
+    j <- ler_sessao_salva(); req(j)
+    carregar(file.path(dir_sessao(), j$arquivo_dados %||% "dados_atual.csv"), j$dados %||% "dados.csv"); req(rv$dados)
+    aplicar_config(j, respeitar = FALSE, com_congelados = TRUE)
+    removeModal(); showNotification(T("Retomado de onde você parou."), type = "message")
+  })
   ler_modelo <- function(txt) {
     j <- tryCatch(jsonlite::fromJSON(txt, simplifyVector = TRUE), error = function(e) NULL)
     if (is.null(j) || !is.list(j) || is.null(j$valores)) NULL else j
@@ -633,5 +688,9 @@ servidor <- function(input, output, session) {
     for (id in setdiff(names(p), cong)) if (!is.null(ESPEC_CAMPOS[[id]])) atualizar_campo(session, ESPEC_CAMPOS[[id]], p[[id]], CFG0)
   }, ignoreInit = TRUE)
   observeEvent(input$guia, showModal(UI(guia_rapido())))
-  observeEvent(input$idioma_pagina, { if (!isTRUE(getOption("gerador_sem_guia"))) showModal(UI(guia_rapido())) }, once = TRUE)
+  observeEvent(input$idioma_pagina, {
+    j <- ler_sessao_salva()
+    if (!is.null(j)) showModal(UI(modal_retomar(j)))                  # há trabalho guardado: oferece retomar (no lugar do guia)
+    else if (!isTRUE(getOption("gerador_sem_guia"))) showModal(UI(guia_rapido()))
+  }, once = TRUE)
 }

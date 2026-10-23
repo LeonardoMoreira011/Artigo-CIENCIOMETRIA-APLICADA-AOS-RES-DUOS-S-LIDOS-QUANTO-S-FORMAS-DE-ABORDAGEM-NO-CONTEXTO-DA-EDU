@@ -290,6 +290,10 @@ cfg$linhas <- list(
   # erro_espessura_pt: espessura das barras de erro em pt.
   erro_espessura_pt = 1,
 
+  # erro_cor: cor das barras de erro. NULL (padrão) = a cor de cada série; com uma cor, todas as barras usam essa cor,
+  #   independente da cor dos pontos/linhas.    EX.: cfg$linhas$erro_cor <- "#20242B"
+  erro_cor = NULL,
+
   # erro_chapeu_percentual: largura do "chapéu" da barra de erro, em % da
   #   largura do eixo X. 0 = sem chapéu.
   #   OPÇÕES: número >= 0      EX.: cfg$linhas$erro_chapeu_percentual <- 1.5
