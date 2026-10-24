@@ -181,9 +181,10 @@
   fil <- c(fil, filhos_txt)
   vp <- viewport(x = unit(cx, "npc"), y = unit(cy, "npc"), width = W, height = H, just = c(jx, jy), angle = it$angulo %||% 0)
   # descrição da caixa (para o app saber onde ela fica e poder movê-la/redimensioná-la com o mouse; só em fração da caixa do gráfico)
-  caixa <- list(W = W, H = H, cx = cx, cy = cy, jx = jx, jy = jy, fracao = identical(un, "fracao"), tipo = if (!is.null(linhas)) "estatistica" else if (tipo == "texto") "texto" else "forma",
+  caixa <- list(W = W, H = H, cx = cx, cy = cy, jx = jx, jy = jy, fracao = identical(un, "fracao"), dados = identical(un, "dados"),
+                lim = unlist(lim[c("xmin", "xmax", "ymin", "ymax")]), tipo = if (!is.null(linhas)) "estatistica" else if (tipo == "texto") "texto" else "forma",
                 forma = tipo, tam = tam, auto = tipo != "poligono" && tem_texto && is.null(largura) && is.null(altura),
-                vert = if (tipo == "poligono" && un == "fracao") vv else NULL)
+                vert = if (tipo == "poligono") vv else NULL)
   list(grob = gTree(children = gList(gTree(children = do.call(gList, fil), vp = vp))),   # (o annotation_custom troca o vp do grob de fora)
         xmin = lim$xmin, xmax = lim$xmax, ymin = lim$ymin, ymax = lim$ymax, caixa = caixa)
 }

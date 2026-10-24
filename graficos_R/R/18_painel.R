@@ -28,7 +28,7 @@
   y_ticks_direcao = c("eixo_y", "direcao_maiores"), y_ticks_menores_direcao = c("eixo_y", "direcao_menores"),
   y_ticks_comprimento_pt = c("eixo_y", "comprimento_maiores_pt"),
   y_ticks_menores_comprimento_pt = c("eixo_y", "comprimento_menores_pt"),
-  ticks_espelhados = c("caixa", "ticks_espelhados"),
+  ticks_espelhados = c("caixa", "ticks_espelhados"), ticks_nas_pontas = c("caixa", "ticks_nas_pontas"),
   x_ticks_espessura_pt = c("eixo_x", "espessura_ticks_pt"), y_ticks_espessura_pt = c("eixo_y", "espessura_ticks_pt"),
   x_ticks_cor = c("eixo_x", "cor_ticks"), y_ticks_cor = c("eixo_y", "cor_ticks"),
   x_linha_espessura_pt = c("eixo_x", "espessura_linha_pt"), y_linha_espessura_pt = c("eixo_y", "espessura_linha_pt"),

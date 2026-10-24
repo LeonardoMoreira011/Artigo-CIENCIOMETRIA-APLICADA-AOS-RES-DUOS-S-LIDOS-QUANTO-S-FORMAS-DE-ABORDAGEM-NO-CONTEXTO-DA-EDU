@@ -269,7 +269,7 @@ Listening on http://127.0.0.1:8421</div>
     <div class="texto">
       <h2>6.1 Eixos (painel 2)</h2>
       <ul>
-        <li><b>Intervalos:</b> onde cada eixo começa e termina e de quanto em quanto aparecem os traços. <i>Ex.: para mostrar todos os anos, "Distância entre os traços" = 1.</i> "Traços pequenos entre dois grandes" controla os traços menores.</li>
+        <li><b>Intervalos:</b> onde cada eixo começa e termina e de quanto em quanto aparecem os traços. <i>Ex.: para mostrar todos os anos, "Distância entre os traços" = 1.</i> "Traços pequenos entre dois grandes" controla os traços menores. Com a moldura fechada, o traço que cai exatamente no canto (o 0 e o último valor) é tirado automaticamente para não sobrar um "dentinho" além da caixa; o número continua. Mude em <i>Traços nas pontas do eixo</i> (Automático, Sempre mostrar ou Nunca mostrar).</li>
         <li><b>Escala:</b> linear ou logarítmica, <b>folga nas pontas</b> (use 4% para os pontos das pontas não ficarem cortados pela moldura) e inverter eixo.</li>
         <li><b>Números e títulos:</b> títulos, formato dos números (normal, milhar, científica), casas decimais, dividir por mil, girar os números.</li>
         <li><b>Grade:</b> linhas de fundo nos traços grandes e/ou pequenos, com tipo, cor e opacidade.</li>
@@ -385,9 +385,10 @@ Listening on http://127.0.0.1:8421</div>
       <ul>
         <li><b>Texto:</b> caixa de texto livre (ex.: "p &lt; 0,05", "Amostra A"). Escreva no campo <i>Texto</i> do cartão; tamanho, cor, negrito, itálico, alinhamento, giro, preenchimento e borda são opcionais.</li>
         <li><b>Forma:</b> retângulo (inclusive de cantos arredondados), elipse/círculo, triângulo, losango, hexágono, estrela e polígono livre, para destacar regiões do gráfico.</li>
-        <li><b>Figura:</b> insere um <b>PNG ou JPEG</b> (logotipo, esquema, foto da amostra) sobre o gráfico, com posição, tamanho, opacidade e giro. PNG com fundo transparente funciona.</li>
+        <li><b>Figura:</b> insere um <b>PNG ou JPEG</b> (logotipo, esquema, foto da amostra) sobre o gráfico, com posição, tamanho, opacidade e giro. PNG com fundo transparente funciona. Aceita arquivos de até 200 MB; o programa usa só os pixels necessários para cada desenho, então fotos grandes não deixam o app pesado.</li>
       </ul>
-      <p>Tudo isso é <b>móvel e editável com o mouse</b>: arraste para posicionar, estique as alças para o tamanho e clique para editar. A posição pode ser dada em fração da caixa (0 a 1) ou nas unidades dos eixos.</p>
+      <p>Tudo isso é <b>móvel e editável com o mouse</b>, sem digitar coordenada: cada caixa tem uma <b>moldura tracejada</b> sobre o gráfico. <b>Clique</b> para selecionar (aparecem alças nos cantos e nos lados), <b>arraste</b> para posicionar (uma sombra do conteúdo acompanha o mouse), <b>puxe uma alça</b> para o tamanho (<b>Shift</b> no canto mantém a proporção) e use as <b>setas</b> do teclado para o ajuste fino. Um clique sem arrastar abre a edição rápida. A posição também pode ser dada em fração da caixa (0 a 1) ou nas unidades dos eixos; nos dois casos o arrasto funciona.</p>
+      <figure><img src="img/31_caixas_moveis.png" alt="Caixas móveis sobre o gráfico" style="max-width:120mm"><figcaption>Cada caixa tem uma moldura tracejada (a legenda, a caixa de estatística). A figura selecionada, em vermelho, mostra as alças; durante o arrasto uma sombra do conteúdo acompanha o mouse.</figcaption></figure>
       <div class="dica"><b>Dica</b> A figura anexada fica só na sessão: ela não vai no salvamento automático nem no projeto. Anexe de novo ao reabrir.</div>
     </div>
     <figure><img src="img/25_anotar_texto.png" alt="Texto no gráfico" style="max-width:66mm"><figcaption>Um cartão de texto criado pelo botão "Texto".</figcaption></figure>

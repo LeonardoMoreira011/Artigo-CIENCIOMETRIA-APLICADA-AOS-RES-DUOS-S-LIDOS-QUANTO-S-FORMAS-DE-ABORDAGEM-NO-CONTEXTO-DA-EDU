@@ -699,6 +699,31 @@ pm2 <- suppressMessages(aplicar_painel(dn, list2env(list(moldura_espessura_pt = 
 gm2 <- suppressWarnings(plotar(aq, pm2))
 teste("a grossura dada ao eixo vale mais que a da moldura",
       abs(gm2$theme$axis.ticks.x.bottom$linewidth - .lw(0.5)) < 1e-9 && abs(gm2$theme$axis.ticks.y.left$linewidth - .lw(2.5)) < 1e-9)
+# traços nas pontas do eixo (com moldura, o traço que cai no canto sobrava além da caixa)
+dpt <- data.frame(Amostra = c("F1", "F4", "F5", "F6"), v = c(3.1, 3.6, 2.8, 3.0))
+cpt <- cfg; cpt$grafico$tipo <- "pontos"; cpt$eixo_y$inicio <- 0; cpt$eixo_y$fim <- 7; cpt$eixo_y$ticks_modo <- "incremento"; cpt$eixo_y$incremento <- 2
+cpt$eixo_y$n_menores <- 1; cpt$caixa$fechada <- TRUE; cpt$caixa$ticks_espelhados <- TRUE
+tracos_eixo <- function(gt, nomes, nas_pontas = FALSE) {                    # traços (pares de pontos) de um eixo; nas_pontas: só os que caem em 0 ou 1 npc
+  n <- 0; pares_ok <- TRUE
+  r <- function(gr, vert) { if (inherits(gr, "polyline") && length(gr$id.lengths) && all(gr$id.lengths == 2L) && all(grid::unitType(if (vert) gr$y else gr$x) == "npc")) {
+      pos <- as.numeric(if (vert) gr$y else gr$x); id <- gr$id %||% rep(seq_along(gr$id.lengths), gr$id.lengths)
+      if (!identical(as.integer(table(id)), rep(2L, length(unique(id))))) pares_ok <<- FALSE
+      n <<- n + (if (nas_pontas) sum(pos < 1e-6 | pos > 1 - 1e-6) / 2 else length(pos) / 2) }
+    if (inherits(gr, "gtable")) lapply(gr$grobs, r, vert = vert); if (inherits(gr, "gTree")) lapply(gr$children, r, vert = vert); NULL }
+  for (nm in nomes) r(gt$grobs[[which(gt$layout$name == nm)]], nm %in% c("axis-l", "axis-r"))
+  c(n = n, ok = pares_ok)
+}
+dtp <- .abrir_dispositivo_tmp(); gpt <- suppressWarnings(plotar(dpt, cpt)); gtpt <- attr(gpt, "gt"); if (is.null(gtpt)) gtpt <- ggplot2::ggplotGrob(gpt)
+gtpt2 <- .tirar_ticks_das_pontas(gtpt); grDevices::dev.off(dtp)
+teste("traços nas pontas: .tirar_ticks_das_pontas tira só os traços que caem em 0 e 1 (eixos Y) e os demais continuam segmentos separados",
+      tracos_eixo(gtpt, c("axis-l", "axis-r"), TRUE)["n"] > 0 && tracos_eixo(gtpt2, c("axis-l", "axis-r"), TRUE)["n"] == 0 &&
+        tracos_eixo(gtpt2, c("axis-l", "axis-r"))["n"] > 0 && tracos_eixo(gtpt2, c("axis-l", "axis-r"))["ok"] == 1 &&
+        tracos_eixo(gtpt2, c("axis-l", "axis-r"))["n"] < tracos_eixo(gtpt, c("axis-l", "axis-r"))["n"])
+teste("traços nas pontas: 'auto' limpa só com moldura fechada; 'ocultar' sempre; 'mostrar' nunca; valor inválido dá erro",
+      { ctm <- function(modo, fechada) { cz <- cpt; cz$caixa$fechada <- fechada; cz$caixa$ticks_nas_pontas <- modo
+          gz <- suppressWarnings(plotar(dpt, cz)); tracos_eixo(.preparar_saida(gz, cz)$grob, c("axis-l", "axis-r"), TRUE)["n"] }
+        ctm("auto", TRUE) == 0 && ctm("auto", FALSE) > 0 && ctm("ocultar", FALSE) == 0 && ctm("mostrar", TRUE) > 0 &&
+          da_erro({ cz <- cpt; cz$caixa$ticks_nas_pontas <- "xx"; plotar(dpt, cz) }, "ticks_nas_pontas") })
 # rotação dos títulos
 pr9 <- suppressMessages(aplicar_painel(dn, list2env(list(y_rotacao_titulo = 0, x_rotacao_titulo = 20))))
 gr9 <- suppressWarnings(plotar(aq, pr9))
@@ -1008,8 +1033,17 @@ cgm$formas <- list(list(tipo = "texto", texto = "Nota", x = 0.4, y = 0.8, cartao
 cgm$imagens <- list(list(arquivo = png_g, x = 0.2, y = 0.3, largura = 0.25, cartao = 2))
 ggm <- suppressWarnings(plotar(dce, cgm)); gcx <- .geometria_caixas(ggm, cgm)
 ids_g <- vapply(gcx$itens, function(i) i$id, "")
-teste("caixas móveis: cada caixa em fração do gráfico aparece com id = prefixo + número do cartão (cx2, fm1, fm3, fm4, im2); a em unidades dos eixos fica de fora",
-      identical(sort(ids_g), c("cx2", "fm1", "fm3", "fm4", "im2")))
+teste("caixas móveis: cada caixa aparece com id = prefixo + número do cartão (cx2, fm1, fm3, fm4, im2); a em unidades dos eixos (fm5) também, com eixos contínuos",
+      identical(sort(ids_g), c("cx2", "fm1", "fm3", "fm4", "fm5", "im2")))
+teste("caixas móveis em unidades dos eixos: o retângulo cai onde o desenho mostra (x 4 a 6, y 17,5 a 22,5 dentro do painel) e traz a faixa dos eixos", {
+  f5 <- gcx$itens[[which(ids_g == "fm5")]]; pn <- gcx$painel; fx <- gcx$faixa
+  fa <- (4 - fx$x[1]) / diff(fx$x); fb <- (6 - fx$x[1]) / diff(fx$x); ga <- (17.5 - fx$y[1]) / diff(fx$y); gb <- (22.5 - fx$y[1]) / diff(fx$y)
+  isTRUE(f5$dados) && isTRUE(f5$regiao) && length(fx$x) == 2 && length(fx$y) == 2 && is.null(names(f5$rect)) &&
+    abs((f5$rect[1] - pn[1]) / pn[3] - fa) < 0.005 && abs(f5$rect[3] / pn[3] - (fb - fa)) < 0.005 &&
+    abs((pn[2] + pn[4] - f5$rect[2] - f5$rect[4]) / pn[4] - ga) < 0.005 && abs(f5$rect[4] / pn[4] - (gb - ga)) < 0.005 })
+teste("caixas móveis em unidades dos eixos: com eixo em escala log não há moldura (sem faixa linear), as de fração continuam", {
+  cl <- cgm; cl$eixo_y$escala <- "log10"; gl <- suppressWarnings(plotar(dce, cl)); gg <- .geometria_caixas(gl, cl)
+  !is.null(gg) && !("fm5" %in% vapply(gg$itens, function(i) i$id, "")) && "fm1" %in% vapply(gg$itens, function(i) i$id, "") })
 teste("caixas móveis: os retângulos (em fração da página) estão dentro da página, o painel também, e a figura mantém a proporção 2:1",
       all(vapply(gcx$itens, function(i) all(i$rect >= 0) && i$rect[1] + i$rect[3] <= 1 && i$rect[2] + i$rect[4] <= 1, NA)) && gcx$painel[3] > 0.3 &&
       { im <- gcx$itens[[which(ids_g == "im2")]]; pp <- .preparar_saida(ggm, cgm); abs((im$rect[3] * pp$larg) / (im$rect[4] * pp$alt) - 2) < 0.02 })
@@ -1142,6 +1176,20 @@ if (.tem("png") && .tem("jpeg")) {
     for (k in 1:4) { f2 <- tempfile(fileext = ".png"); png::writePNG(array(runif(12), c(2, 2, 3)), f2); invisible(.ler_imagem(f2)) }
     inherits(im$nat, "nativeRaster") && identical(as.integer(b1), c(255L, 0L, 0L, 255L)) && identical(as.integer(b5), c(255L, 0L, 0L, 128L)) && identical(.raster_imagem(im, 1), im$nat) &&
       length(ls(.cache_imagens)) <= 3 })
+  teste("figura: reduzir à metade faz a média de cada bloco 2x2 (figura retangular, cada cor no seu lugar, transparência pesa), e figuras gigantes são reduzidas ao ler", {
+    H <- 6; W <- 10; a <- array(1, c(H, W, 4))                                                          # 6 x 10 (não quadrada: a ordem dos pixels importa)
+    a[, , 1] <- outer(1:H, 1:W, function(i, j) (i * 7 + j * 13) %% 10 / 10); a[, , 2] <- outer(1:H, 1:W, function(i, j) j / W); a[, , 3] <- outer(1:H, 1:W, function(i, j) i / H)
+    fq <- tempfile(fileext = ".png"); png::writePNG(a, fq); fr <- tempfile(fileext = ".png"); png::writePNG(.reduzir_metade(png::readPNG(fq, native = TRUE)), fr); b <- png::readPNG(fr)
+    esp <- array(0, c(3, 5, 4)); for (k in 1:4) for (i in 1:3) for (j in 1:5) esp[i, j, k] <- mean(a[(2 * i - 1):(2 * i), (2 * j - 1):(2 * j), k])
+    ct <- array(0, c(2, 2, 4)); ct[1, 1, ] <- 1; ct[2, 2, 4] <- 1; ct[1, 2, 4] <- 1; ct[2, 1, 4] <- 0; fc <- tempfile(fileext = ".png"); png::writePNG(ct, fc)   # 1 branco opaco, 2 pretos opacos, 1 invisível
+    fc2 <- tempfile(fileext = ".png"); png::writePNG(.reduzir_metade(png::readPNG(fc, native = TRUE)), fc2); bt <- png::readPNG(fc2)
+    fg <- tempfile(fileext = ".png"); png::writePNG(array(0.5, c(8, .IMAGEM_MAX_PX + 100, 3)), fg); ig <- .ler_imagem(fg)
+    identical(dim(b), c(3L, 5L, 4L)) && max(abs(b - esp)) < 0.01 && abs(bt[1, 1, 1] - 1 / 3) < 0.01 && abs(bt[1, 1, 4] - 0.75) < 0.01 &&
+      ig$larg <= .IMAGEM_MAX_PX && abs(ig$larg - (.IMAGEM_MAX_PX + 100) / 2) < 1 })
+  teste("figura: o raster do desenho é a versão reduzida quando a figura aparece pequena (e a original quando aparece grande)", {
+    fg <- tempfile(fileext = ".png"); png::writePNG(array(runif(4 * 1600 * 3), c(4, 1600, 3)), fg); ig <- .ler_imagem(fg)
+    pequena <- dim(.raster_para_largura(ig, 1, 1))[2]; grande <- dim(.raster_para_largura(ig, 1, 20))[2]
+    pequena < ig$larg && pequena >= 1600 / 2^5 && grande == ig$larg })
   teste("figura: com a quebra de eixo, a figura em fração fica só na parte de cima", {
     dq <- data.frame(x = 1:20, A = c(1:10, 1001:1010)); cq <- ci; cq$grafico$colunas_y <- "A"; cq$quebra <- utils::modifyList(ci$quebra, list(ativo = TRUE, de = 100, ate = 900))
     cq$imagens <- list(list(arquivo = f_png)); pt <- attr(suppressWarnings(plotar(dq, cq)), "partes"); monta(pt[[1]]) && monta(pt[[2]]) })

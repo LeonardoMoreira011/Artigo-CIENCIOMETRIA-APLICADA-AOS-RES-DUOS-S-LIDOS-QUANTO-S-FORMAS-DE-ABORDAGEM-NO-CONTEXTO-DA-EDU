@@ -57,6 +57,35 @@
   cfg
 }
 
+# Tira, dos eixos de um gtable, os traços (maiores e menores) que caem exatamente no começo ou no fim do eixo (0 e 1 npc). Cada traço do
+# ggplot é um par de pontos de uma polilinha; a linha do próprio eixo não é par de pontos iguais e fica como está. Igual no ggplot2 3.5 e 4.
+.tirar_ticks_das_pontas <- function(gt) {
+  limpar <- function(gr, vertical) {
+    ao_longo <- function(g) if (vertical) g$y else g$x                  # coordenada ao longo do eixo (a outra é "1npc - comprimento")
+    if (inherits(gr, "polyline") && length(gr$id.lengths) && all(gr$id.lengths == 2L) && all(grid::unitType(ao_longo(gr)) == "npc")) {
+      pos <- as.numeric(ao_longo(gr)); p1 <- pos[seq(1L, length(pos), by = 2L)]; p2 <- pos[seq(2L, length(pos), by = 2L)]
+      if (!all(abs(p1 - p2) < 1e-9)) return(gr)                     # não são traços (é uma linha de ponta a ponta)
+      fora <- p1 < 1e-6 | p1 > 1 - 1e-6
+      if (!any(fora)) return(gr)
+      if (all(fora)) return(grid::nullGrob(name = gr$name))
+      manter <- rep(!fora, each = 2L); k <- sum(!fora)
+      return(grid::polylineGrob(x = gr$x[manter], y = gr$y[manter], id.lengths = rep(2L, k), arrow = gr$arrow, name = gr$name, gp = gr$gp, vp = gr$vp))   # grob novo: cada traço volta a ser um segmento
+    }
+    if (inherits(gr, "gtable")) { gr$grobs <- lapply(gr$grobs, limpar, vertical = vertical); return(gr) }
+    if (inherits(gr, "gTree") && length(gr$children)) {
+      novos <- lapply(gr$children, limpar, vertical = vertical)
+      gr$children <- do.call(grid::gList, novos); gr$childrenOrder <- vapply(novos, function(z) z$name, "")
+      return(gr)
+    }
+    gr
+  }
+  for (nome in c("axis-l", "axis-r", "axis-b", "axis-t")) {
+    i <- which(gt$layout$name == nome); if (!length(i)) next
+    gt$grobs[[i[1]]] <- limpar(gt$grobs[[i[1]]], vertical = nome %in% c("axis-l", "axis-r"))
+  }
+  gt
+}
+
 # Tamanho de saída. Com a caixa de tamanho fixo (cfg$caixa$painel_fixo, o padrão; tamanho em painel_largura_cm /
 # painel_altura_cm ou painel_padrao_cm) a caixa do gráfico fica EXATAMENTE nesse tamanho, e a página cresce (ou
 # encolhe) para caber números, títulos e legenda sem cortar nada (exportacao$ajustar_pagina = TRUE) — o gráfico tem o
@@ -73,6 +102,9 @@
     if (is.null(grDevices::dev.list())) { dtmp <- .abrir_dispositivo_tmp(); on.exit(grDevices::dev.off(dtmp), add = TRUE) }
     gt <- ggplot2::ggplotGrob(g)
   }
+  modo_pontas <- cfg$caixa$ticks_nas_pontas %||% "auto"
+  if (identical(modo_pontas, "ocultar") || (identical(modo_pontas, "auto") && isTRUE(cfg$caixa$fechada)))
+    gt <- .tirar_ticks_das_pontas(gt)                    # moldura limpa nos cantos: sem traço saltando para fora
   pan <- gt$layout[gt$layout$name == "panel", ]
   pan <- pan[order(pan$t, pan$l), ]
   cols <- sort(unique(unlist(Map(seq, pan$l, pan$r)))); linhas <- sort(unique(unlist(Map(seq, pan$t, pan$b))))

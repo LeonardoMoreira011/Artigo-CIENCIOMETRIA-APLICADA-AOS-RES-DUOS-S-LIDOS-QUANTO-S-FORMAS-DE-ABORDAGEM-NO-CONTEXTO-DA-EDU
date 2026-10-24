@@ -189,14 +189,35 @@
   out
 }
 
+# Intervalos do painel (x e y, na unidade dos dados) para caixas em "unidades dos eixos" poderem ser movidas com o mouse. Só vale com eixos
+# contínuos sem transformação (nem log, nem data) e coordenadas cartesianas comuns; fora disso sai NULL (essas caixas ficam sem moldura).
+.faixa_dados_painel <- function(g) {
+  tryCatch({
+    if (!identical(class(g$coordinates)[1], "CoordCartesian")) return(NULL)
+    b <- ggplot2::ggplot_build(g); pp <- b$layout$panel_params[[1]]
+    sx <- b$layout$panel_scales_x[[1]]; sy <- b$layout$panel_scales_y[[1]]
+    nome <- function(sc) { tr <- sc$trans %||% sc$transformation; if (is.null(tr)) NA_character_ else tr$name }
+    if (!inherits(sx, "ScaleContinuous") || !inherits(sy, "ScaleContinuous") || !identical(nome(sx), "identity") || !identical(nome(sy), "identity")) return(NULL)
+    xr <- as.numeric(pp$x$continuous_range); yr <- as.numeric(pp$y$continuous_range)
+    if (length(xr) != 2 || length(yr) != 2 || !all(is.finite(c(xr, yr))) || diff(xr) <= 0 || diff(yr) <= 0) return(NULL)
+    list(x = xr, y = yr)
+  }, error = function(e) NULL)
+}
+
 # Onde está cada caixa móvel (caixa de estatística, texto, forma, figura anexada) na página, para o app desenhar uma moldura que se arrasta
-# e se estica sobre a prévia. Só vale para caixas em "fração da caixa do gráfico" (as em unidades dos eixos ficam de fora) e para gráficos
-# de um painel só (sem quebra de eixo). Sai NULL ou list(painel = c(esq, topo, larg, alt), itens = lista); tudo em fração da página (topo = de cima).
+# e se estica sobre a prévia. Vale para caixas em "fração da caixa do gráfico" e, com eixos contínuos sem transformação, também para as em
+# unidades dos eixos; só para gráficos de um painel (sem quebra de eixo). Sai NULL ou list(painel = c(esq, topo, larg, alt), itens = lista,
+# faixa = list(x, y) quando há caixas em unidades dos eixos); tudo em fração da página (topo = de cima).
 # Cada item: id ("cx1", "fm2", "im1": prefixo + número do cartão no app), grupo, tipo ("estatistica" | "texto" | "forma" | "figura"), forma, rect,
-# jx/jy (ponto da caixa que fica em x,y), auto (a caixa tem o tamanho do texto/da figura: esticar muda o tamanho da letra / mantém a proporção), tam (pt) e vert.
+# jx/jy (ponto da caixa que fica em x,y), auto (a caixa tem o tamanho do texto/da figura: esticar muda o tamanho da letra / mantém a proporção),
+# tam (pt), dados (TRUE = x, y, largura e altura estão nas unidades dos eixos), regiao (dados: o retângulo é a própria região largura × altura)
+# e vert (vértices em fração do painel).
 .geometria_caixas <- function(g, cfg, prep = NULL) {
   if (!is.null(attr(g, "partes")) || inherits(g, "patchwork") || is.null(g$layers)) return(NULL)
-  ls <- Filter(function(l) !is.null(attr(l, "caixa")) && isTRUE(attr(l, "caixa")$fracao), g$layers)
+  ls <- Filter(function(l) !is.null(attr(l, "caixa")) && (isTRUE(attr(l, "caixa")$fracao) || isTRUE(attr(l, "caixa")$dados)), g$layers)
+  if (!length(ls)) return(NULL)
+  faixa <- if (any(vapply(ls, function(l) isTRUE(attr(l, "caixa")$dados), NA))) .faixa_dados_painel(g) else NULL
+  ls <- Filter(function(l) { d <- attr(l, "caixa"); isTRUE(d$fracao) || (isTRUE(d$dados) && !is.null(faixa) && all(is.finite(d$lim))) }, ls)
   if (!length(ls)) return(NULL)
   prep <- prep %||% .preparar_saida(g, cfg)
   dtmp <- .abrir_dispositivo_tmp(prep$larg, prep$alt); on.exit(grDevices::dev.off(dtmp), add = TRUE)
@@ -213,14 +234,28 @@
   pl <- sum(w[seq_len(lay$l - 1)]); pt <- sum(h[seq_len(lay$t - 1)]); pw <- sum(w[lay$l:lay$r]); ph <- sum(h[lay$t:lay$b])
   grid::pushViewport(grid::viewport(width = grid::unit(pw, "in"), height = grid::unit(ph, "in")))
   pg <- c(prep$larg, prep$alt)
+  # medida em polegadas: "npc" é relativo à região da caixa (o painel, ou o retângulo em unidades dos eixos); o resto (texto, pt) é absoluto
+  em_in <- function(u, ref, conv) if (all(grid::unitType(u) == "npc")) as.numeric(u) * ref else conv(u, "in", valueOnly = TRUE)
   itens <- lapply(ls, function(l) {
-    d <- attr(l, "caixa")
-    bw <- grid::convertWidth(d$W, "in", valueOnly = TRUE)
-    bh <- if (!is.null(d$H)) grid::convertHeight(d$H, "in", valueOnly = TRUE) else bw * d$prop
-    esq <- pl + d$cx * pw - d$jx * bw; base <- d$cy * ph - d$jy * bh
+    d <- attr(l, "caixa"); dados <- isTRUE(d$dados)
+    if (dados) { fa <- (d$lim[1] - faixa$x[1]) / diff(faixa$x); fb <- (d$lim[2] - faixa$x[1]) / diff(faixa$x)
+                 ga <- (d$lim[3] - faixa$y[1]) / diff(faixa$y); gb <- (d$lim[4] - faixa$y[1]) / diff(faixa$y) }
+    else { fa <- 0; fb <- 1; ga <- 0; gb <- 1 }
+    rw <- (fb - fa) * pw; rh <- (gb - ga) * ph
+    bw <- em_in(d$W, rw, grid::convertWidth)
+    bh <- if (!is.null(d$H)) em_in(d$H, rh, grid::convertHeight) else bw * d$prop
+    esq <- pl + fa * pw + d$cx * rw - d$jx * bw; base <- ga * ph + d$cy * rh - d$jy * bh
+    vert <- if (!is.null(d$vert)) {
+      v <- d$vert
+      if (dados) v <- cbind((v[, 1] - faixa$x[1]) / diff(faixa$x), (v[, 2] - faixa$y[1]) / diff(faixa$y))
+      unname(split(round(v, 5), row(v)))
+    }
     Filter(Negate(is.null), list(id = d$id, grupo = d$grupo, tipo = d$tipo, forma = d$forma, jx = d$jx, jy = d$jy, auto = isTRUE(d$auto), tam = d$tam,
-         rect = round(c(esq / pg[1], (pt + ph - base - bh) / pg[2], bw / pg[1], bh / pg[2]), 5),
-         vert = if (!is.null(d$vert)) unname(split(round(d$vert, 5), row(d$vert)))))
+         dados = if (dados) TRUE, regiao = if (dados && all(grid::unitType(d$W) == "npc")) TRUE,
+         rect = unname(round(c(esq / pg[1], (pt + ph - base - bh) / pg[2], bw / pg[1], bh / pg[2]), 5)), vert = vert))
   })
-  list(painel = round(c(pl / pg[1], pt / pg[2], pw / pg[1], ph / pg[2]), 5), itens = unname(itens))
+  out <- list(painel = round(c(pl / pg[1], pt / pg[2], pw / pg[1], ph / pg[2]), 5), itens = unname(itens))
+  if (!is.null(faixa)) out$faixa <- faixa
+  out
 }
+

@@ -47,6 +47,7 @@ y_ticks_cor     <- NULL
 y_linha_espessura_pt <- NULL
 #  Moldura (a caixa em volta do gráfico)
 ticks_espelhados     <- NULL   # TRUE = repete os traços no topo e à direita (moldura fechada)
+ticks_nas_pontas    <- NULL   # os traços que caem exatamente nas pontas do eixo: "auto" (somem com moldura fechada) | "mostrar" | "ocultar"
 moldura_espessura_pt <- NULL   # grossura da moldura, em pt. EX.: 1.5   — os traços e as linhas dos eixos seguem esta grossura (a menos que você dê x_/y_ticks_espessura_pt)
 moldura_cor          <- NULL   # EX.: "black"
 #  (a grossura das linhas da GRADE está no bloco 5)

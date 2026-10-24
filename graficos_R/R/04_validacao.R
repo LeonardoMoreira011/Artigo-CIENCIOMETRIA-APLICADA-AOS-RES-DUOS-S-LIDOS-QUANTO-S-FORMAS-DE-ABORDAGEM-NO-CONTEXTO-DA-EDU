@@ -21,6 +21,7 @@
   "linhas$preencher_area" = c("nenhum", "ate_zero", "ate_base", "proxima_serie"),
   "linhas$linhas_queda" = c("nenhuma", "vertical", "horizontal", "ambas"),
   "linhas$erro_lado" = c("ambos", "superior", "inferior"),
+  "caixa$ticks_nas_pontas" = c("auto", "mostrar", "ocultar"),
   "linhas$rotulos_dados" = c("nenhum", "y", "x", "xy", "serie"),
   "barras$arranjo" = c("agrupado", "empilhado", "empilhado_100"),
   "barras$orientacao" = c("vertical", "horizontal"),

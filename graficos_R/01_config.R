@@ -940,6 +940,11 @@ cfg$caixa <- list(
   #   intervalos dos eixos principais).  OPÇÕES: TRUE | FALSE
   ticks_espelhados = TRUE,
 
+  # ticks_nas_pontas: os traços que caem EXATAMENTE no começo ou no fim de um eixo (ex.: o 0 e o último número). Com a moldura grossa e
+  #   traços mais grossos que ela, esses traços saltam para fora dos cantos da caixa; esconder deixa o canto limpo (o número continua).
+  #   OPÇÕES: "auto" (esconde só com a moldura fechada) | "mostrar" | "ocultar"       EX.: cfg$caixa$ticks_nas_pontas <- "ocultar"
+  ticks_nas_pontas = "auto",
+
   # rotulos_espelhados: repete também os números no topo e à direita.
   rotulos_espelhados = FALSE,
 

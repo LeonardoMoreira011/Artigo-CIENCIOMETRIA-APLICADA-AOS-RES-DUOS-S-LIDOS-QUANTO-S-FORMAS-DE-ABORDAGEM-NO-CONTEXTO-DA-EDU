@@ -149,77 +149,128 @@
   $(document).on('click', '.pop-x', fecharPopover);
   $(document).on('mousedown', function (e) {
     if (pop && !$(e.target).closest('#popover-edicao, .zona, .caixa-movel, .selectize-dropdown, .modal').length) fecharPopover();
+    if (cmAtiva && !$(e.target).closest('#popover-edicao, .caixa-movel, .selectize-dropdown, .modal').length) desselecionar();
   });
   $(document).on('keydown', function (e) { if (e.key === 'Escape' && pop) { fecharPopover(); e.stopImmediatePropagation(); } });
 
-  // ---- caixas móveis (estatística, texto, forma, figura): arrastar, puxar o canto (tamanho) e clicar (editar) ------------------------------
+  // ---- caixas móveis (estatística, texto, forma, figura): arrastar, puxar as alças (tamanho), setas (ajuste fino) e clicar (editar) --------
+  // Uma moldura fina já aparece sobre cada caixa; clicar seleciona (alças nos cantos e nos lados); arrastar move com uma "sombra" do conteúdo,
+  // que acompanha o mouse; ao soltar, os valores caem nos campos do cartão (em fração do gráfico ou nas unidades dos eixos).
   var PAINEL_DE = { cx: 'estatistica', fm: 'formas', im: 'formas' };
   var CAMPOS_RAPIDOS = { estatistica: ['itens', 'tamanho_pt', 'negrito', 'casas'], texto: ['texto', 'tamanho_pt', 'negrito', 'fundo'],
                          forma: ['texto', 'tamanho_pt', 'fundo', 'borda_cor'], figura: ['largura', 'opacidade', 'angulo'] };
-  var cm = null;                                                     // gesto em andamento
+  var ALCAS_CANTO = ['nw', 'ne', 'sw', 'se'], ALCAS_TODAS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+  var cm = null, cmAtiva = null, ng = null;                          // gesto em andamento, caixa selecionada, ajuste fino pelas setas
   function setCampo(id, v) { var $e = $('#' + id); if ($e.length) $e.val(v).trigger('input').trigger('change'); }
   function arred(v, n) { var f = Math.pow(10, n); return Math.round(v * f) / f; }
+  function casasDe(faixa) { return Math.max(0, Math.min(8, 3 - Math.floor(Math.log10(Math.max(Math.abs(faixa[1] - faixa[0]), 1e-9))))); }
   function pixelsPainel(m) { var p = geo.caixas.painel; return { l: m.ox + p[0] * m.W, t: m.oy + p[1] * m.H, w: p[2] * m.W, h: p[3] * m.H }; }
   function colocarCaixas() {
     $('.caixa-movel').remove();
     var m = medidasImg(); if (!m || !geo.caixas || !geo.caixas.itens || !$('#arrastar').is(':checked')) { return; }
     geo.caixas.itens.forEach(function (it) {
-      var $b = $('<div class="caixa-movel" data-id="' + it.id + '"><span class="cm-rot"></span><i class="cm-alca"></i></div>');
+      var $b = $('<div class="caixa-movel" data-id="' + it.id + '"><b class="cm-fant"></b><span class="cm-rot"></span></div>');
+      (it.auto ? ALCAS_CANTO : ALCAS_TODAS).forEach(function (h) { $b.append('<i class="cm-alca" data-h="' + h + '"></i>'); });
       $b.find('.cm-rot').text(rotulo('cx_' + it.tipo)); $b.attr('title', rotulo('cx_dica')).data('it', it);
       $b.css({ left: m.ox + it.rect[0] * m.W, top: m.oy + it.rect[1] * m.H, width: Math.max(it.rect[2] * m.W, 14), height: Math.max(it.rect[3] * m.H, 14) });
+      if (it.id === cmAtiva) $b.addClass('ativa');
       $(host()).append($b);
     });
     reposicionarPopover();
   }
+  function desselecionar() { cmAtiva = null; $('.caixa-movel').removeClass('ativa'); }
+  // a "sombra": o próprio recorte da prévia, esticado junto com a moldura (mistura multiplicando, então o branco não esconde o gráfico por baixo)
+  function sombra($b, g, l, t, w, h) {
+    var sx = w / g.w0, sy = h / g.h0, im = imagem();
+    $b.find('.cm-fant').css({ backgroundImage: 'url("' + im.src + '")', backgroundSize: (g.m.W * sx) + 'px ' + (g.m.H * sy) + 'px',
+                              backgroundPosition: (-(g.l0 - g.m.ox) * sx) + 'px ' + (-(g.t0 - g.m.oy) * sy) + 'px' });
+  }
+  // novo retângulo (l, t, w, h em px) para o gesto: mover, ou esticar por uma alça (nw, n, ne, e, se, s, sw, w); 'prop' = mantém a proporção
+  function retangulo(g, dx, dy) {
+    var P = pixelsPainel(g.m), l0 = g.l0, t0 = g.t0, w0 = g.w0, h0 = g.h0, r = l0 + w0, b = t0 + h0, MW = 16, MH = 12;
+    if (g.modo === 'mover') return { l: Math.min(Math.max(l0 + dx, P.l), Math.max(P.l, P.l + P.w - w0)), t: Math.min(Math.max(t0 + dy, P.t), Math.max(P.t, P.t + P.h - h0)), w: w0, h: h0 };
+    var H = g.alca, tw = H.indexOf('w') >= 0, te = H.indexOf('e') >= 0, tn = H.indexOf('n') >= 0, ts = H.indexOf('s') >= 0;
+    if (g.prop && H.length === 2) {                                  // canto com proporção fixa: a largura manda, a altura segue
+      var s = (tw ? (r - (l0 + dx)) : (r - l0 + dx)) / w0;
+      var dispW = tw ? (r - P.l) : (P.l + P.w - l0), dispH = tn ? (b - P.t) : (P.t + P.h - t0);
+      s = Math.max(MW / w0, Math.min(s, dispW / w0, dispH / h0));
+      return { l: tw ? r - w0 * s : l0, t: tn ? b - h0 * s : t0, w: w0 * s, h: h0 * s };
+    }
+    var nl = l0, nr = r, nt = t0, nb = b;
+    if (tw) nl = Math.min(Math.max(l0 + dx, P.l), r - MW);
+    if (te) nr = Math.max(Math.min(r + dx, P.l + P.w), l0 + MW);
+    if (tn) nt = Math.min(Math.max(t0 + dy, P.t), b - MH);
+    if (ts) nb = Math.max(Math.min(b + dy, P.t + P.h), t0 + MH);
+    return { l: nl, t: nt, w: nr - nl, h: nb - nt };
+  }
+  function colocarRet($b, R) { $b.css({ left: R.l + 'px', top: R.t + 'px', width: R.w + 'px', height: R.h + 'px' }); }
+  // grava nos campos do cartão o que o gesto deixou (l, t, w, h em px); g guarda o retângulo de antes
+  function gravarCaixa(g, R) {
+    var it = g.it, m = g.m, P = pixelsPainel(m), F = geo.caixas.faixa, dados = !!it.dados && F, redim = g.modo === 'tam';
+    var fx = function (px) { return (px - P.l) / P.w; }, fy = function (py) { return ((P.t + P.h) - py) / P.h; };        // fração do painel (y de baixo para cima)
+    var X = function (f) { return dados ? arred(F.x[0] + f * (F.x[1] - F.x[0]), casasDe(F.x)) : arred(f, 3); };
+    var Y = function (f) { return dados ? arred(F.y[0] + f * (F.y[1] - F.y[0]), casasDe(F.y)) : arred(f, 3); };
+    var LX = function (px) { return dados ? arred(px / P.w * (F.x[1] - F.x[0]), casasDe(F.x)) : arred(px / P.w, 3); };   // comprimentos
+    var LY = function (px) { return dados ? arred(px / P.h * (F.y[1] - F.y[0]), casasDe(F.y)) : arred(px / P.h, 3); };
+    if (it.forma === 'poligono' && it.vert) {
+      var nv = it.vert.map(function (v) {
+        var px = P.l + v[0] * P.w, py = P.t + (1 - v[1]) * P.h;
+        return X(fx(R.l + (px - g.l0) * (R.w / g.w0))) + ',' + Y(fy(R.t + (py - g.t0) * (R.h / g.h0)));
+      });
+      setCampo(it.id + '_vertices', nv.join('; ')); return;
+    }
+    if (dados && it.regiao) {                                       // retângulo/figura em unidades dos eixos: x, y = centro; largura e altura = tamanho
+      setCampo(it.id + '_x', X(fx(R.l + R.w / 2))); setCampo(it.id + '_y', Y(fy(R.t + R.h / 2)));
+      if (redim) { setCampo(it.id + '_largura', LX(R.w)); setCampo(it.id + '_altura', LY(R.h)); }
+      return;
+    }
+    setCampo(it.id + '_x', X(fx(R.l + it.jx * R.w))); setCampo(it.id + '_y', Y(fy(R.t + (1 - it.jy) * R.h)));
+    if (!redim) return;
+    if (it.tipo === 'figura') {
+      setCampo(it.id + '_largura', arred(R.w / P.w, 3)); if (!it.auto) setCampo(it.id + '_altura', arred(R.h / P.h, 3));
+    } else if (it.auto) {
+      setCampo(it.id + '_tamanho_pt', Math.max(4, arred((it.tam || 11) * (R.w / g.w0), 1)));
+    } else {
+      setCampo(it.id + '_largura', arred(R.w / P.w, 3)); setCampo(it.id + '_altura', arred(R.h / P.h, 3));
+    }
+  }
   $(document).on('pointerdown', '.caixa-movel', function (e) {
     var m = medidasImg(); if (!m || !geo.caixas) return;
-    var $b = $(this), it = $b.data('it');
-    cm = { modo: $(e.target).hasClass('cm-alca') ? 'tam' : 'mover', x0: e.clientX, y0: e.clientY, l0: parseFloat($b.css('left')), t0: parseFloat($b.css('top')),
-           w0: $b.outerWidth(), h0: $b.outerHeight(), m: m, it: it, moveu: false };
-    $('.caixa-movel').removeClass('ativa'); $b.addClass('ativa');
+    var $b = $(this), it = $b.data('it'), $al = $(e.target).closest('.cm-alca'), alca = $al.length ? String($al.data('h')) : null;
+    if (ng) { clearTimeout(ng.timer); ng = null; }
+    cm = { modo: alca ? 'tam' : 'mover', alca: alca, prop: !!it.auto || (e.shiftKey && alca && alca.length === 2), x0: e.clientX, y0: e.clientY,
+           l0: parseFloat($b.css('left')), t0: parseFloat($b.css('top')), w0: $b.outerWidth(), h0: $b.outerHeight(), m: m, it: it, moveu: false };
+    cmAtiva = it.id; $('.caixa-movel').removeClass('ativa'); $b.addClass('ativa');
     this.setPointerCapture(e.pointerId); e.preventDefault();
   });
   $(document).on('pointermove', '.caixa-movel', function (e) {
     if (!cm || cm.it.id !== $(this).data('it').id) return;
-    var dx = e.clientX - cm.x0, dy = e.clientY - cm.y0, P = pixelsPainel(cm.m), $b = $(this);
-    if (Math.abs(dx) + Math.abs(dy) > 3) cm.moveu = true;
-    if (cm.modo === 'mover') {
-      $b.css({ left: Math.min(Math.max(cm.l0 + dx, P.l), Math.max(P.l, P.l + P.w - cm.w0)) + 'px', top: Math.min(Math.max(cm.t0 + dy, P.t), Math.max(P.t, P.t + P.h - cm.h0)) + 'px' });
-    } else {
-      var w = Math.min(Math.max(cm.w0 + dx, 16), Math.max(16, P.l + P.w - cm.l0)), h = Math.min(Math.max(cm.h0 + dy, 12), Math.max(12, P.t + P.h - cm.t0));
-      if (cm.it.auto) h = w * cm.h0 / cm.w0;      // texto e figura mantêm a proporção
-      $b.css({ width: w + 'px', height: h + 'px' });
-    }
+    var dx = e.clientX - cm.x0, dy = e.clientY - cm.y0, $b = $(this);
+    if (!cm.moveu && Math.abs(dx) + Math.abs(dy) > 3) { cm.moveu = true; $b.addClass('arrastando'); }
+    if (!cm.moveu) return;
+    var R = retangulo(cm, dx, dy); colocarRet($b, R); sombra($b, cm, R.l, R.t, R.w, R.h);
   });
   $(document).on('pointerup pointercancel', '.caixa-movel', function (e) {
     if (!cm) return;
-    var g = cm, $b = $(this), it = g.it; cm = null;
+    var g = cm, $b = $(this), it = g.it; cm = null; $b.removeClass('arrastando');
     if (!g.moveu) {                                                   // um clique: abre a edição rápida
       var pref = it.id.replace(/[0-9]+$/, ''), ids = (CAMPOS_RAPIDOS[it.tipo] || []).map(function (c) { return it.id + '_' + c; });
       abrirPopover('caixa:' + it.id, ids, rotulo('cx_' + it.tipo), { painel: PAINEL_DE[pref], ativo: it.id + '_ativo' });
       return;
     }
-    var m = g.m, P = pixelsPainel(m), l = parseFloat($b.css('left')), t = parseFloat($b.css('top')), w = $b.outerWidth(), h = $b.outerHeight();
-    var redim = g.modo === 'tam';
-    var ax = (l + it.jx * w - P.l) / P.w, ay = ((P.t + P.h) - (t + (1 - it.jy) * h)) / P.h;
-    if (it.forma === 'poligono' && it.vert) {
-      var nv = it.vert.map(function (v) {
-        var px = P.l + v[0] * P.w, py = P.t + (1 - v[1]) * P.h;
-        var nx = l + (px - g.l0) * (w / g.w0), ny = t + (py - g.t0) * (h / g.h0);
-        return arred((nx - P.l) / P.w, 4) + ',' + arred(1 - (ny - P.t) / P.h, 4);
-      });
-      setCampo(it.id + '_vertices', nv.join('; '));
-      return;
-    }
-    setCampo(it.id + '_x', arred(ax, 3)); setCampo(it.id + '_y', arred(ay, 3));
-    if (!redim) return;
-    if (it.tipo === 'figura') {
-      setCampo(it.id + '_largura', arred(w / P.w, 3)); if (!it.auto) setCampo(it.id + '_altura', arred(h / P.h, 3));
-    } else if (it.auto) {
-      setCampo(it.id + '_tamanho_pt', Math.max(4, arred((it.tam || 11) * (w / g.w0), 1)));
-    } else {
-      setCampo(it.id + '_largura', arred(w / P.w, 3)); setCampo(it.id + '_altura', arred(h / P.h, 3));
-    }
+    gravarCaixa(g, { l: parseFloat($b.css('left')), t: parseFloat($b.css('top')), w: $b.outerWidth(), h: $b.outerHeight() });
+  });
+  // setas: ajuste fino da caixa selecionada (2 px; com Shift, 10 px); grava quando a pessoa para de apertar
+  $(document).on('keydown', function (e) {
+    if (!/^Arrow(Left|Right|Up|Down)$/.test(e.key) || $(e.target).is('input, textarea, select, [contenteditable]') || $(e.target).closest('.selectize-control').length) return;
+    var $b = $('.caixa-movel.ativa'); if (!$b.length || cm) return;
+    var m = medidasImg(); if (!m || !geo.caixas) return;
+    if (!ng) ng = { modo: 'mover', m: m, it: $b.data('it'), l0: parseFloat($b.css('left')), t0: parseFloat($b.css('top')), w0: $b.outerWidth(), h0: $b.outerHeight() };
+    var p = e.shiftKey ? 10 : 2, dx = e.key === 'ArrowLeft' ? -p : e.key === 'ArrowRight' ? p : 0, dy = e.key === 'ArrowUp' ? -p : e.key === 'ArrowDown' ? p : 0;
+    var P = pixelsPainel(ng.m), l = Math.min(Math.max(parseFloat($b.css('left')) + dx, P.l), Math.max(P.l, P.l + P.w - ng.w0)), t = Math.min(Math.max(parseFloat($b.css('top')) + dy, P.t), Math.max(P.t, P.t + P.h - ng.h0));
+    $b.css({ left: l + 'px', top: t + 'px' }); e.preventDefault();
+    clearTimeout(ng.timer);
+    ng.timer = setTimeout(function () { var g = ng; ng = null; var $a = $('.caixa-movel.ativa'); if ($a.length && g) gravarCaixa(g, { l: parseFloat($a.css('left')), t: parseFloat($a.css('top')), w: g.w0, h: g.h0 }); }, 450);
   });
 
   function colocar() {

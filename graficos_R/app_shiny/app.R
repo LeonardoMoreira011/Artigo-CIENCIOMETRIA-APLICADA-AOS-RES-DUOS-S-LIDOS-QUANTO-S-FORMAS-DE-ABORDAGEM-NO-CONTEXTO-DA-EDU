@@ -7,6 +7,9 @@
 # =============================================================================
 if (file.exists("pacotes.R")) { source("pacotes.R", encoding = "UTF-8"); if (!garantir_pacotes()) stop("Faltam pacotes do Cinabro (veja a mensagem acima).", call. = FALSE) }   # 1ª abertura: instala o que faltar
 suppressPackageStartupMessages({ library(shiny) })
+# Limite de tamanho de cada arquivo enviado (CSV ou figura). O padrão do Shiny é 5 MB, o que barrava figuras de alta resolução ("Maximum upload size exceeded").
+# É só um teto de segurança no seu computador; a figura é reduzida com cuidado na hora de desenhar, então não pesa na tela.
+options(shiny.maxRequestSize = 200 * 1024^2)
 
 raiz <- normalizePath(if (file.exists("../02_motor.R")) ".." else if (file.exists("02_motor.R")) "." else
                       stop("Não achei o motor de gráficos (02_motor.R). Abra o app a partir da pasta graficos_R/app_shiny."),
@@ -92,7 +95,7 @@ construir_ui <- function(idioma) fluidPage(
               span(`data-z` = "titulo", "Título do gráfico"), span(`data-z` = "xlab", "Título do eixo X"), span(`data-z` = "ylab", "Título do eixo Y"),
               span(`data-z` = "dica", "Clique para editar o texto, o negrito e o tamanho"), span(`data-z` = "fechar", "Fechar"),
               span(`data-z` = "cx_estatistica", "Caixa de estatística"), span(`data-z` = "cx_texto", "Texto"), span(`data-z` = "cx_forma", "Forma"),
-              span(`data-z` = "cx_figura", "Figura"), span(`data-z` = "cx_dica", "Arraste para mover, puxe o quadradinho do canto para mudar o tamanho, clique para editar"),
+              span(`data-z` = "cx_figura", "Figura"), span(`data-z` = "cx_dica", "Arraste para mover, puxe os quadradinhos dos cantos e lados para mudar o tamanho (Shift mantém a proporção), setas = ajuste fino, clique para editar"),
               span(`data-z` = "cx_mais", "Todas as opções")),
           uiOutput("info_previa"),
           uiOutput("avisos")),
