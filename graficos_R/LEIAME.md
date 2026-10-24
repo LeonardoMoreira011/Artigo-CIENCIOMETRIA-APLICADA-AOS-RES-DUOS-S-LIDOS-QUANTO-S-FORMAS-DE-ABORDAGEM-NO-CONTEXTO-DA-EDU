@@ -2,6 +2,8 @@
 
 Este template em R e o app no navegador formam o **Cinabro**. Cinábrio é o pigmento vermelho de pintores e alquimistas. O logo ainda está em definição.
 
+> **Para quem vai só usar:** leia o **`Manual_Cinabro.pdf`** (24 páginas, com prints do programa): instalação, primeiro gráfico em 5 passos, análises (ajuste de curva, barras de erro, normalidade, ANOVA, Kruskal-Wallis), exportação, salvar e retomar, perguntas frequentes. Os arquivos-fonte do manual ficam em `manual/` (só no repositório) e os roteiros que refazem os prints, em `ferramentas/manual/` (`capturar_1..5.js` com o app aberto, `galeria.R`, `gerar_pdf.js`): ao mudar a tela do programa, rode-os para atualizar o manual.
+
 Entrada: arquivos **CSV**. Saída: figuras **PNG, TIFF, JPEG, PDF, SVG ou EMF** com controle fino de eixos, ticks, moldura, cores, legendas e painéis.
 Testado em R 4.3/4.4 com **ggplot2 4.0.3** e **ggplot2 3.5.2** (Linux). **Não foi testado em Windows:** rode `07_verificar_windows.R` uma vez (seção 8).
 

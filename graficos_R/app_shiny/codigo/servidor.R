@@ -592,7 +592,8 @@ servidor <- function(input, output, session) {
       if (nrow(r$descritiva)) tagList(tags$h5(T("Resumo de cada série")), fmt_tab(r$descritiva, base)),
       if (nrow(r$ajustes)) tagList(tags$h5(T("Ajustes de curva")), fmt_tab(r$ajustes, base)),
       if (nrow(r$parametros)) tagList(tags$h5(T("Parâmetros dos ajustes")), fmt_tab(r$parametros, base)),
-      if (nrow(r$testes)) tagList(tags$h5(T("Testes estatísticos")), fmt_tab(r$testes[, setdiff(names(r$testes), "id"), drop = FALSE], base)),
+      # (colunas dos testes: o valor de p logo depois dos grupos, para caber na largura do painel)
+      if (nrow(r$testes)) tagList(tags$h5(T("Testes estatísticos")), fmt_tab(r$testes[, intersect(c("teste", "grupos", "p", "estatistica", "gl", "detalhe"), names(r$testes)), drop = FALSE], base)),
       if (!nrow(r$ajustes)) tags$p(class = "ajuda", T("Para ver os ajustes aqui, ligue um cartão de ajuste acima."))))
   })
   output$estat_baixar <- downloadHandler(filename = function() paste0(nome_base(), "_estatisticas.csv"), content = function(file) {

@@ -265,6 +265,7 @@ details.bloco:has(.cong input:checked) .bloco-cab h3::after { content: " \1F512"
 .estat-tabelas th, .estat-tabelas td { border-bottom: 1px solid var(--linha); padding: 4px 8px; text-align: right; white-space: nowrap; }
 .estat-tabelas th:first-child, .estat-tabelas td:first-child, .estat-tabelas th:nth-child(2), .estat-tabelas td:nth-child(2) { text-align: left; }
 .estat-tabelas th { background: #EADCC6; position: sticky; top: 0; }
+.estat-tabelas td:nth-child(2) { white-space: normal; min-width: 96px; max-width: 150px; }        /* os nomes dos grupos quebram de linha: o valor de p fica à vista */
 .modal-modelo textarea { width: 100%; height: 260px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
 
 /* links */

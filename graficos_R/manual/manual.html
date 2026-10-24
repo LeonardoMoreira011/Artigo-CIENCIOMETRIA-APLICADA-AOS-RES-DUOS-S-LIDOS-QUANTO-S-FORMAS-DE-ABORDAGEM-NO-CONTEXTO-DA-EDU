@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Cinabro — Manual de uso</title>
+<style>
+  @font-face { font-family: "Barlow"; src: url("../fontes/Barlow/Barlow-Regular.ttf"); font-weight: 400; }
+  @font-face { font-family: "Barlow"; src: url("../fontes/Barlow/Barlow-Bold.ttf"); font-weight: 700; }
+  @font-face { font-family: "Barlow"; src: url("../fontes/Barlow/Barlow-Italic.ttf"); font-weight: 400; font-style: italic; }
+  @font-face { font-family: "Barlow"; src: url("../fontes/Barlow/Barlow-BoldItalic.ttf"); font-weight: 700; font-style: italic; }
+  :root { --vermelho: #B3262E; --creme: #F5EBDD; --tinta: #20242B; --terracota: #C96A4A; --petroleo: #2F6670; --cartao: #FAF4EA; --linha: #E0D2BC; --sec: #6B6358; }
+  @page { size: A4; margin: 16mm 15mm 18mm 15mm; }
+  @page :first { margin: 0; }
+  * { box-sizing: border-box; }
+  html { font-family: "Barlow", sans-serif; color: var(--tinta); font-size: 10.6pt; line-height: 1.45; }
+  body { margin: 0; }
+  h1 { font-size: 22pt; color: var(--vermelho); margin: 0 0 4mm; line-height: 1.1; break-after: avoid; }
+  h2 { font-size: 14.5pt; color: var(--petroleo); margin: 7mm 0 2.5mm; break-after: avoid; border-bottom: 1.5px solid var(--linha); padding-bottom: 1mm; }
+  h3 { font-size: 11.5pt; color: var(--tinta); margin: 5mm 0 1.5mm; break-after: avoid; }
+  p { margin: 0 0 2.6mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 5.5mm; } li { margin-bottom: 1mm; }
+  a { color: var(--petroleo); }
+  code, .kbd { font-family: "Consolas", "Courier New", monospace; font-size: 9.2pt; background: #EFE3CF; padding: 0 1.2mm; border-radius: 1mm; }
+  .secao { break-before: page; }
+  .secao:first-of-type { break-before: auto; }
+  /* capa */
+  .capa { height: 296mm; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: var(--creme); margin: 0; padding: 20mm; break-after: page; }
+  body > section:nth-of-type(2) { padding-top: 16mm; }
+  .capa img.letreiro { width: 120mm; margin-bottom: 14mm; }
+  .capa h1 { font-size: 30pt; color: var(--tinta); }
+  .capa .sub { font-size: 14pt; color: var(--petroleo); margin-bottom: 20mm; }
+  .capa .nota { font-size: 10pt; color: var(--sec); max-width: 120mm; }
+  .capa .fio { display: flex; gap: 3mm; justify-content: center; margin: 6mm 0 12mm; } .capa .fio i { width: 4mm; height: 4mm; border-radius: 50%; display: block; }
+  /* sumário */
+  .sumario ol { list-style: none; padding: 0; counter-reset: s; } .sumario li { counter-increment: s; padding: 1.4mm 0; border-bottom: 1px dotted var(--linha); font-size: 11.5pt; }
+  .sumario li::before { content: counter(s) "."; color: var(--vermelho); font-weight: 700; display: inline-block; width: 8mm; }
+  .sumario li span { color: var(--sec); font-size: 9.5pt; margin-left: 2mm; }
+  /* caixas */
+  .dica, .atencao, .pronto { border-radius: 2.5mm; padding: 2.6mm 3.6mm; margin: 3mm 0; break-inside: avoid; font-size: 10pt; }
+  .dica { background: #F4E3D8; border-left: 1.6mm solid var(--terracota); }
+  .atencao { background: #F7DEDF; border-left: 1.6mm solid var(--vermelho); }
+  .pronto { background: #DDEBEC; border-left: 1.6mm solid var(--petroleo); }
+  .dica b:first-child, .atencao b:first-child, .pronto b:first-child { text-transform: uppercase; font-size: 8.6pt; letter-spacing: .04em; margin-right: 1.5mm; }
+  /* passos */
+  .passo { display: flex; gap: 3.5mm; margin: 3.5mm 0; break-inside: avoid; }
+  .passo .n { flex: none; width: 8mm; height: 8mm; border-radius: 50%; background: var(--vermelho); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 11pt; margin-top: .5mm; }
+  .passo .t { flex: 1; } .passo .t > b:first-child { display: block; font-size: 11.5pt; margin-bottom: .6mm; }
+  /* figuras */
+  figure { margin: 3mm 0; break-inside: avoid; text-align: center; }
+  figure img { max-width: 100%; border: 1px solid var(--linha); border-radius: 1.5mm; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  figure.sem-borda img { border: 0; box-shadow: none; }
+  figcaption { font-size: 8.8pt; color: var(--sec); margin-top: 1.2mm; font-style: italic; }
+  .lado { display: flex; gap: 6mm; align-items: flex-start; margin: 3mm 0; }
+  .lado > .texto { flex: 1; } .lado > figure { flex: none; width: 66mm; margin: 0; }
+  .lado.inverso { flex-direction: row-reverse; }
+  .galeria { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm 6mm; margin: 3mm 0; }
+  .galeria figure { margin: 0; } .galeria .nome { font-weight: 700; font-size: 10pt; margin-top: 1.5mm; text-align: left; } .galeria .quando { font-size: 9pt; color: var(--sec); text-align: left; }
+  /* tour numerado */
+  .tour { position: relative; margin: 3mm 0; break-inside: avoid; } .tour img { width: 100%; display: block; border: 1px solid var(--linha); border-radius: 1.5mm; }
+  .tour .b { position: absolute; width: 7mm; height: 7mm; border-radius: 50%; background: var(--vermelho); color: #fff; font-weight: 700; font-size: 10pt; display: flex; align-items: center; justify-content: center; border: 1.2mm solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.45); transform: translate(-50%, -50%); }
+  table { border-collapse: collapse; width: 100%; margin: 2.5mm 0 4mm; font-size: 9.6pt; break-inside: avoid; }
+  th { background: #EADCC6; text-align: left; } th, td { border-bottom: 1px solid var(--linha); padding: 1.6mm 2.4mm; vertical-align: top; }
+  .terminal { background: #0C0C0C; color: #CCCCCC; font-family: "Consolas", "Courier New", monospace; font-size: 8.4pt; line-height: 1.35; padding: 3.5mm 4mm; border-radius: 1.5mm; margin: 3mm 0; break-inside: avoid; white-space: pre-wrap; }
+  .terminal .tit { background: #2b2b2b; color: #ddd; margin: -3.5mm -4mm 3mm; padding: 1.2mm 4mm; border-radius: 1.5mm 1.5mm 0 0; font-family: "Barlow", sans-serif; font-size: 8pt; }
+  .fluxo { display: grid; grid-template-columns: 1fr; gap: 2mm; margin: 3mm 0; break-inside: avoid; } .fluxo div { background: var(--cartao); border: 1px solid var(--linha); border-radius: 2mm; padding: 2.2mm 3.4mm; font-size: 10pt; }
+  .fluxo div b { color: var(--vermelho); } .fluxo .seta { background: none; border: 0; text-align: center; padding: 0; color: var(--sec); line-height: 1; }
+  .rodape-final { margin-top: 8mm; font-size: 9pt; color: var(--sec); }
+  #faq { font-size: 10pt; } #faq td, #faq th { padding: 1.1mm 2mm; font-size: 9.2pt; } #faq li { margin-bottom: .3mm; } #faq h2 { margin-top: 4mm; }
+  .linha-contato { border-bottom: 1px solid var(--tinta); display: inline-block; width: 90mm; height: 5mm; }
+</style>
+</head>
+<body>
+
+<!-- ===================== CAPA ===================== -->
+<section class="capa">
+  <img class="letreiro" src="../identidade/letreiro_fundo_claro.png" alt="Cinabro">
+  <h1>Manual de uso</h1>
+  <div class="sub">Do CSV ao gráfico de publicação, sem escrever código</div>
+  <div class="fio"><i style="background:#B3262E"></i><i style="background:#2F6670"></i><i style="background:#20242B"></i><i style="background:#C96A4A"></i></div>
+  <div class="nota">Guia para o time: como instalar, como montar o primeiro gráfico, as ferramentas de análise (ajustes, barras de erro, testes estatísticos) e como guardar e retomar o trabalho.</div>
+</section>
+
+<!-- ===================== SUMÁRIO ===================== -->
+<section class="sumario">
+  <h1>Neste manual</h1>
+  <ol>
+    <li>O que é o Cinabro <span>e o que ele faz por você</span></li>
+    <li>Instalação no Windows <span>primeira abertura, atalho, o que fazer se algo falhar</span></li>
+    <li>Conhecendo a tela <span>os 7 painéis e a faixa de ferramentas</span></li>
+    <li>Seu primeiro gráfico em 5 passos <span>e como preparar o CSV</span></li>
+    <li>Tipos de gráfico <span>qual escolher</span></li>
+    <li>Deixando o gráfico do seu jeito <span>eixos, cores, texto, legenda, estilos prontos</span></li>
+    <li>Análises <span>ajuste de curva, média ± DP, barras de erro, normalidade, ANOVA, Kruskal-Wallis</span></li>
+    <li>Anotações no gráfico <span>texto, formas, figuras</span></li>
+    <li>Exportar <span>PNG, PDF, SVG, TIFF… e o tamanho certo</span></li>
+    <li>Guardar e retomar o trabalho <span>salvamento automático, projeto, abas, código</span></li>
+    <li>Boas práticas, perguntas frequentes e pedido de ajuda</li>
+  </ol>
+  <div class="pronto"><b>Dica</b> Quer só começar? Leia os capítulos 2 (instalar) e 4 (primeiro gráfico): leva 10 minutos. O resto é para consultar quando precisar.</div>
+</section>
+
+<!-- ===================== 1. O QUE É ===================== -->
+<section class="secao" id="o-que-e">
+  <h1>1. O que é o Cinabro</h1>
+  <p>O <b>Cinabro</b> é um laboratório de gráficos científicos. Você envia uma planilha (CSV), escolhe o tipo de gráfico e ajusta o visual com cliques; o gráfico se atualiza na hora, com a mesma aparência do arquivo que você vai baixar. Foi feito para o dia a dia do laboratório: relatórios, artigos e apresentações com um padrão visual único para todo o time.</p>
+  <ul>
+    <li><b>Tudo em português</b>, em uma tela organizada em 7 painéis.</li>
+    <li><b>Roda no seu computador</b>, dentro do navegador. Os seus dados <b>não são enviados</b> para a internet; a conexão com o programa é local (<code>127.0.0.1</code>).</li>
+    <li><b>Padrão visual da marca:</b> fonte Barlow, cores do Cinabro e 12 paletas que funcionam bem impressas e para quem tem daltonismo.</li>
+    <li><b>Análises embutidas:</b> ajuste de curva com equação e R², média ± desvio padrão, barras de erro, testes de normalidade, ANOVA, Kruskal-Wallis e comparações par a par, com valor de p.</li>
+    <li><b>Reprodutível:</b> o programa escreve o <i>código equivalente</i> em R do gráfico que você montou. Quem quiser automatizar, copia e usa em script.</li>
+    <li><b>Exporta</b> em PNG, JPEG, TIFF, PDF e SVG (EMF, se disponível), no tamanho em centímetros e na resolução que a revista pede.</li>
+  </ul>
+  <div class="dica"><b>Princípio</b> "Menos é mais": a tela mostra o essencial; o que é raro fica recolhido em "Mais opções" ou nasce só quando você pede (um cartão de ajuste, uma caixa de estatística).</div>
+</section>
+
+<!-- ===================== 2. INSTALAÇÃO ===================== -->
+<section class="secao" id="instalacao">
+  <h1>2. Instalação no Windows</h1>
+  <p>São <b>3 passos</b> e só o primeiro precisa ser repetido em outro computador. Reserve uns 10 minutos e <b>internet</b> na primeira vez.</p>
+
+  <h2>2.1 O que você precisa</h2>
+  <table>
+    <tr><th style="width:42mm">Item</th><th>Detalhe</th></tr>
+    <tr><td><b>R</b> (versão 4.4 ou mais nova)</td><td>O R é o motor que desenha os gráficos. É gratuito. Baixe em <b>cran.r-project.org</b> → <i>Download R for Windows</i> → <i>base</i> → <i>Download R x.y.z for Windows</i>. Execute o instalador e aceite as opções padrão. Se o computador pedir senha de administrador, peça ao suporte de TI.</td></tr>
+    <tr><td><b>Navegador</b></td><td>Chrome, Edge ou Firefox atualizados.</td></tr>
+    <tr><td><b>Internet</b></td><td>Só na <b>primeira abertura</b>, para baixar os pacotes do R que o Cinabro usa (cerca de 20). Depois, funciona sem internet.</td></tr>
+    <tr><td><b>O arquivo ZIP do Cinabro</b></td><td>Fornecido pelo responsável do projeto (<code>graficos_R_com_app.zip</code>).</td></tr>
+  </table>
+
+  <h2>2.2 Extrair o ZIP</h2>
+  <div class="passo"><div class="n">1</div><div class="t"><b>Clique com o botão direito no ZIP → "Extrair tudo…"</b>
+    Escolha uma <b>pasta curta</b>, por exemplo <code>C:\cinabro</code>. Evite pastas com nomes muito compridos ou dentro de outras pastas fundas: o Windows tem limite de tamanho de caminho.</div></div>
+  <div class="atencao"><b>Atenção</b> Extraia <b>tudo</b>. Não dê dois cliques nos arquivos de dentro do ZIP sem extrair: o programa precisa de todas as pastas juntas (motor de gráficos, fontes, exemplos).</div>
+
+  <h2>2.3 Primeira abertura</h2>
+  <div class="passo"><div class="n">2</div><div class="t"><b>Dê dois cliques em <code>abrir_app.bat</code></b>
+    Se o Windows mostrar <i>"O Windows protegeu o computador"</i>, clique em <b>Mais informações → Executar assim mesmo</b> (o arquivo não é assinado digitalmente; isso é esperado).</div></div>
+  <div class="passo"><div class="n">3</div><div class="t"><b>Espere a janela preta terminar de instalar os pacotes</b>
+    Na primeira vez ela baixa tudo o que falta; leva alguns minutos e <b>fecha sozinha</b> apenas quando você sair do Cinabro. Não feche a janela. Quando acabar, o navegador abre sozinho em <code>http://127.0.0.1:8421</code>.</div></div>
+  <div class="terminal"><div class="tit">C:\Windows\System32\cmd.exe — exemplo do que aparece na primeira vez</div>R encontrado: C:\Program Files\R\R-4.5.2\bin\Rscript.exe
+Atalho "Cinabro" criado na area de trabalho e no menu Iniciar.
+Abrindo o Cinabro no navegador (http://127.0.0.1:8421)...
+
+== Cinabro: primeira abertura ==
+Instalando os pacotes que faltam (precisa de internet; pode levar alguns minutos):
+  shiny, ggplot2, scales, patchwork, ragg, systemfonts, jsonlite, gtable, ...
+Pacotes prontos.
+
+Listening on http://127.0.0.1:8421</div>
+  <div class="pronto"><b>Pronto</b> Na mesma primeira abertura, o programa já cria o atalho <b>Cinabro</b> (com o logotipo) na <b>área de trabalho</b> e no <b>menu Iniciar</b>. Não é preciso fazer mais nada.</div>
+
+  <h2>2.4 No dia a dia</h2>
+  <ul>
+    <li>Abra pelo <b>atalho Cinabro</b> da área de trabalho. Ele abre o programa <b>sem janela preta</b>.</li>
+    <li>Para encerrar, use o botão <b>Sair</b> (canto superior direito do programa). Se você só fechar a aba do navegador, o R continua rodando em segundo plano por 10 minutos e depois se encerra sozinho.</li>
+    <li>Se o navegador mostrar a tela cinza ou "desconectado", recarregue a página (<b>F5</b>): o programa oferece <i>Retomar de onde você parou</i> (capítulo 10).</li>
+  </ul>
+
+  <h2>2.5 Se algo der errado</h2>
+  <p style="margin-bottom:1.5mm">Se nada resolver, veja o que mandar ao pedir ajuda no capítulo 11.</p>
+  <table>
+    <tr><th style="width:55mm">O que acontece</th><th>O que fazer</th></tr>
+    <tr><td>A janela pergunta <i>"Caminho do Rscript.exe"</i></td><td>O programa não achou o R. Procure o arquivo <code>Rscript.exe</code> (normalmente em <code>C:\Program Files\R\R-x.y.z\bin\</code>), clique nele com o botão direito → <i>Copiar como caminho</i> → cole na janela e tecle Enter. Ele lembra o caminho nas próximas vezes.</td></tr>
+    <tr><td>"NÃO consegui instalar pacotes…"</td><td>Sem internet ou rede da empresa com proxy. Conecte-se e abra de novo; na rede da empresa, peça ao suporte o endereço do proxy.</td></tr>
+    <tr><td>O Windows ou o antivírus bloqueou o arquivo</td><td>Clique em <i>Mais informações → Executar assim mesmo</i>. Se o antivírus bloquear o atalho (que usa um pequeno script), abra pelo <code>abrir_app.bat</code>, que mostra as mensagens na janela.</td></tr>
+    <tr><td>O navegador abriu numa página em branco ou de erro</td><td>Espere 10–20 segundos e recarregue (<b>F5</b>). Se houver outro Cinabro aberto, o novo escolhe outra porta e mostra o endereço na janela.</td></tr>
+    <tr><td>O atalho está com o ícone antigo</td><td>Cache de ícones do Windows: apague o atalho, abra o <code>abrir_app.bat</code> de novo (ele recria) ou reinicie o Explorer.</td></tr>
+    <tr><td>Mudei a pasta de lugar</td><td>Abra o <code>abrir_app.bat</code> uma vez: ele recria o atalho apontando para a pasta nova.</td></tr>
+  </table>
+</section>
+
+<!-- ===================== 3. TELA ===================== -->
+<section class="secao" id="tela">
+  <h1>3. Conhecendo a tela</h1>
+  <p>A tela tem três áreas: o <b>painel lateral</b> (onde você configura), a <b>faixa de ferramentas</b> (onde você adiciona análises e anotações) e o <b>gráfico</b>, que muda na hora conforme você mexe.</p>
+  <div class="tour" style="width:92%;margin-left:auto;margin-right:auto"><img src="img/03_visao_geral.png" alt="Visão geral da tela">
+    <span class="b" style="left:46%;top:3.2%">1</span>
+    <span class="b" style="left:32.6%;top:8.4%">2</span>
+    <span class="b" style="left:2.2%;top:38%">3</span>
+    <span class="b" style="left:30.5%;top:55%">4</span>
+    <span class="b" style="left:34.2%;top:14.5%">5</span>
+    <span class="b" style="left:94%;top:34%">6</span>
+    <span class="b" style="left:36.5%;top:95.8%">7</span>
+  </div>
+  <table>
+    <tr><th style="width:8mm">#</th><th style="width:38mm">Onde</th><th>Para quê</th></tr>
+    <tr><td><b>1</b></td><td>Cabeçalho</td><td><b>Estilos prontos</b> (publicação, apresentação) · <b>Salvar projeto</b> / <b>Abrir projeto</b> (dados + configuração) · <b>Restaurar tudo</b> (volta ao padrão) · <b>Sair</b> · <b>Como usar</b> (guia rápido de 4 passos).</td></tr>
+    <tr><td><b>2</b></td><td>Abas</td><td>Um gráfico por aba: <b>+ Nova aba</b>, <b>Duplicar</b> (cópia para variar) e <b>Renomear</b>.</td></tr>
+    <tr><td><b>3</b></td><td>Trilho de painéis</td><td>Os 7 ícones abrem cada painel: <b>1 Dados</b> · <b>2 Eixos</b> · <b>3 Cores e símbolos</b> · <b>4 Fonte e textos</b> · <b>5 Legenda</b> · <b>6 Análises e anotações</b> · <b>7 Tamanho e exportação</b>.</td></tr>
+    <tr><td><b>4</b></td><td>Painel aberto</td><td>As opções do painel escolhido. Seções recolhidas (▸) abrem com um clique. Cada passo tem uma <b>dica</b> colorida explicando o essencial.</td></tr>
+    <tr><td><b>5</b></td><td>Faixa de ferramentas</td><td><b>Análise:</b> Ajuste de curva, Média ± DP, Caixa de estatística, Tabelas e testes · <b>Anotar:</b> Texto, Forma, Figura · <b>Baixar PNG / PDF</b> · <b>Maximizar</b> (esconde os painéis para o gráfico ocupar a tela; <b>Esc</b> volta).</td></tr>
+    <tr><td><b>6</b></td><td>Gráfico</td><td>Prévia ao vivo. <b>Arraste</b> a legenda e as caixas com o mouse; <b>clique</b> num título ou eixo para editá-lo ali mesmo. Com "Atualizar sozinho" ligado o gráfico se refaz após cada mudança; senão, use <b>Atualizar agora</b>.</td></tr>
+    <tr><td><b>7</b></td><td>Rodapé</td><td>Tamanho da página, fonte e a lista <b>"O que você mudou"</b>, que mostra tudo o que saiu do padrão.</td></tr>
+  </table>
+  <div class="pronto"><b>Guia rápido</b> Na primeira abertura aparece o <b>"Como usar em 4 passos"</b> (carregue os dados, monte e ajuste, confira, baixe). Para ver de novo, clique em <b>Como usar</b>, no canto superior direito. E quase todo campo tem um texto de ajuda em cinza logo abaixo: leia, ele diz o que o campo faz e dá um exemplo.</div>
+</section>
+
+<!-- ===================== 4. PRIMEIRO GRÁFICO ===================== -->
+<section class="secao" id="primeiro">
+  <h1>4. Seu primeiro gráfico em 5 passos</h1>
+  <p>Vamos usar o exemplo <b>"Ensaio de temperatura"</b>, que já vem no programa, para você ver o caminho completo. Depois, é só trocar pelo seu CSV.</p>
+
+  <div class="lado">
+    <div class="texto">
+      <div class="passo"><div class="n">1</div><div class="t"><b>Carregue os dados</b>
+        No painel <b>1 · Dados</b>, clique em <b>Escolher arquivo…</b> e selecione o seu CSV, <b>ou</b> escolha um exemplo na lista "…ou use um exemplo". Aparecem o nome do arquivo, o número de linhas e colunas e uma tabela de conferência.</div></div>
+      <div class="passo"><div class="n">2</div><div class="t"><b>Escolha o tipo de gráfico</b>
+        Em <b>Tipo de gráfico</b>: linha com pontos, só pontos, barras, boxplot, pizza, histograma… (veja o capítulo 5). O gráfico aparece na hora.</div></div>
+      <div class="passo"><div class="n">3</div><div class="t"><b>Escolha as colunas</b>
+        <b>Coluna do eixo X</b> (padrão: a 1ª coluna) e <b>Colunas do eixo Y</b> (as séries). Deixar o Y vazio usa <i>todas</i> as outras colunas numéricas; clique no campo para escolher só algumas.</div></div>
+    </div>
+    <figure><img src="img/05_dados_carregados.png" alt="Dados carregados"><figcaption>Painel Dados com o exemplo carregado e a tabela de conferência.</figcaption></figure>
+  </div>
+
+  <div class="lado inverso">
+    <div class="texto">
+      <div class="passo"><div class="n">4</div><div class="t"><b>Dê nomes aos eixos</b>
+        No painel <b>2 · Eixos</b>, abra a seção <b>Números e títulos</b> e escreva o <b>Título do eixo X</b> e do <b>eixo Y</b>, com a unidade: <code>Tempo (min)</code>, <code>Temperatura (°C)</code>. Para expoentes use <code>m^{2}</code> e para índices <code>CO_{2}</code>.</div></div>
+      <div class="passo"><div class="n">5</div><div class="t"><b>Baixe o gráfico</b>
+        Na faixa acima do gráfico, clique em <b>Baixar PNG</b> (imagem) ou <b>Baixar PDF</b> (vetorial). Para outros formatos e tamanhos, veja o capítulo 9.</div></div>
+      <div class="dica"><b>Dica</b> As colunas <i>Desvio A</i> e <i>Desvio B</i> deste exemplo são desvios padrão, não séries. Para usá-los como barras de erro, veja o capítulo 7.</div>
+    </div>
+    <figure><img src="img/07_colunas_y.png" alt="Colunas Y"><figcaption>Escolhendo as séries (colunas Y) do gráfico.</figcaption></figure>
+  </div>
+
+  <figure><img src="img/09_primeiro_grafico.png" alt="Primeiro gráfico pronto"><figcaption>O resultado: três séries, eixos nomeados e legenda arrastável. Tudo se refaz sozinho a cada mudança.</figcaption></figure>
+
+  <h2>Como preparar o CSV</h2>
+  <p>CSV é uma planilha salva como texto (no Excel: <i>Salvar como → CSV</i>). O Cinabro entende o formato do Excel brasileiro sozinho: separador <b>;</b>, decimal com <b>vírgula</b> e acentos (Latin-1 ou UTF-8) são detectados automaticamente.</p>
+  <div class="lado">
+    <div class="texto">
+      <ul>
+        <li><b>A 1ª linha traz os títulos</b> das colunas.</li>
+        <li><b>Formato largo</b> (o mais comum): uma coluna para o X e uma coluna para cada série. Para <i>replicatas</i>: <b>uma coluna por grupo</b>, uma linha por medição.</li>
+        <li><b>Formato longo</b>: uma coluna com o nome do grupo (ex.: <i>Tratamento</i>) e outra com o valor (<i>Resposta</i>). Informe a coluna de grupo ao usar boxplot ou histograma.</li>
+        <li><b>Datas</b> (<code>01/03/2024 00:00</code>) viram um eixo de tempo.</li>
+        <li><b>Barras de erro:</b> uma coluna com o desvio padrão de cada ponto (capítulo 7).</li>
+      </ul>
+      <div class="atencao"><b>Atenção</b> Não deixe linhas de título extra, células mescladas ou totais no meio dos dados. Células vazias são aceitas.</div>
+    </div>
+    <figure><img src="img/16_excel_ptbr.png" alt="CSV do Excel brasileiro"><figcaption>CSV do Excel brasileiro (vírgula decimal, ponto e vírgula): lido sem configurar nada.</figcaption></figure>
+  </div>
+  <div class="dica"><b>Arquivos grandes</b> Com dezenas de milhares de linhas, a <b>prévia</b> usa uma amostra que preserva picos e vales (aparece um aviso "Prévia simplificada"); o arquivo que você <b>baixa usa todas as linhas</b>.</div>
+</section>
+
+<!-- ===================== 5. TIPOS ===================== -->
+<section class="secao" id="tipos">
+  <h1>5. Tipos de gráfico</h1>
+  <p>Em <b>Dados → Tipo de gráfico</b>. Todos usam as mesmas colunas e o mesmo visual; só muda a forma de desenhar. Os exemplos abaixo vêm da pasta <code>dados</code> do programa.</p>
+  <div class="galeria">
+    <figure><img src="img/g01_linha_pontos.png"><div class="nome">Linha com pontos / só linha / só pontos</div><div class="quando">Séries ao longo de X (tempo, concentração). "Só pontos" é a dispersão, ideal para ajuste de curva.</div></figure>
+    <figure><img src="img/g05_area_empilhada.png"><div class="nome">Área e área empilhada</div><div class="quando">Contribuição de cada série para o total ao longo de X.</div></figure>
+    <figure><img src="img/g06_barras.png"><div class="nome">Barras</div><div class="quando">Comparar categorias (materiais, tratamentos). Aceita barras de erro por série.</div></figure>
+    <figure><img src="img/g07_pizza.png"><div class="nome">Pizza / rosca</div><div class="quando">Composição de um todo (porcentagens). Poucas fatias; rosca é só um "furo" no centro.</div></figure>
+    <figure><img src="img/g08_histograma.png"><div class="nome">Histograma, densidade e distribuição acumulada</div><div class="quando">Como os valores se distribuem; compara grupos sobrepostos.</div></figure>
+    <figure><img src="img/g09_boxplot.png"><div class="nome">Boxplot (caixas)</div><div class="quando">Replicatas por grupo: mediana, quartis, mínimo/máximo e valores atípicos (×). O quadradinho é a média.</div></figure>
+    <figure><img src="img/g10_violino.png"><div class="nome">Violino (variação do boxplot, só no script)</div><div class="quando">Mostra a forma da distribuição, com a caixa dentro. Ainda não tem botão na tela: no script, <code>cfg$boxplot$variacao &lt;- "violino_box"</code>.</div></figure>
+    <figure><img src="img/g04_escala_log.png"><div class="nome">Escala logarítmica</div><div class="quando">Dados que variam muitas ordens de grandeza (resposta em frequência). Em Eixos → Escala.</div></figure>
+  </div>
+</section>
+
+<!-- ===================== 6. APARÊNCIA ===================== -->
+<section class="secao" id="aparencia">
+  <h1>6. Deixando o gráfico do seu jeito</h1>
+  <p>Cada painel do trilho cuida de uma parte do visual. Tudo vale na hora; o que você muda aparece no rodapé em <b>"O que você mudou"</b>, e <b>Restaurar tudo</b> volta ao padrão.</p>
+
+  <div class="lado">
+    <div class="texto">
+      <h2>6.1 Eixos (painel 2)</h2>
+      <ul>
+        <li><b>Intervalos:</b> onde cada eixo começa e termina e de quanto em quanto aparecem os traços. <i>Ex.: para mostrar todos os anos, "Distância entre os traços" = 1.</i> "Traços pequenos entre dois grandes" controla os traços menores.</li>
+        <li><b>Escala:</b> linear ou logarítmica, <b>folga nas pontas</b> (use 4% para os pontos das pontas não ficarem cortados pela moldura) e inverter eixo.</li>
+        <li><b>Números e títulos:</b> títulos, formato dos números (normal, milhar, científica), casas decimais, dividir por mil, girar os números.</li>
+        <li><b>Grade:</b> linhas de fundo nos traços grandes e/ou pequenos, com tipo, cor e opacidade.</li>
+        <li><b>Quebra do eixo Y:</b> corta o trecho vazio entre grupos de dados muito distantes (o botão <i>Achar o maior vazio nos meus dados</i> sugere o trecho a cortar).</li>
+        <li><b>Eixo Y da direita (Y2):</b> põe outra série, com outra unidade, num segundo eixo vertical.</li>
+      </ul>
+    </div>
+    <figure><img src="img/10_eixos_intervalos.png" alt="Eixos"><figcaption>Seção "Intervalos dos eixos".</figcaption></figure>
+  </div>
+  <div class="galeria">
+    <figure><img src="img/g03_data_y2.png"><div class="nome">Eixo de datas e segundo eixo (Y2)</div><div class="quando">Temperatura (esquerda) e umidade (direita), com as cores do eixo seguindo a série.</div></figure>
+    <figure><img src="img/g12_quebra.png"><div class="nome">Quebra do eixo Y</div><div class="quando">Séries com valores em escalas muito diferentes ficam legíveis sem perder as menores.</div></figure>
+  </div>
+
+  <div class="lado inverso">
+    <div class="texto">
+      <h2>6.2 Cores, linhas e símbolos (painel 3)</h2>
+      <ul>
+        <li><b>Paleta de cores:</b> 12 opções. A padrão, <b>Cinabro</b>, usa as cores da marca e variações; as demais são degradês e paletas divergentes ou contínuas.</li>
+        <li><b>Minha paleta:</b> cole códigos de cor (<code>#B3262E, #2F6670…</code>), ajuste e <b>guarde com um nome</b>.</li>
+        <li><b>Grossura da linha</b> e <b>tamanho do ponto</b> (valem para todas as séries) e <b>forma dos pontos</b>: uma por série ou todas iguais.</li>
+        <li><b>Por série:</b> cor, forma, tamanho e <i>nome na legenda</i> de cada série, na tabela que aparece abaixo.</li>
+      </ul>
+      <div class="dica"><b>Dica</b> Com mais de 4 séries, varie também a <b>forma</b> e o <b>tipo de linha</b>: ajuda quem tem daltonismo e a impressão em preto e branco.</div>
+    </div>
+    <figure><img src="img/13_series.png" alt="Cores"><figcaption>Painel Cores, linhas e símbolos.</figcaption></figure>
+  </div>
+  <figure class="sem-borda"><img src="img/g13_paletas.png" style="width:120mm" alt="Paletas"><figcaption>As 12 paletas do Cinabro (de cima para baixo: Cinabro, degradês, divergentes e contínuas).</figcaption></figure>
+
+  <div class="lado">
+    <div class="texto">
+      <h2>6.3 Fonte e tamanhos (painel 4)</h2>
+      <p>A fonte oficial é a <b>Barlow</b>. Você pode escolher qualquer fonte instalada no computador (digite para procurar) e adicionar um arquivo <code>.ttf</code> ou <code>.otf</code>. O <b>tamanho base</b> vale para todo o texto; tamanhos separados (título, eixos, números, legenda) têm prioridade. <b>Tudo em negrito</b> liga o negrito geral.</p>
+      <h2>6.4 Legenda (painel 5)</h2>
+      <p>Mostrar ou esconder, título, orientação (vertical/horizontal), número de colunas, fundo, borda e sombra. <b>Arraste a caixa tracejada</b> sobre o gráfico para mudar a posição e a alça da direita para a largura; ou digite a posição (0 a 1) e escolha um canto pronto.</p>
+    </div>
+    <figure><img src="img/14_texto.png" alt="Fonte"><figcaption>Painel Fonte e tamanhos de texto.</figcaption></figure>
+  </div>
+
+  <h2>6.5 Estilos prontos, Restaurar e Congelar</h2>
+  <ul>
+    <li><b>Estilos prontos</b> (cabeçalho): <i>Padrão do template</i>, <i>Publicação (artigo)</i> e <i>Apresentação (slides)</i> aplicam um conjunto de ajustes de uma vez.</li>
+    <li><b>Restaurar tudo</b> volta ao padrão (blocos congelados ficam como estão).</li>
+    <li><b>Congelar:</b> o quadradinho "Congelar" no topo de cada painel/seção trava aquele bloco. Congelado, ele não volta ao padrão em <i>Restaurar tudo</i> e <b>passa para as abas novas</b>. Use para fazer vários gráficos com a mesma fonte, moldura e cores: congele esses blocos e abra uma aba nova.</li>
+  </ul>
+</section>
+
+<!-- ===================== 7. ANÁLISES ===================== -->
+<section class="secao" id="analises">
+  <h1>7. Análises</h1>
+  <p>Ficam no painel <b>6 · Análises e anotações</b> e na <b>faixa de ferramentas</b>. Cada análise nasce como um <b>cartão</b> quando você a adiciona; assim a tela fica limpa até você precisar.</p>
+
+  <h2>7.1 Ajuste de curva e equação</h2>
+  <div class="lado">
+    <div class="texto">
+      <div class="passo"><div class="n">1</div><div class="t"><b>Use gráfico de pontos</b> e clique em <b>Ajuste de curva ▾</b> na faixa.</div></div>
+      <div class="passo"><div class="n">2</div><div class="t"><b>Escolha o tipo:</b> linear, exponencial, potência, logarítmico, polinomial (grau 2, 3…), suavizado (loess), <b>fórmula livre</b> (a sua equação) ou <b>curva externa</b> (uma curva que você já tem, só desenhada por cima dos dados).</div></div>
+      <div class="passo"><div class="n">3</div><div class="t"><b>Pronto:</b> a curva é desenhada e a <b>equação com R²</b> aparece numa <b>caixa de estatística separada</b>, que você move e edita com o mouse.</div></div>
+      <p>No cartão do ajuste você escolhe a <b>série</b> (uma ou todas), passar pela origem, cor e tipo da linha e a <b>faixa de confiança</b> da curva.</p>
+    </div>
+    <figure><img src="img/17_menu_ajuste.png" alt="Menu de ajustes"><figcaption>Tipos de ajuste disponíveis.</figcaption></figure>
+  </div>
+  <figure><img src="img/18_ajuste_resultado.png" alt="Ajuste linear"><figcaption>Curva de calibração com ajuste linear nas duas séries: equação e R² numa caixa à parte (CSV do Excel brasileiro).</figcaption></figure>
+
+  <h2>7.2 Média ± desvio padrão</h2>
+  <p>O botão <b>Média ± DP</b> desenha traços de média e a faixa de desvio (ou erro padrão, intervalo de confiança 95% ou mínimo–máximo) <b>a partir dos dados</b>, série por série. Os valores também podem ir numa caixa de estatística.</p>
+
+  <h2>7.3 Barras de erro (quando você já tem a média e o desvio)</h2>
+  <div class="lado">
+    <div class="texto">
+      <p>Se a planilha já traz a <b>média</b> em uma coluna e o <b>desvio padrão</b> em outra:</p>
+      <div class="passo"><div class="n">1</div><div class="t"><b>Tipo:</b> "Só pontos" (ou linha com pontos).</div></div>
+      <div class="passo"><div class="n">2</div><div class="t"><b>Colunas do eixo Y:</b> só a coluna da média.</div></div>
+      <div class="passo"><div class="n">3</div><div class="t"><b>Colunas de erro (± desvio padrão):</b> escolha a coluna do desvio. A 1ª coluna de erro vale para a 1ª série, a 2ª para a 2ª, e assim por diante. Ela <b>não</b> é desenhada como série.</div></div>
+      <p>Aparecem então o <b>lado</b> da barra (os dois lados, só para cima, só para baixo), a <b>cor</b> (vazia = a cor de cada série; com uma cor, as barras ficam dessa cor, independente dos pontos), a <b>grossura</b> e a largura do <b>chapéu</b>. O eixo cresce sozinho para caber a barra.</p>
+    </div>
+    <figure><img src="img/20_erro_painel.png" alt="Painel de barras de erro"><figcaption>Campos das barras de erro, no painel Dados.</figcaption></figure>
+  </div>
+  <div class="galeria">
+    <figure><img src="img/g11_media_desvio.png"><div class="nome">Linha com pontos e barras de erro</div><div class="quando">Cor das barras = cor da série.</div></figure>
+    <figure><img src="img/g11b_erro_cor_propria.png"><div class="nome">Só pontos, barras com cor própria</div><div class="quando">"Cor da barra de erro" em tinta, independente da cor dos pontos.</div></figure>
+  </div>
+  <div class="atencao"><b>Atenção</b> As barras de erro são <b>desenhadas</b> a partir dos valores da planilha; o Cinabro não recalcula o desvio. Informe na legenda da figura se o erro é desvio padrão, erro padrão ou intervalo de confiança.</div>
+
+  <h2>7.4 Caixas de estatística</h2>
+  <p>A <b>Caixa de estatística</b> mostra, dentro do gráfico e à parte da linha, os números que você escolher: média, desvio padrão, n, equação, R², valor de p… Você <b>arrasta</b> a caixa, <b>redimensiona</b> e edita tamanho, negrito, cor e quais itens aparecem (como na legenda). Os ajustes de curva criam a sua caixa automaticamente.</p>
+
+  <h2>7.5 Normalidade, ANOVA e Kruskal-Wallis (comparar grupos)</h2>
+  <p>Botão <b>Tabelas e testes</b>, na faixa. Escolha o tipo <b>Boxplot</b> (ou histograma/densidade) para que <b>cada coluna seja um grupo</b>, escolha os testes em <b>"Testes na tabela"</b> e clique em <b>Calcular as tabelas</b>. A tabela mostra o <b>valor de p</b> de cada teste e pode ser baixada em CSV.</p>
+  <div class="lado">
+    <div class="texto">
+      <div class="fluxo">
+        <div><b>1 · Normalidade</b> (Shapiro-Wilk, de cada grupo). p &gt; 0,05: sem evidência contra a normalidade.</div><div class="seta">▼</div>
+        <div><b>2 · Variâncias iguais?</b> Bartlett (dados normais) ou Fligner-Killeen (robusto).</div><div class="seta">▼</div>
+        <div><b>Normais e variâncias parecidas:</b> <b>ANOVA</b> de um fator (com η², o tamanho do efeito). Se p &lt; 0,05: <b>Tukey</b> mostra quais pares diferem.</div>
+        <div><b>Caso contrário:</b> <b>Kruskal-Wallis</b>. Se p &lt; 0,05: <b>Pares de Wilcoxon com ajuste de Holm</b> mostram quais pares diferem.</div>
+        <div><b>Só dois grupos:</b> teste t (Welch) ou Wilcoxon.</div>
+      </div>
+    </div>
+    <figure><img src="img/23_testes_tabelas.png" alt="Tabelas de testes"><figcaption>Tabela de testes: o valor de p logo depois dos grupos.</figcaption></figure>
+  </div>
+  <figure><img src="img/24_boxplot.png" alt="Boxplot com testes"><figcaption>Boxplot das replicatas com a tabela de testes aberta ao lado. Os mesmos itens podem ir numa caixa de estatística dentro do gráfico.</figcaption></figure>
+  <div class="atencao"><b>Atenção</b> Os testes precisam das <b>replicatas</b> (os valores individuais), não das médias: com média e desvio já resumidos faltam o <i>n</i> e os dados. A escolha do teste e a interpretação são do pesquisador; o Cinabro apenas calcula (com o R base: <code>shapiro.test</code>, <code>aov</code>, <code>TukeyHSD</code>, <code>kruskal.test</code>, <code>pairwise.wilcox.test</code>).</div>
+  <div class="dica"><b>Lendo o valor de p</b> Por convenção, p &lt; 0,05 indica diferença estatisticamente significativa. A tabela mostra &lt;0.001 quando é menor que isso. Compare sempre com o gráfico: significância não é o mesmo que importância prática.</div>
+</section>
+
+<!-- ===================== 8. ANOTAÇÕES ===================== -->
+<section class="secao" id="anotacoes">
+  <h1>8. Anotações no gráfico</h1>
+  <p>Na faixa de ferramentas, grupo <b>Anotar</b>:</p>
+  <div class="lado">
+    <div class="texto">
+      <ul>
+        <li><b>Texto:</b> caixa de texto livre (ex.: "p &lt; 0,05", "Amostra A"). Escreva no campo <i>Texto</i> do cartão; tamanho, cor, negrito, itálico, alinhamento, giro, preenchimento e borda são opcionais.</li>
+        <li><b>Forma:</b> retângulo (inclusive de cantos arredondados), elipse/círculo, triângulo, losango, hexágono, estrela e polígono livre, para destacar regiões do gráfico.</li>
+        <li><b>Figura:</b> insere um <b>PNG ou JPEG</b> (logotipo, esquema, foto da amostra) sobre o gráfico, com posição, tamanho, opacidade e giro. PNG com fundo transparente funciona.</li>
+      </ul>
+      <p>Tudo isso é <b>móvel e editável com o mouse</b>: arraste para posicionar, estique as alças para o tamanho e clique para editar. A posição pode ser dada em fração da caixa (0 a 1) ou nas unidades dos eixos.</p>
+      <div class="dica"><b>Dica</b> A figura anexada fica só na sessão: ela não vai no salvamento automático nem no projeto. Anexe de novo ao reabrir.</div>
+    </div>
+    <figure><img src="img/25_anotar_texto.png" alt="Texto no gráfico" style="max-width:66mm"><figcaption>Um cartão de texto criado pelo botão "Texto".</figcaption></figure>
+  </div>
+</section>
+
+<!-- ===================== 9. EXPORTAR ===================== -->
+<section class="secao" id="exportar">
+  <h1>9. Exportar</h1>
+  <div class="lado">
+    <div class="texto">
+      <p>Os botões <b>Baixar PNG</b> e <b>Baixar PDF</b> ficam sempre à mão, acima do gráfico. No painel <b>7 · Tamanho e exportação</b> você define como o arquivo sai:</p>
+      <table>
+        <tr><th>Formato</th><th>Use para</th></tr>
+        <tr><td><b>PNG</b></td><td>Word, PowerPoint, relatórios, web. Fundo transparente opcional.</td></tr>
+        <tr><td><b>TIFF</b></td><td>Revistas científicas que pedem TIFF.</td></tr>
+        <tr><td><b>JPEG</b></td><td>Fotos; não tem transparência.</td></tr>
+        <tr><td><b>SVG</b></td><td>Vetorial editável (Inkscape, Illustrator); usa a Barlow direto.</td></tr>
+        <tr><td><b>PDF</b></td><td>Vetorial para impressão e artigos. Atenção: o PDF usa as fontes instaladas no Windows.</td></tr>
+        <tr><td><b>EMF</b></td><td>Colar no Word/PowerPoint como desenho editável (aparece se o pacote devEMF estiver instalado).</td></tr>
+      </table>
+    </div>
+    <figure><img src="img/29_exportacao_secao.png" alt="Exportação"><figcaption>Seção "Exportação": formatos, resolução, fundo e nome do arquivo.</figcaption></figure>
+  </div>
+  <ul>
+    <li><b>Tamanho (cm):</b> em <b>Moldura e tamanho do gráfico</b>, defina largura e altura da caixa do gráfico. O padrão é 10 × 7,5 cm; mexer em fontes não muda o gráfico, a página é que se ajusta ("Ajustar a página ao conteúdo").</li>
+    <li><b>Resolução (dpi):</b> 300 serve para relatório; <b>600</b> para publicação (padrão). Vale para PNG, TIFF e JPEG.</li>
+    <li><b>Nome do arquivo:</b> sem extensão. Em branco, usa o nome do CSV.</li>
+    <li><b>Marque mais de um formato</b> e aparece um botão de baixar para cada um.</li>
+  </ul>
+  <div class="atencao"><b>Atenção (PDF e a fonte Barlow)</b> O PDF usa as fontes <i>instaladas no Windows</i>. Para o PDF sair em Barlow, instale a fonte (abra os arquivos <code>.ttf</code> da pasta <code>fontes\Barlow</code> e clique em <i>Instalar</i>). PNG, TIFF e SVG já usam a Barlow direto, sem instalar.</div>
+  <div class="dica"><b>Regra prática</b> Word/PowerPoint → PNG (300–600 dpi). Revista → o formato que ela pede (TIFF 600 dpi ou PDF/SVG). Edição posterior → SVG ou PDF.</div>
+</section>
+
+<!-- ===================== 10. GUARDAR E RETOMAR ===================== -->
+<section class="secao" id="guardar">
+  <h1>10. Guardar e retomar o trabalho</h1>
+  <p>Você tem três formas de guardar, da mais automática à mais controlada:</p>
+
+  <div class="lado">
+    <div class="texto">
+      <h2>10.1 Salvamento automático</h2>
+      <p>Alguns segundos depois de qualquer mudança (e ao fechar a aba), o Cinabro guarda <b>o gráfico atual, com os dados</b>, em <code>%LOCALAPPDATA%\Cinabro\sessao</code>. Quando você abrir de novo, ou recarregar a página depois de uma queda, aparece <b>"Retomar de onde você parou?"</b>:</p>
+      <ul>
+        <li><b>Retomar</b> devolve os dados e toda a configuração.</li>
+        <li><b>Começar do zero</b> ignora.</li>
+      </ul>
+      <p>Guarda só o <b>último gráfico, da aba ativa</b>. Para guardar vários, use o projeto.</p>
+    </div>
+    <figure><img src="img/28_retomar.png" alt="Retomar" style="width:90mm"><figcaption>Pergunta ao reabrir o Cinabro.</figcaption></figure>
+  </div>
+
+  <h2>10.2 Salvar projeto / Abrir projeto (você escolhe onde guardar)</h2>
+  <p>No cabeçalho, <b>Salvar projeto</b> baixa um arquivo <code>.cinabro</code> com os <b>dados e a configuração</b>. <b>Abrir projeto</b> volta exatamente àquele ponto, em qualquer computador que tenha o Cinabro. É o jeito certo de arquivar um gráfico de um artigo ou de passar o trabalho a um colega.</p>
+
+  <h2>10.3 Salvar configuração (só o visual)</h2>
+  <p>Em <b>Modelo, configuração e código</b> (abaixo do gráfico), <b>Salvar configuração</b> guarda <b>só o visual</b> (fonte, cores, eixos…), sem os dados, para você <b>aplicar a outros dados</b> com <b>Carregar configuração</b>. É o jeito de manter o padrão do time.</p>
+  <figure><img src="img/30_modelo_codigo.png" alt="Modelo, configuração e código"><figcaption>Abaixo do gráfico: salvar/carregar configuração e o código equivalente em R.</figcaption></figure>
+
+  <h2>10.4 Abas</h2>
+  <figure class="sem-borda"><img src="img/27_abas.png" alt="Abas" style="width:100%;border:1px solid #E0D2BC"><figcaption>A barra de abas: um gráfico por aba.</figcaption></figure>
+  <p><b>+ Nova aba</b> abre outro gráfico (sem dados; blocos <i>congelados</i> são mantidos). <b>Duplicar</b> faz uma cópia com dados e configuração para você variar. <b>Renomear</b> dá um nome à aba. Você edita <b>um gráfico por vez</b>; trocar de aba guarda e devolve tudo.</p>
+
+  <h2>10.5 Código equivalente em R</h2>
+  <p>Ainda em <b>Modelo, configuração e código</b>, o Cinabro escreve em R as mesmas opções que você escolheu, com botões <b>Copiar</b> e <b>Baixar script (.R)</b>. Serve para registrar como o gráfico foi feito e para repetir a figura com outros dados em um script.</p>
+</section>
+
+<!-- ===================== 11. BOAS PRÁTICAS E FAQ ===================== -->
+<section class="secao" id="faq">
+  <h1>11. Boas práticas, perguntas frequentes e ajuda</h1>
+  <h2>Boas práticas</h2>
+  <ul>
+    <li><b>Padronize:</b> acerte fonte, moldura e cores uma vez, <b>congele</b> esses blocos, salve a <b>configuração</b> e compartilhe o arquivo com o time.</li>
+    <li><b>Tamanho final:</b> defina a largura e a altura em cm <b>como vão aparecer</b> no artigo (ex.: 8,5 cm = uma coluna). Evite redimensionar a imagem depois.</li>
+    <li><b>Letras legíveis:</b> mantenha números e títulos entre 8 e 12 pt no tamanho final.</li>
+    <li><b>Cores:</b> poucas séries usam bem a paleta Cinabro; com muitas séries, varie também forma e tipo de linha.</li>
+    <li><b>Unidades</b> sempre nos títulos dos eixos.</li>
+    <li><b>Guarde o projeto</b> (<code>.cinabro</code>) de cada figura de artigo: serve de registro e de ponto de partida para revisões.</li>
+    <li><b>Estatística:</b> descreva na legenda o que a barra de erro representa e qual teste foi usado.</li>
+  </ul>
+
+  <h2>Perguntas frequentes</h2>
+  <table>
+    <tr><th style="width:62mm">Pergunta</th><th>Resposta</th></tr>
+    <tr><td>Meus dados vão para a internet?</td><td>Não. O Cinabro roda no seu computador. A internet só é usada uma vez, para baixar os pacotes do R.</td></tr>
+    <tr><td>O programa travou / a tela ficou cinza.</td><td>Recarregue com <b>F5</b> e escolha <i>Retomar</i>. Se não abrir, abra de novo pelo atalho. O último gráfico fica guardado sozinho.</td></tr>
+    <tr><td>Meu CSV com vírgula decimal veio errado.</td><td>Normalmente é detectado sozinho. Confira a tabela de conferência no painel Dados; se as colunas numéricas aparecerem como texto, salve o CSV de novo pelo Excel ("CSV UTF-8").</td></tr>
+    <tr><td>Os pontos das pontas ficaram cortados.</td><td>Em <b>Eixos → Escala</b>, ponha <b>4</b> em "Folga nas pontas (%)".</td></tr>
+    <tr><td>Quero a mesma figura com outros dados.</td><td>Salve a <b>configuração</b>, carregue o novo CSV e use <b>Carregar configuração</b>; ou use as <b>abas</b> com blocos congelados.</td></tr>
+    <tr><td>A tabela de testes não aparece / vem vazia.</td><td>Use o tipo <b>Boxplot</b> (ou histograma/densidade) com as replicatas em colunas, e clique em <b>Calcular as tabelas</b>.</td></tr>
+    <tr><td>Posso editar o gráfico em outro programa? O PDF saiu com outra fonte.</td><td>Exporte em <b>SVG</b> ou <b>PDF</b> (vetoriais) e abra no Inkscape ou Illustrator. Para o PDF sair em Barlow, instale a fonte no Windows (capítulo 9) ou use SVG/PNG.</td></tr>
+  </table>
+
+  <h2>Pedindo ajuda</h2>
+  <p>Para o responsável resolver rápido, mande:</p>
+  <ol>
+    <li>O que você estava fazendo e o que esperava (um <b>print da tela</b> ajuda muito).</li>
+    <li>O texto da janela preta do <code>abrir_app.bat</code>, se ela mostrou algum erro.</li>
+    <li>O arquivo <code>app.log</code> (em <code>%LOCALAPPDATA%\Cinabro\log</code>): só tem horários, tempos e nomes de campos, nunca os seus dados.</li>
+    <li>Se possível, o projeto (<code>.cinabro</code>) ou o CSV que causou o problema.</li>
+  </ol>
+  <p class="rodape-final">Contato do responsável: <span class="linha-contato"></span></p>
+  <p class="rodape-final">Cinabro — laboratório de gráficos. Fonte Barlow (SIL Open Font License). Créditos das paletas e das fontes no arquivo <code>NOTICE.md</code>.</p>
+</section>
+
+</body>
+</html>

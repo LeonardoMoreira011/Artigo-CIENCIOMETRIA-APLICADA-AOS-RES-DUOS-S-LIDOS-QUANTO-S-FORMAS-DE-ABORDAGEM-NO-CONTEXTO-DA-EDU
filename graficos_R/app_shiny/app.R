@@ -26,7 +26,7 @@ EXEMPLOS <- c("Dois eixos + quebra de eixo (Y esquerdo e direito)" = "exemplo_do
               "Resposta em frequência (escala logarítmica)" = "resposta_frequencia.csv",
               "Resistência de materiais (barras)" = "resistencia_materiais.csv",
               "Composição da liga (pizza)" = "composicao_liga.csv",
-              "Replicatas (boxplot)" = "replicatas.csv", "Vários sinais" = "multissinal.csv")
+              "Replicatas (boxplot)" = "replicatas.csv", "Média e desvio padrão (barras de erro)" = "media_e_desvio.csv", "Vários sinais" = "multissinal.csv")
 EXEMPLOS <- EXEMPLOS[file.exists(file.path(raiz, "dados", EXEMPLOS))]
 
 cartao_dados <- function() div(class = "dados-cartao",

@@ -23,7 +23,7 @@ if ($LASTEXITCODE -ne 0) { throw "instalação dos pacotes falhou" }
 
 # 3) o Cinabro (só o que o programa precisa para rodar; sem testes, relatórios nem arquivos de desenvolvimento)
 $dest = Join-Path $stage "graficos_R"
-robocopy $proj $dest /E /XD saida ferramentas idiomas_arquivados instalador stage .git /XF "Rplots.pdf" "*.Rproj" "*.bat" "*.vbs" "*.ps1" "caminho_do_R.txt" ".pronto" "06_testes.R" "05_exemplos.R" "07_verificar_windows.R" "testes_app.R" "AUDITORIA.md" "RELATORIO_REVISAO.md" "abrir_app.R" "00_instalar_pacotes.R" "03_executar.R" /NFL /NDL /NJH /NJS /NP | Out-Null
+robocopy $proj $dest /E /XD saida ferramentas idiomas_arquivados instalador stage manual .git /XF "Rplots.pdf" "*.Rproj" "*.bat" "*.vbs" "*.ps1" "caminho_do_R.txt" ".pronto" "06_testes.R" "05_exemplos.R" "07_verificar_windows.R" "testes_app.R" "AUDITORIA.md" "RELATORIO_REVISAO.md" "abrir_app.R" "00_instalar_pacotes.R" "03_executar.R" /NFL /NDL /NJH /NJS /NP | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "robocopy do app falhou ($LASTEXITCODE)" }
 $global:LASTEXITCODE = 0
 
