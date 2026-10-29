@@ -386,6 +386,20 @@ testServer(servidor, {
     teste("servidor: o editor pede o PDF e o servidor devolve um arquivo PDF", file.exists(file.path(DASH_DIR, "Teste_do_PDF.pdf")) && identical(readBin(file.path(DASH_DIR, "Teste_do_PDF.pdf"), "raw", 4), charToRaw("%PDF")))
   }
 })
+# ---- modelos de planilha (modelos_csv/): todos abrem e os de ordenação e mapas montam o gráfico ---------------------------------------
+arqs_m <- list.files(file.path(raiz, "modelos_csv"), "^modelo_[0-9]+[b-z]?_.*\\.csv$", full.names = TRUE); arqs_m <- arqs_m[!grepl("ANTES", arqs_m)]
+teste("modelos_csv: 15 modelos de planilha (14 gráficos + o 'depois' da tabela cruzada)", length(arqs_m) == 15)
+lidos_m <- lapply(arqs_m, function(a) tryCatch(suppressMessages(ler_csv(a, utils::modifyList(CFG0$dados, list(relatorio = FALSE)))), error = function(e) NULL))
+teste("modelos_csv: todos abrem no Cinabro, com várias colunas e linhas", all(vapply(lidos_m, function(d) !is.null(d) && ncol(d) >= 2 && nrow(d) >= 4, NA)))
+tp_m <- c(modelo_11_pca.csv = "pca", modelo_12_cca.csv = "cca", modelo_13_mapa_mundo.csv = "mapa_mundo", modelo_14_mapa_brasil.csv = "mapa_brasil", modelo_09_mapa_calor.csv = "mapa_calor", modelo_15b_DEPOIS_pca.csv = "pca")
+for (n in names(tp_m)) {
+  d <- lidos_m[[which(basename(arqs_m) == n)]]; num <- names(d)[vapply(d, is.numeric, NA)]
+  v <- list(tipo_grafico = tp_m[[n]]); if (tp_m[[n]] %in% c("pca", "cca")) { v$coluna_grupo <- names(d)[2]; v$multi_variaveis <- setdiff(num, c("pH", "Temperatura (°C)", "Umidade (%)", "Salinidade (g/L)"))
+    if (identical(tp_m[[n]], "cca")) v$multi_ambientais <- c("pH", "Temperatura (°C)", "Salinidade (g/L)") }
+  r <- suppressWarnings(construir_grafico(d, montar_variaveis(v, CFG0, NULL), CFG0, preview = FALSE))
+  teste(paste0("modelos_csv: ", n, " monta o gráfico (", tp_m[[n]], ") sem erro"), is.null(r$erro) && !is.null(r$g))
+}
+
 # ---- Dashboard: números-chave, destaques, imagens, página HTML e PDF ---------------------------------------------------------------
 L <- function(f) suppressMessages(suppressWarnings(ler_csv(file.path(raiz, "dados", f), utils::modifyList(CFG0$dados, list(relatorio = FALSE)))))
 teste("dashboard: números em português (vírgula decimal, ponto de milhar, p < 0,001)", identical(.dash_num(1234.5, 1), "1.234,5") && identical(.dash_p(0.0004), "p < 0,001") && identical(.dash_p(0.0312), "p = 0,031") && identical(.dash_pct(0.704), "70,4%"))

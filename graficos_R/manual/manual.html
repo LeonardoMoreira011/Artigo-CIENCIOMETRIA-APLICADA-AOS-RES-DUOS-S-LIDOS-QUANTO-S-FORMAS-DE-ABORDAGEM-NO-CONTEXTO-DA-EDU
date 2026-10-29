@@ -67,6 +67,15 @@
   .rodape-final { margin-top: 8mm; font-size: 9pt; color: var(--sec); }
   #faq { font-size: 10pt; } #faq td, #faq th { padding: 1.1mm 2mm; font-size: 9.2pt; } #faq li { margin-bottom: .3mm; } #faq h2 { margin-top: 4mm; }
   .linha-contato { border-bottom: 1px solid var(--tinta); display: inline-block; width: 90mm; height: 5mm; }
+  /* apêndice: modelos de planilha */
+  table.csv { break-inside: avoid; width: 100%; border-collapse: collapse; font-size: 8.4pt; margin: 2mm 0; font-family: 'Barlow Semi Condensed', 'Barlow', sans-serif; }
+  table.csv th { background: #EADCC6; text-align: left; padding: 1mm 1.8mm; border: .2mm solid #CDBBA0; white-space: nowrap; }
+  table.csv td { padding: .9mm 1.8mm; border: .2mm solid #E0D2BC; background: #fff; white-space: nowrap; }
+  table.csv tr.mais td { background: #FAF4EA; color: #6B6358; font-style: italic; white-space: normal; }
+  table.csv.ruim td { background: #FBEAEA; border-color: #E8B8BA; } table.csv.bom td { background: #EAF4EF; border-color: #B8D8C8; }
+  .modelo { break-inside: avoid; margin: 5mm 0 7mm; } .modelo h3 { font-size: 12pt; color: var(--vermelho); margin: 0 0 1mm; } .modelo .quando { margin: 0 0 1.5mm; font-size: 9.6pt; }
+  .modelo .lado > figure { width: 74mm; } ol.passos { margin: 1.5mm 0 0; padding-left: 5mm; font-size: 9.4pt; } ol.passos li { margin-bottom: .8mm; }
+  .cores-colunas td:first-child { white-space: nowrap; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -95,6 +104,7 @@
     <li>Exportar <span>PNG, PDF, SVG, TIFF… o tamanho certo e o Dashboard (todos os gráficos numa folha)</span></li>
     <li>Guardar e retomar o trabalho <span>salvamento automático, projeto, abas, código</span></li>
     <li>Boas práticas, perguntas frequentes e pedido de ajuda</li>
+    <li>Apêndice: como montar a planilha (CSV) <span>regras, antes e depois, e 14 modelos prontos com dados de exemplo</span></li>
   </ol>
   <div class="pronto"><b>Dica</b> Quer só começar? Leia os capítulos 2 (instalar) e 4 (primeiro gráfico): leva 10 minutos. O resto é para consultar quando precisar.</div>
 </section>
@@ -241,6 +251,7 @@ Listening on http://127.0.0.1:8421</div>
     </div>
     <figure><img src="img/16_excel_ptbr.png" alt="CSV do Excel brasileiro"><figcaption>CSV do Excel brasileiro (vírgula decimal, ponto e vírgula): lido sem configurar nada.</figcaption></figure>
   </div>
+  <div class="dica"><b>Modelos prontos</b> Não sabe como organizar a sua planilha? O <b>Apêndice</b>, no fim do manual, mostra 14 modelos (com dados de exemplo, a planilha, o que marcar no programa e o gráfico que sai) e a pasta <code>modelos_csv</code> traz os arquivos para abrir no Excel e trocar pelos seus números.</div>
   <div class="dica"><b>Arquivos grandes</b> Com dezenas de milhares de linhas, a <b>prévia</b> usa uma amostra que preserva picos e vales (aparece um aviso "Prévia simplificada"); o arquivo que você <b>baixa usa todas as linhas</b>.</div>
 </section>
 
@@ -538,6 +549,215 @@ Listening on http://127.0.0.1:8421</div>
   </ol>
   <p class="rodape-final">Contato do responsável: <span class="linha-contato"></span></p>
   <p class="rodape-final">Cinabro — laboratório de gráficos. Fonte Barlow (SIL Open Font License). Créditos das paletas e das fontes no arquivo <code>NOTICE.md</code>.</p>
+</section>
+
+<!-- ===================== APÊNDICE: MODELOS DE PLANILHA ===================== -->
+<section class="secao" id="modelos">
+  <h1>Apêndice. Como montar a planilha (CSV)</h1>
+  <p>A forma da planilha decide o que o Cinabro consegue desenhar. Este apêndice mostra, para cada tipo de gráfico, <b>como deixar o CSV</b>, <b>o que marcar no programa</b> e <b>o gráfico que sai</b>. Os números são <b>inventados</b>: só servem para mostrar o formato. A pasta <code>modelos_csv</code> (junto do programa) tem todos os arquivos: abra no Excel, troque pelos seus dados e salve de novo como CSV.</p>
+
+  <h2>A.1 Cinco regras que valem para todos os gráficos</h2>
+  <ol>
+    <li><b>Uma única linha de títulos</b>, na primeira linha. Nada de título da planilha em cima, nem cabeçalho em duas ou três linhas, nem células mescladas.</li>
+    <li><b>Uma linha = uma observação</b> (uma amostra, um instante, um ponto de coleta). <b>Uma coluna = uma coisa medida</b> (ou a identificação: nome, grupo, data).</li>
+    <li><b>Colunas numéricas só com números.</b> Sem unidade dentro da célula (<code>12 mg</code>), sem sinais como <code>&lt;0,5</code> ou <code>n.d.</code> (deixe a célula <b>vazia</b>). A unidade vai no <b>título</b> da coluna: <code>Massa (g)</code>. Vírgula ou ponto decimal: o Cinabro entende os dois.</li>
+    <li><b>Nada de totais ou médias no meio dos dados</b> (linha de "Média" no fim). Se precisar, o Cinabro calcula (capítulo 7).</li>
+    <li><b>Salvar como CSV:</b> no Excel, <i>Salvar como → CSV (delimitado por vírgulas)</i>. Acentos, ponto e vírgula e vírgula decimal são detectados sozinhos. Uma planilha por gráfico (use as <b>abas do Cinabro</b> para vários).</li>
+  </ol>
+  <div class="dica"><b>Nomes que aparecem no gráfico</b> Os títulos das colunas viram os <b>nomes das séries na legenda</b> e dos eixos; os nomes escritos nas células (de grupos, amostras, países) viram os rótulos. Escreva do jeito que quer ver: <i>Tratamento A</i>, não <i>trat_A_v2</i>. (Dá para renomear depois, em <b>Cores, linhas e símbolos</b>, mas é mais rápido acertar na planilha.)</div>
+
+  <h2>A.2 Cada coluna manda em quê (cores, divisões, grupos)</h2>
+  <p>As <b>cores, símbolos e divisões</b> do gráfico vêm das colunas que você aponta no bloco <b>Dados</b>. Esta é a regra de ouro:</p>
+  <table class="cores-colunas">
+    <tr><th style="width:44mm">Na planilha</th><th>Vira, no gráfico</th><th style="width:52mm">Onde marcar</th></tr>
+    <tr><td>Coluna do X</td><td>O eixo X (número ou data) ou os <b>nomes</b> das categorias, amostras, linhas do mapa de calor, países.</td><td>Dados → Coluna do eixo X (ou dos nomes)</td></tr>
+    <tr><td>Cada coluna de valores</td><td><b>Uma série</b>: uma cor, um símbolo, um tipo de linha e um nome na legenda (tudo editável).</td><td>Dados → Colunas do eixo Y; cores em Cores, linhas e símbolos</td></tr>
+    <tr><td>Coluna de grupo (texto)</td><td><b>Divisão em grupos</b>: uma cor e um símbolo por grupo (PCA, CA, CCA), uma caixa por grupo (boxplot), uma distribuição por grupo (histograma).</td><td>Dados → Coluna dos grupos</td></tr>
+    <tr><td>Colunas de desvio padrão</td><td><b>Barras de erro</b> sobre as séries, na mesma ordem.</td><td>Dados → Colunas de erro</td></tr>
+    <tr><td>Colunas de variáveis e de ambientais</td><td>Pontos, setas e elipses da <b>ordenação</b> (PCA, CA, CCA).</td><td>Dados → Variáveis e Variáveis ambientais</td></tr>
+    <tr><td>Coluna com grandezas diferentes</td><td>Uma série no <b>eixo da direita</b>.</td><td>Eixos → Eixo Y da direita</td></tr>
+    <tr><td>Coluna de valores (mapas e mapa de calor)</td><td>A <b>cor de preenchimento</b> (gradiente de baixo a alto).</td><td>Dados → Colunas do eixo Y; Mais opções do mapa</td></tr>
+  </table>
+  <div class="dica"><b>Quer dividir por tempo, por tratamento, por local?</b> Faça <b>uma coluna para cada divisão</b> (<i>Tempo</i>, <i>Tratamento</i>, <i>Local</i>) e use <b>uma aba do Cinabro por divisão</b>, com os mesmos dados e a <i>Coluna dos grupos</i> diferente em cada uma (aba <i>Duplicar</i>). Assim o mesmo CSV dá vários gráficos.</div>
+
+  <h2>A.3 Antes e depois: a tabela cruzada do Excel</h2>
+  <p>É comum receber (ou montar) a tabela <b>de lado</b>: as variáveis nas linhas e os tratamentos e tempos espalhados em colunas, com cabeçalho em duas linhas. Boa para ler, mas <b>o Cinabro não entende</b>:</p>
+  <table class="csv ruim"><tr><td></td><td>Dia 1</td><td></td><td></td><td>Dia 7</td><td></td><td></td></tr><tr><td></td><td>Controle</td><td>Trat. A</td><td>Trat. B</td><td>Controle</td><td>Trat. A</td><td>Trat. B</td></tr><tr><td>Clorofila</td><td>1</td><td>1,12</td><td>0,95</td><td>1</td><td>1,31</td><td>0,82</td></tr><tr><td>Carotenoides</td><td>1</td><td>0,97</td><td>1,08</td><td>1</td><td>1,15</td><td>1,22</td></tr><tr><td>Prolina</td><td>1</td><td>1,25</td><td>1,4</td><td>1</td><td>1,9</td><td>2,3</td></tr></table>
+  <p>Para a PCA (e para quase tudo), cada <b>combinação de tratamento e tempo</b> precisa virar <b>uma linha</b>, e as variáveis passam a ser <b>colunas</b>. Com duas colunas extras (<i>Dia</i> e <i>Tratamento</i>) você pode colorir os pontos por tempo <b>ou</b> por tratamento:</p>
+  <table class="csv bom"><tr><th>Amostra</th><th>Dia</th><th>Tratamento</th><th>Clorofila</th><th>Carotenoides</th><th>Prolina</th></tr><tr><td>Controle Dia 1</td><td>Dia 1</td><td>Controle</td><td>1</td><td>1</td><td>1</td></tr><tr><td>Trat. A Dia 1</td><td>Dia 1</td><td>Trat. A</td><td>1,12</td><td>0,97</td><td>1,25</td></tr><tr><td>Trat. B Dia 1</td><td>Dia 1</td><td>Trat. B</td><td>0,95</td><td>1,08</td><td>1,4</td></tr><tr><td>Controle Dia 7</td><td>Dia 7</td><td>Controle</td><td>1</td><td>1</td><td>1</td></tr><tr><td>Trat. A Dia 7</td><td>Dia 7</td><td>Trat. A</td><td>1,31</td><td>1,15</td><td>1,9</td></tr><tr><td>Trat. B Dia 7</td><td>Dia 7</td><td>Trat. B</td><td>0,82</td><td>1,22</td><td>2,3</td></tr></table>
+  <ul>
+    <li><b>Girar a tabela no Excel:</b> selecione os dados, <b>Copiar</b>; clique numa célula vazia e use <i>Colar especial → Transpor</i>. As linhas viram colunas.</li>
+    <li><b>Montar o nome da amostra:</b> numa coluna nova, junte os dois títulos com uma fórmula, por exemplo <code>=B2&amp;" "&amp;C2</code> (Tratamento + Dia), e depois copie e cole <i>só os valores</i>.</li>
+    <li><b>Sem réplicas</b> (um valor por condição, como acima), a PCA descreve como as condições se separam, mas não tem teste estatístico. Com <b>réplicas</b>, ponha <b>uma linha por réplica</b>: aparecem elipses por grupo e o teste de permutação.</li>
+    <li>Os dois arquivos estão na pasta <code>modelos_csv</code>: <code>modelo_15a_ANTES_tabela_cruzada.csv</code> e <code>modelo_15b_DEPOIS_pca.csv</code>.</li>
+  </ul>
+
+  <h2>Os modelos, um por tipo de gráfico</h2>
+  <p>Em cada modelo: a planilha (as primeiras linhas), o que marcar no bloco <b>Dados</b> e o gráfico que sai. Os arquivos estão em <code>modelos_csv</code>.</p>
+<!-- MODELOS-INICIO -->
+<div class="modelo">
+  <h3>A.4 Séries ao longo de X (linhas, pontos, áreas)</h3>
+  <p class="quando">Medidas em função do tempo, da concentração, da distância... Cada coluna depois do X vira <b>uma série</b> (uma cor, um símbolo). Arquivo: <code>modelos_csv/modelo_01_series_xy.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Tempo (min)</th><th>Amostra A</th><th>Amostra B</th><th>Amostra C</th></tr><tr><td>0</td><td>21,2</td><td>18,8</td><td>16,1</td></tr><tr><td>10</td><td>38,7</td><td>29,4</td><td>25,8</td></tr><tr><td>20</td><td>50,2</td><td>38,1</td><td>29,3</td></tr><tr><td>30</td><td>58,2</td><td>43,5</td><td>34,4</td></tr><tr><td>40</td><td>65,3</td><td>50,5</td><td>34,4</td></tr><tr><td>50</td><td>69,1</td><td>54,1</td><td>35,8</td></tr><tr class="mais"><td colspan="4">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Linha com pontos (ou Só linha, Só pontos, Área).</li><li><b>Coluna do eixo X:</b> Tempo (min).</li><li><b>Colunas do eixo Y:</b> deixe vazio (usa todas) ou escolha só as que quer.</li></ol>
+      <div class="dica">Para ajustar uma curva (linear, exponencial...), use <i>Só pontos</i> e o botão <i>Ajuste de curva</i> da faixa de ferramentas.</div>
+    </div>
+    <figure><img src="img/m01_series_xy.png" alt="Séries ao longo de X (linhas, pontos, áreas)"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.5 Duas grandezas no mesmo gráfico (dois eixos Y)</h3>
+  <p class="quando">Séries com unidades diferentes (°C e %, mg e mL). A planilha é igual à anterior: uma coluna por série. Arquivo: <code>modelos_csv/modelo_02_dois_eixos.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Hora do dia (h)</th><th>Temperatura (°C)</th><th>Umidade (%)</th></tr><tr><td>0</td><td>16,9</td><td>73,6</td></tr><tr><td>2</td><td>16,3</td><td>76,4</td></tr><tr><td>4</td><td>16,7</td><td>74,5</td></tr><tr><td>6</td><td>19,1</td><td>68,5</td></tr><tr><td>8</td><td>21,5</td><td>61,4</td></tr><tr><td>10</td><td>25</td><td>55,4</td></tr><tr class="mais"><td colspan="3">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Linha com pontos.</li><li><b>Coluna do eixo X:</b> Hora do dia (h).</li><li>No painel <b>Eixos</b>, abra <b>Eixo Y da direita</b>, ligue-o e escolha <b>Umidade (%)</b> em <i>Séries no eixo direito</i>.</li></ol>
+    </div>
+    <figure><img src="img/m02_dois_eixos.png" alt="Duas grandezas no mesmo gráfico (dois eixos Y)"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.6 Série temporal (datas e horas)</h3>
+  <p class="quando">Registros de sensores, coletas, dias. A coluna de datas vira um <b>eixo de tempo</b> sozinha. Arquivo: <code>modelos_csv/modelo_03_serie_temporal.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Data e hora</th><th>Nível (m)</th><th>Vazão (L/s)</th></tr><tr><td>01/03/2024 00:00</td><td>2,43</td><td>179</td></tr><tr><td>01/03/2024 06:00</td><td>2,52</td><td>186</td></tr><tr><td>01/03/2024 12:00</td><td>2,67</td><td>197</td></tr><tr><td>01/03/2024 18:00</td><td>2,63</td><td>196</td></tr><tr><td>02/03/2024 00:00</td><td>2,69</td><td>204</td></tr><tr><td>02/03/2024 06:00</td><td>2,76</td><td>208</td></tr><tr class="mais"><td colspan="3">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Coluna do eixo X:</b> Data e hora (escreva como <code>01/03/2024 06:00</code>: dia/mês/ano, hora opcional).</li><li><b>Colunas do eixo Y:</b> as séries que quer ver.</li></ol>
+      <div class="dica">Os intervalos entre as datas não precisam ser iguais.</div>
+    </div>
+    <figure><img src="img/m03_serie_temporal.png" alt="Série temporal (datas e horas)"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.7 Barras agrupadas com barras de erro</h3>
+  <p class="quando">Comparar categorias (tratamentos, materiais) em vários momentos. A <b>média</b> de cada série fica numa coluna e o <b>desvio padrão</b> em outra, na mesma ordem. Arquivo: <code>modelos_csv/modelo_04_barras_erro.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Tratamento</th><th>Dia 1</th><th>Dia 7</th><th>Dia 14</th><th>DP Dia 1</th><th>DP Dia 7</th><th>DP Dia 14</th></tr><tr><td>Controle</td><td>10</td><td>12</td><td>13</td><td>0,5</td><td>1,2</td><td>1,5</td></tr><tr><td>Tratamento A</td><td>10,5</td><td>15</td><td>21</td><td>0,6</td><td>0,6</td><td>1,7</td></tr><tr><td>Tratamento B</td><td>9,8</td><td>18</td><td>26</td><td>0,5</td><td>0,7</td><td>1,1</td></tr><tr><td>Tratamento C</td><td>10,2</td><td>14</td><td>17</td><td>0,5</td><td>0,6</td><td>1,5</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Barras.</li><li><b>Coluna do eixo X (ou dos nomes):</b> Tratamento.</li><li><b>Colunas do eixo Y:</b> Dia 1, Dia 7, Dia 14.</li><li><b>Colunas de erro:</b> DP Dia 1, DP Dia 7, DP Dia 14 (a 1ª vale para a 1ª série, a 2ª para a 2ª...).</li></ol>
+    </div>
+    <figure><img src="img/m04_barras_erro.png" alt="Barras agrupadas com barras de erro"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.8 Pizza ou rosca (composição de um todo)</h3>
+  <p class="quando">Poucas categorias (até uns 7) que somam um todo. Os valores viram porcentagens. Arquivo: <code>modelos_csv/modelo_05_pizza.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Componente</th><th>Massa (kg)</th></tr><tr><td>Plástico</td><td>120</td></tr><tr><td>Papel</td><td>95</td></tr><tr><td>Vidro</td><td>40</td></tr><tr><td>Metal</td><td>28</td></tr><tr><td>Orgânico</td><td>210</td></tr><tr><td>Outros</td><td>35</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Pizza / rosca.</li><li><b>Coluna do eixo X (ou dos nomes):</b> Componente.</li><li><b>Colunas do eixo Y:</b> Massa (kg).</li></ol>
+    </div>
+    <figure><img src="img/m05_pizza.png" alt="Pizza ou rosca (composição de um todo)"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.9 Replicatas por grupo (uma coluna por grupo)</h3>
+  <p class="quando">Várias medidas de cada tratamento: <b>cada coluna é um grupo</b> e cada linha, uma medida. É o jeito mais rápido de digitar. Arquivo: <code>modelos_csv/modelo_06_boxplot_colunas.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Controle</th><th>Dose 1</th><th>Dose 2</th><th>Dose 3</th></tr><tr><td>50,1</td><td>50</td><td>67,3</td><td>68,2</td></tr><tr><td>56,8</td><td>51,8</td><td>56,3</td><td>65,7</td></tr><tr><td>46,6</td><td>62</td><td>61,8</td><td>71,8</td></tr><tr><td>45,2</td><td>58,5</td><td>74</td><td>80,4</td></tr><tr><td>52,1</td><td>57,9</td><td>68,2</td><td>70</td></tr><tr><td>51,3</td><td>61,9</td><td>58,2</td><td>70</td></tr><tr class="mais"><td colspan="4">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Boxplot (caixas).</li><li><b>Coluna do eixo X:</b> deixe vazio. <b>Colunas do eixo Y:</b> deixe vazio (usa todas) ou escolha os grupos.</li><li><b>Coluna dos grupos:</b> vazia.</li></ol>
+      <div class="dica">Grupos com número diferente de medidas? Deixe as células vazias: tudo bem.</div>
+    </div>
+    <figure><img src="img/m06_boxplot_colunas.png" alt="Replicatas por grupo (uma coluna por grupo)"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.10 Formato longo: uma coluna de grupo e uma de valor</h3>
+  <p class="quando">Quando há muitos grupos ou mais de um fator (tratamento, local, tempo...). Cada linha é <b>uma medida</b>, com o grupo escrito ao lado. Serve para boxplot, histograma e densidade. Arquivo: <code>modelos_csv/modelo_07_formato_longo.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Tratamento</th><th>Local</th><th>Resposta (u.a.)</th></tr><tr><td>Controle</td><td>Campo</td><td>47,5</td></tr><tr><td>Controle</td><td>Estufa</td><td>50,5</td></tr><tr><td>Controle</td><td>Campo</td><td>43,1</td></tr><tr><td>Controle</td><td>Estufa</td><td>54,9</td></tr><tr><td>Controle</td><td>Campo</td><td>58,8</td></tr><tr><td>Controle</td><td>Estufa</td><td>48,5</td></tr><tr class="mais"><td colspan="3">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Boxplot (ou Histograma, Curva de densidade).</li><li><b>Colunas do eixo Y:</b> Resposta (u.a.).</li><li><b>Coluna dos grupos:</b> Tratamento (ou Local, para outra divisão: troque e compare).</li></ol>
+      <div class="dica">Cada coluna de texto (Tratamento, Local) pode ser a divisão do gráfico; para ver as duas, use duas abas.</div>
+    </div>
+    <figure><img src="img/m07_formato_longo.png" alt="Formato longo: uma coluna de grupo e uma de valor"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.11 Distribuição dos valores (histograma, densidade)</h3>
+  <p class="quando">Muitas medidas de uma mesma grandeza, com ou sem divisão em grupos (lotes, locais). Arquivo: <code>modelos_csv/modelo_08_histograma.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Diâmetro (mm)</th><th>Lote</th></tr><tr><td>12,8</td><td>Lote 1</td></tr><tr><td>11,1</td><td>Lote 1</td></tr><tr><td>10,3</td><td>Lote 1</td></tr><tr><td>12,9</td><td>Lote 1</td></tr><tr><td>13,7</td><td>Lote 1</td></tr><tr><td>14,1</td><td>Lote 1</td></tr><tr class="mais"><td colspan="2">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Histograma (ou Curva de densidade, Distribuição acumulada).</li><li><b>Colunas do eixo Y:</b> Diâmetro (mm).</li><li><b>Coluna dos grupos:</b> Lote (vazio = um grupo só).</li></ol>
+    </div>
+    <figure><img src="img/m08_histograma.png" alt="Distribuição dos valores (histograma, densidade)"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.12 Mapa de calor: matriz de linhas × colunas</h3>
+  <p class="quando">Uma tabela de valores (genes × doses, amostras × variáveis, meses × locais) pintada por um gradiente de cor. Arquivo: <code>modelos_csv/modelo_09_mapa_calor.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Gene</th><th>Controle</th><th>Dose 1</th><th>Dose 2</th><th>Dose 3</th><th>Dose 4</th></tr><tr><td>Gene 01</td><td>4</td><td>5,9</td><td>3,2</td><td>13,2</td><td>12,8</td></tr><tr><td>Gene 02</td><td>8,5</td><td>4,9</td><td>6,8</td><td>5,5</td><td>2,9</td></tr><tr><td>Gene 03</td><td>4,5</td><td>7,2</td><td>9,6</td><td>5,3</td><td>12,4</td></tr><tr><td>Gene 04</td><td>5</td><td>2,3</td><td>3,9</td><td>9</td><td>5,8</td></tr><tr><td>Gene 05</td><td>5</td><td>4,7</td><td>2,3</td><td>8,4</td><td>3,6</td></tr><tr><td>Gene 06</td><td>6,3</td><td>6,7</td><td>8,2</td><td>2,5</td><td>11,3</td></tr><tr class="mais"><td colspan="6">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Mapa de calor.</li><li><b>Coluna do eixo X (ou dos nomes):</b> Gene (os nomes das linhas).</li><li><b>Colunas do eixo Y:</b> deixe vazio (todas as outras viram as colunas do mapa).</li></ol>
+      <div class="dica">Em <i>Mais opções</i> do mapa de calor: normalizar por linha, agrupar por semelhança, escrever o valor em cada célula.</div>
+    </div>
+    <figure><img src="img/m09_mapa_calor.png" alt="Mapa de calor: matriz de linhas × colunas"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.13 Mapa de calor: formato longo (três colunas)</h3>
+  <p class="quando">Quando os dados já estão assim (um registro por linha: onde, quando, quanto). O Cinabro monta a matriz sozinho. Arquivo: <code>modelos_csv/modelo_10_mapa_calor_longo.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Local</th><th>Mes</th><th>Chuva (mm)</th></tr><tr><td>Ponto 1</td><td>Jan</td><td>60</td></tr><tr><td>Ponto 2</td><td>Jan</td><td>42</td></tr><tr><td>Ponto 3</td><td>Jan</td><td>211</td></tr><tr><td>Ponto 4</td><td>Jan</td><td>36</td></tr><tr><td>Ponto 5</td><td>Jan</td><td>80</td></tr><tr><td>Ponto 1</td><td>Abr</td><td>114</td></tr><tr class="mais"><td colspan="3">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Mapa de calor; <b>Formato da tabela:</b> Longo (linha, coluna, valor).</li><li><b>Coluna do eixo X:</b> Local. <b>Coluna dos grupos:</b> Mes (vira as colunas do mapa).</li><li><b>Colunas do eixo Y:</b> Chuva (mm) (o valor).</li></ol>
+    </div>
+    <figure><img src="img/m10_mapa_calor_longo.png" alt="Mapa de calor: formato longo (três colunas)"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.14 PCA: amostras nas linhas, variáveis nas colunas</h3>
+  <p class="quando">Comparar o perfil de várias amostras em muitas variáveis. <b>Cada linha é uma amostra</b>; as colunas são o nome, o grupo (opcional), as variáveis e, se tiver, as variáveis ambientais, <b>tudo na mesma planilha</b>. Arquivo: <code>modelos_csv/modelo_11_pca.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Amostra</th><th>Grupo</th><th>Clorofila a</th><th>Carotenoides</th><th>Proteínas</th><th>Açúcares</th><th>Fenóis</th><th>Prolina</th><th>…</th></tr><tr><td>C1</td><td>Controle</td><td>2,11</td><td>0,88</td><td>14,12</td><td>5,18</td><td>3,59</td><td>0,38</td><td>…</td></tr><tr><td>C2</td><td>Controle</td><td>2,46</td><td>0,71</td><td>12,27</td><td>6,89</td><td>2,63</td><td>0,65</td><td>…</td></tr><tr><td>C3</td><td>Controle</td><td>2,31</td><td>0,87</td><td>12,71</td><td>6,89</td><td>1,85</td><td>0,46</td><td>…</td></tr><tr><td>C4</td><td>Controle</td><td>2,49</td><td>1,18</td><td>11,5</td><td>4,53</td><td>3,52</td><td>0,44</td><td>…</td></tr><tr><td>C5</td><td>Controle</td><td>2,41</td><td>1,01</td><td>14,98</td><td>5,2</td><td>3,63</td><td>0,49</td><td>…</td></tr><tr><td>C6</td><td>Controle</td><td>2,93</td><td>0,93</td><td>11,25</td><td>5,47</td><td>3,36</td><td>0,46</td><td>…</td></tr><tr class="mais"><td colspan="9">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> PCA.</li><li><b>Coluna do eixo X (ou dos nomes):</b> Amostra. <b>Coluna dos grupos:</b> Grupo (cor e elipse de cada grupo).</li><li><b>Variáveis:</b> as seis medidas (Clorofila a... Prolina). <b>Variáveis ambientais:</b> Temperatura e Umidade (aparecem como setas vermelhas; podem ficar vazias).</li><li><b>Transformação:</b> Padronizar (recomendado quando as variáveis têm unidades ou escalas diferentes).</li></ol>
+      <div class="dica">Pelo menos 4 amostras. Com poucas amostras por grupo (3 ou menos) a elipse não é desenhada.</div>
+    </div>
+    <figure><img src="img/m11_pca.png" alt="PCA: amostras nas linhas, variáveis nas colunas"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.15 CCA e CA: contagens, abundâncias e variáveis ambientais</h3>
+  <p class="quando">Espécies (ou classes) por ponto de coleta, mais as variáveis do ambiente <b>na mesma planilha</b>. No bloco Dados você diz o que é matriz e o que é ambiental. Arquivo: <code>modelos_csv/modelo_12_cca.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Ponto</th><th>Estação</th><th>Espécie A</th><th>Espécie B</th><th>Espécie C</th><th>Espécie D</th><th>Espécie E</th><th>Espécie F</th><th>…</th></tr><tr><td>P1</td><td>Seca</td><td>11</td><td>4</td><td>15</td><td>4</td><td>7</td><td>2</td><td>…</td></tr><tr><td>P2</td><td>Seca</td><td>7</td><td>7</td><td>11</td><td>2</td><td>12</td><td>1</td><td>…</td></tr><tr><td>P3</td><td>Seca</td><td>11</td><td>6</td><td>13</td><td>2</td><td>9</td><td>4</td><td>…</td></tr><tr><td>P4</td><td>Seca</td><td>13</td><td>2</td><td>17</td><td>3</td><td>8</td><td>3</td><td>…</td></tr><tr><td>P5</td><td>Seca</td><td>12</td><td>5</td><td>12</td><td>1</td><td>4</td><td>3</td><td>…</td></tr><tr><td>P6</td><td>Seca</td><td>5</td><td>9</td><td>14</td><td>0</td><td>5</td><td>0</td><td>…</td></tr><tr class="mais"><td colspan="9">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> CCA (ou CA, sem as ambientais).</li><li><b>Coluna do eixo X:</b> Ponto. <b>Coluna dos grupos:</b> Estação.</li><li><b>Variáveis:</b> as oito espécies. <b>Variáveis ambientais:</b> pH, Temperatura, Salinidade (o CCA exige as ambientais).</li></ol>
+      <div class="dica">CA e CCA exigem valores <b>maiores ou iguais a zero</b> (contagens, abundâncias). Valores negativos? Use o PCA.</div>
+    </div>
+    <figure><img src="img/m12_cca.png" alt="CCA e CA: contagens, abundâncias e variáveis ambientais"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.16 Mapa-múndi por país ou por região comercial</h3>
+  <p class="quando">Um valor por país (vendas, casos, produção). Os países <b>sem linha</b> na planilha ficam cinza. Arquivo: <code>modelos_csv/modelo_13_mapa_mundo.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Country</th><th>Vendas (mil)</th></tr><tr><td>United States of America</td><td>840</td></tr><tr><td>Canada</td><td>536</td></tr><tr><td>Brazil</td><td>791</td></tr><tr><td>Argentina</td><td>123</td></tr><tr><td>Germany</td><td>688</td></tr><tr><td>France</td><td>189</td></tr><tr class="mais"><td colspan="2">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Mapa-múndi.</li><li><b>Coluna do eixo X (ou dos nomes):</b> Country (o país <b>em inglês</b>; também vale <i>USA</i>, <i>UK</i> e o código de 3 letras).</li><li><b>Colunas do eixo Y:</b> Vendas (mil). Em <i>Pintar por</i> escolha País ou Região (Asia Pacific, LATAM, Brazil, North America, Western Europe, Other).</li></ol>
+      <div class="dica">Países repetidos são somados (ou a média, ou o máximo: <i>Valores repetidos</i>).</div>
+    </div>
+    <figure><img src="img/m13_mapa_mundo.png" alt="Mapa-múndi por país ou por região comercial"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.17 Mapa do Brasil por estado ou por região</h3>
+  <p class="quando">Um valor por estado. Vale a <b>sigla</b> (SP) ou o <b>nome</b> (São Paulo; o acento não importa). Arquivo: <code>modelos_csv/modelo_14_mapa_brasil.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>UF</th><th>Resíduos (t)</th></tr><tr><td>AC</td><td>1912</td></tr><tr><td>AL</td><td>1169</td></tr><tr><td>AP</td><td>4728</td></tr><tr><td>AM</td><td>1871</td></tr><tr><td>BA</td><td>2758</td></tr><tr><td>CE</td><td>2125</td></tr><tr class="mais"><td colspan="2">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Mapa do Brasil.</li><li><b>Coluna do eixo X:</b> UF. <b>Colunas do eixo Y:</b> Resíduos (t).</li><li><b>Pintar por:</b> Estado, ou Região (IBGE) para somar por região.</li></ol>
+    </div>
+    <figure><img src="img/m14_mapa_brasil.png" alt="Mapa do Brasil por estado ou por região"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<!-- MODELOS-FIM -->
 </section>
 
 </body>
