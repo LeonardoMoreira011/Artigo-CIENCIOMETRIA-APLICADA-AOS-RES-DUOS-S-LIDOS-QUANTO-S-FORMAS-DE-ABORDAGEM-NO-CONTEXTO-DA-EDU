@@ -403,6 +403,9 @@ for (n in names(tp_m)) {
 # ---- Dashboard: números-chave, destaques, imagens, página HTML e PDF ---------------------------------------------------------------
 L <- function(f) suppressMessages(suppressWarnings(ler_csv(file.path(raiz, "dados", f), utils::modifyList(CFG0$dados, list(relatorio = FALSE)))))
 teste("dashboard: números em português (vírgula decimal, ponto de milhar, p < 0,001)", identical(.dash_num(1234.5, 1), "1.234,5") && identical(.dash_p(0.0004), "p < 0,001") && identical(.dash_p(0.0312), "p = 0,031") && identical(.dash_pct(0.704), "70,4%"))
+teste("dashboard: nome do PDF sem acento, espaço nem símbolo, e nunca vazio", identical(nome_de_arquivo("Relatório de Gestão: 2ª etapa/çñ"), "Relatorio_de_Gestao_2_etapa_cn") && identical(nome_de_arquivo("///"), "dashboard") && identical(nome_de_arquivo(NA), "dashboard") && nchar(nome_de_arquivo(strrep("a", 300))) == 80)
+gr_d <- data.frame(x = 1:40000, y = rnorm(40000), z = rnorm(40000)); cf_d <- CFG0; cf_d$grafico$tipo <- "pontos"; cf_l <- cf_d; cf_l$grafico$tipo <- "linha"
+teste("dashboard: milhares de pontos vão como imagem leve (SVG só até 30 mil pontos em dispersão e 150 mil em linhas)", .dash_pesado(gr_d, cf_d) && !.dash_pesado(gr_d, cf_l) && !.dash_pesado(data.frame(x = 1:100, y = 1:100), cf_d))
 teste("dashboard: textos dos dados são escapados (nada de HTML vindo da planilha)", identical(.dash_b("<i>x</i> & y"), "<b>&lt;i&gt;x&lt;/i&gt; &amp; y</b>"))
 svg1 <- "<svg viewBox='0 0 1 1'><defs><clipPath id='cpAB='><rect/></clipPath></defs><g clip-path='url(#cpAB=)'/></svg>"
 a1 <- .dash_svg_limpo(svg1, 1); a2 <- .dash_svg_limpo(svg1, 2)

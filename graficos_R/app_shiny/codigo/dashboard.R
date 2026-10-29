@@ -140,6 +140,11 @@ dir.create(DASH_DIR, showWarnings = FALSE, recursive = TRUE)
   }
   txt
 }
+# TRUE se o gráfico tem pontos demais para ir como SVG (pontos e linhas com pontos pesam mais do que linhas).
+.dash_pesado <- function(dados, cfg) {
+  ny <- max(1, sum(vapply(dados, is.numeric, NA)) - 1); n <- nrow(dados) * ny
+  n > if (cfg$grafico$tipo %in% c("pontos", "linha_pontos")) 30000 else 150000
+}
 # Entra: r (de construir_grafico). Sai: list(tipo = "svg" | "png", conteudo, larg, alt) (polegadas).
 .dash_imagem <- function(r, vetorial = TRUE, k = 1, dpi = 200) {
   cfg <- r$cfg; g <- r$g
@@ -173,7 +178,9 @@ dash_construir <- function(abas, opcoes = list(), progresso = function(i, n, nom
     r <- tryCatch(construir_grafico(a$dados, montar_variaveis(a$valores, CFG0, a$series), CFG0, preview = FALSE), error = function(e) list(erro = conditionMessage(e)))
     if (!is.null(r$erro)) { avisos <- c(avisos, sprintf("\"%s\": %s", nome, substr(r$erro, 1, 160))); next }
     k <- length(gs) + 1
-    im <- tryCatch(.dash_imagem(r, vetorial, k), error = function(e) { avisos <<- c(avisos, sprintf("\"%s\": não consegui desenhar (%s).", nome, substr(conditionMessage(e), 1, 120))); NULL })
+    pesado <- .dash_pesado(a$dados, r$cfg)                                  # milhares de pontos: SVG pesaria e levaria mais de 15 s; vai como imagem
+    if (vetorial && pesado) avisos <- c(avisos, sprintf("\"%s\": tem muitos pontos e entrou como imagem (leve), não como vetor.", nome))
+    im <- tryCatch(.dash_imagem(r, vetorial && !pesado, k), error = function(e) { avisos <<- c(avisos, sprintf("\"%s\": não consegui desenhar (%s).", nome, substr(conditionMessage(e), 1, 120))); NULL })
     if (is.null(im)) next
     d <- if (com_dest) .dash_destaques(a$dados, r$cfg, r$g) else .dash_vazio()
     gs[[k]] <- list(id = paste0("g", k), nome = nome, tipo = r$cfg$grafico$tipo, formato = im$tipo, conteudo = im$conteudo, ar = round(im$larg / im$alt, 4),
@@ -214,6 +221,13 @@ dash_html <- function(estado, graficos, modo = "editar") {
   h <- .dash_inserir(h, "@@JS@@", .dash_ler("editor.js"))
   h <- .dash_inserir(h, "@@ESTADO@@", .dash_json(estado))
   .dash_inserir(h, "@@GRAFICOS@@", .dash_json(graficos))        # (por último: é o texto maior)
+}
+
+# Nome de arquivo seguro: sem acento (o iconv do Windows troca por "?"), sem espaço nem símbolo.
+nome_de_arquivo <- function(x, padrao = "dashboard") {
+  x <- chartr("áàâãäéèêëíìîïóòôõöúùûüçñÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑ", "aaaaaeeeeiiiiooooouuuucnAAAAAEEEEIIIIOOOOOUUUUCN", as.character(x)[1])
+  x <- gsub("^_+|_+$", "", gsub("[^A-Za-z0-9_.-]+", "_", x))
+  if (is.na(x) || !nzchar(x)) padrao else substr(x, 1, 80)
 }
 
 # ---- PDF pelo navegador que já está no computador (Edge ou Chrome, em modo invisível) ------------------------------------------------------------

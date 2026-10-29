@@ -5,3 +5,6 @@
 # o ZIP leva só o PDF do manual (Manual_Cinabro.pdf); os arquivos-fonte (HTML e prints) ficam no repositório
 manual export-ignore
 planejamento export-ignore
+# as saídas de exemplo (PNG gerados pelo 05_exemplos.R) e a galeria de referência não vão no ZIP: o 05_exemplos.R as refaz
+saida/exemplos export-ignore
+saida/galeria_referencia.pdf export-ignore

@@ -723,7 +723,7 @@ servidor <- function(input, output, session) {
   })
   observeEvent(input$dash_pdf, {                 # o editor pede o PDF: o R imprime a página pelo Edge/Chrome em modo invisível
     d <- input$dash_pdf; req(rv_dash$id)
-    nome <- gsub("^_+|_+$", "", gsub("[^A-Za-z0-9_.-]+", "_", iconv(d$nome %||% "dashboard", to = "ASCII//TRANSLIT"))); if (!nzchar(nome)) nome <- "dashboard"
+    nome <- nome_de_arquivo(d$nome %||% "dashboard")
     ok <- withProgress(message = T("Gerando o PDF..."), value = 0.5, {
       arq <- file.path(DASH_DIR, paste0("pdf_", rv_dash$id, ".html")); pdf <- file.path(DASH_DIR, paste0(nome, ".pdf"))
       writeLines(dash_html(d$estado, rv_dash$graficos, "pdf"), arq, useBytes = TRUE)
