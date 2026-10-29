@@ -377,3 +377,7 @@ Seis tipos novos em **Dados e tipo de gráfico**. Usam os pacotes `sf` (mapas), 
 - A pasta **`modelos_csv/`** traz 14 modelos de planilha com **dados inventados** (um por tipo de gráfico: séries, dois eixos, datas, barras com erro, pizza, boxplot em colunas e em formato longo, histograma, mapa de calor em matriz e em formato longo, PCA, CCA, mapa-múndi, mapa do Brasil) e o par **antes/depois** que mostra como transformar a tabela "de lado" do Excel (variáveis nas linhas, tratamentos e tempos nas colunas) na planilha certa para a PCA.
 - O **Apêndice do `Manual_Cinabro.pdf`** explica cada modelo: a planilha, o **que marcar no bloco Dados** e o gráfico que sai; mais cinco regras de ouro e uma tabela "cada coluna manda em quê" (cores, grupos, divisões, barras de erro, eixo da direita).
 - `ferramentas/manual/modelos.R` refaz os CSVs, os gráficos do apêndice e o próprio apêndice (entre `MODELOS-INICIO` e `MODELOS-FIM` em `manual/manual.html`). O teste `testes_app.R` confere que todos os modelos abrem no Cinabro.
+
+## Auditoria final
+
+`AUDITORIA_FINAL.md` traz o parecer, tudo o que foi rodado (motor, app, exemplos, navegador, fuzz, desempenho, CI no Windows), os 11 achados corrigidos e o que ainda poderia ser otimizado. `ferramentas/fuzz_tipos.R` varre os campos da tela nos tipos novos.
