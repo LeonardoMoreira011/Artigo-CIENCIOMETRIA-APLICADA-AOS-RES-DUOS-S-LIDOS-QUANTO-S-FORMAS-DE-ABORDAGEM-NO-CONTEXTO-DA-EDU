@@ -4,3 +4,4 @@
 *.vbs text eol=crlf
 # o ZIP leva só o PDF do manual (Manual_Cinabro.pdf); os arquivos-fonte (HTML e prints) ficam no repositório
 manual export-ignore
+planejamento export-ignore

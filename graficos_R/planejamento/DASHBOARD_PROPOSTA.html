@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinabro — Proposta do Dashboard</title>
+<style>
+  @font-face { font-family: "Barlow"; src: url("../fontes/Barlow/Barlow-Regular.ttf"); font-weight: 400; }
+  @font-face { font-family: "Barlow"; src: url("../fontes/Barlow/Barlow-Bold.ttf"); font-weight: 700; }
+  @font-face { font-family: "Barlow"; src: url("../fontes/Barlow/Barlow-Italic.ttf"); font-weight: 400; font-style: italic; }
+  :root { --vermelho:#B3262E; --creme:#F5EBDD; --tinta:#20242B; --terracota:#C96A4A; --petroleo:#2F6670; --cartao:#FAF4EA; --linha:#E0D2BC; --sec:#6B6358; --azulclaro:#8FC3CC; --branco:#fff; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--creme); color:var(--tinta); font-family:"Barlow", system-ui, sans-serif; font-size:16px; line-height:1.5; }
+  .pagina { max-width: 1180px; margin: 0 auto; padding: 28px 24px 80px; }
+  header.topo { display:flex; gap:18px; align-items:center; padding:18px 22px; background:var(--tinta); color:#fff; border-radius:14px; border-bottom:4px solid var(--vermelho); }
+  header.topo h1 { margin:0; font-size:28px; letter-spacing:.2px; } header.topo p { margin:2px 0 0; color:#E9DCC6; font-size:15px; }
+  .selo { background:var(--vermelho); color:#fff; font-weight:700; font-size:12px; padding:3px 10px; border-radius:999px; text-transform:uppercase; letter-spacing:.6px; }
+  h2 { font-size:24px; color:var(--vermelho); margin:44px 0 6px; line-height:1.15; } h2 small { display:block; font-size:14px; color:var(--sec); font-weight:400; margin-top:2px; }
+  h3 { font-size:17px; color:var(--petroleo); margin:20px 0 6px; }
+  p { margin:6px 0 10px; } .sec { color:var(--sec); }
+  .cartao { background:var(--cartao); border:1px solid var(--linha); border-radius:12px; padding:16px 18px; }
+  .grade2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; } .grade3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  @media (max-width:860px){ .grade2,.grade3{grid-template-columns:1fr;} }
+  .passos { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; counter-reset:p; margin-top:18px; }
+  @media (max-width:860px){ .passos{grid-template-columns:1fr 1fr;} }
+  .passo { background:var(--cartao); border:1px solid var(--linha); border-radius:12px; padding:12px; position:relative; font-size:14px; }
+  .passo b { display:block; color:var(--tinta); margin-bottom:3px; } .passo::before { counter-increment:p; content:counter(p); position:absolute; top:-10px; left:-8px; width:26px; height:26px; border-radius:50%; background:var(--vermelho); color:#fff; display:grid; place-items:center; font-weight:700; }
+  table { border-collapse:collapse; width:100%; font-size:14.5px; background:var(--cartao); border:1px solid var(--linha); border-radius:10px; overflow:hidden; }
+  th,td { text-align:left; padding:8px 11px; border-bottom:1px solid var(--linha); vertical-align:top; } th { background:#EFE2CC; color:var(--tinta); }
+  code { background:#EFE2CC; padding:1px 6px; border-radius:5px; font-size:.92em; }
+  .dica { border-left:4px solid var(--petroleo); background:#E4EEEF; padding:10px 14px; border-radius:8px; margin:12px 0; }
+  .atencao { border-left:4px solid var(--vermelho); background:#F7E3E0; padding:10px 14px; border-radius:8px; margin:12px 0; }
+  .moldura { background:#fff; border:1px solid var(--linha); border-radius:12px; padding:14px; box-shadow:0 6px 20px rgba(32,36,43,.10); }
+  .legenda { font-size:13.5px; color:var(--sec); margin-top:6px; }
+
+  /* --- barra de ferramentas do app (mock) --- */
+  .app-faixa { display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:#fff; border:1px solid var(--linha); border-radius:12px; padding:10px 12px; font-size:13px; }
+  .app-faixa .rot { font-size:11px; font-weight:700; letter-spacing:.8px; color:var(--sec); margin-right:2px; }
+  .pil { border:1px solid var(--linha); background:var(--cartao); border-radius:999px; padding:4px 11px; font-weight:700; font-size:13px; }
+  .pil.dest { background:var(--vermelho); color:#fff; border-color:var(--vermelho); box-shadow:0 0 0 3px rgba(179,38,46,.25); }
+  .pil.esc { background:var(--tinta); color:#fff; border-color:var(--tinta); }
+
+  /* --- EDITOR --- */
+  .editor { display:grid; grid-template-columns:190px 1fr 230px; grid-template-rows:auto 1fr; gap:0; border-radius:14px; overflow:hidden; border:1px solid #cdbfa6; background:#d9cdb8; box-shadow:0 10px 30px rgba(32,36,43,.18); }
+  .ed-topo { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:8px; align-items:center; background:var(--tinta); color:#fff; padding:9px 12px; font-size:13px; }
+  .ed-topo .tit { font-weight:700; margin-right:8px; } .ed-topo .bt { background:#3a4150; border-radius:7px; padding:4px 10px; } .ed-topo .bt.pdf { background:var(--vermelho); font-weight:700; } .ed-topo .esp { flex:1; }
+  .ed-lat { background:#EFE2CC; padding:12px 10px; font-size:13px; border-right:1px solid #cdbfa6; }
+  .ed-lat h4 { margin:0 0 6px; font-size:11px; letter-spacing:.8px; color:var(--sec); text-transform:uppercase; }
+  .bloco-lib { background:#fff; border:1px solid var(--linha); border-radius:8px; padding:6px 8px; margin-bottom:6px; display:flex; gap:8px; align-items:center; cursor:grab; }
+  .bloco-lib i { width:22px; height:22px; border-radius:5px; display:grid; place-items:center; color:#fff; font-style:normal; font-size:12px; font-weight:700; }
+  .ed-centro { padding:16px; display:flex; justify-content:center; background:
+      radial-gradient(circle at 1px 1px, rgba(32,36,43,.10) 1px, transparent 1.4px) 0 0/14px 14px, #d9cdb8; }
+  .folha { position:relative; width:100%; max-width:760px; aspect-ratio:297/210; background:#fff; box-shadow:0 8px 26px rgba(32,36,43,.28); border-radius:2px; overflow:hidden; }
+  .ed-dir { background:#EFE2CC; padding:12px 10px; font-size:13px; border-left:1px solid #cdbfa6; }
+  .ed-dir h4 { margin:0 0 6px; font-size:11px; letter-spacing:.8px; color:var(--sec); text-transform:uppercase; }
+  .campo { display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid var(--linha); border-radius:7px; padding:4px 8px; margin-bottom:5px; } .campo b { font-weight:600; }
+  @media (max-width:980px){ .editor{grid-template-columns:1fr;} .ed-lat,.ed-dir{display:none;} }
+
+  /* --- elementos da folha (usados no editor e no resultado) --- */
+  .folha .cab { position:absolute; left:0; right:0; top:0; height:11%; background:var(--tinta); color:#fff; display:flex; align-items:center; padding:0 3%; border-bottom:3px solid var(--vermelho); }
+  .folha .cab b { font-size:clamp(11px,1.9vw,20px); } .folha .cab span { margin-left:auto; font-size:clamp(8px,1.1vw,12px); color:#E9DCC6; }
+  .bk { position:absolute; background:#fff; border:1px solid var(--linha); border-radius:6px; padding:5px 6px; overflow:hidden; font-size:clamp(7px,.95vw,11px); line-height:1.3; }
+  .bk .t { font-weight:700; color:var(--petroleo); font-size:clamp(7px,1vw,11.5px); margin-bottom:2px; text-transform:uppercase; letter-spacing:.5px; }
+  .bk img { width:100%; height:calc(100% - 1.4em); object-fit:contain; display:block; }
+  .kpi { text-align:center; display:flex; flex-direction:column; justify-content:center; } .kpi .n { font-size:clamp(13px,2.6vw,26px); font-weight:700; color:var(--vermelho); line-height:1.05; } .kpi .d { color:var(--sec); font-size:clamp(6.5px,.85vw,10px); }
+  .bk.txt ul { margin:0; padding-left:1.1em; } .bk.txt li { margin:1px 0; }
+  .sel { outline:2px solid var(--vermelho); outline-offset:0; } .sel::after { content:""; position:absolute; right:-5px; bottom:-5px; width:9px; height:9px; background:var(--vermelho); border:2px solid #fff; border-radius:2px; }
+  .sel::before { content:""; position:absolute; left:-5px; top:-5px; width:9px; height:9px; background:var(--vermelho); border:2px solid #fff; border-radius:2px; }
+  .guia-v { position:absolute; top:0; bottom:0; width:0; border-left:1.5px dashed #00a3b8; } .guia-h { position:absolute; left:0; right:0; height:0; border-top:1.5px dashed #00a3b8; }
+  .tag { position:absolute; background:var(--vermelho); color:#fff; font-size:10px; font-weight:700; padding:1px 6px; border-radius:4px 4px 0 0; transform:translateY(-100%); z-index:5; white-space:nowrap; }
+  .rod { position:absolute; left:0; right:0; bottom:0; height:5%; display:flex; align-items:center; justify-content:space-between; padding:0 3%; font-size:clamp(6px,.8vw,9px); color:var(--sec); border-top:1px solid var(--linha); }
+
+  /* fluxo */
+  .fluxo { display:flex; flex-wrap:wrap; gap:8px; align-items:stretch; }
+  .no { flex:1 1 150px; background:var(--cartao); border:1px solid var(--linha); border-radius:10px; padding:10px 12px; font-size:14px; position:relative; } .no b { display:block; color:var(--petroleo); }
+  .seta { align-self:center; color:var(--vermelho); font-weight:700; font-size:22px; }
+  .fase { border-left:6px solid var(--petroleo); } .fase.f2 { border-left-color:var(--terracota); } .fase.f3 { border-left-color:var(--vermelho); }
+  .fase h3 { margin-top:0; } .fase ul { margin:4px 0 4px; padding-left:1.2em; }
+  .mini { aspect-ratio:4/3; background:#fff; border:1px solid var(--linha); border-radius:6px; position:relative; overflow:hidden; margin-bottom:6px; }
+  .mini div { position:absolute; border-radius:3px; }
+  details { background:var(--cartao); border:1px solid var(--linha); border-radius:10px; padding:8px 12px; margin:8px 0; } summary { cursor:pointer; font-weight:700; color:var(--petroleo); }
+</style>
+</head>
+<body>
+<div class="pagina">
+
+<header class="topo">
+  <div>
+    <span class="selo">Proposta · para decidir</span>
+    <h1>Dashboard do Cinabro</h1>
+    <p>Um painel de uma página que reúne os gráficos, os resumos estatísticos e os destaques do seu trabalho: você monta na tela e sai em PDF.</p>
+  </div>
+</header>
+
+<h2>1. A ideia em uma frase <small>o que muda na vida de quem usa</small></h2>
+<div class="grade2">
+  <div class="cartao">
+    <b>Hoje</b>
+    <p>Cada gráfico sai separado (PNG, PDF, SVG). Para apresentar, é preciso montar tudo no PowerPoint ou no Word, copiar os números dos testes e escrever os destaques à mão.</p>
+  </div>
+  <div class="cartao" style="border-color:var(--vermelho)">
+    <b style="color:var(--vermelho)">Com o Dashboard</b>
+    <p>Um botão reúne os gráficos das suas abas, os resumos estatísticos e <b>destaques escritos a partir dos números</b>. Você arruma na tela (arrastar, esticar, trocar de lugar) e baixa um <b>PDF</b> ou um <b>HTML</b> para compartilhar com o time.</p>
+  </div>
+</div>
+
+<h2>2. O caminho do usuário <small>cinco passos, sem sair do Cinabro</small></h2>
+<div class="passos">
+  <div class="passo"><b>Faça os gráficos</b>como hoje, uma aba por gráfico (PCA, mapa, boxplot…).</div>
+  <div class="passo"><b>Clique em Dashboard</b>botão novo na faixa de ferramentas. Escolha as abas e o formato da página.</div>
+  <div class="passo"><b>O Cinabro monta</b>uma primeira disposição já bonita: título, números-chave, gráficos e destaques.</div>
+  <div class="passo"><b>Você ajusta</b>arrasta, estica, troca, apaga, escreve. As guias alinham sozinhas.</div>
+  <div class="passo"><b>Exporte</b>PDF para imprimir ou enviar; HTML para abrir no navegador; salve o layout no projeto.</div>
+</div>
+
+<h2>3. Onde fica o botão <small>faixa de ferramentas, ao lado de "Baixar PNG / PDF"</small></h2>
+<div class="app-faixa">
+  <span class="rot">ANÁLISE</span><span class="pil">Ajuste de curva ▾</span><span class="pil">Média ± DP</span><span class="pil">Caixa de estatística</span><span class="pil">Tabelas e testes</span>
+  <span class="rot" style="margin-left:10px">ANOTAR</span><span class="pil">Texto</span><span class="pil">Forma ▾</span><span class="pil">Figura</span>
+  <span style="flex:1"></span>
+  <span class="pil">⬇ Baixar PNG</span><span class="pil">⬇ Baixar PDF</span><span class="pil dest">▦ Dashboard</span><span class="pil esc">Maximizar</span>
+</div>
+<p class="legenda">O botão abre o editor numa tela cheia (como o "Maximizar"). O gráfico e as abas continuam como estão; o dashboard só <i>lê</i> o que já foi feito e pode ser refeito a qualquer momento.</p>
+
+<h2>4. O editor <small>onde você disponha, mova e redimensione</small></h2>
+<div class="editor">
+  <div class="ed-topo">
+    <span class="tit">▦ Dashboard</span>
+    <span class="bt">Página: A4 paisagem ▾</span><span class="bt">Tema: Cinabro ▾</span><span class="bt">Grade ✓</span><span class="bt">Guias ✓</span><span class="bt">↶ Desfazer</span><span class="bt">↷ Refazer</span>
+    <span class="esp"></span>
+    <span class="bt">Salvar layout</span><span class="bt">Exportar HTML</span><span class="bt pdf">Exportar PDF</span>
+  </div>
+  <aside class="ed-lat">
+    <h4>Blocos</h4>
+    <div class="bloco-lib"><i style="background:var(--petroleo)">▤</i>Gráfico</div>
+    <div class="bloco-lib"><i style="background:var(--vermelho)">#</i>Número-chave</div>
+    <div class="bloco-lib"><i style="background:var(--terracota)">≡</i>Destaques</div>
+    <div class="bloco-lib"><i style="background:var(--tinta)">σ</i>Resumo estatístico</div>
+    <div class="bloco-lib"><i style="background:#8a7a5a">▦</i>Tabela</div>
+    <div class="bloco-lib"><i style="background:#5b6b7a">T</i>Texto livre</div>
+    <div class="bloco-lib"><i style="background:#a08a6a">▣</i>Imagem / logo</div>
+    <h4 style="margin-top:12px">Gráficos das abas</h4>
+    <div class="bloco-lib" style="font-size:12px">PCA de espécies</div>
+    <div class="bloco-lib" style="font-size:12px">Mapa de vendas</div>
+    <div class="bloco-lib" style="font-size:12px">Boxplot dos grupos</div>
+  </aside>
+  <div class="ed-centro">
+    <div class="folha" id="folha-editor">
+      <div class="cab"><b>Painel de acompanhamento</b><span>Setor de Resíduos · atualizado em 29/10/2026</span></div>
+      <div class="bk kpi" style="left:2%;top:14%;width:15.5%;height:15%"><div class="n">5.390</div><div class="d">vendas totais</div></div>
+      <div class="bk kpi" style="left:19%;top:14%;width:15.5%;height:15%"><div class="n">40%</div><div class="d">Asia Pacific (maior região)</div></div>
+      <div class="bk kpi" style="left:36%;top:14%;width:15.5%;height:15%"><div class="n">70,4%</div><div class="d">PC1 + PC2</div></div>
+      <div class="bk kpi" style="left:53%;top:14%;width:15.5%;height:15%"><div class="n">p &lt; 0,001</div><div class="d">permutação (CCA)</div></div>
+      <div class="bk" style="left:2%;top:31%;width:33%;height:59%"><div class="t">PCA das espécies</div><img src="../manual/img/g14_pca.png" alt=""></div>
+      <div class="bk" style="left:37%;top:31%;width:31.5%;height:59%"><div class="t">Mapa de vendas por região</div><img src="../manual/img/g17_mapa_mundo.png" alt=""></div>
+      <div class="bk txt" style="left:70.5%;top:14%;width:27.5%;height:76%"><div class="t">Destaques</div>
+        <ul><li>A <b>Ásia-Pacífico</b> concentra 40% das vendas.</li><li>PC1 e PC2 explicam <b>70,4%</b> da variação.</li><li>Temperatura e salinidade são as ambientais mais ligadas ao eixo 1 (R² 0,88 e 0,93).</li><li><i>Escreva aqui um comentário seu…</i></li></ul></div>
+      <div class="rod"><span>Cinabro</span><span>página 1 de 1</span></div>
+      <!-- bloco selecionado -->
+      <div class="bk sel" style="left:37%;top:31%;width:31.5%;height:59%;background:transparent;border:none;pointer-events:none"><span class="tag">Gráfico · Mapa de vendas</span></div>
+      <div class="guia-v" style="left:36%;"></div><div class="guia-h" style="top:30%;"></div>
+    </div>
+  </div>
+  <aside class="ed-dir">
+    <h4>Bloco selecionado</h4>
+    <div class="campo"><b>Tipo</b><span>Gráfico</span></div>
+    <div class="campo"><b>Fonte</b><span>Aba "Mapa" ▾</span></div>
+    <div class="campo"><b>X / Y</b><span>37% · 31%</span></div>
+    <div class="campo"><b>Largura × Altura</b><span>31,5 × 59%</span></div>
+    <div class="campo"><b>Título</b><span>editar…</span></div>
+    <div class="campo"><b>Borda / sombra</b><span>fina</span></div>
+    <div class="campo"><b>Ordem</b><span>frente ⇅</span></div>
+    <div class="campo"><b>Travar posição</b><span>☐</span></div>
+    <h4 style="margin-top:12px">Ações</h4>
+    <div class="campo"><b>Duplicar</b><span>Ctrl+D</span></div>
+    <div class="campo"><b>Apagar</b><span>Del</span></div>
+    <div class="campo"><b>Alinhar</b><span>⇤ ⇔ ⇥ ⤒ ⇕ ⤓</span></div>
+  </aside>
+</div>
+<p class="legenda">Mock da tela de edição (as imagens são gráficos reais do Cinabro). Esquerda: biblioteca de blocos e os gráficos das suas abas (arraste para a folha). Centro: a folha, em escala, com grade pontilhada, <b>guias de alinhamento</b> (tracejado azul) e o bloco selecionado com alças. Direita: propriedades do bloco.</p>
+
+<h2>5. O resultado <small>a página exportada (PDF ou HTML), sem as ferramentas de edição</small></h2>
+<div class="moldura" style="max-width:860px;margin:auto">
+  <div class="folha" style="max-width:none">
+    <div class="cab"><b>Painel de acompanhamento</b><span>Setor de Resíduos · atualizado em 29/10/2026</span></div>
+    <div class="bk kpi" style="left:2%;top:14%;width:15.5%;height:15%"><div class="n">5.390</div><div class="d">vendas totais</div></div>
+    <div class="bk kpi" style="left:19%;top:14%;width:15.5%;height:15%"><div class="n">40%</div><div class="d">Asia Pacific (maior região)</div></div>
+    <div class="bk kpi" style="left:36%;top:14%;width:15.5%;height:15%"><div class="n">70,4%</div><div class="d">PC1 + PC2</div></div>
+    <div class="bk kpi" style="left:53%;top:14%;width:15.5%;height:15%"><div class="n">p &lt; 0,001</div><div class="d">permutação (CCA)</div></div>
+    <div class="bk" style="left:2%;top:31%;width:33%;height:59%"><div class="t">PCA das espécies</div><img src="../manual/img/g14_pca.png" alt=""></div>
+    <div class="bk" style="left:37%;top:31%;width:31.5%;height:59%"><div class="t">Mapa de vendas por região</div><img src="../manual/img/g17_mapa_mundo.png" alt=""></div>
+    <div class="bk txt" style="left:70.5%;top:14%;width:27.5%;height:76%"><div class="t">Destaques</div>
+      <ul><li>A <b>Ásia-Pacífico</b> concentra 40% das vendas.</li><li>PC1 e PC2 explicam <b>70,4%</b> da variação.</li><li>Temperatura e salinidade são as ambientais mais ligadas ao eixo 1 (R² 0,88 e 0,93).</li></ul></div>
+    <div class="rod"><span>Cinabro</span><span>página 1 de 1</span></div>
+  </div>
+</div>
+<p class="legenda">Os gráficos entram em alta resolução (PNG a 300 dpi; no HTML podem entrar como SVG vetorial). A fonte e as cores são as do Cinabro.</p>
+
+<h2>6. Os blocos <small>tudo o que se pode pôr na folha</small></h2>
+<div class="grade3">
+  <div class="cartao"><div class="mini"><div style="left:8%;top:12%;width:84%;height:76%;background:#E4EEEF"></div></div><b>Gráfico</b><p class="sec">Qualquer gráfico das abas (inclusive PCA, mapas, mapa de calor). Mostra o que está na aba: se você mudar a aba, o bloco se atualiza.</p></div>
+  <div class="cartao"><div class="mini"><div style="left:20%;top:30%;width:60%;height:40%;background:#F7E3E0;border:1px solid var(--vermelho)"></div></div><b>Número-chave</b><p class="sec">Um número grande com legenda (total, maior região, % explicada, p). Escolhe-se a origem (um resumo ou uma fórmula simples) ou se digita.</p></div>
+  <div class="cartao"><div class="mini"><div style="left:10%;top:15%;width:80%;height:8%;background:#d9cdb8"></div><div style="left:10%;top:32%;width:70%;height:8%;background:#d9cdb8"></div><div style="left:10%;top:49%;width:76%;height:8%;background:#d9cdb8"></div><div style="left:10%;top:66%;width:50%;height:8%;background:#d9cdb8"></div></div><b>Destaques</b><p class="sec">Frases geradas dos números (veja a seção 7). Cada frase pode ser editada, apagada ou reordenada; dá para somar as suas.</p></div>
+  <div class="cartao"><div class="mini"><div style="left:8%;top:10%;width:84%;height:80%;background:#fff;border:1px solid var(--linha)"></div><div style="left:12%;top:20%;width:76%;height:6%;background:#E0D2BC"></div><div style="left:12%;top:36%;width:76%;height:4%;background:#EFE2CC"></div><div style="left:12%;top:50%;width:76%;height:4%;background:#EFE2CC"></div></div><b>Resumo estatístico</b><p class="sec">A caixa de resumo que já existe (equação e R², % dos eixos, testes) como bloco próprio, com tamanho de letra livre.</p></div>
+  <div class="cartao"><div class="mini"><div style="left:8%;top:12%;width:84%;height:76%;background:repeating-linear-gradient(0deg,#EFE2CC 0 12px,#fff 12px 24px)"></div></div><b>Tabela</b><p class="sec">Estatística descritiva, resultado do ANOVA/Tukey, autovalores do PCA: as tabelas de "Tabelas e testes" prontas, com zebra e cabeçalho.</p></div>
+  <div class="cartao"><div class="mini"><div style="left:12%;top:18%;width:60%;height:10%;background:var(--tinta)"></div><div style="left:12%;top:38%;width:76%;height:6%;background:#d9cdb8"></div><div style="left:12%;top:52%;width:70%;height:6%;background:#d9cdb8"></div></div><b>Texto livre, título e imagem</b><p class="sec">Títulos, comentários, notas metodológicas, o logotipo da empresa. Texto com negrito, itálico, expoente e índice (como nos gráficos).</p></div>
+</div>
+
+<h2>7. Destaques automáticos <small>o painel "lê" os números e escreve por você (e você edita)</small></h2>
+<table>
+  <tr><th>Origem</th><th>Regra</th><th>Exemplo de frase</th></tr>
+  <tr><td>Mapa / barras</td><td>Maior e menor valor; participação do maior no total; concentração (top 3)</td><td>"A <b>Ásia-Pacífico</b> concentra 40% das vendas; as três maiores regiões somam 87%."</td></tr>
+  <tr><td>Linhas (série)</td><td>Variação entre o primeiro e o último ponto; inclinação da reta de ajuste; máximo e quando ocorreu</td><td>"A temperatura da Amostra A <b>subiu 62%</b> em 60 min (R² = 0,97)."</td></tr>
+  <tr><td>PCA / CA / CCA</td><td>% dos dois eixos; variáveis que mais pesam; p do teste; ambientais significativas</td><td>"PC1 + PC2 explicam <b>70,4%</b>; <i>Draco</i> e <i>Hydra</i> pesam mais no eixo 1; salinidade é a ambiental mais ligada (R² = 0,93, p &lt; 0,001)."</td></tr>
+  <tr><td>Grupos (boxplot)</td><td>ANOVA/Kruskal; maior média; diferenças pelo Tukey/Holm</td><td>"Os grupos <b>diferem</b> (Kruskal-Wallis, p = 0,003); a Dose 3 tem a maior mediana."</td></tr>
+  <tr><td>Mapa de calor</td><td>Maior e menor célula; linha/coluna de maior média</td><td>"O maior valor está em <b>Gene 09 × Controle</b> (17,3)."</td></tr>
+</table>
+<div class="dica"><b>Princípio:</b> o texto é só um ponto de partida. Cada frase mostra "de onde veio" (um ícone discreto) e vira texto livre assim que você edita. Nada de números inventados: toda frase vem de um cálculo que o programa já faz.</div>
+
+<h2>8. Como se edita <small>interações do editor</small></h2>
+<table>
+  <tr><th>Ação</th><th>Como</th></tr>
+  <tr><td>Mover</td><td>Arrastar o bloco. <b>Guias</b> tracejadas aparecem ao alinhar com as bordas e o centro de outros blocos; <b>imã na grade</b> (liga/desliga).</td></tr>
+  <tr><td>Redimensionar</td><td>Alças nos 4 cantos e 4 lados (as mesmas do Cinabro). Shift mantém a proporção; o gráfico dentro se reajusta ao novo tamanho.</td></tr>
+  <tr><td>Trocar de lugar</td><td>Arrastar um bloco sobre outro troca os dois (opcional).</td></tr>
+  <tr><td>Alinhar e distribuir</td><td>Selecionar vários (Shift/Ctrl, ou laço) e usar alinhar à esquerda/centro/direita/topo/meio/base e "distribuir igualmente".</td></tr>
+  <tr><td>Ordem (frente/trás)</td><td>Botão no painel da direita; os blocos nunca "somem" atrás de outros sem aviso.</td></tr>
+  <tr><td>Duplicar, apagar, travar</td><td><kbd>Ctrl</kbd>+<kbd>D</kbd>, <kbd>Del</kbd>, "Travar posição".</td></tr>
+  <tr><td>Setas do teclado</td><td>Ajuste fino (2 px; com Shift, 10 px) — igual ao que já existe nas caixas do gráfico.</td></tr>
+  <tr><td>Desfazer / refazer</td><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd>, com histórico da sessão.</td></tr>
+  <tr><td>Zoom</td><td>Ctrl + roda do mouse; "ajustar à tela".</td></tr>
+  <tr><td>Modelos</td><td>Disposições prontas ("Resumo executivo", "Artigo: figura de 4 painéis", "Apresentação 16:9"). Você também salva o seu como modelo para o time.</td></tr>
+</table>
+
+<h2>9. Página, tema e saída em PDF</h2>
+<div class="grade2">
+  <div class="cartao">
+    <h3 style="margin-top:0">Páginas e tema</h3>
+    <ul>
+      <li><b>Formatos:</b> A4 paisagem (padrão), A4 retrato, 16:9 (apresentação), página livre em cm.</li>
+      <li><b>Várias páginas:</b> adicionar, duplicar, reordenar; o rodapé numera sozinho ("página 2 de 3").</li>
+      <li><b>Tema:</b> Cinabro (padrão), claro, escuro, preto e branco (para imprimir), ou as cores da empresa.</li>
+      <li><b>Cabeçalho e rodapé:</b> título, subtítulo, logotipo, data, autor, fonte dos dados — tudo editável ou ocultável.</li>
+    </ul>
+  </div>
+  <div class="cartao">
+    <h3 style="margin-top:0">Como sai o PDF</h3>
+    <ul>
+      <li><b>PDF fiel ao editor</b>: o que está na folha é o que sai (mesmas posições, mesma fonte Barlow).</li>
+      <li><b>Sem instalar nada:</b> o Cinabro usa o navegador que já está no Windows (Edge ou Chrome) em modo invisível para gerar o PDF. Se não achar, o botão abre a janela de impressão do navegador ("Salvar como PDF").</li>
+      <li><b>Qualidade:</b> gráficos em 300 dpi ou vetoriais; texto selecionável.</li>
+      <li><b>HTML autônomo:</b> um único arquivo (imagens dentro) que abre em qualquer computador, sem o Cinabro.</li>
+    </ul>
+  </div>
+</div>
+
+<h2>10. Como funciona por dentro <small>para a equipe técnica; o usuário não precisa ver isto</small></h2>
+<div class="fluxo">
+  <div class="no"><b>1. Abas do Cinabro</b>gráficos, dados, ajustes e testes de cada aba</div><div class="seta">→</div>
+  <div class="no"><b>2. Motor em R</b>desenha cada gráfico (PNG/SVG) e calcula números, resumos e destaques</div><div class="seta">→</div>
+  <div class="no"><b>3. Layout (JSON)</b>lista de blocos: tipo, origem, x, y, largura, altura, texto, estilo</div><div class="seta">→</div>
+  <div class="no"><b>4. Editor (HTML + JS)</b>página única, sem internet; mesmas interações do Cinabro (arrastar, alças, setas)</div><div class="seta">→</div>
+  <div class="no"><b>5. Saída</b>PDF (Edge/Chrome invisível), HTML autônomo e layout salvo no projeto (<code>.cinabro</code>)</div>
+</div>
+<ul>
+  <li><b>Reaproveita o que já existe:</b> o JavaScript de arrastar e redimensionar das caixas móveis, o gerador de PDF do manual (Chromium), a fonte Barlow, as caixas de estatística, os testes.</li>
+  <li><b>Layout em coordenadas relativas</b> (frações da página): o mesmo layout vale em qualquer formato, e o bloco do gráfico se refaz no tamanho exato em que aparece.</li>
+  <li><b>Sem dependências novas de R</b>: o HTML do editor é um arquivo do projeto (<code>app_shiny/www/dashboard.html</code>), preenchido pelo motor.</li>
+  <li><b>Testado como o resto:</b> testes do motor (destaques e layout), roteiro de navegador (arrastar, redimensionar, exportar) e conferência visual do PDF.</li>
+</ul>
+
+<h2>11. Etapas <small>cada etapa entrega algo que já se usa</small></h2>
+<div class="grade3">
+  <div class="cartao fase">
+    <h3>Etapa 1 · Painel editável (HTML)</h3>
+    <ul>
+      <li>Botão <b>Dashboard</b> e escolha das abas.</li>
+      <li>Disposição automática inicial (título, gráficos, resumos).</li>
+      <li>Editor: mover, redimensionar, apagar, duplicar, guias, grade, setas, desfazer.</li>
+      <li>Blocos: gráfico, resumo estatístico, texto livre, imagem/logo.</li>
+      <li><b>Exportar PDF</b> (A4 paisagem/retrato) e HTML.</li>
+    </ul>
+    <p class="sec"><b>Pronto quando:</b> você monta, ajusta e baixa um PDF de 1 página com 4 gráficos em menos de 5 minutos.</p>
+  </div>
+  <div class="cartao fase f2">
+    <h3>Etapa 2 · Inteligência e acabamento</h3>
+    <ul>
+      <li>Números-chave e <b>destaques automáticos</b> editáveis.</li>
+      <li>Tabelas (descritiva, testes, autovalores).</li>
+      <li>Várias páginas, numeração, cabeçalho/rodapé, logotipo.</li>
+      <li>Temas (inclusive preto e branco) e cores da empresa.</li>
+      <li>Salvar o layout no projeto e <b>modelos</b> para o time.</li>
+      <li>Alinhar/distribuir vários blocos; trocar blocos de lugar.</li>
+    </ul>
+    <p class="sec"><b>Pronto quando:</b> o time reaproveita um modelo com dados novos e o painel sai com os destaques certos.</p>
+  </div>
+  <div class="cartao fase f3">
+    <h3>Etapa 3 · Painel vivo</h3>
+    <ul>
+      <li>HTML interativo: passar o mouse mostra valores; filtros por grupo/região.</li>
+      <li>Atualizar o painel quando os dados mudam, mantendo o layout.</li>
+      <li>Blocos de comparação ("antes × depois", dois períodos).</li>
+      <li>Exportar como slides (PPTX) ou imagem de capa.</li>
+    </ul>
+    <p class="sec"><b>Pronto quando:</b> o painel HTML responde ao filtro sem o Cinabro aberto.</p>
+  </div>
+</div>
+
+<h2>12. O que preciso que você decida <small>cada resposta muda o desenho</small></h2>
+<table>
+  <tr><th>Pergunta</th><th>Minha sugestão</th></tr>
+  <tr><td>Formato de página principal?</td><td>A4 paisagem (e retrato como alternativa). Slide 16:9 na etapa 2.</td></tr>
+  <tr><td>O dashboard deve reunir <b>todas as abas</b> ou só as que você escolher?</td><td>Escolher na hora (caixas de marcar), todas marcadas por padrão.</td></tr>
+  <tr><td>Os destaques automáticos devem vir <b>ligados</b>?</td><td>Sim, como rascunho editável com o ícone "gerado"; fácil de apagar.</td></tr>
+  <tr><td>PDF: <b>vetorial</b> (nítido, arquivo maior) ou <b>imagem</b> (leve)?</td><td>Vetorial por padrão; opção "leve" para e-mail.</td></tr>
+  <tr><td>O painel precisa abrir <b>sem o Cinabro</b> (HTML autônomo)?</td><td>Sim: a etapa 1 já entrega isso.</td></tr>
+  <tr><td>Marca da empresa no cabeçalho (logotipo, cores)?</td><td>Sim: campo de logotipo e paleta da empresa; se você me passar o logotipo e as cores, entram como tema.</td></tr>
+  <tr><td>Quem edita: só você, ou o time inteiro compartilha modelos?</td><td>Modelos como arquivos que o time troca (sem servidor), igual ao <code>.cinabro</code>.</td></tr>
+</table>
+
+<h2>13. Riscos e cuidados</h2>
+<table>
+  <tr><th>Risco</th><th>Como tratamos</th></tr>
+  <tr><td>PDF diferente do que se vê na tela</td><td>O PDF é gerado a partir da mesma página do editor (mesmo HTML e fonte), e há teste visual automático.</td></tr>
+  <tr><td>Computador sem Edge/Chrome utilizável</td><td>Alternativa embutida: abrir a janela de impressão do navegador padrão ("Salvar como PDF").</td></tr>
+  <tr><td>Destaque automático errado ou "forçado"</td><td>Só frases de cálculos que o programa já faz e valida; toda frase editável; nada de interpretação causal.</td></tr>
+  <tr><td>Painel desatualizado quando os dados mudam</td><td>Etapa 2: botão "Atualizar" mantém o layout e troca só o conteúdo; aviso quando o bloco está defasado.</td></tr>
+  <tr><td>Tela cheia de coisas ("poluição")</td><td>Disposição inicial limpa, poucas cores, 1 mensagem por bloco, margens e espaçamento fixos (o mesmo rigor da auditoria estética).</td></tr>
+</table>
+
+<div class="dica" style="margin-top:28px"><b>Próximo passo, se você aprovar:</b> começar pela Etapa 1, que já entrega o botão, o editor e o PDF. Eu mostro uma versão navegável no Cinabro antes de seguir para a Etapa 2.</div>
+
+</div>
+</body>
+</html>
