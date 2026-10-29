@@ -43,7 +43,7 @@ Restam três itens que **eu não consigo provar aqui** e que o time deve conferi
 | 10 | Teste | Meu teste novo do achado 2 deixava um dispositivo gráfico aberto e quebrava outro teste | Corrigido (visto no motor, nas duas versões, e no CI do Windows) |
 | 11 | Ferramenta | O arranjo de teste do arquivo único estava defasado em relação ao `06_testes.R` | Refeito a partir do `06_testes.R` atual |
 
-**ZIP:** 9,7 MB e 200 arquivos antes da auditoria; **7,9 MB e 183 arquivos** depois.
+**ZIP:** 9,7 MB e 200 arquivos antes da auditoria; **6,9 MB e 185 arquivos** depois (já com o Dashboard, os 15 modelos de planilha e este relatório).
 
 ## 4. Desempenho (medido nesta máquina de teste, sem outros processos)
 
