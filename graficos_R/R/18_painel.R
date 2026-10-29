@@ -10,6 +10,25 @@
 .PAINEL_MAPA <- list(
   # tipo e colunas
   tipo_grafico = c("grafico", "tipo"), coluna_x = c("grafico", "coluna_x"), colunas_y = c("grafico", "colunas_y"),
+  coluna_grupo = c("grafico", "coluna_grupo"),
+  # PCA / CA / CCA
+  multi_variaveis = c("multivariada", "variaveis"), multi_ambientais = c("multivariada", "ambientais"),
+  multi_transformacao = c("multivariada", "transformacao"), multi_escalar = c("multivariada", "escalar_variaveis"),
+  multi_escalonamento = c("multivariada", "escalonamento"), multi_eixo_horizontal = c("multivariada", "eixo_horizontal"),
+  multi_eixo_vertical = c("multivariada", "eixo_vertical"), multi_rotulos_amostras = c("multivariada", "rotulos_amostras"),
+  multi_mostrar_variaveis = c("multivariada", "mostrar_variaveis"), multi_rotulos_variaveis = c("multivariada", "rotulos_variaveis"),
+  multi_variaveis_estilo = c("multivariada", "variaveis_estilo"), multi_max_variaveis = c("multivariada", "max_variaveis"),
+  multi_mostrar_ambientais = c("multivariada", "mostrar_ambientais"), multi_elipses = c("multivariada", "elipses"),
+  multi_elipse_nivel = c("multivariada", "elipse_nivel"), multi_cor_variaveis = c("multivariada", "cor_variaveis"),
+  multi_cor_ambientais = c("multivariada", "cor_ambientais"), multi_legenda_posicao = c("multivariada", "legenda_posicao"), multi_linhas_zero = c("multivariada", "linhas_zero"),
+  # mapa de calor (eixo Z em gradiente) e mapas
+  calor_formato = c("mapa_calor", "formato"), calor_normalizar = c("mapa_calor", "normalizar"), calor_agrupar = c("mapa_calor", "agrupar"),
+  calor_esquema = c("mapa_calor", "esquema_cor"), calor_cores = c("mapa_calor", "cores_escala"), calor_inverter = c("mapa_calor", "inverter_cores"),
+  calor_min = c("mapa_calor", "limite_min"), calor_max = c("mapa_calor", "limite_max"), calor_centro = c("mapa_calor", "centro"),
+  calor_titulo_barra = c("mapa_calor", "titulo_barra"), calor_valores = c("mapa_calor", "valores_nas_celulas"), calor_casas = c("mapa_calor", "casas"),
+  calor_contorno_cor = c("mapa_calor", "contorno_cor"), calor_cor_sem_dado = c("mapa_calor", "cor_sem_dado"), calor_barra_posicao = c("mapa_calor", "barra_posicao"),
+  mapa_nivel = c("mapa", "nivel"), mapa_agregacao = c("mapa", "agregacao"), mapa_projecao = c("mapa", "projecao"),
+  mapa_recorte = c("mapa", "recorte"), mapa_rotulos = c("mapa", "rotulos"),
   # escala
   x_inicio = c("eixo_x", "inicio"), x_fim = c("eixo_x", "fim"), x_folga_pct = c("eixo_x", "margem_percentual"),
   x_escala = c("eixo_x", "escala"), x_inverter = c("eixo_x", "inverter"),

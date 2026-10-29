@@ -16,6 +16,11 @@ O Cinabro usa, sem alterar, os trabalhos abaixo. Cada um tem a sua licença; os 
 - A paleta `cinabro` (cores da marca e variações) é original deste projeto.
 
 ## Pacotes R usados (instalados à parte, não incluídos)
-ggplot2, scales, patchwork, ragg, systemfonts, shiny, svglite, devEMF, viridisLite — cada um com a sua licença (MIT, GPL ou similar); veja o `DESCRIPTION` de cada pacote.
+ggplot2, scales, patchwork, ragg, systemfonts, shiny, svglite, devEMF, viridisLite, sf, vegan, ggrepel — cada um com a sua licença (MIT, GPL ou similar); veja o `DESCRIPTION` de cada pacote.
 
 > Esta lista foi montada de boa-fé a partir da documentação pública de cada trabalho. Antes de publicar o projeto como software livre, confira os textos oficiais das licenças acima.
+
+## Mapas, PCA/CA/CCA
+
+- **Contornos dos mapas** (`mapas/*.geojson`): Natural Earth (naturalearthdata.com), escalas 1:50m, `admin_0_countries` e `admin_1_states_provinces` — domínio público. As fronteiras seguem a visão do Natural Earth.
+- **vegan** (pacote R; PCA, CA e CCA): Oksanen et al., licença GPL-2 ou posterior. **sf** (mapas): Pebesma, GPL-2/MIT. **ggrepel** (rótulos): Slowikowski, GPL-3.

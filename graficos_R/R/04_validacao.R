@@ -13,7 +13,8 @@
 
 .OPCOES <- list(
   "grafico$tipo" = c("pontos", "linha", "linha_pontos", "area", "area_empilhada", "barras",
-                     "pizza", "histograma", "densidade", "ecdf", "boxplot"),
+                     "pizza", "histograma", "densidade", "ecdf", "boxplot", "mapa_calor", "pca", "ca", "cca",
+                     "mapa_mundo", "mapa_brasil"),
   "cores$preenchimento" = c("solido", "gradiente"),
   "cores$gradiente_direcao" = c("vertical", "vertical_invertido", "horizontal",
                                 "horizontal_invertido", "diagonal", "radial"),
@@ -36,6 +37,21 @@
   "boxplot$pontos_disposicao" = c("jitter", "coluna", "enxame"),
   "boxplot$media_erro_tipo" = c("desvio_padrao", "erro_padrao", "ic95"),
   "boxplot$media_erro_estilo" = c("barra", "ponto"),
+  "multivariada$transformacao" = c("nenhuma", "padronizar", "log1p", "raiz", "hellinger"),
+  "multivariada$escalonamento" = c("auto", "amostras", "variaveis", "simetrica"),
+  "multivariada$variaveis_estilo" = c("auto", "setas", "pontos"),
+  "multivariada$elipses" = c("nenhuma", "confianca", "dados"),
+  "mapa_calor$formato" = c("matriz", "longo"),
+  "mapa_calor$normalizar" = c("nenhum", "linha", "coluna"),
+  "mapa_calor$agrupar" = c("nenhum", "linhas", "colunas", "ambos"),
+  "mapa_calor$esquema_cor" = c("cinabro", "petroleo", "divergente", "viridis", "magma", "inferno", "turbo"),
+  "multivariada$legenda_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
+  "mapa_calor$barra_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
+  "mapa$nivel" = c("pais", "estado", "regiao"),
+  "mapa$agregacao" = c("soma", "media", "maximo"),
+  "mapa$projecao" = c("robinson", "equal_earth", "mercator", "plana"),
+  "mapa$recorte" = c("mundo", "sem_antartida", "america", "europa", "asia_pacifico"),
+  "mapa$rotulos" = c("nenhum", "nome", "nome_valor", "valor"),
   "eixo_y2$modo" = c("independente", "transformado"),
   "legenda$posicao" = c("dentro", "direita", "esquerda", "topo", "base"),
   "legenda$alinhar" = c("topo", "centro", "base", "esquerda", "direita"),
@@ -211,6 +227,19 @@
     .erro("cfg$legenda$sombra_deslocamento_pt deve ser um número ou c(direita, baixo), em pt.")
   if (!is.null(cfg$pizza$raio_furo) && (cfg$pizza$raio_furo < 0 || cfg$pizza$raio_furo > 0.9))
     .erro("cfg$pizza$raio_furo deve estar entre 0 e 0.9.")
+  mv <- cfg$multivariada
+  for (k in c("eixo_horizontal", "eixo_vertical"))
+    if (!is.null(mv[[k]]) && (!is.numeric(mv[[k]]) || length(mv[[k]]) != 1 || mv[[k]] < 1 || mv[[k]] != round(mv[[k]])))
+      .erro("cfg$multivariada$", k, " deve ser um número inteiro >= 1 (1 = primeiro eixo da ordenação).")
+  if (!is.null(mv$elipse_nivel) && (!is.numeric(mv$elipse_nivel) || mv$elipse_nivel <= 0 || mv$elipse_nivel >= 1))
+    .erro("cfg$multivariada$elipse_nivel deve estar entre 0 e 1 (ex.: 0.95).")
+  if (!is.null(mv$max_variaveis) && (!is.numeric(mv$max_variaveis) || mv$max_variaveis < 1))
+    .erro("cfg$multivariada$max_variaveis deve ser NULL ou um número >= 1.")
+  mc <- cfg$mapa_calor
+  if (!is.null(mc$cores_escala) && (!is.character(mc$cores_escala) || length(mc$cores_escala) < 2))
+    .erro("cfg$mapa_calor$cores_escala deve ter 2 ou mais cores (ex.: c(\"white\", \"red\")).")
+  if (!is.null(mc$limite_min) && !is.null(mc$limite_max) && mc$limite_min >= mc$limite_max)
+    .erro("cfg$mapa_calor$limite_min (", mc$limite_min, ") deve ser menor que limite_max (", mc$limite_max, ").")
   if (!identical(cfg$legenda$mostrar, "auto") && !is.logical(cfg$legenda$mostrar))
     .erro("cfg$legenda$mostrar deve ser \"auto\", TRUE ou FALSE.")
   invisible(TRUE)

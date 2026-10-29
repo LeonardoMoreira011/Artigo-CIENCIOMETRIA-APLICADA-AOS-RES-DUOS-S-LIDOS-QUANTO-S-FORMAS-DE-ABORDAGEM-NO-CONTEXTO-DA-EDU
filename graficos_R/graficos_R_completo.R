@@ -57,6 +57,9 @@ instalar_pacotes <- function() {
     svglite      = "2.1.0",  # SVG editável (Inkscape/Illustrator)
     devEMF       = "4.0",    # EMF para colar no Word/PowerPoint
     viridisLite  = "0.4.0",  # paletas magma/inferno/turbo
+    sf           = "1.0-0",  # mapas (mundo e estados do Brasil)
+    vegan        = "2.6-0",  # PCA, CA e CCA (ordenações)
+    ggrepel      = "0.9.0",  # rótulos de pontos sem sobreposição
     png          = "0.1-7",  # figuras anexadas ao gráfico (logotipo, esquema): PNG
     jpeg         = "0.1-9",  # figuras anexadas ao gráfico: JPEG
     shiny        = "1.7.0"   # aplicativo no navegador (app_shiny/, abrir_app.bat)
@@ -180,7 +183,8 @@ cfg$dados <- list(
 cfg$grafico <- list(
   # tipo: tipo de gráfico.
   #   OPÇÕES: "pontos" | "linha" | "linha_pontos" | "area" | "area_empilhada" |
-  #           "barras" | "pizza" | "histograma" | "densidade" | "ecdf" | "boxplot"
+  #           "barras" | "pizza" | "histograma" | "densidade" | "ecdf" | "boxplot" |
+  #           "mapa_calor" | "pca" | "ca" | "cca" | "mapa_mundo" | "mapa_brasil"
   #   EX.: cfg$grafico$tipo <- "boxplot"
   tipo = "linha_pontos",
 
@@ -741,6 +745,180 @@ cfg$boxplot <- list(
   #   OPÇÕES: NULL (80 % do tamanho base do texto) | número
   #   EX.: cfg$boxplot$n_tamanho_pt <- 7
   n_tamanho_pt = NULL
+)
+
+# -----------------------------------------------------------------------------
+# MULTIVARIADA — PCA, CA e CCA (tipos "pca", "ca" e "cca")
+# -----------------------------------------------------------------------------
+#  A planilha tem uma linha por amostra. Coluna das amostras = cfg$grafico$coluna_x (os nomes das amostras); a coluna de
+#  grupo (cores e elipses) = cfg$grafico$coluna_grupo; as demais colunas numéricas são divididas aqui em VARIÁVEIS
+#  (espécies, parâmetros) e AMBIENTAIS (pH, temperatura... só o CCA as usa para restringir a ordenação; no PCA e no CA
+#  entram como setas suplementares, ajustadas com envfit).
+cfg$multivariada <- list(
+  # variaveis: colunas das variáveis (matriz principal).
+  #   OPÇÕES: NULL (todas as numéricas, menos as ambientais, a de grupo e a das amostras) | vetor de nomes ou números
+  #   EX.: cfg$multivariada$variaveis <- c("Sp1", "Sp2", "Sp3")
+  variaveis = NULL,
+
+  # ambientais: colunas das variáveis ambientais.
+  #   OPÇÕES: NULL | vetor de nomes ou números      EX.: cfg$multivariada$ambientais <- c("pH", "Temperatura")
+  ambientais = NULL,
+
+  # transformacao: tratamento da matriz antes da análise.
+  #   "nenhuma" | "padronizar" (média 0, desvio 1 por coluna) | "log1p" (log(x + 1)) | "raiz" | "hellinger" (raiz da
+  #   abundância relativa da amostra; comum em ecologia)
+  #   EX.: cfg$multivariada$transformacao <- "hellinger"
+  transformacao = "nenhuma",
+
+  # escalar_variaveis: só no PCA. TRUE = PCA de correlação (variáveis com unidades diferentes); FALSE = de covariância.
+  #   OPÇÕES: TRUE | FALSE
+  escalar_variaveis = TRUE,
+
+  # escalonamento: o que fica "fiel" no biplot. "auto" (PCA: variaveis; CA e CCA: simetrica) | "amostras" (distâncias entre
+  #   amostras) | "variaveis" (correlações entre variáveis) | "simetrica"
+  escalonamento = "auto",
+
+  # eixo_horizontal / eixo_vertical: quais eixos da ordenação aparecem (1 = primeiro, 2 = segundo...).
+  #   OPÇÕES: inteiros (padrão 1 e 2)
+  eixo_horizontal = 1,
+  eixo_vertical = 2,
+
+  # mostrar_amostras / rotulos_amostras: pontos das amostras e seus nomes.
+  mostrar_amostras = TRUE,
+  rotulos_amostras = FALSE,
+
+  # mostrar_variaveis: desenha as variáveis (PCA: setas; CA e CCA: pontos), com os nomes (rotulos_variaveis).
+  mostrar_variaveis = TRUE,
+  rotulos_variaveis = TRUE,
+
+  # variaveis_estilo: "auto" (PCA: setas; CA/CCA: pontos) | "setas" | "pontos"
+  variaveis_estilo = "auto",
+
+  # max_variaveis: só as N variáveis que mais pesam no plano mostrado (NULL = todas).
+  #   OPÇÕES: NULL | inteiro      EX.: cfg$multivariada$max_variaveis <- 15
+  max_variaveis = 20,
+
+  # mostrar_ambientais: setas das variáveis ambientais (com nomes).
+  mostrar_ambientais = TRUE,
+
+  # ajustar_setas: TRUE = as setas (variáveis e ambientais) são esticadas para caber na nuvem de amostras (a direção e
+  #   os tamanhos relativos são verdadeiros; o comprimento absoluto não).
+  ajustar_setas = TRUE,
+
+  # elipses: elipse por grupo (precisa de cfg$grafico$coluna_grupo). "nenhuma" | "confianca" (elipse de confiança da média,
+  #   usa elipse_nivel) | "dados" (contém a fração elipse_nivel dos pontos)
+  #   EX.: cfg$multivariada$elipses <- "dados"
+  elipses = "nenhuma",
+  elipse_nivel = 0.95,
+
+  # legenda_posicao: onde fica a legenda dos grupos (manda sobre cfg$legenda$posicao nestes gráficos; fora do gráfico
+  #   ela não cobre os pontos). OPÇÕES: "direita" | "esquerda" | "topo" | "base" | "dentro"
+  legenda_posicao = "direita",
+
+  # linhas_zero: linhas tracejadas passando pela origem (0, 0).
+  linhas_zero = TRUE,
+
+  # cor_variaveis / cor_ambientais: cor das setas, dos pontos e dos nomes das variáveis e das ambientais.
+  #   OPÇÕES: qualquer cor (nome ou #RRGGBB)
+  cor_variaveis = "grey30",
+  cor_ambientais = "#B3262E",
+
+  # tamanho_rotulos_pt: tamanho dos nomes (amostras, variáveis, ambientais), em pt. NULL = 85 % do tamanho base.
+  tamanho_rotulos_pt = NULL,
+
+  # espessura_setas_pt: espessura das setas (pt).   OPÇÕES: número > 0
+  espessura_setas_pt = 0.6
+)
+
+# -----------------------------------------------------------------------------
+# MAPA_CALOR — mapa de calor (tipo "mapa_calor"): Z em gradiente de cor
+# -----------------------------------------------------------------------------
+#  Formato "matriz" (padrão): a coluna das linhas = cfg$grafico$coluna_x (nomes das linhas); as outras colunas numéricas
+#  (ou cfg$grafico$colunas_y) são as colunas do mapa. Formato "longo": coluna_x = linhas, coluna_grupo = colunas,
+#  colunas_y[1] = valor Z.
+#  Os mapas geográficos (tipos "mapa_mundo" e "mapa_brasil") usam o mesmo esquema de cor (esquema_cor, cores_escala,
+#  limite_min, limite_max, centro) e a mesma barra de cores.
+cfg$mapa_calor <- list(
+  # formato: "matriz" | "longo"
+  formato = "matriz",
+
+  # normalizar: padroniza (nota z) antes de colorir. "nenhum" | "linha" | "coluna"
+  normalizar = "nenhum",
+
+  # agrupar: reordena linhas e/ou colunas por semelhança (agrupamento hierárquico). "nenhum" | "linhas" | "colunas" | "ambos"
+  agrupar = "nenhum",
+
+  # esquema_cor: gradiente do eixo Z. "cinabro" (creme -> vermelho) | "petroleo" (creme -> azul petróleo) |
+  #   "divergente" (petróleo - creme - vermelho; o centro vale 0 ou o "centro" abaixo) | "viridis" | "magma" | "inferno" | "turbo"
+  esquema_cor = "cinabro",
+
+  # cores_escala: sua própria escala (2 ou mais cores, do menor para o maior valor). NULL = usa o esquema_cor.
+  #   EX.: cfg$mapa_calor$cores_escala <- c("white", "gold", "red")
+  cores_escala = NULL,
+
+  # inverter_cores: inverte a escala (maior vira o primeiro tom).
+  inverter_cores = FALSE,
+
+  # limite_min / limite_max: valores onde a escala começa e termina. NULL = menor e maior valor.
+  limite_min = NULL,
+  limite_max = NULL,
+
+  # centro: valor que fica na cor do meio (esquema "divergente" ou escala de 3 cores). NULL = 0 (divergente) ou ponto médio.
+  centro = NULL,
+
+  # titulo_barra: título da barra de cores. NULL = nome da coluna de valor (ou "Valor").
+  titulo_barra = NULL,
+
+  # valores_nas_celulas / casas / tamanho_valores_pt: escreve o número em cada célula (ou país/região no mapa).
+  valores_nas_celulas = FALSE,
+  casas = 1,
+  tamanho_valores_pt = NULL,
+
+  # contorno_cor / contorno_espessura_pt: linha entre as células (ou fronteiras no mapa). contorno_cor NA = sem linha.
+  contorno_cor = "white",
+  contorno_espessura_pt = 0.4,
+
+  # cor_sem_dado: cor das células vazias (e, no mapa, dos países/estados sem valor).
+  cor_sem_dado = "grey88",
+
+  # barra_posicao: onde fica a barra de cores (vale para o mapa de calor e os mapas; manda sobre cfg$legenda$posicao).
+  #   OPÇÕES: "direita" | "esquerda" | "topo" | "base" | "dentro"
+  barra_posicao = "direita",
+
+  # barra_altura_cm / barra_largura_cm: tamanho da barra de cores (cm).
+  barra_altura_cm = 4,
+  barra_largura_cm = 0.4
+)
+
+# -----------------------------------------------------------------------------
+# MAPA — mapa mundi e mapa do Brasil com gradiente de cor (tipos "mapa_mundo" e "mapa_brasil")
+# -----------------------------------------------------------------------------
+#  Coluna dos locais = cfg$grafico$coluna_x; valor = a primeira de cfg$grafico$colunas_y.
+#  Mundo: países pelo nome em INGLÊS (ou código ISO de 3 letras). Brasil: sigla (SP) ou nome do estado.
+#  Os contornos e a divisão em regiões comerciais ficam na pasta mapas/ (edite mapas/mundo_regioes.csv).
+cfg$mapa <- list(
+  # nivel: como pintar. Mundo: "pais" | "regiao" (soma/média por região comercial: Asia Pacific, LATAM, Brazil,
+  #   North America, Western Europe, Other). Brasil: "estado" | "regiao" (Norte, Nordeste, Centro-Oeste, Sudeste, Sul).
+  nivel = "pais",
+
+  # agregacao: com nivel = "regiao" (ou locais repetidos), como combinar os valores. "soma" | "media" | "maximo"
+  agregacao = "soma",
+
+  # projecao: só no mundo. "robinson" | "equal_earth" | "mercator" | "plana"
+  projecao = "robinson",
+
+  # recorte: só no mundo; mostra só uma parte. "mundo" | "sem_antartida" (padrão) | "america" | "europa" | "asia_pacifico"
+  recorte = "sem_antartida",
+
+  # rotulos: escreve o nome dos locais com valor (e o valor, se valores_nas_celulas = TRUE em mapa_calor).
+  #   "nenhum" | "nome" | "nome_valor" | "valor"
+  rotulos = "nenhum",
+  rotulos_tamanho_pt = NULL,
+
+  # mundo_geojson / mundo_regioes_csv / brasil_geojson: caminhos dos contornos e da tabela de regiões (NULL = os da pasta mapas/).
+  mundo_geojson = NULL,
+  mundo_regioes_csv = NULL,
+  brasil_geojson = NULL
 )
 
 # -----------------------------------------------------------------------------
@@ -2230,7 +2408,8 @@ colunas <- function(dados) {
 
 .OPCOES <- list(
   "grafico$tipo" = c("pontos", "linha", "linha_pontos", "area", "area_empilhada", "barras",
-                     "pizza", "histograma", "densidade", "ecdf", "boxplot"),
+                     "pizza", "histograma", "densidade", "ecdf", "boxplot", "mapa_calor", "pca", "ca", "cca",
+                     "mapa_mundo", "mapa_brasil"),
   "cores$preenchimento" = c("solido", "gradiente"),
   "cores$gradiente_direcao" = c("vertical", "vertical_invertido", "horizontal",
                                 "horizontal_invertido", "diagonal", "radial"),
@@ -2253,6 +2432,21 @@ colunas <- function(dados) {
   "boxplot$pontos_disposicao" = c("jitter", "coluna", "enxame"),
   "boxplot$media_erro_tipo" = c("desvio_padrao", "erro_padrao", "ic95"),
   "boxplot$media_erro_estilo" = c("barra", "ponto"),
+  "multivariada$transformacao" = c("nenhuma", "padronizar", "log1p", "raiz", "hellinger"),
+  "multivariada$escalonamento" = c("auto", "amostras", "variaveis", "simetrica"),
+  "multivariada$variaveis_estilo" = c("auto", "setas", "pontos"),
+  "multivariada$elipses" = c("nenhuma", "confianca", "dados"),
+  "mapa_calor$formato" = c("matriz", "longo"),
+  "mapa_calor$normalizar" = c("nenhum", "linha", "coluna"),
+  "mapa_calor$agrupar" = c("nenhum", "linhas", "colunas", "ambos"),
+  "mapa_calor$esquema_cor" = c("cinabro", "petroleo", "divergente", "viridis", "magma", "inferno", "turbo"),
+  "multivariada$legenda_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
+  "mapa_calor$barra_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
+  "mapa$nivel" = c("pais", "estado", "regiao"),
+  "mapa$agregacao" = c("soma", "media", "maximo"),
+  "mapa$projecao" = c("robinson", "equal_earth", "mercator", "plana"),
+  "mapa$recorte" = c("mundo", "sem_antartida", "america", "europa", "asia_pacifico"),
+  "mapa$rotulos" = c("nenhum", "nome", "nome_valor", "valor"),
   "eixo_y2$modo" = c("independente", "transformado"),
   "legenda$posicao" = c("dentro", "direita", "esquerda", "topo", "base"),
   "legenda$alinhar" = c("topo", "centro", "base", "esquerda", "direita"),
@@ -2428,6 +2622,19 @@ colunas <- function(dados) {
     .erro("cfg$legenda$sombra_deslocamento_pt deve ser um número ou c(direita, baixo), em pt.")
   if (!is.null(cfg$pizza$raio_furo) && (cfg$pizza$raio_furo < 0 || cfg$pizza$raio_furo > 0.9))
     .erro("cfg$pizza$raio_furo deve estar entre 0 e 0.9.")
+  mv <- cfg$multivariada
+  for (k in c("eixo_horizontal", "eixo_vertical"))
+    if (!is.null(mv[[k]]) && (!is.numeric(mv[[k]]) || length(mv[[k]]) != 1 || mv[[k]] < 1 || mv[[k]] != round(mv[[k]])))
+      .erro("cfg$multivariada$", k, " deve ser um número inteiro >= 1 (1 = primeiro eixo da ordenação).")
+  if (!is.null(mv$elipse_nivel) && (!is.numeric(mv$elipse_nivel) || mv$elipse_nivel <= 0 || mv$elipse_nivel >= 1))
+    .erro("cfg$multivariada$elipse_nivel deve estar entre 0 e 1 (ex.: 0.95).")
+  if (!is.null(mv$max_variaveis) && (!is.numeric(mv$max_variaveis) || mv$max_variaveis < 1))
+    .erro("cfg$multivariada$max_variaveis deve ser NULL ou um número >= 1.")
+  mc <- cfg$mapa_calor
+  if (!is.null(mc$cores_escala) && (!is.character(mc$cores_escala) || length(mc$cores_escala) < 2))
+    .erro("cfg$mapa_calor$cores_escala deve ter 2 ou mais cores (ex.: c(\"white\", \"red\")).")
+  if (!is.null(mc$limite_min) && !is.null(mc$limite_max) && mc$limite_min >= mc$limite_max)
+    .erro("cfg$mapa_calor$limite_min (", mc$limite_min, ") deve ser menor que limite_max (", mc$limite_max, ").")
   if (!identical(cfg$legenda$mostrar, "auto") && !is.logical(cfg$legenda$mostrar))
     .erro("cfg$legenda$mostrar deve ser \"auto\", TRUE ou FALSE.")
   invisible(TRUE)
@@ -4343,16 +4550,21 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
     barras = .construir_barras(dados, cfg),
     pizza = .construir_pizza(dados, cfg),
     histograma = , densidade = , ecdf = .construir_distribuicao(dados, cfg),
-    boxplot = .construir_boxplot(dados, cfg))
+    boxplot = .construir_boxplot(dados, cfg),
+    pca = , ca = , cca = .construir_multivariada(dados, cfg),
+    mapa_calor = .construir_mapa_calor(dados, cfg),
+    mapa_mundo = , mapa_brasil = .construir_mapa(dados, cfg))
   info <- res$info
   if (isTRUE(so_info)) return(info)
+  if (!is.null(info$titulo_barra) && is.null(cfg$legenda$titulo)) cfg$legenda$titulo <- info$titulo_barra   # a barra de cores leva o nome do valor
   extra <- .camadas_extra(cfg, info)
   aju <- .camadas_ajustes(cfg, info); frm <- .camadas_formas(cfg, info)
   g <- ggplot() + extra$antes + aju$antes + frm$antes + res$camadas + aju$depois + extra$depois + frm$depois
   mostrar_leg <- if (identical(cfg$legenda$mostrar, "auto")) info$legenda_auto else isTRUE(cfg$legenda$mostrar)
 
-  if (isTRUE(info$pizza)) {
-    g <- g + coord_fixed(xlim = c(-info$lim, info$lim), ylim = c(-info$lim, info$lim), expand = FALSE, clip = "off") +
+  if (isTRUE(info$pizza) || isTRUE(info$mapa)) {
+    g <- g + (if (isTRUE(info$mapa)) coord_fixed(xlim = info$xlim, ylim = info$ylim, expand = FALSE, clip = "off")
+              else coord_fixed(xlim = c(-info$lim, info$lim), ylim = c(-info$lim, info$lim), expand = FALSE, clip = "off")) +
       .tema(cfg, cfg$eixo_x, cfg$eixo_y, list(hor = "bottom", ver = "left", lado_y2 = ""), sem_eixos = TRUE) +
       labs(title = .texto(cfg$titulos$titulo, cfg$titulos$negrito_titulo), subtitle = .texto(cfg$titulos$subtitulo))
     if (!mostrar_leg) g <- g + theme(legend.position = "none")
@@ -4472,6 +4684,9 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 # Valores que, se vazios, seguem outro ajuste: a grossura dos traços e da linha dos eixos segue a da moldura
 # (cfg$caixa$espessura_pt) — mudar a moldura padroniza tudo; escrever o valor no eixo vale mais.
 .resolver_herancas <- function(cfg) {
+  # gráficos com barra de cores (mapa de calor e mapas): a barra vai para onde cfg$mapa_calor$barra_posicao manda (padrão: direita)
+  if (cfg$grafico$tipo %in% c("mapa_calor", "mapa_mundo", "mapa_brasil")) cfg$legenda$posicao <- cfg$mapa_calor$barra_posicao %||% "direita"
+  if (cfg$grafico$tipo %in% c("pca", "ca", "cca")) cfg$legenda$posicao <- cfg$multivariada$legenda_posicao %||% "direita"
   for (ax in c("eixo_x", "eixo_y")) {
     cfg[[ax]]$espessura_ticks_pt <- cfg[[ax]]$espessura_ticks_pt %||% cfg$caixa$espessura_pt
     cfg[[ax]]$espessura_linha_pt <- cfg[[ax]]$espessura_linha_pt %||% cfg$caixa$espessura_pt
@@ -4605,7 +4820,7 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
 .plotar_quebra <- function(dados, cfg) {
   Q <- cfg$quebra
   if (is.null(Q$de) || is.null(Q$ate) || Q$de >= Q$ate) .erro("cfg$quebra: defina de < ate (ex.: de = 20, ate = 80).")
-  if (cfg$grafico$tipo == "pizza") .erro("Quebra de eixo não se aplica a pizza.")
+  if (cfg$grafico$tipo %in% c("pizza", "mapa_mundo", "mapa_brasil", "mapa_calor", "pca", "ca", "cca")) .erro("Quebra de eixo não se aplica a este tipo de gráfico (", cfg$grafico$tipo, ").")
   base <- cfg; base$quebra$ativo <- FALSE
   inf <- .plotar_um(dados, base, so_info = TRUE)
   lim <- inf$ax_y$limites
@@ -5240,6 +5455,25 @@ jsonlite_b64 <- function(txt) {
 .PAINEL_MAPA <- list(
   # tipo e colunas
   tipo_grafico = c("grafico", "tipo"), coluna_x = c("grafico", "coluna_x"), colunas_y = c("grafico", "colunas_y"),
+  coluna_grupo = c("grafico", "coluna_grupo"),
+  # PCA / CA / CCA
+  multi_variaveis = c("multivariada", "variaveis"), multi_ambientais = c("multivariada", "ambientais"),
+  multi_transformacao = c("multivariada", "transformacao"), multi_escalar = c("multivariada", "escalar_variaveis"),
+  multi_escalonamento = c("multivariada", "escalonamento"), multi_eixo_horizontal = c("multivariada", "eixo_horizontal"),
+  multi_eixo_vertical = c("multivariada", "eixo_vertical"), multi_rotulos_amostras = c("multivariada", "rotulos_amostras"),
+  multi_mostrar_variaveis = c("multivariada", "mostrar_variaveis"), multi_rotulos_variaveis = c("multivariada", "rotulos_variaveis"),
+  multi_variaveis_estilo = c("multivariada", "variaveis_estilo"), multi_max_variaveis = c("multivariada", "max_variaveis"),
+  multi_mostrar_ambientais = c("multivariada", "mostrar_ambientais"), multi_elipses = c("multivariada", "elipses"),
+  multi_elipse_nivel = c("multivariada", "elipse_nivel"), multi_cor_variaveis = c("multivariada", "cor_variaveis"),
+  multi_cor_ambientais = c("multivariada", "cor_ambientais"), multi_legenda_posicao = c("multivariada", "legenda_posicao"), multi_linhas_zero = c("multivariada", "linhas_zero"),
+  # mapa de calor (eixo Z em gradiente) e mapas
+  calor_formato = c("mapa_calor", "formato"), calor_normalizar = c("mapa_calor", "normalizar"), calor_agrupar = c("mapa_calor", "agrupar"),
+  calor_esquema = c("mapa_calor", "esquema_cor"), calor_cores = c("mapa_calor", "cores_escala"), calor_inverter = c("mapa_calor", "inverter_cores"),
+  calor_min = c("mapa_calor", "limite_min"), calor_max = c("mapa_calor", "limite_max"), calor_centro = c("mapa_calor", "centro"),
+  calor_titulo_barra = c("mapa_calor", "titulo_barra"), calor_valores = c("mapa_calor", "valores_nas_celulas"), calor_casas = c("mapa_calor", "casas"),
+  calor_contorno_cor = c("mapa_calor", "contorno_cor"), calor_cor_sem_dado = c("mapa_calor", "cor_sem_dado"), calor_barra_posicao = c("mapa_calor", "barra_posicao"),
+  mapa_nivel = c("mapa", "nivel"), mapa_agregacao = c("mapa", "agregacao"), mapa_projecao = c("mapa", "projecao"),
+  mapa_recorte = c("mapa", "recorte"), mapa_rotulos = c("mapa", "rotulos"),
   # escala
   x_inicio = c("eixo_x", "inicio"), x_fim = c("eixo_x", "fim"), x_folga_pct = c("eixo_x", "margem_percentual"),
   x_escala = c("eixo_x", "escala"), x_inverter = c("eixo_x", "inverter"),
@@ -5685,7 +5919,7 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
   if (!isTRUE(cx$painel_fixo %||% TRUE)) return(NULL)
   w <- cx$painel_largura_cm; h <- cx$painel_altura_cm
   if (is.null(w) && is.null(h)) {
-    if (identical(cfg$grafico$tipo, "pizza") || isTRUE(cfg$paineis$ativo)) return(NULL)
+    if (cfg$grafico$tipo %in% c("pizza", "mapa_mundo", "mapa_brasil") || isTRUE(cfg$paineis$ativo)) return(NULL)
     p <- cx$painel_padrao_cm %||% c(10, 7.5)
     w <- p[1]; h <- p[2]
     if (!is.null(cx$proporcao)) h <- w * cx$proporcao
@@ -5799,6 +6033,7 @@ geom_esfera <- function(mapping = NULL, data = NULL, luz = c(-0.35, -0.45), show
 # Entra: g (de plotar) e cfg. Sai: NULL (sem legenda dentro) ou list(pagina = c(larg, alt) em polegadas,
 #   painel = c(esq, topo, larg, alt) e legenda = c(esq, topo, larg, alt), todos em FRAÇÃO da página (topo = a partir de cima)).
 .geometria_legenda <- function(g, cfg, prep = NULL) {
+  cfg <- .resolver_herancas(cfg)                                  # (a barra de cores dos mapas pode mudar a posição da legenda)
   lg <- cfg$legenda
   if (!identical(lg$posicao, "dentro") || isFALSE(lg$mostrar)) return(NULL)
   prep <- prep %||% .preparar_saida(g, cfg)                       # o app passa o 'prep' já calculado: o gráfico é montado uma vez só
@@ -6881,6 +7116,477 @@ if (requireNamespace("grid", quietly = TRUE)) {
 }
 
 # -----------------------------------------------------------------------------
+#  24_tipo_multivariada.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/24_tipo_multivariada.R — PCA, CA e CCA (biplots)
+# =============================================================================
+#  Usa o pacote vegan (rda para o PCA, cca para o CA e o CCA). A planilha tem uma linha por amostra; as colunas são
+#  divididas em variáveis (matriz principal) e ambientais (cfg$multivariada). Veja cfg$multivariada no 01_config.R.
+# =============================================================================
+
+# Tabela que o app e o motor usam para dizer como cada coluna foi tratada. Entra: dados e cfg. Sai: list(x, grupo, variaveis, ambientais).
+.colunas_multivariada <- function(dados, cfg) {
+  M <- cfg$multivariada; G <- cfg$grafico
+  nome <- function(refs, onde) if (is.null(refs)) NULL else vapply(refs, function(r) .coluna(dados, r, onde), "")
+  xcol <- if (is.null(G$coluna_x)) NULL else .coluna(dados, G$coluna_x, "cfg$grafico$coluna_x")
+  gcol <- nome(G$coluna_grupo, "cfg$grafico$coluna_grupo")
+  amb <- nome(M$ambientais, "cfg$multivariada$ambientais")
+  vars <- nome(M$variaveis %||% G$colunas_y, "cfg$multivariada$variaveis")
+  if (is.null(vars)) {
+    numericas <- names(dados)[vapply(dados, is.numeric, NA)]
+    vars <- setdiff(numericas, c(xcol, gcol, amb))
+  }
+  vars <- setdiff(vars, c(xcol, gcol, amb))
+  if (length(vars) < 2) .erro("PCA/CA/CCA precisam de pelo menos 2 variáveis numéricas (colunas). Defina cfg$multivariada$variaveis.")
+  nao_num <- c(vars, amb)[!vapply(dados[c(vars, amb)], is.numeric, NA)]
+  if (length(nao_num)) .erro("A(s) coluna(s) ", paste0("'", nao_num, "'", collapse = ", "), " não é(são) numérica(s). ",
+                             "Se o arquivo usa vírgula decimal, veja cfg$dados$decimal_virgula.")
+  list(x = xcol, grupo = gcol, variaveis = vars, ambientais = amb)
+}
+
+# Transformações da matriz de variáveis antes da ordenação.
+.transformar_matriz <- function(X, modo) {
+  if (modo %in% c("log1p", "raiz", "hellinger") && any(X < 0, na.rm = TRUE))
+    .erro("A transformação \"", modo, "\" não aceita valores negativos (há ", sum(X < 0, na.rm = TRUE), " na matriz).")
+  switch(modo,
+    nenhuma = X,
+    padronizar = { v <- apply(X, 2, stats::sd); X[, v > 0] <- scale(X[, v > 0, drop = FALSE]); X },
+    log1p = log1p(X),
+    raiz = sqrt(X),
+    hellinger = { rs <- rowSums(X); rs[rs == 0] <- NA; sqrt(X / rs) })
+}
+
+# Pontos de uma elipse por grupo. tipo "dados": contém a fração `nivel` dos pontos; "confianca": elipse de confiança da média.
+.elipse_grupo <- function(xy, tipo, nivel) {
+  n <- nrow(xy); if (n < 4) return(NULL)
+  mu <- colMeans(xy); S <- stats::cov(xy)
+  if (any(!is.finite(S)) || abs(det(S)) < 1e-12) return(NULL)
+  r <- if (tipo == "dados") sqrt(stats::qchisq(nivel, 2)) else sqrt(2 * stats::qf(nivel, 2, n - 2) / n)
+  th <- seq(0, 2 * pi, length.out = 101)
+  L <- t(chol(S))
+  t(mu + r * (L %*% rbind(cos(th), sin(th))))
+}
+
+# Calcula a ordenação. Entra: dados e cfg. Sai: lista com coordenadas das amostras, variáveis e ambientais, e a variância explicada.
+.ordenacao <- function(dados, cfg) {
+  if (!.tem("vegan")) .erro("PCA, CA e CCA precisam do pacote vegan. Instale com install.packages(\"vegan\") (ou rode o 00_instalar_pacotes.R).")
+  M <- cfg$multivariada; tipo <- cfg$grafico$tipo
+  col <- .colunas_multivariada(dados, cfg)
+  if (tipo == "cca" && !length(col$ambientais))
+    .erro("CCA precisa das variáveis ambientais: escolha as colunas em \"Variáveis ambientais\" (no código: cfg$multivariada$ambientais). Elas podem estar na mesma planilha.")
+  usar <- c(col$variaveis, col$ambientais)
+  completo <- stats::complete.cases(dados[usar])
+  if (!all(completo)) .aviso(sum(!completo), " amostra(s) com valor vazio em variáveis/ambientais foram ignoradas na ordenação.")
+  d <- dados[completo, , drop = FALSE]
+  X <- as.matrix(d[col$variaveis]); storage.mode(X) <- "double"
+  X <- .transformar_matriz(X, M$transformacao %||% "nenhuma")
+  rotulos <- if (!is.null(col$x)) as.character(d[[col$x]]) else as.character(seq_len(nrow(d)))
+  grupo <- if (!is.null(col$grupo)) as.character(d[[col$grupo]]) else NULL
+  ok <- stats::complete.cases(X)
+  if (!all(ok)) { .aviso(sum(!ok), " amostra(s) ficaram sem valor após a transformação e foram ignoradas."); X <- X[ok, , drop = FALSE]
+                  d <- d[ok, , drop = FALSE]; rotulos <- rotulos[ok]; grupo <- grupo[ok] }
+  if (nrow(X) < 4) .erro("A ordenação precisa de pelo menos 4 amostras (linhas); há ", nrow(X), ".")
+  constante <- apply(X, 2, stats::sd) == 0
+  if (any(constante) && tipo == "pca") { .aviso("Variável(is) sem variação foram ignoradas: ", paste(colnames(X)[constante], collapse = ", ")); X <- X[, !constante, drop = FALSE] }
+  if (tipo %in% c("ca", "cca")) {
+    if (any(X < 0)) .erro("CA e CCA exigem valores >= 0 (contagens, abundâncias). Há valores negativos na matriz; use o PCA, ou outra transformação.")
+    zero <- rowSums(X) == 0
+    if (any(zero)) { .aviso(sum(zero), " amostra(s) com soma zero foram ignoradas (o CA/CCA não as aceita)."); X <- X[!zero, , drop = FALSE]
+                     d <- d[!zero, , drop = FALSE]; rotulos <- rotulos[!zero]; grupo <- grupo[!zero] }
+    colzero <- colSums(X) == 0
+    if (any(colzero)) X <- X[, !colzero, drop = FALSE]
+  }
+  if (ncol(X) < 2) .erro("Sobraram menos de 2 variáveis com variação; confira as colunas escolhidas.")
+  E <- if (length(col$ambientais)) as.data.frame(d[col$ambientais]) else NULL
+  ord <- suppressWarnings(switch(tipo,
+    pca = vegan::rda(X, scale = isTRUE(M$escalar_variaveis)),
+    ca = vegan::cca(X),
+    cca = vegan::cca(X, E)))
+  ev <- vegan::eigenvals(ord); prop <- ev / sum(ev)
+  ch <- c(M$eixo_horizontal %||% 1, M$eixo_vertical %||% 2)
+  if (ch[1] == ch[2]) .erro("cfg$multivariada: eixo_horizontal e eixo_vertical não podem ser o mesmo eixo.")
+  if (max(ch) > length(ev)) .erro("A ordenação só tem ", length(ev), " eixo(s); pedi os eixos ", ch[1], " e ", ch[2], " (cfg$multivariada$eixo_horizontal/eixo_vertical).")
+  esc <- switch(M$escalonamento %||% "auto", amostras = 1, variaveis = 2, simetrica = 3, auto = if (tipo == "pca") 2 else 3)
+  pega <- function(...) tryCatch(suppressWarnings(vegan::scores(ord, choices = ch, scaling = esc, ...)), error = function(e) NULL)
+  sc_sites <- pega(display = "sites"); sc_vars <- pega(display = "species")
+  nomes_eixos <- colnames(sc_sites)
+  amb <- NULL
+  if (tipo == "cca") {
+    amb <- pega(display = "bp")
+  } else if (length(col$ambientais)) {
+    numE <- E[vapply(E, is.numeric, NA)]
+    ef <- tryCatch(suppressWarnings(vegan::envfit(ord, numE, choices = ch, scaling = esc, permutations = 0)), error = function(e) NULL)
+    if (!is.null(ef) && !is.null(ef$vectors)) {
+      amb <- ef$vectors$arrows * sqrt(ef$vectors$r)
+      colnames(amb) <- nomes_eixos
+    }
+  }
+  list(tipo = tipo, sites = as.matrix(sc_sites), vars = as.matrix(sc_vars), amb = if (!is.null(amb)) as.matrix(amb), rotulos = rotulos,
+       grupo = grupo, eixos = nomes_eixos, prop = as.numeric(prop[ch]), escalonamento = esc,
+       resumo = list(prop_total = as.numeric(prop), eixos_total = names(ev), n = nrow(X), n_vars = ncol(X),
+                     restrita = if (tipo == "cca") ord$CCA$tot.chi / ord$tot.chi else NA_real_))
+}
+
+# Biplot de PCA, CA e CCA. Entra: dados e cfg. Sai: list(camadas, info).
+.construir_multivariada <- function(dados, cfg) {
+  M <- cfg$multivariada; tipo <- cfg$grafico$tipo
+  o <- .ordenacao(dados, cfg)
+  fonte <- .fonte(cfg$texto$fonte); tam_rot <- .tx(M$tamanho_rotulos_pt %||% cfg$texto$tamanho_base_pt * 0.85)
+  face <- if (.neg(cfg)) "bold" else "plain"
+  rotular <- function(d, cor, ...) {
+    if (!nrow(d)) return(NULL)
+    if (.tem("ggrepel")) ggrepel::geom_text_repel(data = d, aes(x = x, y = y, label = rot), colour = cor, size = tam_rot, family = fonte, fontface = face,
+                                                   max.overlaps = 100, min.segment.length = 0.3, segment.size = 0.25, segment.colour = "grey60",
+                                                   box.padding = 0.25, point.padding = 0.15, seed = 1, show.legend = FALSE, ...)
+    else geom_text(data = d, aes(x = x, y = y, label = rot), colour = cor, size = tam_rot, family = fonte, fontface = face, vjust = -0.6, check_overlap = TRUE, show.legend = FALSE)
+  }
+  S <- as.data.frame(o$sites); names(S) <- c("x", "y"); S$rot <- o$rotulos
+  grupos <- if (!is.null(o$grupo)) { ordem <- cfg$grafico$ordem_itens; g <- unique(o$grupo[!is.na(o$grupo)])
+                                       if (!is.null(ordem)) c(intersect(ordem, g), setdiff(g, ordem)) else g } else "Amostras"
+  S$serie <- factor(if (is.null(o$grupo)) "Amostras" else o$grupo, levels = grupos)
+  est <- .estilos(cfg, grupos)
+  for (i in names(est)) if (isTRUE(est[[i]]$simbolo == .COD_ESFERA)) est[[i]]$simbolo <- 21
+  cam <- list(); aes_leg <- character(0)
+  # setas esticadas para caber na nuvem de amostras (só a direção e o tamanho relativo valem)
+  mul <- function(v) {
+    if (!isTRUE(M$ajustar_setas) || !nrow(v)) return(1)
+    lim <- apply(abs(o$sites), 2, max); mx <- apply(abs(v), 2, max); mx[mx == 0] <- 1e-9
+    0.9 * min(lim / mx)
+  }
+  if (isTRUE(M$linhas_zero))
+    cam <- c(cam, list(geom_hline(yintercept = 0, colour = "grey60", linewidth = .lw(0.4), linetype = "dashed"),
+                       geom_vline(xintercept = 0, colour = "grey60", linewidth = .lw(0.4), linetype = "dashed")))
+  if (!identical(M$elipses %||% "nenhuma", "nenhuma")) {
+    if (is.null(o$grupo)) .aviso("cfg$multivariada$elipses precisa de grupos: defina cfg$grafico$coluna_grupo.")
+    else {
+      el <- do.call(rbind, lapply(grupos, function(g) {
+        p <- .elipse_grupo(o$sites[o$grupo %in% g, , drop = FALSE], M$elipses, M$elipse_nivel %||% 0.95)
+        if (is.null(p)) { .aviso("Elipse do grupo '", g, "' ignorada (precisa de pelo menos 4 amostras com variação)."); return(NULL) }
+        data.frame(x = p[, 1], y = p[, 2], serie = g)
+      }))
+      if (!is.null(el)) { el$serie <- factor(el$serie, levels = grupos)
+        cam[[length(cam) + 1]] <- geom_path(data = el, aes(x = x, y = y, colour = serie, group = serie), linewidth = .lw(0.8), show.legend = FALSE) }
+    }
+  }
+  # variáveis
+  V <- NULL; Vlab <- NULL
+  if (isTRUE(M$mostrar_variaveis) && !is.null(o$vars)) {
+    V <- as.data.frame(o$vars); names(V) <- c("x", "y"); V$rot <- rownames(o$vars)
+    if (!is.null(M$max_variaveis) && nrow(V) > M$max_variaveis) V <- V[order(-(V$x^2 + V$y^2))[seq_len(M$max_variaveis)], , drop = FALSE]
+    estilo <- if (identical(M$variaveis_estilo, "auto") || is.null(M$variaveis_estilo)) (if (tipo == "pca") "setas" else "pontos") else M$variaveis_estilo
+    if (estilo == "setas") { k <- mul(as.matrix(V[c("x", "y")])); V$x <- V$x * k; V$y <- V$y * k }
+    cor_v <- .cor(M$cor_variaveis %||% "grey30", "cfg$multivariada$cor_variaveis")
+    cam[[length(cam) + 1]] <- if (estilo == "setas")
+      geom_segment(data = V, aes(x = 0, y = 0, xend = x, yend = y), colour = cor_v, linewidth = .lw(M$espessura_setas_pt %||% 0.6),
+                   arrow = arrow(length = unit(5, "pt"), type = "closed"), show.legend = FALSE)
+      else geom_point(data = V, aes(x = x, y = y), colour = cor_v, shape = 17, size = .tx(cfg$serie_padrao$tamanho_simbolo_pt * 0.8), show.legend = FALSE)
+    if (isTRUE(M$rotulos_variaveis)) Vlab <- rotular(V, cor_v)
+  }
+  # ambientais
+  A <- NULL; Alab <- NULL
+  if (isTRUE(M$mostrar_ambientais) && !is.null(o$amb)) {
+    A <- as.data.frame(o$amb); names(A) <- c("x", "y"); A$rot <- rownames(o$amb)
+    k <- mul(as.matrix(A[c("x", "y")])); A$x <- A$x * k; A$y <- A$y * k
+    cor_a <- .cor(M$cor_ambientais %||% "#B3262E", "cfg$multivariada$cor_ambientais")
+    cam[[length(cam) + 1]] <- geom_segment(data = A, aes(x = 0, y = 0, xend = x, yend = y), colour = cor_a, linewidth = .lw((M$espessura_setas_pt %||% 0.6) * 1.2),
+                                           arrow = arrow(length = unit(5, "pt"), type = "closed"), show.legend = FALSE)
+    Alab <- rotular(A, cor_a)
+  }
+  # amostras
+  if (isTRUE(M$mostrar_amostras)) {
+    cam[[length(cam) + 1]] <- geom_point(data = S, aes(x = x, y = y, colour = serie, fill = serie, shape = serie, size = serie, stroke = serie, alpha = serie),
+                                         show.legend = TRUE, na.rm = TRUE, key_glyph = .key_escala(.draw_key_ponto_ou_nada, cfg))
+    aes_leg <- c("colour", "shape", "size", "stroke", "fill_simb", "alpha")
+  }
+  cam <- c(cam, Vlab, Alab)
+  if (isTRUE(M$rotulos_amostras)) cam[[length(cam) + 1]] <- rotular(S, cfg$texto$cor)
+  escalas <- .escalas_legenda(est, aes_leg, cfg)
+  if (!isTRUE(M$mostrar_amostras)) escalas <- list()
+  faixa_x <- range(c(S$x, V$x, A$x, 0)); faixa_y <- range(c(S$y, V$y, A$y, 0))
+  folga <- function(r) r + c(-1, 1) * 0.06 * max(diff(r), 1e-9)
+  faixa_x <- folga(faixa_x); faixa_y <- folga(faixa_y)
+  ax_x <- .calc_eixo(cfg$eixo_x, faixa_x, forcar = cfg$.interno$forcar_x)
+  ax_y <- .calc_eixo(cfg$eixo_y, faixa_y, forcar = cfg$.interno$forcar_y)
+  tit <- function(i) paste0(o$eixos[i], " (", .fmt_num(o$prop[i] * 100, 1), "%)")
+  list(camadas = c(cam, escalas),
+       info = list(ax_x = ax_x, ax_y = ax_y, flip = FALSE, titulo_x = cfg$eixo_x$titulo %||% tit(1), titulo_y = cfg$eixo_y$titulo %||% tit(2),
+                   legenda_auto = length(grupos) > 1, faixa_x = faixa_x, faixa_y = faixa_y, ordenacao = o$resumo))
+}
+
+# -----------------------------------------------------------------------------
+#  25_tipo_mapas.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/25_tipo_mapas.R — mapa de calor (eixo Z em gradiente), mapa-múndi e mapa do Brasil
+# =============================================================================
+#  Os contornos ficam na pasta mapas/ (GeoJSON do Natural Earth + tabelas CSV editáveis). Precisam do pacote sf.
+#  A cor vem de cfg$mapa_calor (esquema_cor, cores_escala, limites, centro...), igual nos três tipos.
+# =============================================================================
+
+# ---- escala de cor do eixo Z -------------------------------------------------------------------
+.ESQUEMAS_Z <- list(
+  cinabro    = c("#F4ECDD", "#E8B49A", "#C96A4A", "#B3262E", "#6B1218"),
+  petroleo   = c("#F4ECDD", "#BFD9DB", "#6FA5AC", "#2F6670", "#13343A"),
+  divergente = c("#2F6670", "#8FC3CC", "#F4ECDD", "#E9A58A", "#B3262E"))
+
+# Cores do gradiente. Entra: cfg. Sai: vetor de cores (do menor para o maior valor).
+.cores_z <- function(cfg) {
+  H <- cfg$mapa_calor
+  cores <- if (!is.null(H$cores_escala)) vapply(H$cores_escala, .cor, "", "cfg$mapa_calor$cores_escala")
+    else if (H$esquema_cor %in% names(.ESQUEMAS_Z)) .ESQUEMAS_Z[[H$esquema_cor]]
+    else if (.tem("viridisLite")) viridisLite::viridis(7, option = switch(H$esquema_cor, viridis = "D", magma = "A", inferno = "B", turbo = "H"))
+    else { .aviso("O esquema \"", H$esquema_cor, "\" precisa do pacote viridisLite; usando \"cinabro\"."); .ESQUEMAS_Z$cinabro }
+  if (isTRUE(H$inverter_cores)) rev(cores) else cores
+}
+
+# Escala contínua de preenchimento (com barra de cores). Entra: cfg e os valores Z. Sai: list(escala, limites, cor_de).
+.escala_z <- function(cfg, z, nome) {
+  H <- cfg$mapa_calor; z <- z[is.finite(z)]
+  if (!length(z)) .erro("Não há valores numéricos para colorir.")
+  lim <- c(H$limite_min %||% min(z), H$limite_max %||% max(z))
+  if (lim[1] == lim[2]) lim <- lim + c(-0.5, 0.5)
+  cores <- .cores_z(cfg)
+  meio <- H$centro %||% (if (identical(H$esquema_cor, "divergente") && is.null(H$cores_escala)) 0 else NULL)
+  if (!is.null(meio) && (meio <= lim[1] || meio >= lim[2])) {
+    .aviso("O centro (", meio, ") está fora dos limites (", lim[1], " a ", lim[2], "); ele será ignorado.")
+    meio <- NULL
+  }
+  resc <- if (is.null(meio)) scales::rescale else function(x, to = c(0, 1), from = range(x, na.rm = TRUE)) scales::rescale_mid(x, to, from, mid = meio)
+  barra <- guide_colourbar(theme = theme(legend.key.height = unit(H$barra_altura_cm, "cm"), legend.key.width = unit(H$barra_largura_cm, "cm")),
+                           ticks.colour = "white", frame.colour = NA)
+  esc <- scale_fill_gradientn(colours = cores, limits = lim, rescaler = resc, oob = scales::squish, na.value = .cor(H$cor_sem_dado),
+                              name = .texto(H$titulo_barra %||% nome), guide = barra)
+  pal <- scales::pal_gradient_n(cores)
+  list(escala = esc, limites = lim, titulo = H$titulo_barra %||% nome, cor_de = function(v) pal(resc(v, from = lim)))
+}
+
+# Rótulo de contraste (preto ou branco) para escrever sobre uma cor.
+.cor_contraste <- function(cores) ifelse(vapply(cores, function(k) if (is.na(k)) 1 else .luminancia(k), 0) < 0.5, "white", "black")
+
+# ---- mapa de calor -----------------------------------------------------------------------------
+# Matriz de valores (linhas x colunas) a partir dos dados, no formato "matriz" ou "longo". Sai: list(Z, linhas, colunas, nome_linhas, nome_colunas, nome_valor).
+.matriz_mapa_calor <- function(dados, cfg) {
+  H <- cfg$mapa_calor; G <- cfg$grafico
+  xcol <- .coluna(dados, G$coluna_x %||% 1, "cfg$grafico$coluna_x")
+  if (identical(H$formato, "longo")) {
+    gcol <- .coluna(dados, G$coluna_grupo, "cfg$grafico$coluna_grupo")
+    if (is.null(gcol)) .erro("Mapa de calor no formato \"longo\": defina a coluna das colunas do mapa em cfg$grafico$coluna_grupo.")
+    vcol <- .colunas_y(dados, cfg, excluir = c(xcol, gcol))[1]
+    lin <- as.character(dados[[xcol]]); col <- as.character(dados[[gcol]])
+    nl <- unique(lin[!is.na(lin)]); nc <- unique(col[!is.na(col)])
+    if (anyDuplicated(paste(lin, col))) .aviso("Há linhas repetidas para o mesmo par (", xcol, ", ", gcol, "): usei a média.")
+    Z <- tapply(dados[[vcol]], list(factor(lin, nl), factor(col, nc)), mean, na.rm = TRUE)
+    Z <- matrix(as.numeric(Z), length(nl), length(nc), dimnames = list(nl, nc))
+    return(list(Z = Z, nome_linhas = xcol, nome_colunas = gcol, nome_valor = vcol))
+  }
+  ycols <- .colunas_y(dados, cfg, excluir = xcol)
+  if (length(ycols) < 2) .erro("O mapa de calor precisa de pelo menos 2 colunas numéricas (além da coluna dos nomes das linhas).")
+  nl <- as.character(dados[[xcol]])
+  if (anyDuplicated(nl)) { .aviso("Nomes de linha repetidos em '", xcol, "': acrescentei números para diferenciar."); nl <- make.unique(nl) }
+  Z <- as.matrix(dados[ycols]); storage.mode(Z) <- "double"; dimnames(Z) <- list(nl, ycols)
+  list(Z = Z, nome_linhas = xcol, nome_colunas = "", nome_valor = NULL)
+}
+
+# Mapa de calor. Entra: dados e cfg. Sai: list(camadas, info).
+.construir_mapa_calor <- function(dados, cfg) {
+  H <- cfg$mapa_calor
+  m <- .matriz_mapa_calor(dados, cfg); Z <- m$Z
+  if (H$normalizar == "linha") Z <- t(apply(Z, 1, function(v) { s <- stats::sd(v, na.rm = TRUE); if (is.na(s) || s == 0) v * 0 else (v - mean(v, na.rm = TRUE)) / s }))
+  if (H$normalizar == "coluna") Z <- apply(Z, 2, function(v) { s <- stats::sd(v, na.rm = TRUE); if (is.na(s) || s == 0) v * 0 else (v - mean(v, na.rm = TRUE)) / s })
+  dimnames(Z) <- dimnames(m$Z)
+  if (H$agrupar != "nenhum") {
+    Zc <- Z; Zc[is.na(Zc)] <- 0
+    ord <- function(M) if (nrow(M) > 2) stats::hclust(stats::dist(M))$order else seq_len(nrow(M))
+    ir <- if (H$agrupar %in% c("linhas", "ambos")) ord(Zc) else seq_len(nrow(Z))
+    ic <- if (H$agrupar %in% c("colunas", "ambos")) ord(t(Zc)) else seq_len(ncol(Z))
+    Z <- Z[ir, ic, drop = FALSE]
+  }
+  nr <- nrow(Z); nc <- ncol(Z)
+  d <- data.frame(x = rep(seq_len(nc), each = nr), y = rep(nr:1, times = nc), z = as.vector(Z))
+  esc <- .escala_z(cfg, d$z, m$nome_valor %||% if (H$normalizar != "nenhum") .rot("Nota z") else .rot("Valor"))
+  cam <- list(geom_tile(data = d, aes(x = x, y = y, fill = z), width = 1, height = 1,
+                        colour = if (is.na(H$contorno_cor)) NA else .cor(H$contorno_cor), linewidth = .lw(H$contorno_espessura_pt), na.rm = FALSE),
+              esc$escala)
+  if (isTRUE(H$valores_nas_celulas)) {
+    dd <- d[is.finite(d$z), ]
+    dd$rot <- .fmt_num(dd$z, H$casas)
+    dd$cor <- .cor_contraste(esc$cor_de(dd$z))
+    cam[[length(cam) + 1]] <- geom_text(data = dd, aes(x = x, y = y, label = rot), colour = dd$cor, size = .tx(H$tamanho_valores_pt %||% cfg$texto$tamanho_base_pt * 0.8),
+                                        family = .fonte(cfg$texto$fonte), fontface = if (.neg(cfg)) "bold" else "plain", show.legend = FALSE)
+  }
+  ax_x <- .calc_eixo(cfg$eixo_x, c(0.5, nc + 0.5), categorias = colnames(Z), forcar = cfg$.interno$forcar_x)
+  ax_y <- .calc_eixo(cfg$eixo_y, c(0.5, nr + 0.5), categorias = rev(rownames(Z)), forcar = cfg$.interno$forcar_y)
+  list(camadas = cam,
+       info = list(ax_x = ax_x, ax_y = ax_y, flip = FALSE, titulo_x = cfg$eixo_x$titulo %||% m$nome_colunas, titulo_y = cfg$eixo_y$titulo %||% m$nome_linhas,
+                   legenda_auto = TRUE, faixa_x = c(0.5, nc + 0.5), faixa_y = c(0.5, nr + 0.5), titulo_barra = esc$titulo))
+}
+
+# ---- mapas geográficos --------------------------------------------------------------------------
+.cache_mapas <- new.env()
+
+# Chave de comparação de nomes: sem acento, maiúsculas, pontuação nem artigo "the".
+.chave_local <- function(x) {
+  x <- iconv(as.character(x), to = "ASCII//TRANSLIT"); x[is.na(x)] <- ""
+  x <- tolower(gsub("[^A-Za-z0-9]+", "", sub("^\\s*the\\s+", "", x, ignore.case = TRUE)))
+  x
+}
+
+.exigir_sf <- function() if (!.tem("sf")) .erro("Os mapas precisam do pacote sf. Instale com install.packages(\"sf\") (ou rode o 00_instalar_pacotes.R).")
+
+# Lê um GeoJSON de mapas/ (com cache por arquivo e data). Sai: objeto sf.
+.ler_geojson <- function(arq) {
+  .exigir_sf()
+  caminho <- .arquivo_proj(arq)
+  if (!file.exists(caminho)) .erro("Não achei o arquivo de mapa '", arq, "'. Ele vem na pasta mapas/ do Cinabro (mantenha a pasta junto do programa).")
+  chave <- paste(normalizePath(caminho, winslash = "/"), file.mtime(caminho))
+  if (!is.null(.cache_mapas[[chave]])) return(.cache_mapas[[chave]])
+  g <- suppressWarnings(sf::st_read(caminho, quiet = TRUE))
+  .cache_mapas[[chave]] <- g
+  g
+}
+
+# Mundo com a região comercial de cada país (a tabela mapas/mundo_regioes.csv, editável, manda sobre o GeoJSON).
+.mapa_base_mundo <- function(cfg) {
+  g <- .ler_geojson(cfg$mapa$mundo_geojson %||% "mapas/mundo_paises.geojson")
+  csv <- .arquivo_proj(cfg$mapa$mundo_regioes_csv %||% "mapas/mundo_regioes.csv")
+  if (file.exists(csv)) {
+    t <- utils::read.csv2(csv, stringsAsFactors = FALSE, encoding = "UTF-8", check.names = FALSE, fileEncoding = "UTF-8-BOM")
+    if (all(c("country", "region") %in% names(t))) {
+      r <- t$region[match(g$name, t$country)]
+      g$region <- ifelse(is.na(r) | !nzchar(trimws(r)), g$region, trimws(r))
+    } else .aviso("O arquivo ", basename(csv), " precisa das colunas 'country' e 'region'; usei as regiões do próprio mapa.")
+  }
+  g
+}
+
+# Procura os locais do usuário nos nomes do mapa. Entra: nomes, tabela de chaves (lista chave -> índice). Sai: vetor de índices (NA = não achou).
+.casar_locais <- function(locais, chaves) {
+  k <- .chave_local(locais)
+  idx <- unname(chaves[k]); idx[!nzchar(k)] <- NA
+  as.integer(idx)
+}
+
+# Chaves de nomes do mundo (nome, nome longo, formal, sigla, ISO 3 e os apelidos de mapas/mundo_apelidos.csv).
+.chaves_mundo <- function(g, cfg) {
+  ch <- character(0); idx <- integer(0)
+  add <- function(v, i) { v <- .chave_local(v); ok <- nzchar(v) & !v %in% ch; ch <<- c(ch, v[ok]); idx <<- c(idx, i[ok]) }
+  for (campo in c("name", "admin", "name_long", "formal", "abbrev")) if (campo %in% names(g)) add(g[[campo]], seq_len(nrow(g)))
+  add(g$iso3, seq_len(nrow(g)))
+  ap <- .arquivo_proj("mapas/mundo_apelidos.csv")
+  if (file.exists(ap)) {
+    t <- tryCatch(utils::read.csv2(ap, stringsAsFactors = FALSE, encoding = "UTF-8", check.names = FALSE, fileEncoding = "UTF-8-BOM"), error = function(e) NULL)
+    if (!is.null(t) && all(c("alias", "country") %in% names(t))) { i <- match(t$country, g$name); ok <- !is.na(i); add(t$alias[ok], i[ok]) }
+  }
+  stats::setNames(idx, ch)
+}
+
+# Chaves dos estados (sigla, nome sem acento).
+.chaves_brasil <- function(g) {
+  ch <- c(.chave_local(g$uf), .chave_local(g$name)); idx <- c(seq_len(nrow(g)), seq_len(nrow(g)))
+  ok <- !duplicated(ch); stats::setNames(idx[ok], ch[ok])
+}
+
+# Une os polígonos por região (ou outro grupo). Sai: sf com uma linha por grupo.
+.unir_por <- function(g, grupo) {
+  usava <- suppressMessages(sf::sf_use_s2()); suppressMessages(sf::sf_use_s2(FALSE))     # união plana: o s2 reclama de vértices repetidos nos contornos
+  on.exit(suppressMessages(sf::sf_use_s2(usava)), add = TRUE)
+  partes <- split(seq_len(nrow(g)), grupo)
+  geo0 <- suppressWarnings(sf::st_make_valid(sf::st_geometry(g)))
+  geo <- do.call(base::c, lapply(partes, function(i) suppressMessages(sf::st_union(geo0[i]))))
+  sf::st_sf(grupo = names(partes), geometry = geo)
+}
+
+# Recortes do mundo (caixa em longitude/latitude).
+.RECORTES <- list(america = c(-170, -58, -30, 75), europa = c(-25, 34, 45, 72), asia_pacifico = c(60, -50, 180, 60))
+
+# Projeção do mapa-múndi.
+.crs_mapa <- function(nome) switch(nome, robinson = "+proj=robin +lon_0=0 +datum=WGS84 +units=m +no_defs", equal_earth = "+proj=eqearth +lon_0=0 +datum=WGS84 +units=m +no_defs",
+                                    mercator = "+proj=merc +lon_0=0 +datum=WGS84 +units=m +no_defs", plana = "EPSG:4326")
+
+# Converte as geometrias em tabela de polígonos (com furos) para o ggplot. Sai: data.frame(x, y, grp, anel, item).
+.sf_em_tabela <- function(g) {
+  geo <- sf::st_geometry(g); out <- list(); k <- 0L
+  for (i in seq_along(geo)) {
+    ps <- tryCatch(suppressWarnings(sf::st_cast(sf::st_collection_extract(geo[i], "POLYGON"), "POLYGON")), error = function(e) suppressWarnings(sf::st_cast(geo[i], "POLYGON")))
+    for (j in seq_along(ps)) {
+      k <- k + 1L; m <- sf::st_coordinates(ps[j])
+      out[[k]] <- data.frame(x = m[, 1], y = m[, 2], anel = m[, "L1"], grp = k, item = i)
+    }
+  }
+  do.call(rbind, out)
+}
+
+# Mapa-múndi e mapa do Brasil. Entra: dados e cfg. Sai: list(camadas, info) (info$mapa = TRUE).
+.construir_mapa <- function(dados, cfg) {
+  .exigir_sf()
+  H <- cfg$mapa_calor; Mp <- cfg$mapa; tipo <- cfg$grafico$tipo; mundo <- tipo == "mapa_mundo"
+  xcol <- .coluna(dados, cfg$grafico$coluna_x %||% 1, "cfg$grafico$coluna_x")
+  vcol <- .colunas_y(dados, cfg, excluir = xcol)[1]
+  locais <- as.character(dados[[xcol]]); val <- dados[[vcol]]
+  g <- if (mundo) .mapa_base_mundo(cfg) else .ler_geojson(Mp$brasil_geojson %||% "mapas/brasil_estados.geojson")
+  chaves <- if (mundo) .chaves_mundo(g, cfg) else .chaves_brasil(g)
+  idx <- .casar_locais(locais, chaves)
+  falhou <- is.na(idx) & !is.na(locais) & !is.na(val)
+  if (any(falhou)) {
+    ref <- if (mundo) g$name else g$uf
+    sug <- vapply(locais[falhou], function(l) { d <- utils::adist(l, ref, ignore.case = TRUE); if (min(d) <= max(1, nchar(l) %/% 4)) paste0(" (", ref[which.min(d)], "?)") else "" }, "")
+    .aviso(sum(falhou), if (mundo) " país(es) da planilha não foram achados no mapa e ficaram de fora: " else " estado(s) da planilha não foram achados no mapa e ficaram de fora: ",
+           paste0("'", locais[falhou], "'", sug, collapse = ", "),
+           if (mundo) ". Use o nome em inglês (veja mapas/mundo_regioes.csv) ou acrescente um apelido em mapas/mundo_apelidos.csv." else ". Use a sigla (SP) ou o nome do estado.")
+  }
+  ok <- !is.na(idx) & !is.na(val)
+  if (!any(ok)) .erro("Nenhum local da coluna '", xcol, "' casou com o mapa; confira os nomes (", if (mundo) "em inglês" else "sigla ou nome do estado", ").")
+  agg <- switch(Mp$agregacao %||% "soma", soma = function(v) sum(v, na.rm = TRUE), media = function(v) mean(v, na.rm = TRUE), maximo = function(v) max(v, na.rm = TRUE))
+  nivel <- Mp$nivel %||% "pais"
+  if (!mundo && nivel == "pais") nivel <- "estado"
+  if (mundo && nivel == "estado") nivel <- "pais"
+  ordem_regiao <- NULL
+  if (nivel == "regiao") {
+    reg <- g$region[idx[ok]]
+    res <- tapply(val[ok], reg, agg)
+    sf_plot <- .unir_por(g, g$region); sf_plot$valor <- as.numeric(res[sf_plot$grupo]); sf_plot$rotulo <- sf_plot$grupo
+  } else {
+    res <- tapply(val[ok], idx[ok], agg)
+    sf_plot <- g; sf_plot$valor <- NA_real_; sf_plot$valor[as.integer(names(res))] <- as.numeric(res)
+    sf_plot$rotulo <- if (mundo) sf_plot$name else sf_plot$uf
+  }
+  if (mundo && Mp$recorte %in% names(.RECORTES)) {
+    suppressMessages(sf::sf_use_s2(FALSE)); on.exit(suppressMessages(sf::sf_use_s2(TRUE)), add = TRUE)
+    bx <- .RECORTES[[Mp$recorte]]
+    sf_plot <- suppressWarnings(sf::st_crop(sf::st_make_valid(sf_plot), xmin = bx[1], ymin = bx[2], xmax = bx[3], ymax = bx[4]))
+    sf_plot <- sf_plot[!sf::st_is_empty(sf_plot), ]
+  }
+  crs <- if (mundo) .crs_mapa(Mp$projecao %||% "robinson") else "+proj=aea +lat_1=-5 +lat_2=-33 +lat_0=-15 +lon_0=-54 +datum=WGS84 +units=m +no_defs"
+  if (!identical(crs, "EPSG:4326")) sf_plot <- sf::st_transform(sf_plot, crs)
+  tab <- .sf_em_tabela(sf_plot); tab$valor <- sf_plot$valor[tab$item]
+  esc <- .escala_z(cfg, sf_plot$valor, vcol)
+  cam <- list(geom_polygon(data = tab, aes(x = x, y = y, group = grp, subgroup = anel, fill = valor),
+                           colour = if (is.na(H$contorno_cor)) NA else .cor(H$contorno_cor), linewidth = .lw(H$contorno_espessura_pt)), esc$escala)
+  # rótulos (nome e/ou valor) no ponto do maior pedaço de cada local com valor
+  if (!identical(Mp$rotulos %||% "nenhum", "nenhum")) {
+    maior <- do.call(rbind, lapply(seq_len(nrow(sf_plot)), function(i) {
+      ps <- tryCatch(suppressWarnings(sf::st_cast(sf::st_collection_extract(sf::st_geometry(sf_plot)[i], "POLYGON"), "POLYGON")),
+                     error = function(e) suppressWarnings(sf::st_cast(sf::st_geometry(sf_plot)[i], "POLYGON")))
+      a <- as.numeric(sf::st_area(ps)); j <- which.max(a)
+      xy <- sf::st_coordinates(suppressWarnings(sf::st_point_on_surface(ps[j]))); data.frame(x = xy[1], y = xy[2])
+    }))
+    tem <- is.finite(sf_plot$valor)
+    dl <- data.frame(maior[tem, , drop = FALSE], nome = sf_plot$rotulo[tem], valor = sf_plot$valor[tem])
+    casas <- if (all(abs(dl$valor - round(dl$valor)) < 1e-9)) 0 else H$casas        # valores inteiros: sem ",0" à toa
+    dl$rot <- switch(Mp$rotulos, nome = dl$nome, valor = .fmt_num(dl$valor, casas), nome_valor = paste0(dl$nome, "\n", .fmt_num(dl$valor, casas)))
+    dl$cor <- .cor_contraste(esc$cor_de(dl$valor))
+    tam <- .tx(Mp$rotulos_tamanho_pt %||% cfg$texto$tamanho_base_pt * 0.75)
+    cam[[length(cam) + 1]] <- geom_text(data = dl, aes(x = x, y = y, label = rot), colour = dl$cor, size = tam, lineheight = 0.9, family = .fonte(cfg$texto$fonte),
+                                        fontface = if (.neg(cfg)) "bold" else "plain", show.legend = FALSE)
+  }
+  bb <- c(range(tab$x), range(tab$y)); fx <- diff(bb[1:2]) * 0.01; fy <- diff(bb[3:4]) * 0.01
+  list(camadas = cam,
+       info = list(mapa = TRUE, xlim = bb[1:2] + c(-fx, fx), ylim = bb[3:4] + c(-fy, fy), legenda_auto = TRUE, flip = FALSE, titulo_barra = esc$titulo,
+                   locais_sem_par = if (any(falhou)) locais[falhou] else character(0)))
+}
+
+# -----------------------------------------------------------------------------
 #  04_catalogo.R — ajuda(), galeria(), mostrar_paletas()
 # -----------------------------------------------------------------------------
 # =============================================================================
@@ -6904,7 +7610,9 @@ if (requireNamespace("grid", quietly = TRUE)) {
                simbolo = "serie_padrao", simbolos = "serie_padrao", moldura = "caixa", ticks = "eixo_x",
                fonte = "texto", painel = "paineis", empilhar = "paineis", exportar = "exportacao",
                salvar = "exportacao", grid = "grade", titulo = "titulos", referencia = "referencias",
-               tempo = "eixo_x", data = "eixo_x", datas = "eixo_x", ordenar_x = "linhas")
+               tempo = "eixo_x", data = "eixo_x", datas = "eixo_x", ordenar_x = "linhas",
+               pca = "multivariada", ca = "multivariada", cca = "multivariada", ordenacao = "multivariada", biplot = "multivariada",
+               mapa_mundo = "mapa", mapa_brasil = "mapa", mundo = "mapa", brasil = "mapa", heatmap = "mapa_calor", calor = "mapa_calor")
 
 ajuda <- function(bloco = NULL) {
   L <- .config_linhas()
@@ -6936,8 +7644,12 @@ TIPOS DE GRÁFICO  (cfg$grafico$tipo)            colunas usadas / bloco de opç�
   "densidade"       curva de densidade           colunas_y ou coluna_grupo -> ajuda("distribuicao")
   "ecdf"            distribuição acumulada       colunas_y ou coluna_grupo -> ajuda("distribuicao")
   "boxplot"         box, violino, meio box, média±erro  colunas_y ou coluna_grupo -> ajuda("boxplot")
+  "mapa_calor"      mapa de calor (eixo Z em cores) coluna_x (linhas) + colunas numéricas -> ajuda("mapa_calor")
+  "pca" | "ca" | "cca"  ordenações (biplot)      coluna_x (amostras) + multivariada$variaveis/ambientais -> ajuda("multivariada")
+  "mapa_mundo"      mapa-múndi (países, regiões comerciais) coluna_x (país em inglês) + colunas_y[1] -> ajuda("mapa")
+  "mapa_brasil"     mapa do Brasil (estados, regiões) coluna_x (sigla ou nome) + colunas_y[1] -> ajuda("mapa")
 
-RECURSOS QUE VALEM PARA TODOS (exceto pizza): eixo_x, eixo_y, eixo_y2, caixa, grade,
+RECURSOS QUE VALEM PARA TODOS (exceto pizza, mapas e mapa de calor, que não têm eixos numéricos): eixo_x, eixo_y, eixo_y2, caixa, grade,
   legenda, titulos, texto, referencias, anotacoes, quebra, paineis, exportacao.
 ')
     return(invisible())
@@ -10031,6 +10743,54 @@ ARQUIVO_CSV <- ""        # caminho do CSV. EX.: "C:/pasta/dados.csv". Vazio = s�
 tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barras" | "pizza" | "boxplot"...
 coluna_x     <- NULL     # coluna do eixo X: número ou "nome". EX.: 1  |  "Years"
 colunas_y    <- NULL     # colunas Y. NULL = todas as outras numéricas. EX.: c(2, 3)  |  c("WORLD", "LATAM")
+coluna_grupo <- NULL     # coluna que separa as amostras em grupos (cores e elipses do PCA/CA/CCA; colunas do mapa de calor "longo"). EX.: "Local"
+
+# ---- 1b. PCA, CA, CCA (tipo_grafico "pca" | "ca" | "cca") ----------------------------------------
+#  A planilha tem uma linha por amostra. coluna_x = nome da amostra; multi_variaveis = a matriz principal (espécies,
+#  parâmetros); multi_ambientais = as variáveis ambientais (o CCA as usa para restringir; no PCA/CA viram setas).
+multi_variaveis     <- NULL   # colunas da matriz. NULL = todas as numéricas que não são ambientais. EX.: c("Sp1", "Sp2", "Sp3")
+multi_ambientais    <- NULL   # colunas ambientais. EX.: c("pH", "Temperatura")
+multi_transformacao <- NULL   # "nenhuma" | "padronizar" | "log1p" | "raiz" | "hellinger"
+multi_escalar       <- NULL   # PCA: TRUE = de correlação (padrão) | FALSE = de covariância
+multi_escalonamento <- NULL   # "auto" | "amostras" | "variaveis" | "simetrica"
+multi_eixo_horizontal <- NULL # eixo da ordenação no X (padrão 1)
+multi_eixo_vertical   <- NULL # eixo da ordenação no Y (padrão 2)
+multi_rotulos_amostras <- NULL   # TRUE = escreve o nome de cada amostra
+multi_mostrar_variaveis <- NULL  # TRUE/FALSE: desenha as variáveis (setas no PCA, pontos no CA/CCA)
+multi_rotulos_variaveis <- NULL  # TRUE/FALSE: nomes das variáveis
+multi_variaveis_estilo  <- NULL  # "auto" | "setas" | "pontos"
+multi_max_variaveis     <- NULL  # só as N variáveis que mais pesam no plano. EX.: 15
+multi_mostrar_ambientais <- NULL # TRUE/FALSE: setas das ambientais
+multi_elipses       <- NULL   # "nenhuma" | "confianca" | "dados" (uma elipse por grupo; precisa de coluna_grupo)
+multi_elipse_nivel  <- NULL   # nível da elipse. EX.: 0.95
+multi_cor_variaveis <- NULL   # cor das variáveis. EX.: "grey30"
+multi_cor_ambientais <- NULL  # cor das ambientais. EX.: "#B3262E"
+multi_linhas_zero   <- NULL   # TRUE/FALSE: linhas tracejadas em 0
+multi_legenda_posicao <- NULL # onde fica a legenda dos grupos: "direita" | "esquerda" | "topo" | "base" | "dentro"
+
+# ---- 1c. MAPA DE CALOR E MAPAS (tipo_grafico "mapa_calor" | "mapa_mundo" | "mapa_brasil") ---------
+#  Mapa de calor: coluna_x = nome das linhas; as demais colunas numéricas viram as colunas do mapa.
+#  Mapas: coluna_x = país (nome em inglês) ou estado (sigla/nome); colunas_y[1] = o valor que vira cor.
+calor_formato    <- NULL   # "matriz" | "longo" (longo: coluna_x = linhas, coluna_grupo = colunas, colunas_y[1] = valor)
+calor_normalizar <- NULL   # "nenhum" | "linha" | "coluna" (nota z)
+calor_agrupar    <- NULL   # "nenhum" | "linhas" | "colunas" | "ambos" (ordena por semelhança)
+calor_esquema    <- NULL   # "cinabro" | "petroleo" | "divergente" | "viridis" | "magma" | "inferno" | "turbo"
+calor_cores      <- NULL   # sua escala. EX.: c("white", "gold", "red")
+calor_inverter   <- NULL   # TRUE = inverte a escala
+calor_min        <- NULL   # valor onde a escala começa
+calor_max        <- NULL   # valor onde a escala termina
+calor_centro     <- NULL   # valor na cor do meio (escala divergente)
+calor_titulo_barra <- NULL # título da barra de cores
+calor_valores    <- NULL   # TRUE = escreve o número em cada célula (ou local do mapa)
+calor_casas      <- NULL   # casas decimais desses números
+calor_contorno_cor <- NULL # cor das linhas entre as células / das fronteiras. EX.: "white"
+calor_cor_sem_dado <- NULL # cor do que não tem valor. EX.: "grey88"
+calor_barra_posicao <- NULL # "direita" | "esquerda" | "topo" | "base" | "dentro"
+mapa_nivel     <- NULL     # mundo: "pais" | "regiao" (regiões comerciais) · Brasil: "estado" | "regiao"
+mapa_agregacao <- NULL     # "soma" | "media" | "maximo" (valores repetidos ou por região)
+mapa_projecao  <- NULL     # mundo: "robinson" | "equal_earth" | "mercator" | "plana"
+mapa_recorte   <- NULL     # mundo: "mundo" | "america" | "europa" | "asia_pacifico"
+mapa_rotulos   <- NULL     # "nenhum" | "nome" | "nome_valor" | "valor"
 
 # ---- 2. INTERVALOS DOS EIXOS (início, fim, passo e grossura dos traços) -------------------------
 #  Eixo X

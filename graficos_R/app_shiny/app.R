@@ -29,7 +29,9 @@ EXEMPLOS <- c("Dois eixos + quebra de eixo (Y esquerdo e direito)" = "exemplo_do
               "Resposta em frequência (escala logarítmica)" = "resposta_frequencia.csv",
               "Resistência de materiais (barras)" = "resistencia_materiais.csv",
               "Composição da liga (pizza)" = "composicao_liga.csv",
-              "Replicatas (boxplot)" = "replicatas.csv", "Média e desvio padrão (barras de erro)" = "media_e_desvio.csv", "Vários sinais" = "multissinal.csv")
+              "Replicatas (boxplot)" = "replicatas.csv", "Média e desvio padrão (barras de erro)" = "media_e_desvio.csv", "Vários sinais" = "multissinal.csv",
+              "PCA / CA / CCA (amostras × variáveis + ambientais)" = "ordenacao_amostras_variaveis_ambientais.csv", "Mapa de calor (genes × doses)" = "mapa_de_calor.csv",
+              "Mapa-múndi (vendas por país)" = "mapa_mundo_vendas.csv", "Mapa do Brasil (resíduos por estado)" = "mapa_brasil_estados.csv")
 EXEMPLOS <- EXEMPLOS[file.exists(file.path(raiz, "dados", EXEMPLOS))]
 
 cartao_dados <- function() div(class = "dados-cartao",

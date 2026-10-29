@@ -258,6 +258,25 @@ Listening on http://127.0.0.1:8421</div>
     <figure><img src="img/g10_violino.png"><div class="nome">Violino (variação do boxplot, só no script)</div><div class="quando">Mostra a forma da distribuição, com a caixa dentro. Ainda não tem botão na tela: no script, <code>cfg$boxplot$variacao &lt;- "violino_box"</code>.</div></figure>
     <figure><img src="img/g04_escala_log.png"><div class="nome">Escala logarítmica</div><div class="quando">Dados que variam muitas ordens de grandeza (resposta em frequência). Em Eixos → Escala.</div></figure>
   </div>
+
+  <h2>5.1 Mapa de calor, PCA, CA, CCA e mapas</h2>
+  <p>Seis tipos para análises multivariadas e geográficas, no mesmo menu <b>Tipo de gráfico</b>. Eles usam três pacotes extras (<code>sf</code>, <code>vegan</code>, <code>ggrepel</code>) que o <code>abrir_app.bat</code> instala sozinho na primeira abertura. Há um arquivo de exemplo de cada um na lista de exemplos.</p>
+  <div class="galeria">
+    <figure><img src="img/g16_mapa_calor.png"><div class="nome">Mapa de calor (eixo Z em cores)</div><div class="quando">Uma matriz de valores (linhas × colunas) pintada por um gradiente. Dá para normalizar por linha, reordenar por semelhança e escrever o número em cada célula.</div></figure>
+    <figure><img src="img/g14_pca.png"><div class="nome">PCA (componentes principais)</div><div class="quando">Amostras (pontos, por grupo, com elipses), variáveis (setas) e ambientais (setas vermelhas). A variância explicada aparece no título dos eixos.</div></figure>
+    <figure><img src="img/g15_cca.png"><div class="nome">CCA (correspondência canônica)</div><div class="quando">As variáveis ambientais restringem a ordenação. O CA é igual, sem as ambientais.</div></figure>
+    <figure><img src="img/g17_mapa_mundo.png"><div class="nome">Mapa-múndi por região comercial</div><div class="quando">Por país ou por região (Asia Pacific, LATAM, Brazil, North America, Western Europe, Other), com soma, média ou máximo.</div></figure>
+    <figure><img src="img/g18_mapa_brasil.png"><div class="nome">Mapa do Brasil (estados)</div><div class="quando">Por estado (sigla ou nome) ou por região do IBGE.</div></figure>
+  </div>
+  <table>
+    <tr><th>Tipo</th><th>Como preparar a planilha</th></tr>
+    <tr><td><b>Mapa de calor</b></td><td>1ª coluna: nome das linhas. As demais colunas numéricas viram as colunas do mapa. (Formato "longo": linha, coluna e valor em três colunas.)</td></tr>
+    <tr><td><b>PCA, CA, CCA</b></td><td><b>Uma só planilha</b>: nome da amostra, grupo (opcional), as variáveis (espécies, parâmetros) e as variáveis ambientais. No bloco <b>Dados</b> você marca quais colunas são <i>Variáveis</i>, quais são <i>Ambientais</i> e qual é o <i>Grupo</i>. O CCA exige as ambientais; no PCA e no CA elas viram setas extras.</td></tr>
+    <tr><td><b>Mapa-múndi</b></td><td>Uma coluna com o <b>país em inglês</b> (ex.: <i>United States of America</i>, <i>Brazil</i>; também aceita <i>USA</i>, <i>UK</i> e o código ISO de 3 letras) e uma coluna de valores.</td></tr>
+    <tr><td><b>Mapa do Brasil</b></td><td>Uma coluna com a sigla (SP) ou o nome do estado (acento não importa) e uma coluna de valores.</td></tr>
+  </table>
+  <div class="dica"><b>Dica</b> Os contornos e a divisão em regiões comerciais ficam na pasta <code>mapas</code> do programa e podem ser editados no Excel (<code>mundo_regioes.csv</code>): para mudar um país de região, troque o nome na coluna <i>region</i>. Países ou estados que não casam com o mapa aparecem num aviso e ficam de fora.</div>
+  <div class="atencao"><b>Atenção</b> Nos mapas e no mapa de calor não existem eixos numéricos: a quebra de eixo, o eixo da direita e o ajuste de curva não se aplicam. Nas ordenações, as setas são esticadas para caber na nuvem de amostras: valem a direção e o tamanho relativo, não o comprimento absoluto.</div>
 </section>
 
 <!-- ===================== 6. APARÊNCIA ===================== -->

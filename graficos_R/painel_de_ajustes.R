@@ -15,6 +15,54 @@ ARQUIVO_CSV <- ""        # caminho do CSV. EX.: "C:/pasta/dados.csv". Vazio = s�
 tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barras" | "pizza" | "boxplot"...
 coluna_x     <- NULL     # coluna do eixo X: número ou "nome". EX.: 1  |  "Years"
 colunas_y    <- NULL     # colunas Y. NULL = todas as outras numéricas. EX.: c(2, 3)  |  c("WORLD", "LATAM")
+coluna_grupo <- NULL     # coluna que separa as amostras em grupos (cores e elipses do PCA/CA/CCA; colunas do mapa de calor "longo"). EX.: "Local"
+
+# ---- 1b. PCA, CA, CCA (tipo_grafico "pca" | "ca" | "cca") ----------------------------------------
+#  A planilha tem uma linha por amostra. coluna_x = nome da amostra; multi_variaveis = a matriz principal (espécies,
+#  parâmetros); multi_ambientais = as variáveis ambientais (o CCA as usa para restringir; no PCA/CA viram setas).
+multi_variaveis     <- NULL   # colunas da matriz. NULL = todas as numéricas que não são ambientais. EX.: c("Sp1", "Sp2", "Sp3")
+multi_ambientais    <- NULL   # colunas ambientais. EX.: c("pH", "Temperatura")
+multi_transformacao <- NULL   # "nenhuma" | "padronizar" | "log1p" | "raiz" | "hellinger"
+multi_escalar       <- NULL   # PCA: TRUE = de correlação (padrão) | FALSE = de covariância
+multi_escalonamento <- NULL   # "auto" | "amostras" | "variaveis" | "simetrica"
+multi_eixo_horizontal <- NULL # eixo da ordenação no X (padrão 1)
+multi_eixo_vertical   <- NULL # eixo da ordenação no Y (padrão 2)
+multi_rotulos_amostras <- NULL   # TRUE = escreve o nome de cada amostra
+multi_mostrar_variaveis <- NULL  # TRUE/FALSE: desenha as variáveis (setas no PCA, pontos no CA/CCA)
+multi_rotulos_variaveis <- NULL  # TRUE/FALSE: nomes das variáveis
+multi_variaveis_estilo  <- NULL  # "auto" | "setas" | "pontos"
+multi_max_variaveis     <- NULL  # só as N variáveis que mais pesam no plano. EX.: 15
+multi_mostrar_ambientais <- NULL # TRUE/FALSE: setas das ambientais
+multi_elipses       <- NULL   # "nenhuma" | "confianca" | "dados" (uma elipse por grupo; precisa de coluna_grupo)
+multi_elipse_nivel  <- NULL   # nível da elipse. EX.: 0.95
+multi_cor_variaveis <- NULL   # cor das variáveis. EX.: "grey30"
+multi_cor_ambientais <- NULL  # cor das ambientais. EX.: "#B3262E"
+multi_linhas_zero   <- NULL   # TRUE/FALSE: linhas tracejadas em 0
+multi_legenda_posicao <- NULL # onde fica a legenda dos grupos: "direita" | "esquerda" | "topo" | "base" | "dentro"
+
+# ---- 1c. MAPA DE CALOR E MAPAS (tipo_grafico "mapa_calor" | "mapa_mundo" | "mapa_brasil") ---------
+#  Mapa de calor: coluna_x = nome das linhas; as demais colunas numéricas viram as colunas do mapa.
+#  Mapas: coluna_x = país (nome em inglês) ou estado (sigla/nome); colunas_y[1] = o valor que vira cor.
+calor_formato    <- NULL   # "matriz" | "longo" (longo: coluna_x = linhas, coluna_grupo = colunas, colunas_y[1] = valor)
+calor_normalizar <- NULL   # "nenhum" | "linha" | "coluna" (nota z)
+calor_agrupar    <- NULL   # "nenhum" | "linhas" | "colunas" | "ambos" (ordena por semelhança)
+calor_esquema    <- NULL   # "cinabro" | "petroleo" | "divergente" | "viridis" | "magma" | "inferno" | "turbo"
+calor_cores      <- NULL   # sua escala. EX.: c("white", "gold", "red")
+calor_inverter   <- NULL   # TRUE = inverte a escala
+calor_min        <- NULL   # valor onde a escala começa
+calor_max        <- NULL   # valor onde a escala termina
+calor_centro     <- NULL   # valor na cor do meio (escala divergente)
+calor_titulo_barra <- NULL # título da barra de cores
+calor_valores    <- NULL   # TRUE = escreve o número em cada célula (ou local do mapa)
+calor_casas      <- NULL   # casas decimais desses números
+calor_contorno_cor <- NULL # cor das linhas entre as células / das fronteiras. EX.: "white"
+calor_cor_sem_dado <- NULL # cor do que não tem valor. EX.: "grey88"
+calor_barra_posicao <- NULL # "direita" | "esquerda" | "topo" | "base" | "dentro"
+mapa_nivel     <- NULL     # mundo: "pais" | "regiao" (regiões comerciais) · Brasil: "estado" | "regiao"
+mapa_agregacao <- NULL     # "soma" | "media" | "maximo" (valores repetidos ou por região)
+mapa_projecao  <- NULL     # mundo: "robinson" | "equal_earth" | "mercator" | "plana"
+mapa_recorte   <- NULL     # mundo: "mundo" | "america" | "europa" | "asia_pacifico"
+mapa_rotulos   <- NULL     # "nenhum" | "nome" | "nome_valor" | "valor"
 
 # ---- 2. INTERVALOS DOS EIXOS (início, fim, passo e grossura dos traços) -------------------------
 #  Eixo X

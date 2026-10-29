@@ -40,7 +40,7 @@ texto_r <- texto_r[!grepl("^\\s*#", texto_r)]                                   
 usados <- unique(c(unlist(regmatches(texto_r, gregexpr("[A-Za-z][A-Za-z0-9.]*(?=::)", texto_r, perl = TRUE))),
                    unlist(regmatches(texto_r, gregexpr("(?<=requireNamespace\\(\")[A-Za-z0-9.]+", texto_r, perl = TRUE))),
                    unlist(regmatches(texto_r, gregexpr("(?<=library\\()[A-Za-z0-9.]+(?=\\))", texto_r, perl = TRUE)))))
-base_r <- c("stats", "grid", "grDevices", "graphics", "utils", "tools", "methods", "parallel", "tcltk", "compiler", "datasets", "splines", "stats4")
+base_r <- c("base", "stats", "grid", "grDevices", "graphics", "utils", "tools", "methods", "parallel", "tcltk", "compiler", "datasets", "splines", "stats4")
 teste("pacotes: todo pacote que o código usa está na lista do pacotes.R (instalada sozinha na 1ª abertura)",
       length(setdiff(usados, c(base_r, names(.PACOTES_OBRIGATORIOS), names(.PACOTES_OPCIONAIS)))) == 0)
 if (length(setdiff(usados, c(base_r, names(.PACOTES_OBRIGATORIOS), names(.PACOTES_OPCIONAIS))))) print(setdiff(usados, c(base_r, names(.PACOTES_OBRIGATORIOS), names(.PACOTES_OPCIONAIS))))

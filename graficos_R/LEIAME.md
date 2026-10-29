@@ -331,3 +331,20 @@ Ao dar dois cliques no **`abrir_app.bat`** pela primeira vez, ele já cria sozin
 
 - **Tamanho do arquivo no envio:** o limite é de **200 MB** por figura (o padrão do Shiny era 5 MB, e foi isso que bloqueava fotos grandes: "Maximum upload size exceeded"). Não pesa no sistema: a figura é lida uma vez (4 bytes por pixel) e, para cada desenho, o programa usa uma **versão reduzida por média de blocos** com só os pixels necessários (cerca de 1,25 a 2,5 vezes o que aparece). Na prévia (pequena) isso é rápido; no PNG/PDF final (300 dpi) ele usa a versão com mais detalhes. Fotos com mais de 3200 px no lado maior são reduzidas por média de blocos ao ler (sem listras nem serrilhado); 3200 px já passam de 300 dpi em 27 cm.
 
+## Mapa de calor, ordenações (PCA, CA, CCA) e mapas
+
+Seis tipos novos em **Dados e tipo de gráfico**. Usam os pacotes `sf` (mapas), `vegan` (PCA/CA/CCA) e `ggrepel` (nomes sem sobreposição), que o `abrir_app.bat` instala sozinho na primeira abertura (a primeira abertura fica mais demorada). Exemplos prontos na lista de exemplos do app e na pasta `dados/`.
+
+| Tipo | Planilha | Escolhas no app |
+|---|---|---|
+| **Mapa de calor** (`mapa_calor`) | Uma coluna com o nome das linhas e as demais colunas numéricas (a matriz). Ou o formato "longo": linha, coluna, valor. | Esquema de cores do eixo Z (cinabro, petróleo, divergente, viridis, magma...), ou as suas cores; limites e centro; normalizar por linha/coluna (nota z); reordenar por semelhança; número em cada célula; barra de cores. |
+| **PCA** (`pca`), **CA** (`ca`), **CCA** (`cca`) | **Uma só planilha**: nome da amostra, grupo (opcional), as variáveis (espécies, parâmetros) e as variáveis ambientais. | Você marca quais colunas são **Variáveis** e quais são **Ambientais** (e qual é o **Grupo**). Transformação (padronizar, log, raiz, Hellinger), o que o gráfico preserva, eixos mostrados, elipses por grupo, setas, nomes, legenda. |
+| **Mapa-múndi** (`mapa_mundo`) | Uma coluna com o país **em inglês** (ou ISO de 3 letras) e uma de valores. | Pintar por país ou por **região comercial** (Asia Pacific, LATAM, Brazil, North America, Western Europe, Other), soma/média/máximo, projeção, recorte (Américas, Europa, Ásia-Pacífico), nomes e valores no mapa. |
+| **Mapa do Brasil** (`mapa_brasil`) | Sigla (SP) ou nome do estado (sem precisar de acento) e uma coluna de valores. | Pintar por estado ou por região do IBGE, soma/média/máximo, nomes e valores. |
+
+- **PCA** é feito com `vegan::rda` (PCA de correlação por padrão, igual ao `prcomp`). **CA** e **CCA** usam `vegan::cca`. No **CCA** as ambientais restringem a ordenação (setas de restrição); no **PCA** e no **CA** elas entram como setas suplementares (`envfit`). O título de cada eixo traz a **variância explicada** (ex.: `PC1 (53,7%)`). As setas são esticadas para caber na nuvem de amostras: valem a direção e o tamanho relativo, não o comprimento absoluto.
+- **Linhas com valor vazio** nas variáveis são ignoradas (com aviso). CA e CCA pedem valores ≥ 0. Mínimo de 4 amostras.
+- **Mapas:** os contornos e a divisão em regiões ficam em `mapas/` e podem ser editados no Excel (`mundo_regioes.csv`, `brasil_estados.csv`, apelidos de países em `mundo_apelidos.csv`); veja `mapas/LEIAME.md`. Países ou estados da planilha que não casam com o mapa são listados num aviso e ficam de fora.
+- Os gráficos de mapa e o mapa de calor não têm eixos numéricos: não valem a quebra de eixo, o eixo da direita nem o ajuste de curva. A caixa de tamanho fixo não se aplica aos mapas (a proporção do mapa é mantida). Cores, fonte, título, legenda (a barra de cores) e exportação valem normalmente.
+- No código: `cfg$grafico$tipo <- "cca"`; blocos `cfg$multivariada`, `cfg$mapa_calor` e `cfg$mapa` (`ajuda("multivariada")`, `ajuda("mapa_calor")`, `ajuda("mapa")`); no painel: `multi_*`, `calor_*`, `mapa_*` e `coluna_grupo` (seção 1b e 1c do `painel_de_ajustes.R`).
+

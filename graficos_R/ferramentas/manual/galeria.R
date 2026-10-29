@@ -60,3 +60,16 @@ for (i in seq_along(nomes)) { cores <- tryCatch(.paleta(nomes[i], 10, base$cores
   mtext(nomes[i], side = 2, at = i, las = 1, line = 0.5, cex = 0.8) }
 dev.off()
 cat("galeria pronta em", saida, "\n")
+
+# ---- mapa de calor, ordenações e mapas
+ordenacao <- function(nome, tipo) {
+  d <- lê("ordenacao_amostras_variaveis_ambientais.csv")
+  c <- novo(nome); c$grafico$tipo <- tipo; c$grafico$coluna_x <- 1; c$grafico$coluna_grupo <- "Local"
+  c$multivariada$variaveis <- c("Aquila", "Boreus", "Caelum", "Draco", "Eridanus", "Fornax", "Grus", "Hydra"); c$multivariada$ambientais <- c("pH", "Temperatura", "Salinidade")
+  c$multivariada$elipses <- "dados"; if (tipo == "pca") c$multivariada$transformacao <- "padronizar"
+  gerar(c, d)
+}
+ordenacao("g14_pca", "pca"); ordenacao("g15_cca", "cca")
+d <- lê("mapa_de_calor.csv"); c <- novo("g16_mapa_calor"); c$grafico$tipo <- "mapa_calor"; c$mapa_calor$valores_nas_celulas <- TRUE; c$mapa_calor$agrupar <- "ambos"; c$mapa_calor$titulo_barra <- "Expressão"; gerar(c, d)
+d <- lê("mapa_mundo_vendas.csv"); c <- novo("g17_mapa_mundo", 12, 7); c$grafico$tipo <- "mapa_mundo"; c$mapa$nivel <- "regiao"; c$mapa$rotulos <- "nome_valor"; c$mapa_calor$titulo_barra <- "Vendas"; gerar(c, d)
+d <- lê("mapa_brasil_estados.csv"); c <- novo("g18_mapa_brasil", 12, 8.2); c$grafico$tipo <- "mapa_brasil"; c$mapa$rotulos <- "nome_valor"; c$mapa_calor$titulo_barra <- "Resíduos (t)"; gerar(c, d)

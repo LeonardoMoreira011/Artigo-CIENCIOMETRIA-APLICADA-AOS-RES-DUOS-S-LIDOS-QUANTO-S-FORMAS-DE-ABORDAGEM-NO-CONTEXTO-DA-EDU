@@ -29,7 +29,9 @@ bloco <- function(id, titulo, resumo, dica = NULL, campos = list(), grupos = NUL
 .TIPOS <- c("Linha com pontos" = "linha_pontos", "Só linha" = "linha", "Só pontos (dispersão)" = "pontos",
             "Área" = "area", "Área empilhada" = "area_empilhada", "Barras" = "barras", "Pizza / rosca" = "pizza",
             "Histograma" = "histograma", "Curva de densidade" = "densidade", "Distribuição acumulada" = "ecdf",
-            "Boxplot (caixas)" = "boxplot")
+            "Boxplot (caixas)" = "boxplot",
+            "Mapa de calor (eixo Z em cores)" = "mapa_calor", "PCA (componentes principais)" = "pca", "CA (análise de correspondência)" = "ca",
+            "CCA (correspondência canônica)" = "cca", "Mapa-múndi (países e regiões)" = "mapa_mundo", "Mapa do Brasil (estados)" = "mapa_brasil")
 # Fontes: as oficiais (Barlow), as genéricas e TODAS as que o systemfonts enxerga neste computador (e as adicionadas pelo app).
 opcoes_fontes <- function() {
   oficiais <- c("Barlow (oficial)" = "Barlow", "Barlow Condensed" = "Barlow Condensed", "Barlow Semi Condensed" = "Barlow Semi Condensed")
@@ -106,6 +108,14 @@ opcoes_paletas <- function(guardadas = character(0)) {
 .SE_Y2 <- "input.y2_series && input.y2_series.length"
 .SE_QUEBRA <- "input.quebra_ativar"
 .SE_ERRO <- "input.colunas_erro && input.colunas_erro.length"
+.SE_MULTI <- "['pca','ca','cca'].indexOf(input.tipo_grafico) >= 0"
+.SE_NAO_XY <- "['pca','ca','cca','mapa_calor','mapa_mundo','mapa_brasil'].indexOf(input.tipo_grafico) < 0"
+.SE_PCA <- "input.tipo_grafico == 'pca'"
+.SE_CALOR <- "input.tipo_grafico == 'mapa_calor'"
+.SE_MAPA <- "['mapa_mundo','mapa_brasil'].indexOf(input.tipo_grafico) >= 0"
+.SE_MUNDO <- "input.tipo_grafico == 'mapa_mundo'"
+.SE_Z <- "['mapa_calor','mapa_mundo','mapa_brasil'].indexOf(input.tipo_grafico) >= 0"
+.SE_ELIPSE <- "['pca','ca','cca'].indexOf(input.tipo_grafico) >= 0 && input.multi_elipses && input.multi_elipses != 'nenhuma'"
 .SE_QUEBRA_Y2 <- "input.quebra_ativar && input.y2_series && input.y2_series.length"
 
 # Eixo da direita (Y2): as mesmas opções do eixo Y.
@@ -325,9 +335,49 @@ ESPEC <- list(
         "O arquivo é um CSV com uma linha de títulos. A 1ª coluna costuma ser o eixo X e as demais, as séries (eixo Y).",
         list(
           campo("tipo_grafico", "sel", "Tipo de gráfico", "Linha, pontos, barras, pizza...", opcoes = .TIPOS, padrao = "linha_pontos", largura = 12),
-          campo("coluna_x", "colx", "Coluna do eixo X", "Vazio = a 1ª coluna."),
-          campo("colunas_y", "colsy", "Colunas do eixo Y (séries)", "Vazio = todas as outras colunas numéricas."),
-          campo("colunas_erro", "colsy2", "Colunas de erro (± desvio padrão)", "Barras de erro nos pontos. A 1ª coluna vale para a 1ª série, a 2ª para a 2ª, e assim por diante. Elas não são desenhadas como série.", largura = 12),
+          campo("coluna_x", "colx", "Coluna do eixo X (ou dos nomes)", "Vazio = a 1ª coluna. No PCA/CA/CCA: o nome de cada amostra. No mapa de calor: o nome das linhas. Nos mapas: o país (em inglês) ou o estado (sigla)."),
+          campo("colunas_y", "colsy", "Colunas do eixo Y (séries)", "Vazio = todas as outras colunas numéricas. No mapa de calor: as colunas do mapa. Nos mapas: a coluna do valor que vira cor (a 1ª).", se = "['pca','ca','cca'].indexOf(input.tipo_grafico) < 0"),
+          campo("colunas_erro", "colsy2", "Colunas de erro (± desvio padrão)", "Barras de erro nos pontos. A 1ª coluna vale para a 1ª série, a 2ª para a 2ª, e assim por diante. Elas não são desenhadas como série.", largura = 12, se = .SE_NAO_XY),
+          campo("coluna_grupo", "colx", "Coluna dos grupos", "Separa as amostras em grupos (cores e elipses). No mapa de calor \"longo\": a coluna dos nomes das colunas do mapa. Vazio = sem grupos.", se = "['pca','ca','cca'].indexOf(input.tipo_grafico) >= 0 || (input.tipo_grafico == 'mapa_calor' && input.calor_formato == 'longo')"),
+          campo("multi_variaveis", "colsy2", "Variáveis (a matriz principal)", "As colunas da matriz: espécies, parâmetros... Vazio = todas as colunas numéricas que não são ambientais.", largura = 12, se = .SE_MULTI),
+          campo("multi_ambientais", "colsy2", "Variáveis ambientais", "pH, temperatura... No CCA elas restringem a ordenação; no PCA e no CA aparecem como setas. Podem ficar na mesma planilha.", largura = 12, se = .SE_MULTI),
+          campo("multi_transformacao", "sel", "Tratar a matriz antes", "Padronizar: média 0 e desvio 1 por coluna. Hellinger: usual em ecologia (abundâncias).", opcoes = c("Nenhum" = "nenhuma", "Padronizar (nota z)" = "padronizar", "log(x + 1)" = "log1p", "Raiz quadrada" = "raiz", "Hellinger" = "hellinger"), se = .SE_MULTI),
+          campo("multi_escalar", "chk", "PCA de correlação (padroniza as variáveis)", "Marcado: variáveis com unidades diferentes pesam igual. Desmarcado: PCA de covariância.", se = .SE_PCA),
+          campo("multi_escalonamento", "sel", "O que o gráfico preserva", "Variáveis: ângulos entre setas = correlações. Amostras: distâncias entre amostras. Simétrica: meio-termo (CA/CCA).", opcoes = c("Automático" = "auto", "Variáveis (correlações)" = "variaveis", "Amostras (distâncias)" = "amostras", "Simétrica" = "simetrica"), se = .SE_MULTI),
+          campo("multi_eixo_horizontal", "int", "Eixo da ordenação no X", "1 = o primeiro eixo (o que mais explica).", min = 1, max = 20, se = .SE_MULTI),
+          campo("multi_eixo_vertical", "int", "Eixo da ordenação no Y", "2 = o segundo eixo.", min = 1, max = 20, se = .SE_MULTI),
+          campo("multi_rotulos_amostras", "chk", "Escrever o nome das amostras", NULL, se = .SE_MULTI),
+          campo("multi_mostrar_variaveis", "chk", "Mostrar as variáveis", "PCA: setas; CA e CCA: pontos.", se = .SE_MULTI),
+          campo("multi_rotulos_variaveis", "chk", "Escrever o nome das variáveis", NULL, se = .SE_MULTI),
+          campo("multi_variaveis_estilo", "sel", "Variáveis como", "Automático: setas no PCA e pontos no CA/CCA.", opcoes = c("Automático" = "auto", "Setas" = "setas", "Pontos" = "pontos"), se = .SE_MULTI),
+          campo("multi_max_variaveis", "int", "Só as N variáveis que mais pesam", "Evita poluir o gráfico quando há muitas variáveis. Vazio = todas.", min = 1, max = 500, se = .SE_MULTI),
+          campo("multi_mostrar_ambientais", "chk", "Mostrar as setas das ambientais", NULL, se = .SE_MULTI),
+          campo("multi_elipses", "sel", "Elipse por grupo", "Precisa da coluna dos grupos. Confiança: da média; dados: contém a fração dos pontos.", opcoes = c("Sem elipses" = "nenhuma", "Dos dados (contém os pontos)" = "dados", "De confiança da média" = "confianca"), se = .SE_MULTI),
+          campo("multi_elipse_nivel", "num", "Nível da elipse", "0.95 = 95%.", min = 0.5, max = 0.999, passo = 0.01, se = .SE_ELIPSE),
+          campo("multi_cor_variaveis", "cor", "Cor das variáveis", NULL, se = .SE_MULTI),
+          campo("multi_cor_ambientais", "cor", "Cor das ambientais", NULL, se = .SE_MULTI),
+          campo("multi_linhas_zero", "chk", "Linhas tracejadas em zero", NULL, se = .SE_MULTI),
+          campo("multi_legenda_posicao", "sel", "Posição da legenda dos grupos", "Fora do gráfico ela não cobre os pontos.", opcoes = c("Direita" = "direita", "Esquerda" = "esquerda", "Em cima" = "topo", "Embaixo" = "base", "Dentro do gráfico" = "dentro"), se = .SE_MULTI),
+          campo("calor_formato", "sel", "Formato da tabela", "Matriz: uma coluna por coluna do mapa. Longo: linhas, colunas e valor em três colunas.", opcoes = c("Matriz (linhas × colunas)" = "matriz", "Longo (linha, coluna, valor)" = "longo"), se = .SE_CALOR),
+          campo("calor_normalizar", "sel", "Normalizar (nota z)", "Compara padrões em vez de valores absolutos.", opcoes = c("Não" = "nenhum", "Por linha" = "linha", "Por coluna" = "coluna"), se = .SE_CALOR),
+          campo("calor_agrupar", "sel", "Reordenar por semelhança", "Agrupamento hierárquico das linhas e/ou colunas.", opcoes = c("Não" = "nenhum", "Linhas" = "linhas", "Colunas" = "colunas", "Linhas e colunas" = "ambos"), se = .SE_CALOR),
+          campo("mapa_nivel", "sel", "Pintar por", "Mundo: país ou região comercial (Asia Pacific, LATAM, Brazil, North America, Western Europe, Other). Brasil: estado ou região.", opcoes = c("País / estado" = "pais", "Região" = "regiao"), se = .SE_MAPA),
+          campo("mapa_agregacao", "sel", "Valores repetidos / por região", "Como combinar os valores do mesmo local ou da mesma região.", opcoes = c("Soma" = "soma", "Média" = "media", "Máximo" = "maximo"), se = .SE_MAPA),
+          campo("mapa_projecao", "sel", "Projeção do mapa", "Robinson e Equal Earth distorcem pouco; Mercator estica os polos.", opcoes = c("Robinson" = "robinson", "Equal Earth" = "equal_earth", "Mercator" = "mercator", "Plana (lat/long)" = "plana"), se = .SE_MUNDO),
+          campo("mapa_recorte", "sel", "Parte do mundo", NULL, opcoes = c("Mundo todo" = "mundo", "Américas" = "america", "Europa" = "europa", "Ásia-Pacífico" = "asia_pacifico"), se = .SE_MUNDO),
+          campo("mapa_rotulos", "sel", "Escrever nos locais", "Nome e/ou valor sobre cada local com dado.", opcoes = c("Nada" = "nenhum", "Nome" = "nome", "Nome e valor" = "nome_valor", "Só o valor" = "valor"), se = .SE_MAPA),
+          campo("calor_esquema", "sel", "Cores do gradiente (eixo Z)", "Cinabro e petróleo: do creme ao tom forte. Divergente: duas cores com um centro (ex.: zero).", opcoes = c("Cinabro (creme → vermelho)" = "cinabro", "Petróleo (creme → azul)" = "petroleo", "Divergente (azul - creme - vermelho)" = "divergente", "Viridis" = "viridis", "Magma" = "magma", "Inferno" = "inferno", "Turbo" = "turbo"), se = .SE_Z),
+          campo("calor_cores", "vec", "Ou as suas cores (do menor ao maior)", "Separe por vírgula: white, gold, red (ou #RRGGBB). Vale mais que o gradiente acima.", largura = 12, se = .SE_Z),
+          campo("calor_inverter", "chk", "Inverter o gradiente", NULL, se = .SE_Z),
+          campo("calor_min", "num", "Escala começa em", "Vazio = o menor valor.", se = .SE_Z),
+          campo("calor_max", "num", "Escala termina em", "Vazio = o maior valor.", se = .SE_Z),
+          campo("calor_centro", "num", "Valor do centro", "Cor do meio da escala divergente. Vazio = 0.", se = .SE_Z),
+          campo("calor_titulo_barra", "txt", "Título da barra de cores", "Vazio = o nome da coluna do valor.", se = .SE_Z),
+          campo("calor_valores", "chk", "Escrever o número em cada célula", NULL, se = .SE_CALOR),
+          campo("calor_casas", "int", "Casas decimais", NULL, min = 0, max = 6, se = .SE_Z),
+          campo("calor_contorno_cor", "cor", "Cor das linhas entre as células / fronteiras", NULL, se = .SE_Z),
+          campo("calor_cor_sem_dado", "cor", "Cor de onde não há valor", NULL, se = .SE_Z),
+          campo("calor_barra_posicao", "sel", "Posição da barra de cores", NULL, opcoes = c("Direita" = "direita", "Esquerda" = "esquerda", "Em cima" = "topo", "Embaixo" = "base", "Dentro do gráfico" = "dentro"), se = .SE_Z),
           campo("erro_lado", "sel", "Lado da barra de erro", "Os dois lados, só para cima ou só para baixo.", opcoes = c("Os dois lados" = "ambos", "Só para cima" = "superior", "Só para baixo" = "inferior"), se = .SE_ERRO),
           campo("erro_cor", "cor", "Cor da barra de erro", "Vazio = a cor de cada série. Com uma cor, as barras ficam dessa cor, independente da cor dos pontos.", se = .SE_ERRO),
           campo("erro_espessura_pt", "num", "Grossura da barra de erro (pt)", "Espessura do traço.", min = 0, max = 10, passo = 0.25, se = .SE_ERRO),

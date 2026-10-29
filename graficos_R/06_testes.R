@@ -1196,5 +1196,102 @@ if (.tem("png") && .tem("jpeg")) {
   teste("painel: a variável imagens chega ao cfg", length(suppressMessages(aplicar_painel(c0, list2env(list(imagens = list(list(arquivo = f_png))))))$imagens) == 1)
 } else cat("(png/jpeg não instalados: testes de figuras pulados)\n")
 
+cat("\n--- PCA, CA, CCA, mapa de calor e mapas ---\n")
+if (.tem("vegan")) {
+  do_ <- ler_csv(file.path("dados", "ordenacao_amostras_variaveis_ambientais.csv"), op)
+  esp_ <- c("Aquila", "Boreus", "Caelum", "Draco", "Eridanus", "Fornax", "Grus", "Hydra"); amb_ <- c("pH", "Temperatura", "Salinidade")
+  cm_ <- function(tipo, ...) { c1 <- cfg; c1$grafico$tipo <- tipo; c1$grafico$coluna_x <- 1; c1$grafico$coluna_grupo <- "Local"; c1$multivariada$variaveis <- esp_
+                                c1$multivariada$ambientais <- amb_; utils::modifyList(c1, list(...)) }
+  gp_ <- suppressWarnings(plotar(do_, cm_("pca"))); ip_ <- attr(gp_, "info")
+  pr_ <- stats::prcomp(do_[esp_], scale. = TRUE); vp_ <- summary(pr_)$importance[2, 1:2]
+  teste("PCA: a variância explicada dos dois eixos bate com o prcomp (PC de correlação) e vira o título dos eixos", {
+    abs(ip_$ordenacao$prop_total[1] - vp_[1]) < 1e-4 && abs(ip_$ordenacao$prop_total[2] - vp_[2]) < 1e-4 &&
+      grepl("^PC1 \\(", ip_$titulo_x) && grepl("%\\)$", ip_$titulo_y) && monta(gp_) })
+  teste("PCA: amostras (pontos), setas das variáveis e das ambientais (envfit) e a elipse de cada grupo entram como camadas", {
+    gg <- suppressWarnings(plotar(do_, cm_("pca", multivariada = list(elipses = "dados")))); ts <- vapply(gg$layers, function(l) { k <- class(l$geom); k[nzchar(k)][1] }, "")
+    sum(ts == "GeomSegment") == 2 && "GeomPoint" %in% ts && "GeomPath" %in% ts })
+  teste("PCA: sem coluna de grupo não há elipse nem legenda; o aviso explica", {
+    c1 <- cm_("pca", multivariada = list(elipses = "dados")); c1$grafico$coluna_grupo <- NULL
+    da_aviso(plotar(do_, c1), "elipses precisa de grupos") })
+  teste("CA: os pontos das variáveis (espécies) saem sem setas; e exige valores >= 0", {
+    gc <- suppressWarnings(plotar(do_, cm_("ca", multivariada = list(ambientais = NULL)))); ts <- vapply(gc$layers, function(l) { k <- class(l$geom); k[nzchar(k)][1] }, "")
+    dn <- do_; dn$Aquila[1] <- -3
+    !("GeomSegment" %in% ts) && "GeomPoint" %in% ts && da_erro(plotar(dn, cm_("ca")), "valores >= 0") })
+  teste("CCA: precisa das variáveis ambientais (erro em português); com elas as setas de restrição aparecem e o eixo 1 restrito explica mais que no CA", {
+    c1 <- cm_("cca"); c1$multivariada$ambientais <- NULL
+    gcc <- suppressWarnings(plotar(do_, cm_("cca"))); ts <- vapply(gcc$layers, function(l) { k <- class(l$geom); k[nzchar(k)][1] }, "")
+    da_erro(plotar(do_, c1), "variáveis ambientais") && sum(ts == "GeomSegment") == 1 && attr(gcc, "info")$ordenacao$restrita > 0.2 })
+  teste("PCA/CA/CCA: eixos pedidos além dos que existem, iguais ou transformação com negativo dão erro claro; padronizar, hellinger, log1p e raiz funcionam", {
+    ok <- vapply(c("padronizar", "hellinger", "log1p", "raiz"), function(tr) monta(suppressWarnings(plotar(do_, cm_("pca", multivariada = list(transformacao = tr))))), NA)
+    da_erro(plotar(do_, cm_("pca", multivariada = list(eixo_horizontal = 1, eixo_vertical = 1))), "mesmo eixo") &&
+      da_erro(plotar(do_, cm_("pca", multivariada = list(eixo_vertical = 9))), "só tem") && all(ok) })
+  teste("PCA/CA/CCA: a legenda dos grupos vai para a direita por padrão (fora dos pontos) e 'dentro' devolve para dentro do gráfico", {
+    gd <- suppressWarnings(plotar(do_, cm_("pca"))); gi <- suppressWarnings(plotar(do_, cm_("pca", multivariada = list(legenda_posicao = "dentro"))))
+    identical(attr(gd, "cfg")$legenda$posicao, "direita") && identical(attr(gi, "cfg")$legenda$posicao, "dentro") })
+  teste("PCA/CA/CCA: exporta em PNG e a prévia do app (variaveis/ambientais do painel) chega ao cfg", {
+    pn <- suppressMessages(aplicar_painel(cfg, list2env(list(tipo_grafico = "cca", coluna_grupo = "Local", multi_variaveis = esp_, multi_ambientais = amb_, multi_elipses = "dados"))))
+    pn$exportacao$pasta <- tmp; pn$exportacao$formatos <- "png"; pn$exportacao$nome_arquivo <- "ordenacao"
+    g9 <- suppressWarnings(plotar(do_, pn)); suppressMessages(salvar(g9, pn))
+    identical(pn$grafico$tipo, "cca") && identical(pn$multivariada$ambientais, amb_) && file.exists(file.path(tmp, "ordenacao.png")) })
+} else cat("(vegan não instalado: testes de PCA/CA/CCA pulados)\n")
+dh_ <- ler_csv(file.path("dados", "mapa_de_calor.csv"), op)
+ch_ <- function(...) { c1 <- cfg; c1$grafico$tipo <- "mapa_calor"; c1$grafico$coluna_x <- 1; utils::modifyList(c1, list(...)) }
+teste("mapa de calor: uma célula por linha x coluna, com o valor Z mapeado na cor; eixos categóricos com os nomes; barra de cores à direita", {
+  gh <- suppressWarnings(plotar(dh_, ch_())); b <- ggplot2::ggplot_build(gh); d <- b$data[[1]]
+  nrow(d) == 12 * 6 && length(attr(gh, "info")$ax_x$maiores) == 6 && length(attr(gh, "info")$ax_y$maiores) == 12 && identical(attr(gh, "cfg")$legenda$posicao, "direita") })
+teste("mapa de calor: normalizar por linha dá média 0 e desvio 1 em cada linha; o formato longo dá a mesma matriz que o formato matriz", {
+  Z0 <- as.matrix(dh_[-1]); zr <- .matriz_mapa_calor(dh_, ch_(mapa_calor = list(normalizar = "linha")))$Z
+  longo <- data.frame(L = rep(dh_[[1]], times = ncol(Z0)), C = rep(names(dh_)[-1], each = nrow(Z0)), V = as.vector(Z0))
+  cl <- ch_(mapa_calor = list(formato = "longo")); cl$grafico$coluna_grupo <- "C"; cl$grafico$colunas_y <- "V"; cl$grafico$coluna_x <- "L"
+  ml <- .matriz_mapa_calor(longo, cl)$Z
+  all(abs(apply(t(apply(Z0, 1, function(v) (v - mean(v)) / stats::sd(v))), 1, mean)) < 1e-9) && monta(suppressWarnings(plotar(dh_, ch_(mapa_calor = list(normalizar = "linha"))))) &&
+    all(abs(ml[dh_[[1]], names(dh_)[-1]] - Z0) < 1e-9) && !is.null(zr) })
+teste("mapa de calor: agrupar reordena as linhas; escrever valores, escala divergente com centro, esquema próprio e limites funcionam", {
+  g0 <- attr(suppressWarnings(plotar(dh_, ch_())), "info")$ax_y$rotulos; g1 <- attr(suppressWarnings(plotar(dh_, ch_(mapa_calor = list(agrupar = "linhas")))), "info")$ax_y$rotulos
+  ok <- vapply(list(list(valores_nas_celulas = TRUE), list(esquema_cor = "divergente", centro = 10), list(cores_escala = c("white", "gold", "red")), list(limite_min = 0, limite_max = 20, inverter_cores = TRUE)),
+               function(a) monta(suppressWarnings(plotar(dh_, ch_(mapa_calor = a)))), NA)
+  !identical(g0, g1) && setequal(g0, g1) && all(ok) })
+teste("mapa de calor: limites invertidos e cores_escala com 1 cor dão erro em português", {
+  da_erro(plotar(dh_, ch_(mapa_calor = list(limite_min = 5, limite_max = 1))), "limite_min") && da_erro(plotar(dh_, ch_(mapa_calor = list(cores_escala = "red"))), "2 ou mais cores") })
+if (.tem("sf") && file.exists(.arquivo_proj("mapas/mundo_paises.geojson"))) {
+  dm_ <- data.frame(Pais = c("USA", "Brazil", "Mexico", "Germany", "France", "China", "Japan", "Atlantis"), Valor = c(100, 50, 30, 20, 10, 80, 40, 5))
+  cmu_ <- function(...) { c1 <- cfg; c1$grafico$tipo <- "mapa_mundo"; c1$grafico$coluna_x <- 1; utils::modifyList(c1, list(...)) }
+  teste("mapa-múndi: casa países por nome em inglês, apelido (USA), sigla ISO e acento/maiúscula; o que não casa avisa com o nome", {
+    k <- .chaves_mundo(.mapa_base_mundo(cfg), cfg); g0 <- .mapa_base_mundo(cfg)
+    i <- .casar_locais(c("United States of America", "usa", "United States", "BRA", "brazil", "Côte d'Ivoire", "Cote dIvoire", "Dem. Rep. Congo", "Democratic Republic of the Congo", "xx"), k)
+    g0$name[i[1]] == "United States of America" && i[1] == i[2] && i[2] == i[3] && g0$name[i[4]] == "Brazil" && i[4] == i[5] && i[6] == i[7] && i[8] == i[9] && is.na(i[10]) &&
+      da_aviso(plotar(dm_, cmu_()), "Atlantis") })
+  teste("mapa-múndi: um polígono por país com a cor do valor (sem dado = cinza); nível região soma por região comercial (Brazil = só o Brasil; LATAM = México)", {
+    g <- suppressWarnings(plotar(dm_, cmu_())); b <- ggplot2::ggplot_build(g)
+    gr <- suppressWarnings(plotar(dm_, cmu_(mapa = list(nivel = "regiao", rotulos = "nome_valor")))); br <- ggplot2::ggplot_build(gr)
+    vr <- unique(br$data[[1]]$fill); lab <- br$data[[length(br$data)]]
+    length(unique(b$data[[1]]$group)) > 150 && isTRUE(attr(g, "info")$mapa) && any(grepl("Brazil\\n50", lab$label)) && any(grepl("LATAM\\n30", lab$label)) && any(grepl("North America\\n100", lab$label)) &&
+      any(grepl("Western Europe\\n30", lab$label)) && any(grepl("Asia Pacific\\n120", lab$label)) })
+  teste("mapa-múndi: média e máximo por região, projeções, recortes e rótulos funcionam; a tabela mapas/mundo_regioes.csv editável manda na região", {
+    ok <- vapply(list(list(agregacao = "media", nivel = "regiao"), list(projecao = "equal_earth"), list(projecao = "mercator"), list(projecao = "plana"), list(recorte = "america"), list(recorte = "europa"), list(recorte = "asia_pacifico"), list(rotulos = "valor")),
+                 function(a) monta(suppressWarnings(plotar(dm_, cmu_(mapa = a)))), NA)
+    rt <- file.path(tmp, "regioes.csv"); tb <- utils::read.csv2("mapas/mundo_regioes.csv", fileEncoding = "UTF-8-BOM"); tb$region[tb$country == "Mexico"] <- "North America"
+    utils::write.table(tb, rt, sep = ";", row.names = FALSE, fileEncoding = "UTF-8")
+    gm <- ggplot2::ggplot_build(suppressWarnings(plotar(dm_, cmu_(mapa = list(nivel = "regiao", rotulos = "nome_valor", mundo_regioes_csv = rt)))))
+    lab <- gm$data[[length(gm$data)]]$label
+    all(ok) && any(grepl("North America\\n130", lab)) })
+  teste("mapa-múndi: exporta em PNG sem caixa de tamanho fixo (a proporção do mapa é mantida) e o nome de coluna errado ou valor ausente dá erro claro", {
+    c1 <- cmu_(); c1$exportacao$pasta <- tmp; c1$exportacao$formatos <- "png"; c1$exportacao$nome_arquivo <- "mundo"
+    g <- suppressWarnings(plotar(dm_, c1)); suppressMessages(salvar(g, c1))
+    nada <- data.frame(Pais = c("Atlantis", "Lemuria"), V = 1:2)
+    is.null(.painel_cm(c1)) && file.exists(file.path(tmp, "mundo.png")) && da_erro(plotar(nada, c1), "Nenhum local") })
+  db_ <- data.frame(UF = c("SP", "Rio de Janeiro", "Minas Gerais", "Sao Paulo", "RS", "XX"), V = c(10, 5, 4, 2, 3, 9))
+  cbr_ <- function(...) { c1 <- cfg; c1$grafico$tipo <- "mapa_brasil"; c1$grafico$coluna_x <- 1; utils::modifyList(c1, list(...)) }
+  teste("mapa do Brasil: casa estado por sigla ou nome sem acento (SP e Sao Paulo somam); região do IBGE soma por região; o que não casa avisa", {
+    g <- suppressWarnings(plotar(db_, cbr_(mapa = list(rotulos = "nome_valor")))); lab <- ggplot2::ggplot_build(g)$data
+    lab <- lab[[length(lab)]]$label
+    gr <- ggplot2::ggplot_build(suppressWarnings(plotar(db_, cbr_(mapa = list(nivel = "regiao", rotulos = "nome_valor"))))); lr <- gr$data[[length(gr$data)]]$label
+    any(grepl("^SP\\n12$", lab)) && any(grepl("^RJ\\n5$", lab)) && any(grepl("Sudeste\\n21", lr)) && any(grepl("^Sul\\n3$", lr)) && da_aviso(plotar(db_, cbr_()), "'XX'") })
+} else cat("(sf ou a pasta mapas/ ausentes: testes de mapas pulados)\n")
+teste("novos tipos: quebra de eixo não se aplica (erro claro) e a validação conhece os novos tipos e opções", {
+  cq <- ch_(); cq$quebra$ativo <- TRUE; cq$quebra$de <- 5; cq$quebra$ate <- 10
+  da_erro(plotar(dh_, cq), "Quebra de eixo não se aplica") && da_erro(plotar(dh_, ch_(mapa_calor = list(esquema_cor = "arco-iris"))), "esquema_cor") &&
+    da_erro(plotar(dh_, ch_(mapa_calor = list(barra_posicao = "meio"))), "barra_posicao") })
+
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", .res["passou"], .res["falhou"]))
 unlink(tmp, recursive = TRUE)

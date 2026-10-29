@@ -7,7 +7,7 @@ dir.create(lib, recursive = TRUE, showWarnings = FALSE)
 repo <- paste0("https://packagemanager.posit.co/cran/", foto)
 options(repos = c(CRAN = repo), pkgType = "binary", Ncpus = 2L)
 pacotes <- c("shiny", "ggplot2", "scales", "patchwork", "ragg", "systemfonts", "jsonlite", "gtable", "later", "htmltools",
-             "png", "jpeg", "svglite", "devEMF", "base64enc", "viridisLite")
+             "png", "jpeg", "svglite", "devEMF", "base64enc", "viridisLite", "sf", "vegan", "ggrepel")
 cat("Repositório:", repo, "\nDestino:", lib, "\n")
 utils::install.packages(pacotes, lib = lib, type = "binary", dependencies = c("Depends", "Imports", "LinkingTo"))
 falta <- setdiff(pacotes, rownames(utils::installed.packages(lib.loc = lib)))

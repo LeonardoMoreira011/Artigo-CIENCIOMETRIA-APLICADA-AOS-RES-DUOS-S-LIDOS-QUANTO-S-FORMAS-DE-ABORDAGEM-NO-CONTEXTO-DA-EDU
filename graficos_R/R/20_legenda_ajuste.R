@@ -16,7 +16,7 @@
   if (!isTRUE(cx$painel_fixo %||% TRUE)) return(NULL)
   w <- cx$painel_largura_cm; h <- cx$painel_altura_cm
   if (is.null(w) && is.null(h)) {
-    if (identical(cfg$grafico$tipo, "pizza") || isTRUE(cfg$paineis$ativo)) return(NULL)
+    if (cfg$grafico$tipo %in% c("pizza", "mapa_mundo", "mapa_brasil") || isTRUE(cfg$paineis$ativo)) return(NULL)
     p <- cx$painel_padrao_cm %||% c(10, 7.5)
     w <- p[1]; h <- p[2]
     if (!is.null(cx$proporcao)) h <- w * cx$proporcao
@@ -130,6 +130,7 @@
 # Entra: g (de plotar) e cfg. Sai: NULL (sem legenda dentro) ou list(pagina = c(larg, alt) em polegadas,
 #   painel = c(esq, topo, larg, alt) e legenda = c(esq, topo, larg, alt), todos em FRAÇÃO da página (topo = a partir de cima)).
 .geometria_legenda <- function(g, cfg, prep = NULL) {
+  cfg <- .resolver_herancas(cfg)                                  # (a barra de cores dos mapas pode mudar a posição da legenda)
   lg <- cfg$legenda
   if (!identical(lg$posicao, "dentro") || isFALSE(lg$mostrar)) return(NULL)
   prep <- prep %||% .preparar_saida(g, cfg)                       # o app passa o 'prep' já calculado: o gráfico é montado uma vez só

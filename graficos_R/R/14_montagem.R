@@ -78,16 +78,21 @@
     barras = .construir_barras(dados, cfg),
     pizza = .construir_pizza(dados, cfg),
     histograma = , densidade = , ecdf = .construir_distribuicao(dados, cfg),
-    boxplot = .construir_boxplot(dados, cfg))
+    boxplot = .construir_boxplot(dados, cfg),
+    pca = , ca = , cca = .construir_multivariada(dados, cfg),
+    mapa_calor = .construir_mapa_calor(dados, cfg),
+    mapa_mundo = , mapa_brasil = .construir_mapa(dados, cfg))
   info <- res$info
   if (isTRUE(so_info)) return(info)
+  if (!is.null(info$titulo_barra) && is.null(cfg$legenda$titulo)) cfg$legenda$titulo <- info$titulo_barra   # a barra de cores leva o nome do valor
   extra <- .camadas_extra(cfg, info)
   aju <- .camadas_ajustes(cfg, info); frm <- .camadas_formas(cfg, info)
   g <- ggplot() + extra$antes + aju$antes + frm$antes + res$camadas + aju$depois + extra$depois + frm$depois
   mostrar_leg <- if (identical(cfg$legenda$mostrar, "auto")) info$legenda_auto else isTRUE(cfg$legenda$mostrar)
 
-  if (isTRUE(info$pizza)) {
-    g <- g + coord_fixed(xlim = c(-info$lim, info$lim), ylim = c(-info$lim, info$lim), expand = FALSE, clip = "off") +
+  if (isTRUE(info$pizza) || isTRUE(info$mapa)) {
+    g <- g + (if (isTRUE(info$mapa)) coord_fixed(xlim = info$xlim, ylim = info$ylim, expand = FALSE, clip = "off")
+              else coord_fixed(xlim = c(-info$lim, info$lim), ylim = c(-info$lim, info$lim), expand = FALSE, clip = "off")) +
       .tema(cfg, cfg$eixo_x, cfg$eixo_y, list(hor = "bottom", ver = "left", lado_y2 = ""), sem_eixos = TRUE) +
       labs(title = .texto(cfg$titulos$titulo, cfg$titulos$negrito_titulo), subtitle = .texto(cfg$titulos$subtitulo))
     if (!mostrar_leg) g <- g + theme(legend.position = "none")

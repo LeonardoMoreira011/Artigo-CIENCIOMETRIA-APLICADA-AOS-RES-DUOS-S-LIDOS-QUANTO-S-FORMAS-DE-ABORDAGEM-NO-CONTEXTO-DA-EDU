@@ -61,7 +61,8 @@ cfg$dados <- list(
 cfg$grafico <- list(
   # tipo: tipo de gráfico.
   #   OPÇÕES: "pontos" | "linha" | "linha_pontos" | "area" | "area_empilhada" |
-  #           "barras" | "pizza" | "histograma" | "densidade" | "ecdf" | "boxplot"
+  #           "barras" | "pizza" | "histograma" | "densidade" | "ecdf" | "boxplot" |
+  #           "mapa_calor" | "pca" | "ca" | "cca" | "mapa_mundo" | "mapa_brasil"
   #   EX.: cfg$grafico$tipo <- "boxplot"
   tipo = "linha_pontos",
 
@@ -622,6 +623,180 @@ cfg$boxplot <- list(
   #   OPÇÕES: NULL (80 % do tamanho base do texto) | número
   #   EX.: cfg$boxplot$n_tamanho_pt <- 7
   n_tamanho_pt = NULL
+)
+
+# -----------------------------------------------------------------------------
+# MULTIVARIADA — PCA, CA e CCA (tipos "pca", "ca" e "cca")
+# -----------------------------------------------------------------------------
+#  A planilha tem uma linha por amostra. Coluna das amostras = cfg$grafico$coluna_x (os nomes das amostras); a coluna de
+#  grupo (cores e elipses) = cfg$grafico$coluna_grupo; as demais colunas numéricas são divididas aqui em VARIÁVEIS
+#  (espécies, parâmetros) e AMBIENTAIS (pH, temperatura... só o CCA as usa para restringir a ordenação; no PCA e no CA
+#  entram como setas suplementares, ajustadas com envfit).
+cfg$multivariada <- list(
+  # variaveis: colunas das variáveis (matriz principal).
+  #   OPÇÕES: NULL (todas as numéricas, menos as ambientais, a de grupo e a das amostras) | vetor de nomes ou números
+  #   EX.: cfg$multivariada$variaveis <- c("Sp1", "Sp2", "Sp3")
+  variaveis = NULL,
+
+  # ambientais: colunas das variáveis ambientais.
+  #   OPÇÕES: NULL | vetor de nomes ou números      EX.: cfg$multivariada$ambientais <- c("pH", "Temperatura")
+  ambientais = NULL,
+
+  # transformacao: tratamento da matriz antes da análise.
+  #   "nenhuma" | "padronizar" (média 0, desvio 1 por coluna) | "log1p" (log(x + 1)) | "raiz" | "hellinger" (raiz da
+  #   abundância relativa da amostra; comum em ecologia)
+  #   EX.: cfg$multivariada$transformacao <- "hellinger"
+  transformacao = "nenhuma",
+
+  # escalar_variaveis: só no PCA. TRUE = PCA de correlação (variáveis com unidades diferentes); FALSE = de covariância.
+  #   OPÇÕES: TRUE | FALSE
+  escalar_variaveis = TRUE,
+
+  # escalonamento: o que fica "fiel" no biplot. "auto" (PCA: variaveis; CA e CCA: simetrica) | "amostras" (distâncias entre
+  #   amostras) | "variaveis" (correlações entre variáveis) | "simetrica"
+  escalonamento = "auto",
+
+  # eixo_horizontal / eixo_vertical: quais eixos da ordenação aparecem (1 = primeiro, 2 = segundo...).
+  #   OPÇÕES: inteiros (padrão 1 e 2)
+  eixo_horizontal = 1,
+  eixo_vertical = 2,
+
+  # mostrar_amostras / rotulos_amostras: pontos das amostras e seus nomes.
+  mostrar_amostras = TRUE,
+  rotulos_amostras = FALSE,
+
+  # mostrar_variaveis: desenha as variáveis (PCA: setas; CA e CCA: pontos), com os nomes (rotulos_variaveis).
+  mostrar_variaveis = TRUE,
+  rotulos_variaveis = TRUE,
+
+  # variaveis_estilo: "auto" (PCA: setas; CA/CCA: pontos) | "setas" | "pontos"
+  variaveis_estilo = "auto",
+
+  # max_variaveis: só as N variáveis que mais pesam no plano mostrado (NULL = todas).
+  #   OPÇÕES: NULL | inteiro      EX.: cfg$multivariada$max_variaveis <- 15
+  max_variaveis = 20,
+
+  # mostrar_ambientais: setas das variáveis ambientais (com nomes).
+  mostrar_ambientais = TRUE,
+
+  # ajustar_setas: TRUE = as setas (variáveis e ambientais) são esticadas para caber na nuvem de amostras (a direção e
+  #   os tamanhos relativos são verdadeiros; o comprimento absoluto não).
+  ajustar_setas = TRUE,
+
+  # elipses: elipse por grupo (precisa de cfg$grafico$coluna_grupo). "nenhuma" | "confianca" (elipse de confiança da média,
+  #   usa elipse_nivel) | "dados" (contém a fração elipse_nivel dos pontos)
+  #   EX.: cfg$multivariada$elipses <- "dados"
+  elipses = "nenhuma",
+  elipse_nivel = 0.95,
+
+  # legenda_posicao: onde fica a legenda dos grupos (manda sobre cfg$legenda$posicao nestes gráficos; fora do gráfico
+  #   ela não cobre os pontos). OPÇÕES: "direita" | "esquerda" | "topo" | "base" | "dentro"
+  legenda_posicao = "direita",
+
+  # linhas_zero: linhas tracejadas passando pela origem (0, 0).
+  linhas_zero = TRUE,
+
+  # cor_variaveis / cor_ambientais: cor das setas, dos pontos e dos nomes das variáveis e das ambientais.
+  #   OPÇÕES: qualquer cor (nome ou #RRGGBB)
+  cor_variaveis = "grey30",
+  cor_ambientais = "#B3262E",
+
+  # tamanho_rotulos_pt: tamanho dos nomes (amostras, variáveis, ambientais), em pt. NULL = 85 % do tamanho base.
+  tamanho_rotulos_pt = NULL,
+
+  # espessura_setas_pt: espessura das setas (pt).   OPÇÕES: número > 0
+  espessura_setas_pt = 0.6
+)
+
+# -----------------------------------------------------------------------------
+# MAPA_CALOR — mapa de calor (tipo "mapa_calor"): Z em gradiente de cor
+# -----------------------------------------------------------------------------
+#  Formato "matriz" (padrão): a coluna das linhas = cfg$grafico$coluna_x (nomes das linhas); as outras colunas numéricas
+#  (ou cfg$grafico$colunas_y) são as colunas do mapa. Formato "longo": coluna_x = linhas, coluna_grupo = colunas,
+#  colunas_y[1] = valor Z.
+#  Os mapas geográficos (tipos "mapa_mundo" e "mapa_brasil") usam o mesmo esquema de cor (esquema_cor, cores_escala,
+#  limite_min, limite_max, centro) e a mesma barra de cores.
+cfg$mapa_calor <- list(
+  # formato: "matriz" | "longo"
+  formato = "matriz",
+
+  # normalizar: padroniza (nota z) antes de colorir. "nenhum" | "linha" | "coluna"
+  normalizar = "nenhum",
+
+  # agrupar: reordena linhas e/ou colunas por semelhança (agrupamento hierárquico). "nenhum" | "linhas" | "colunas" | "ambos"
+  agrupar = "nenhum",
+
+  # esquema_cor: gradiente do eixo Z. "cinabro" (creme -> vermelho) | "petroleo" (creme -> azul petróleo) |
+  #   "divergente" (petróleo - creme - vermelho; o centro vale 0 ou o "centro" abaixo) | "viridis" | "magma" | "inferno" | "turbo"
+  esquema_cor = "cinabro",
+
+  # cores_escala: sua própria escala (2 ou mais cores, do menor para o maior valor). NULL = usa o esquema_cor.
+  #   EX.: cfg$mapa_calor$cores_escala <- c("white", "gold", "red")
+  cores_escala = NULL,
+
+  # inverter_cores: inverte a escala (maior vira o primeiro tom).
+  inverter_cores = FALSE,
+
+  # limite_min / limite_max: valores onde a escala começa e termina. NULL = menor e maior valor.
+  limite_min = NULL,
+  limite_max = NULL,
+
+  # centro: valor que fica na cor do meio (esquema "divergente" ou escala de 3 cores). NULL = 0 (divergente) ou ponto médio.
+  centro = NULL,
+
+  # titulo_barra: título da barra de cores. NULL = nome da coluna de valor (ou "Valor").
+  titulo_barra = NULL,
+
+  # valores_nas_celulas / casas / tamanho_valores_pt: escreve o número em cada célula (ou país/região no mapa).
+  valores_nas_celulas = FALSE,
+  casas = 1,
+  tamanho_valores_pt = NULL,
+
+  # contorno_cor / contorno_espessura_pt: linha entre as células (ou fronteiras no mapa). contorno_cor NA = sem linha.
+  contorno_cor = "white",
+  contorno_espessura_pt = 0.4,
+
+  # cor_sem_dado: cor das células vazias (e, no mapa, dos países/estados sem valor).
+  cor_sem_dado = "grey88",
+
+  # barra_posicao: onde fica a barra de cores (vale para o mapa de calor e os mapas; manda sobre cfg$legenda$posicao).
+  #   OPÇÕES: "direita" | "esquerda" | "topo" | "base" | "dentro"
+  barra_posicao = "direita",
+
+  # barra_altura_cm / barra_largura_cm: tamanho da barra de cores (cm).
+  barra_altura_cm = 4,
+  barra_largura_cm = 0.4
+)
+
+# -----------------------------------------------------------------------------
+# MAPA — mapa mundi e mapa do Brasil com gradiente de cor (tipos "mapa_mundo" e "mapa_brasil")
+# -----------------------------------------------------------------------------
+#  Coluna dos locais = cfg$grafico$coluna_x; valor = a primeira de cfg$grafico$colunas_y.
+#  Mundo: países pelo nome em INGLÊS (ou código ISO de 3 letras). Brasil: sigla (SP) ou nome do estado.
+#  Os contornos e a divisão em regiões comerciais ficam na pasta mapas/ (edite mapas/mundo_regioes.csv).
+cfg$mapa <- list(
+  # nivel: como pintar. Mundo: "pais" | "regiao" (soma/média por região comercial: Asia Pacific, LATAM, Brazil,
+  #   North America, Western Europe, Other). Brasil: "estado" | "regiao" (Norte, Nordeste, Centro-Oeste, Sudeste, Sul).
+  nivel = "pais",
+
+  # agregacao: com nivel = "regiao" (ou locais repetidos), como combinar os valores. "soma" | "media" | "maximo"
+  agregacao = "soma",
+
+  # projecao: só no mundo. "robinson" | "equal_earth" | "mercator" | "plana"
+  projecao = "robinson",
+
+  # recorte: só no mundo; mostra só uma parte. "mundo" | "sem_antartida" (padrão) | "america" | "europa" | "asia_pacifico"
+  recorte = "sem_antartida",
+
+  # rotulos: escreve o nome dos locais com valor (e o valor, se valores_nas_celulas = TRUE em mapa_calor).
+  #   "nenhum" | "nome" | "nome_valor" | "valor"
+  rotulos = "nenhum",
+  rotulos_tamanho_pt = NULL,
+
+  # mundo_geojson / mundo_regioes_csv / brasil_geojson: caminhos dos contornos e da tabela de regiões (NULL = os da pasta mapas/).
+  mundo_geojson = NULL,
+  mundo_regioes_csv = NULL,
+  brasil_geojson = NULL
 )
 
 # -----------------------------------------------------------------------------

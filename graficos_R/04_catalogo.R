@@ -19,7 +19,9 @@
                simbolo = "serie_padrao", simbolos = "serie_padrao", moldura = "caixa", ticks = "eixo_x",
                fonte = "texto", painel = "paineis", empilhar = "paineis", exportar = "exportacao",
                salvar = "exportacao", grid = "grade", titulo = "titulos", referencia = "referencias",
-               tempo = "eixo_x", data = "eixo_x", datas = "eixo_x", ordenar_x = "linhas")
+               tempo = "eixo_x", data = "eixo_x", datas = "eixo_x", ordenar_x = "linhas",
+               pca = "multivariada", ca = "multivariada", cca = "multivariada", ordenacao = "multivariada", biplot = "multivariada",
+               mapa_mundo = "mapa", mapa_brasil = "mapa", mundo = "mapa", brasil = "mapa", heatmap = "mapa_calor", calor = "mapa_calor")
 
 ajuda <- function(bloco = NULL) {
   arq <- file.path(.motor_pasta, "01_config.R")
@@ -52,8 +54,12 @@ TIPOS DE GRÁFICO  (cfg$grafico$tipo)            colunas usadas / bloco de opç�
   "densidade"       curva de densidade           colunas_y ou coluna_grupo -> ajuda("distribuicao")
   "ecdf"            distribuição acumulada       colunas_y ou coluna_grupo -> ajuda("distribuicao")
   "boxplot"         box, violino, meio box, média±erro  colunas_y ou coluna_grupo -> ajuda("boxplot")
+  "mapa_calor"      mapa de calor (eixo Z em cores) coluna_x (linhas) + colunas numéricas -> ajuda("mapa_calor")
+  "pca" | "ca" | "cca"  ordenações (biplot)      coluna_x (amostras) + multivariada$variaveis/ambientais -> ajuda("multivariada")
+  "mapa_mundo"      mapa-múndi (países, regiões comerciais) coluna_x (país em inglês) + colunas_y[1] -> ajuda("mapa")
+  "mapa_brasil"     mapa do Brasil (estados, regiões) coluna_x (sigla ou nome) + colunas_y[1] -> ajuda("mapa")
 
-RECURSOS QUE VALEM PARA TODOS (exceto pizza): eixo_x, eixo_y, eixo_y2, caixa, grade,
+RECURSOS QUE VALEM PARA TODOS (exceto pizza, mapas e mapa de calor, que não têm eixos numéricos): eixo_x, eixo_y, eixo_y2, caixa, grade,
   legenda, titulos, texto, referencias, anotacoes, quebra, paineis, exportacao.
 ')
     return(invisible())

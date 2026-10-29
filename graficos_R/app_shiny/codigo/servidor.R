@@ -124,13 +124,17 @@ servidor <- function(input, output, session) {
     updateSelectizeInput(session, "colunas_y", choices = stats::setNames(num, num), selected = intersect(as.character(unlist(sel$colunas_y)), num))
     updateSelectizeInput(session, "y2_series", choices = stats::setNames(num, num), selected = intersect(as.character(unlist(sel$y2_series)), num))
     updateSelectizeInput(session, "colunas_erro", choices = stats::setNames(num, num), selected = intersect(as.character(unlist(sel$colunas_erro)), num))
+    for (id in c("multi_variaveis", "multi_ambientais"))      # PCA/CA/CCA: quais colunas são variáveis e quais são ambientais
+      updateSelectizeInput(session, id, choices = stats::setNames(num, num), selected = intersect(as.character(unlist(sel[[id]])), num))
+    g <- sel$coluna_grupo; g <- if (is.null(g) || !nzchar(g) || !g %in% cols) "" else g
+    updateSelectInput(session, "coluna_grupo", choices = stats::setNames(c("", cols), c(T("(sem grupos)"), cols)), selected = g)
   }
   # a coluna do eixo X não aparece nas listas de séries (Y e Y2)
   observeEvent(input$coluna_x, {
     d <- rv$dados; req(d)
     x <- input$coluna_x; if (is.null(x) || !nzchar(x)) x <- names(d)[1]
     num <- setdiff(names(d)[vapply(d, is.numeric, NA)], x)
-    for (id in c("colunas_y", "y2_series", "colunas_erro"))
+    for (id in c("colunas_y", "y2_series", "colunas_erro", "multi_variaveis", "multi_ambientais"))
       updateSelectizeInput(session, id, choices = stats::setNames(num, num), selected = intersect(isolate(input[[id]]), num))
   }, ignoreInit = TRUE)
   observeEvent(input$arquivo, { carregar(input$arquivo$datapath, input$arquivo$name); updateSelectInput(session, "exemplo", selected = "") })

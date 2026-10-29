@@ -10,8 +10,9 @@
 # versão mínima testada de cada pacote
 .PACOTES_OBRIGATORIOS <- c(shiny = "1.7.0", ggplot2 = "3.5.0", scales = "1.3.0", patchwork = "1.2.0", ragg = "1.5.0",   # ragg < 1.5: bug no gradiente radial
                            systemfonts = "1.0.0", jsonlite = "1.8.0", gtable = "0.3.0", later = "1.3.0", htmltools = "0.5.0", httpuv = "1.6.0")
-# sem estes o programa abre, mas perde um recurso (figuras anexadas, SVG, EMF, paletas magma/inferno/turbo)
-.PACOTES_OPCIONAIS <- c(png = "0.1-7", jpeg = "0.1-9", svglite = "2.1.0", devEMF = "4.0", viridisLite = "0.4.0", base64enc = "0.1-3")
+# sem estes o programa abre, mas perde um recurso (figuras anexadas, SVG, EMF, paletas magma/inferno/turbo, mapas, PCA/CA/CCA)
+.PACOTES_OPCIONAIS <- c(png = "0.1-7", jpeg = "0.1-9", svglite = "2.1.0", devEMF = "4.0", viridisLite = "0.4.0", base64enc = "0.1-3",
+                        sf = "1.0-0", vegan = "2.6-0", ggrepel = "0.9.0")   # sf: mapas; vegan: PCA/CA/CCA; ggrepel: rótulos sem sobreposição
 
 garantir_pacotes <- function(instalar = TRUE) {
   falta <- function(lista) names(lista)[!vapply(names(lista), function(p)
