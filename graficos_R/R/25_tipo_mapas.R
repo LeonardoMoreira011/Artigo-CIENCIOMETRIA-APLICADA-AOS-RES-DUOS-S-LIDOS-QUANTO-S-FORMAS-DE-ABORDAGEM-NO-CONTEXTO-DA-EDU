@@ -7,7 +7,7 @@
 
 # ---- escala de cor do eixo Z -------------------------------------------------------------------
 .ESQUEMAS_Z <- list(
-  cinabro    = c("#F4ECDD", "#E8B49A", "#C96A4A", "#B3262E", "#6B1218"),
+  cinabro    = c("#F4ECDD", "#E8B49A", "#CF6F4E", "#B3262E", "#7E1B22"),
   petroleo   = c("#F4ECDD", "#BFD9DB", "#6FA5AC", "#2F6670", "#13343A"),
   divergente = c("#2F6670", "#8FC3CC", "#F4ECDD", "#E9A58A", "#B3262E"))
 
@@ -244,7 +244,10 @@
   esc <- .escala_z(cfg, sf_plot$valor, vcol)
   cam <- list(geom_polygon(data = tab, aes(x = x, y = y, group = grp, subgroup = anel, fill = valor),
                            colour = if (is.na(H$contorno_cor)) NA else .cor(H$contorno_cor), linewidth = .lw(H$contorno_espessura_pt)), esc$escala)
-  # rótulos (nome e/ou valor) no ponto do maior pedaço de cada local com valor
+  # rótulos (nome e/ou valor) no ponto do maior pedaço de cada local com valor; os que colidem saem para o lado, com um fio; dá para arrastar
+  bb <- c(range(tab$x), range(tab$y)); fx <- diff(bb[1:2]) * 0.01; fy <- diff(bb[3:4]) * 0.01
+  xlim <- bb[1:2] + c(-fx, fx); ylim <- bb[3:4] + c(-fy, fy)
+  rotulos_info <- NULL
   if (!identical(Mp$rotulos %||% "nenhum", "nenhum")) {
     maior <- do.call(rbind, lapply(seq_len(nrow(sf_plot)), function(i) {
       ps <- tryCatch(suppressWarnings(sf::st_cast(sf::st_collection_extract(sf::st_geometry(sf_plot)[i], "POLYGON"), "POLYGON")),
@@ -253,16 +256,29 @@
       xy <- sf::st_coordinates(suppressWarnings(sf::st_point_on_surface(ps[j]))); data.frame(x = xy[1], y = xy[2])
     }))
     tem <- is.finite(sf_plot$valor)
-    dl <- data.frame(maior[tem, , drop = FALSE], nome = sf_plot$rotulo[tem], valor = sf_plot$valor[tem])
+    dl <- data.frame(maior[tem, , drop = FALSE], nome = sf_plot$rotulo[tem], valor = sf_plot$valor[tem], stringsAsFactors = FALSE)
     casas <- if (all(abs(dl$valor - round(dl$valor)) < 1e-9)) 0 else H$casas        # valores inteiros: sem ",0" à toa
     dl$rot <- switch(Mp$rotulos, nome = dl$nome, valor = .fmt_num(dl$valor, casas), nome_valor = paste0(dl$nome, "\n", .fmt_num(dl$valor, casas)))
-    dl$cor <- .cor_contraste(esc$cor_de(dl$valor))
-    tam <- .tx(Mp$rotulos_tamanho_pt %||% cfg$texto$tamanho_base_pt * 0.75)
-    cam[[length(cam) + 1]] <- geom_text(data = dl, aes(x = x, y = y, label = rot), colour = dl$cor, size = tam, lineheight = 0.9, family = .fonte(cfg$texto$fonte),
-                                        fontface = if (.neg(cfg)) "bold" else "plain", show.legend = FALSE)
+    dl <- dl[order(-dl$valor), , drop = FALSE]
+    est_t <- list(fonte = .fonte(Mp$rotulos_fonte %||% cfg$texto$fonte), pt = Mp$rotulos_tamanho_pt %||% cfg$texto$tamanho_base_pt * 0.75,
+                  face = { n <- .neg(cfg, Mp$rotulos_negrito); i <- isTRUE(Mp$rotulos_italico); if (n && i) "bold.italic" else if (n) "bold" else if (i) "italic" else "plain" })
+    pw_cm <- cfg$caixa$painel_largura_cm %||% 12; ph_cm <- cfg$caixa$painel_altura_cm %||% pw_cm * diff(ylim) / diff(xlim)
+    sx <- pw_cm / 2.54 / diff(xlim); sy <- ph_cm / 2.54 / diff(ylim)
+    me <- .medir_textos(dl$rot, est_t$pt, est_t$fonte, est_t$face)
+    pos <- .posicionar_rotulos(dl[c("x", "y")], me$w, me$h, sx, sy, c(xlim, ylim), pref = rep(pi / 4, nrow(dl)), fixas = lapply(dl$nome, function(r) .ler_posicoes(Mp$rotulos_posicoes)[[r]]), raio_ancora = 0.02, centro = TRUE)
+    dl$px <- pos$x; dl$py <- pos$y
+    dl$cor <- ifelse(pos$longe, cfg$texto$cor, .cor_contraste(esc$cor_de(dl$valor)))
+    if (!is.null(Mp$rotulos_cor)) dl$cor <- .cor(Mp$rotulos_cor, "cfg$mapa$rotulos_cor")
+    cam[[length(cam) + 1]] <- geom_text(data = dl, aes(x = px, y = py, label = rot), colour = dl$cor, size = .tx(est_t$pt), lineheight = 0.9, family = est_t$fonte,
+                                        fontface = est_t$face, show.legend = FALSE)
+    if (isTRUE(Mp$linha_guia %||% TRUE) && any(pos$longe)) {
+      f <- .fios_rotulos(dl[c("x", "y")], pos, me$w, me$h, sx, sy)
+      if (!is.null(f)) cam <- c(list(), cam, list(geom_segment(data = f, aes(x = x, y = y, xend = xend, yend = yend), colour = cfg$texto$cor, linewidth = .lw(0.35), show.legend = FALSE)))
+    }
+    rotulos_info <- list(campo = "mapa_rotulos_posicoes", itens = data.frame(chave = dl$nome, x = pos$x, y = pos$y, w_in = me$w, h_in = me$h, conj = "mapa", stringsAsFactors = FALSE),
+                         lim_x = xlim, lim_y = ylim)
   }
-  bb <- c(range(tab$x), range(tab$y)); fx <- diff(bb[1:2]) * 0.01; fy <- diff(bb[3:4]) * 0.01
   list(camadas = cam,
-       info = list(mapa = TRUE, xlim = bb[1:2] + c(-fx, fx), ylim = bb[3:4] + c(-fy, fy), legenda_auto = TRUE, flip = FALSE, titulo_barra = esc$titulo,
+       info = list(mapa = TRUE, xlim = xlim, ylim = ylim, legenda_auto = TRUE, flip = FALSE, titulo_barra = esc$titulo, rotulos = rotulos_info,
                    locais_sem_par = if (any(falhou)) locais[falhou] else character(0)))
 }

@@ -64,6 +64,42 @@ mapa_projecao  <- NULL     # mundo: "robinson" | "equal_earth" | "mercator" | "p
 mapa_recorte   <- NULL     # mundo: "mundo" | "america" | "europa" | "asia_pacifico"
 mapa_rotulos   <- NULL     # "nenhum" | "nome" | "nome_valor" | "valor"
 
+# ---- 1d. TEXTO, POSIÇÃO E ESTILO DOS NOMES (PCA/CA/CCA e mapas) ----------------------------------------
+#  Cada tipo de nome (amostras, variaveis, ambientais) tem fonte, tamanho, negrito, itálico e cor próprios. NULL = herda do gráfico.
+multi_amostras_fonte <- NULL
+multi_amostras_tamanho_pt <- NULL
+multi_amostras_negrito <- NULL
+multi_amostras_italico <- NULL
+multi_variaveis_fonte <- NULL
+multi_variaveis_tamanho_pt <- NULL
+multi_variaveis_negrito <- NULL
+multi_variaveis_italico <- NULL
+multi_ambientais_fonte <- NULL
+multi_ambientais_tamanho_pt <- NULL
+multi_ambientais_negrito <- NULL
+multi_ambientais_italico <- NULL
+multi_amostras_cor <- NULL      # cor dos nomes das amostras
+multi_rotulos_posicoes <- NULL # nomes movidos à mão: "Aquila=-0.8,0.3; pH=1,0.5" (no app: arraste o nome)
+multi_escala_igual <- NULL     # TRUE = mesma escala nos dois eixos (biplot fiel)
+multi_linha_guia <- NULL       # TRUE = fio entre o nome e o ponto/seta quando ele sai do lugar
+multi_variaveis_simbolo <- NULL # símbolo das variáveis em pontos: "cruz" | "x" | "circulo" | "quadrado" | "losango" ...
+multi_variaveis_tamanho_ponto_pt <- NULL # tamanho desse símbolo (pt)
+multi_setas_ponta_pt <- NULL  # tamanho da ponta das setas (pt)
+multi_setas_ponta <- NULL     # "fechada" | "aberta"
+multi_espessura_setas_pt <- NULL # grossura das setas (pt)
+multi_elipse_espessura_pt <- NULL # grossura da elipse (pt)
+multi_elipse_preencher <- NULL # TRUE = elipse com preenchimento leve
+mapa_rotulos_tamanho_pt <- NULL
+mapa_rotulos_fonte <- NULL
+mapa_rotulos_negrito <- NULL
+mapa_rotulos_italico <- NULL
+mapa_rotulos_cor <- NULL
+mapa_rotulos_posicoes <- NULL  # nomes do mapa movidos à mão: "Brazil=x,y" (no app: arraste o nome)
+mapa_linha_guia <- NULL       # TRUE/FALSE: fio entre o nome e o local
+calor_mostrar_ticks <- NULL   # TRUE = traços de eixo nas células do mapa de calor
+calor_tamanho_valores_pt <- NULL # tamanho (pt) do número escrito em cada célula
+
+
 # ---- 2. INTERVALOS DOS EIXOS (início, fim, passo e grossura dos traços) -------------------------
 #  Eixo X
 x_inicio    <- NULL      # começo do eixo X.  EX.: 2015

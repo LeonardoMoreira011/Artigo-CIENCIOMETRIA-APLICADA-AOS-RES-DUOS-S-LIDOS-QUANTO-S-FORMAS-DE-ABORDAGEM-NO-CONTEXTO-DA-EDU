@@ -94,6 +94,11 @@
 .preparar_saida <- function(g, cfg) {
   pg <- .tamanho_pagina_in(cfg)
   fixo <- .painel_cm(cfg)
+  inf_mapa <- attr(g, "info")
+  if (is.null(fixo) && isTRUE(inf_mapa$mapa)) {                      # mapas: a caixa tem a proporção do mapa (nada de faixas vazias em cima e embaixo)
+    w <- cfg$caixa$painel_largura_cm %||% 12
+    fixo <- list(w = w, h = cfg$caixa$painel_altura_cm %||% w * diff(inf_mapa$ylim) / diff(inf_mapa$xlim))
+  }
   if (is.null(fixo)) return(list(grob = NULL, larg = pg[1], alt = pg[2]))
   pw <- fixo$w; ph <- fixo$h
   gt <- attr(g, "gt")

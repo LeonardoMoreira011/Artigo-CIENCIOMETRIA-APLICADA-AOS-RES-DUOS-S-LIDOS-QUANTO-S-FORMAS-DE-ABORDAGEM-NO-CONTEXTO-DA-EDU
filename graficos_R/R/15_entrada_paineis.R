@@ -26,6 +26,9 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 .resolver_herancas <- function(cfg) {
   # gráficos com barra de cores (mapa de calor e mapas): a barra vai para onde cfg$mapa_calor$barra_posicao manda (padrão: direita)
   if (cfg$grafico$tipo %in% c("mapa_calor", "mapa_mundo", "mapa_brasil")) cfg$legenda$posicao <- cfg$mapa_calor$barra_posicao %||% "direita"
+  if (identical(cfg$grafico$tipo, "mapa_calor") && !isTRUE(cfg$mapa_calor$mostrar_ticks)) {   # células não precisam de traços de eixo
+    for (ax in c("eixo_x", "eixo_y")) { cfg[[ax]]$direcao_maiores <- "nenhum"; cfg[[ax]]$direcao_menores <- "nenhum"; cfg[[ax]]$n_menores <- 0 }
+  }
   if (cfg$grafico$tipo %in% c("pca", "ca", "cca")) cfg$legenda$posicao <- cfg$multivariada$legenda_posicao %||% "direita"
   for (ax in c("eixo_x", "eixo_y")) {
     cfg[[ax]]$espessura_ticks_pt <- cfg[[ax]]$espessura_ticks_pt %||% cfg$caixa$espessura_pt

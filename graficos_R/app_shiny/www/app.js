@@ -171,9 +171,10 @@
     // as menores por cima: uma caixa grande (polígono, caixa de estatística) nunca esconde o texto ou a figura que está sobre ela
     var ordem = geo.caixas.itens.slice().sort(function (a, b) { return b.rect[2] * b.rect[3] - a.rect[2] * a.rect[3]; });
     ordem.forEach(function (it) {
-      var $b = $('<div class="caixa-movel" data-id="' + it.id + '"><b class="cm-fant"></b><span class="cm-rot"></span></div>');
-      ALCAS_TODAS.forEach(function (h) { $b.append('<i class="cm-alca" data-h="' + h + '"></i>'); });
-      $b.find('.cm-rot').text(rotulo('cx_' + it.tipo)); $b.attr('title', rotulo('cx_dica')).data('it', it);
+      var ehRot = it.tipo === 'rotulo';
+      var $b = $('<div class="caixa-movel' + (ehRot ? ' rotulo' : '') + '" data-id="' + it.id + '"><b class="cm-fant"></b><span class="cm-rot"></span></div>');
+      if (!ehRot) ALCAS_TODAS.forEach(function (h) { $b.append('<i class="cm-alca" data-h="' + h + '"></i>'); });
+      $b.find('.cm-rot').text(ehRot ? it.chave : rotulo('cx_' + it.tipo)); $b.attr('title', ehRot ? rotulo('cx_dica_nome') : rotulo('cx_dica')).data('it', it);
       $b.css({ left: m.ox + it.rect[0] * m.W, top: m.oy + it.rect[1] * m.H, width: Math.max(it.rect[2] * m.W, 14), height: Math.max(it.rect[3] * m.H, 14) });
       if (it.id === cmAtiva) $b.addClass('ativa');
       $(host()).append($b);
@@ -207,8 +208,28 @@
   }
   function colocarRet($b, R) { $b.css({ left: R.l + 'px', top: R.t + 'px', width: R.w + 'px', height: R.h + 'px' }); }
   // grava nos campos do cartão o que o gesto deixou (l, t, w, h em px); g guarda o retângulo de antes
+  // nomes arrastáveis (PCA/CA/CCA e mapas): o campo guarda "Nome=x,y; Nome2=x,y" (centro do nome, nas unidades dos eixos)
+  function lerPosicoes(campo) {
+    var out = [], v = String($('#' + campo).val() || '');
+    v.split(';').forEach(function (z) { var k = z.lastIndexOf('='); if (k > 0 && z.trim()) out.push([z.slice(0, k).trim(), z.slice(k + 1).trim()]); });
+    return out;
+  }
+  function gravarPosicoes(campo, lista) { setCampo(campo, lista.map(function (e) { return e[0] + '=' + e[1]; }).join('; ')); }
+  function gravarRotulo(it, R, P) {
+    var fxr = (R.l + R.w / 2 - P.l) / P.w, fyr = ((P.t + P.h) - (R.t + R.h / 2)) / P.h;
+    var X = it.lx[0] + fxr * (it.lx[1] - it.lx[0]), Y = it.ly[0] + fyr * (it.ly[1] - it.ly[0]);
+    var txt = arred(X, casasDe(it.lx) + 1) + ',' + arred(Y, casasDe(it.ly) + 1), lista = lerPosicoes(it.campo), achou = false;
+    lista.forEach(function (e) { if (e[0] === it.chave) { e[1] = txt; achou = true; } });
+    if (!achou) lista.push([it.chave, txt]);
+    gravarPosicoes(it.campo, lista);
+  }
+  $(document).on('dblclick', '.caixa-movel.rotulo', function () {                  // duplo clique: o nome volta a se posicionar sozinho
+    var it = $(this).data('it'); if (!it) return;
+    gravarPosicoes(it.campo, lerPosicoes(it.campo).filter(function (e) { return e[0] !== it.chave; }));
+  });
   function gravarCaixa(g, R) {
     var it = g.it, m = g.m, P = pixelsPainel(m), F = geo.caixas.faixa, dados = !!it.dados && F, redim = g.modo === 'tam';
+    if (it.tipo === 'rotulo') { gravarRotulo(it, R, P); return; }
     var livre = !it.auto || !!g.lado;                                 // tamanho próprio (largura e altura) em vez de proporção / tamanho da letra
     var fx = function (px) { return (px - P.l) / P.w; }, fy = function (py) { return ((P.t + P.h) - py) / P.h; };        // fração do painel (y de baixo para cima)
     var X = function (f) { return dados ? arred(F.x[0] + f * (F.x[1] - F.x[0]), casasDe(F.x)) : arred(f, 3); };
@@ -257,6 +278,7 @@
   $(document).on('pointerup pointercancel', '.caixa-movel', function (e) {
     if (!cm) return;
     var g = cm, $b = $(this), it = g.it; cm = null; $b.removeClass('arrastando');
+    if (!g.moveu && it.tipo === 'rotulo') return;                       // um clique num nome: nada (arraste para mover, duplo clique para soltar)
     if (!g.moveu) {                                                   // um clique: abre a edição rápida
       var pref = it.id.replace(/[0-9]+$/, ''), ids = (CAMPOS_RAPIDOS[it.tipo] || []).map(function (c) { return it.id + '_' + c; });
       abrirPopover('caixa:' + it.id, ids, rotulo('cx_' + it.tipo), { painel: PAINEL_DE[pref], ativo: it.id + '_ativo' });

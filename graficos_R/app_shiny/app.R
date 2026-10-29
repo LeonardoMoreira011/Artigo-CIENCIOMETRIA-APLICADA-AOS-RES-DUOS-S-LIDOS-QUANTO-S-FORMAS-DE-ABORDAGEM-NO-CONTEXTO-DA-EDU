@@ -97,7 +97,7 @@ construir_ui <- function(idioma) fluidPage(
               span(`data-z` = "titulo", "Título do gráfico"), span(`data-z` = "xlab", "Título do eixo X"), span(`data-z` = "ylab", "Título do eixo Y"),
               span(`data-z` = "dica", "Clique para editar o texto, o negrito e o tamanho"), span(`data-z` = "fechar", "Fechar"),
               span(`data-z` = "cx_estatistica", "Caixa de estatística"), span(`data-z` = "cx_texto", "Texto"), span(`data-z` = "cx_forma", "Forma"),
-              span(`data-z` = "cx_figura", "Figura"), span(`data-z` = "cx_dica", "Arraste para mover, puxe os quadradinhos para mudar o tamanho (cantos: proporcional em texto e figura; lados: largura ou altura livres; Shift inverte), setas = ajuste fino, clique para editar"),
+              span(`data-z` = "cx_rotulo", "Nome"), span(`data-z` = "cx_dica_nome", "Arraste para posicionar o nome; duplo clique devolve à posição automática"), span(`data-z` = "cx_figura", "Figura"), span(`data-z` = "cx_dica", "Arraste para mover, puxe os quadradinhos para mudar o tamanho (cantos: proporcional em texto e figura; lados: largura ou altura livres; Shift inverte), setas = ajuste fino, clique para editar"),
               span(`data-z` = "cx_mais", "Todas as opções")),
           uiOutput("info_previa"),
           uiOutput("avisos")),

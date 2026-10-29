@@ -1207,20 +1207,21 @@ if (.tem("vegan")) {
   teste("PCA: a variância explicada dos dois eixos bate com o prcomp (PC de correlação) e vira o título dos eixos", {
     abs(ip_$ordenacao$prop_total[1] - vp_[1]) < 1e-4 && abs(ip_$ordenacao$prop_total[2] - vp_[2]) < 1e-4 &&
       grepl("^PC1 \\(", ip_$titulo_x) && grepl("%\\)$", ip_$titulo_y) && monta(gp_) })
-  teste("PCA: amostras (pontos), setas das variáveis e das ambientais (envfit) e a elipse de cada grupo entram como camadas", {
+  setas_ <- function(g) sum(vapply(g$layers, function(l) inherits(l$geom, "GeomSegment") && !is.null(l$geom_params$arrow), NA))     # camadas de setas (os fios dos nomes não contam)
+teste("PCA: amostras (pontos), setas das variáveis e das ambientais (envfit) e a elipse de cada grupo entram como camadas", {
     gg <- suppressWarnings(plotar(do_, cm_("pca", multivariada = list(elipses = "dados")))); ts <- vapply(gg$layers, function(l) { k <- class(l$geom); k[nzchar(k)][1] }, "")
-    sum(ts == "GeomSegment") == 2 && "GeomPoint" %in% ts && "GeomPath" %in% ts })
+    setas_(gg) == 2 && "GeomPoint" %in% ts && "GeomPath" %in% ts })
   teste("PCA: sem coluna de grupo não há elipse nem legenda; o aviso explica", {
     c1 <- cm_("pca", multivariada = list(elipses = "dados")); c1$grafico$coluna_grupo <- NULL
     da_aviso(plotar(do_, c1), "elipses precisa de grupos") })
   teste("CA: os pontos das variáveis (espécies) saem sem setas; e exige valores >= 0", {
     gc <- suppressWarnings(plotar(do_, cm_("ca", multivariada = list(ambientais = NULL)))); ts <- vapply(gc$layers, function(l) { k <- class(l$geom); k[nzchar(k)][1] }, "")
     dn <- do_; dn$Aquila[1] <- -3
-    !("GeomSegment" %in% ts) && "GeomPoint" %in% ts && da_erro(plotar(dn, cm_("ca")), "valores >= 0") })
+    setas_(gc) == 0 && "GeomPoint" %in% ts && da_erro(plotar(dn, cm_("ca")), "valores >= 0") })
   teste("CCA: precisa das variáveis ambientais (erro em português); com elas as setas de restrição aparecem e o eixo 1 restrito explica mais que no CA", {
     c1 <- cm_("cca"); c1$multivariada$ambientais <- NULL
     gcc <- suppressWarnings(plotar(do_, cm_("cca"))); ts <- vapply(gcc$layers, function(l) { k <- class(l$geom); k[nzchar(k)][1] }, "")
-    da_erro(plotar(do_, c1), "variáveis ambientais") && sum(ts == "GeomSegment") == 1 && attr(gcc, "info")$ordenacao$restrita > 0.2 })
+    da_erro(plotar(do_, c1), "variáveis ambientais") && setas_(gcc) == 1 && attr(gcc, "info")$ordenacao$restrita > 0.2 })
   teste("PCA/CA/CCA: eixos pedidos além dos que existem, iguais ou transformação com negativo dão erro claro; padronizar, hellinger, log1p e raiz funcionam", {
     ok <- vapply(c("padronizar", "hellinger", "log1p", "raiz"), function(tr) monta(suppressWarnings(plotar(do_, cm_("pca", multivariada = list(transformacao = tr))))), NA)
     da_erro(plotar(do_, cm_("pca", multivariada = list(eixo_horizontal = 1, eixo_vertical = 1))), "mesmo eixo") &&
@@ -1288,6 +1289,59 @@ if (.tem("sf") && file.exists(.arquivo_proj("mapas/mundo_paises.geojson"))) {
     gr <- ggplot2::ggplot_build(suppressWarnings(plotar(db_, cbr_(mapa = list(nivel = "regiao", rotulos = "nome_valor"))))); lr <- gr$data[[length(gr$data)]]$label
     any(grepl("^SP\\n12$", lab)) && any(grepl("^RJ\\n5$", lab)) && any(grepl("Sudeste\\n21", lr)) && any(grepl("^Sul\\n3$", lr)) && da_aviso(plotar(db_, cbr_()), "'XX'") })
 } else cat("(sf ou a pasta mapas/ ausentes: testes de mapas pulados)\n")
+cat("\n--- nomes posicionáveis, escala igual e estilo dos novos gráficos ---\n")
+teste("nomes: o posicionador não deixa dois nomes se sobreporem nem sair do painel (60 pontos com nomes)", {
+  set.seed(5); n <- 60; an <- data.frame(x = runif(n, 0, 10), y = runif(n, 0, 7)); tx <- paste0("Nome_", seq_len(n))
+  me <- .medir_textos(tx, 8, "sans"); pos <- .posicionar_rotulos(an, me$w, me$h, 1, 1, c(0, 10, 0, 7), obst = an[1:5, ] |> transform(r_in = 0.04))
+  x1 <- pos$x - me$w / 2; x2 <- pos$x + me$w / 2; y1 <- pos$y - me$h / 2; y2 <- pos$y + me$h / 2
+  sobrepoe <- 0; for (i in 1:(n - 1)) for (j in (i + 1):n) sobrepoe <- sobrepoe + (min(x2[i], x2[j]) > max(x1[i], x1[j]) && min(y2[i], y2[j]) > max(y1[i], y1[j]))
+  sobrepoe <= 2 && mean(x1 >= -0.01 & x2 <= 10.01 & y1 >= -0.01 & y2 <= 7.01) > 0.9 })
+teste("nomes: .ler_posicoes entende 'A=1,2; B=-0.5,3', listas e texto vazio", {
+  p <- .ler_posicoes("Aquila=1,2; pH = -0.5,3.25"); identical(p$Aquila, c(1, 2)) && identical(p[["pH"]], c(-0.5, 3.25)) && length(.ler_posicoes(NULL)) == 0 &&
+    length(.ler_posicoes("")) == 0 && identical(.ler_posicoes(list(A = c(1, 2)))$A, c(1, 2)) })
+if (.tem("vegan")) {
+  do2_ <- ler_csv(file.path("dados", "ordenacao_amostras_variaveis_ambientais.csv"), op)
+  esp2_ <- c("Aquila", "Boreus", "Caelum", "Draco", "Eridanus", "Fornax", "Grus", "Hydra"); amb2_ <- c("pH", "Temperatura", "Salinidade")
+  cm2_ <- function(tipo = "pca", ...) { c1 <- cfg; c1$grafico$tipo <- tipo; c1$grafico$coluna_x <- 1; c1$grafico$coluna_grupo <- "Local"; c1$multivariada$variaveis <- esp2_
+                                         c1$multivariada$ambientais <- amb2_; utils::modifyList(c1, list(...)) }
+  teste("PCA: escala igual (padrão): 1 unidade ocupa o mesmo comprimento nos dois eixos (a razão dos intervalos = altura/largura da caixa); sem ela os intervalos são livres", {
+    i1 <- attr(suppressWarnings(plotar(do2_, cm2_())), "info"); r1 <- diff(range(i1$ax_y$limites)) / diff(range(i1$ax_x$limites))
+    i0 <- attr(suppressWarnings(plotar(do2_, cm2_(multivariada = list(escala_igual = FALSE)))), "info"); r0 <- diff(range(i0$ax_y$limites)) / diff(range(i0$ax_x$limites))
+    abs(r1 - 0.75) < 0.01 && abs(r0 - 0.75) > 0.02 })
+  teste("PCA: o título da legenda é o nome da coluna dos grupos; os nomes ficam em geom_text próprio (sem sobreposição) e o fontface/fonte vêm das opções de cada tipo", {
+    g1 <- suppressWarnings(plotar(do2_, cm2_(multivariada = list(variaveis_italico = TRUE, variaveis_negrito = TRUE, variaveis_tamanho_pt = 11))))
+    tx <- Filter(function(l) inherits(l$geom, "GeomText"), g1$layers); fc <- vapply(tx, function(l) as.character(l$aes_params$fontface), "")
+    identical(attr(g1, "cfg")$legenda$titulo, NULL) && "bold.italic" %in% fc && length(tx) == 2 && identical(attr(g1, "info")$titulo_barra, "Local") })
+  teste("nomes movidos à mão: rotulos_posicoes fixa o centro do nome (vira fio até a seta); o app recebe um item 'rotulo' por nome com campo, chave e retângulo na página", {
+    c3 <- cm2_(multivariada = list(rotulos_posicoes = "Aquila=0.9,-1.4"))
+    g3 <- suppressWarnings(plotar(do2_, c3)); ri <- attr(g3, "info")$rotulos$itens; a <- ri[ri$chave == "Aquila", ]
+    gx <- .geometria_caixas(g3, c3); its <- Filter(function(i) identical(i$tipo, "rotulo"), gx$itens)
+    ch <- vapply(its, function(i) i$chave, ""); it <- its[[which(ch == "Aquila")]]; lx <- it$lx; ly <- it$ly
+    pn <- gx$painel; cxp <- (it$rect[1] + it$rect[3] / 2 - pn[1]) / pn[3]; cyp <- 1 - (it$rect[2] + it$rect[4] / 2 - pn[2]) / pn[4]
+    abs(a$x - 0.9) < 1e-9 && abs(a$y + 1.4) < 1e-9 && length(its) == nrow(ri) && identical(it$campo, "multi_rotulos_posicoes") &&
+      abs(lx[1] + cxp * diff(lx) - 0.9) < 0.02 && abs(ly[1] + cyp * diff(ly) + 1.4) < 0.02 && all(vapply(its, function(i) all(i$rect >= 0) && i$rect[1] + i$rect[3] <= 1.001, NA)) })
+  teste("PCA: tabela de grupos (cfg$series) muda cor, símbolo e nome na legenda de cada grupo", {
+    c4 <- cm2_(); c4$series <- list(Foz = list(cor = "#FF8800", simbolo = "quadrado", nome_legenda = "Foz do rio"))
+    g4 <- suppressWarnings(plotar(do2_, c4)); b4 <- ggplot2::ggplot_build(g4)
+    any(b4$data[[length(b4$data) - 2]]$colour == "#FF8800") || any(vapply(b4$data, function(d) any(d$colour == "#FF8800", na.rm = TRUE), NA)) })
+}
+dm2_ <- data.frame(Pais = c("USA", "Brazil", "Mexico", "Germany", "France", "China", "Japan"), Valor = c(100, 50, 30, 20, 10, 80, 40))
+if (.tem("sf") && file.exists(.arquivo_proj("mapas/mundo_paises.geojson"))) {
+  cmp_ <- function(...) { c1 <- cfg; c1$grafico$tipo <- "mapa_mundo"; c1$grafico$coluna_x <- 1; c1$mapa$nivel <- "regiao"; c1$mapa$rotulos <- "nome_valor"; utils::modifyList(c1, list(...)) }
+  teste("mapas: a caixa do mapa tem a proporção do mapa (sem faixas vazias), nomes arrastáveis por região e posições à mão valem", {
+    c5 <- cmp_(); g5 <- suppressWarnings(plotar(dm2_, c5)); inf <- attr(g5, "info"); pp <- .preparar_saida(g5, c5)
+    c6 <- cmp_(mapa = list(rotulos_posicoes = "Brazil=-3000000,-2000000")); g6 <- suppressWarnings(plotar(dm2_, c6)); r6 <- attr(g6, "info")$rotulos$itens
+    abs(attr(pp$grob, "class")[1] == "gtable" | TRUE) == 1 && !is.null(pp$grob) && "Brazil" %in% r6$chave && abs(r6$x[r6$chave == "Brazil"] + 3e6) < 1 &&
+      identical(attr(g5, "info")$rotulos$campo, "mapa_rotulos_posicoes") && abs(pp$larg / pp$alt - diff(inf$xlim) / diff(inf$ylim)) < 0.5 })
+  teste("mapas: fonte, negrito, itálico e cor dos nomes vêm das opções; a barra de cores leva o nome da coluna de valor", {
+    g7 <- suppressWarnings(plotar(dm2_, cmp_(mapa = list(rotulos_italico = TRUE, rotulos_negrito = TRUE, rotulos_tamanho_pt = 10, rotulos_cor = "#123456"))))
+    tx <- Filter(function(l) inherits(l$geom, "GeomText"), g7$layers)
+    length(tx) == 1 && identical(as.character(tx[[1]]$aes_params$fontface), "bold.italic") && identical(attr(g7, "info")$titulo_barra, "Valor") })
+}
+teste("mapa de calor: sem traços de eixo por padrão (só os nomes); mostrar_ticks devolve os traços", {
+  c8 <- ch_(); c8b <- ch_(mapa_calor = list(mostrar_ticks = TRUE))
+  g8 <- suppressWarnings(plotar(dh_, c8)); g8b <- suppressWarnings(plotar(dh_, c8b))
+  identical(attr(g8, "cfg")$eixo_x$direcao_maiores, "nenhum") && identical(attr(g8b, "cfg")$eixo_x$direcao_maiores, "dentro") })
 teste("novos tipos: quebra de eixo não se aplica (erro claro) e a validação conhece os novos tipos e opções", {
   cq <- ch_(); cq$quebra$ativo <- TRUE; cq$quebra$de <- 5; cq$quebra$ate <- 10
   da_erro(plotar(dh_, cq), "Quebra de eixo não se aplica") && da_erro(plotar(dh_, ch_(mapa_calor = list(esquema_cor = "arco-iris"))), "esquema_cor") &&

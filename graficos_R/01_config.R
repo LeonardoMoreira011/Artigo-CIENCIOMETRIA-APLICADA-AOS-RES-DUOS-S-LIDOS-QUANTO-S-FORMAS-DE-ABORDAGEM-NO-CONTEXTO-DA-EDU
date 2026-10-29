@@ -701,11 +701,40 @@ cfg$multivariada <- list(
   cor_variaveis = "grey30",
   cor_ambientais = "#B3262E",
 
-  # tamanho_rotulos_pt: tamanho dos nomes (amostras, variáveis, ambientais), em pt. NULL = 85 % do tamanho base.
-  tamanho_rotulos_pt = NULL,
+  # escala_igual: TRUE = 1 unidade no eixo X ocupa o mesmo comprimento que 1 unidade no Y (biplot fiel: os ângulos entre as setas
+  #   e as distâncias entre as amostras não ficam deformados). Precisa da caixa de tamanho fixo (o padrão).
+  escala_igual = TRUE,
+
+  # rotulos_posicoes: onde ficam os nomes que você moveu à mão: "Nome=x,y; Nome2=x,y" (centro do nome, nas unidades dos eixos).
+  #   No app basta arrastar o nome no gráfico. Os demais nomes se posicionam sozinhos, sem encostar em pontos, setas e outros nomes.
+  #   OPÇÕES: NULL | texto "Aquila=-0.8,0.3; pH=1,0.5"
+  rotulos_posicoes = NULL,
+
+  # linha_guia: liga com um fio cada nome que ficou longe do seu ponto/seta.   OPÇÕES: TRUE | FALSE
+  linha_guia = TRUE,
+
+  # --- texto de cada tipo de nome (amostras / variaveis / ambientais): fonte, tamanho (pt), negrito, itálico e cor.
+  #   NULL = herda: fonte do gráfico, 85 % do tamanho base, sem negrito, e a cor de cada tipo (cor_variaveis / cor_ambientais).
+  #   EX.: cfg$multivariada$variaveis_italico <- TRUE      (nomes de espécies em itálico)
+  amostras_fonte = NULL, amostras_tamanho_pt = NULL, amostras_negrito = NULL, amostras_italico = NULL, amostras_cor = NULL,
+  variaveis_fonte = NULL, variaveis_tamanho_pt = NULL, variaveis_negrito = NULL, variaveis_italico = NULL,
+  ambientais_fonte = NULL, ambientais_tamanho_pt = NULL, ambientais_negrito = NULL, ambientais_italico = NULL,
+
+  # variaveis_simbolo / variaveis_tamanho_ponto_pt: símbolo e tamanho dos pontos das variáveis (CA e CCA, ou PCA com "pontos").
+  #   OPÇÕES: "cruz" | "x" | "circulo" | "quadrado" | "losango" | "triangulo" | ... (veja a lista de símbolos)
+  variaveis_simbolo = "cruz",
+  variaveis_tamanho_ponto_pt = NULL,
 
   # espessura_setas_pt: espessura das setas (pt).   OPÇÕES: número > 0
-  espessura_setas_pt = 0.6
+  espessura_setas_pt = 0.6,
+
+  # setas_ponta_pt / setas_ponta: tamanho (pt) e tipo da ponta das setas. "fechada" (triângulo cheio) | "aberta" (dois traços)
+  setas_ponta_pt = 5,
+  setas_ponta = "fechada",
+
+  # elipse_espessura_pt / elipse_preencher: traço da elipse e, se TRUE, um preenchimento leve na cor do grupo.
+  elipse_espessura_pt = 0.8,
+  elipse_preencher = FALSE
 )
 
 # -----------------------------------------------------------------------------
@@ -759,6 +788,9 @@ cfg$mapa_calor <- list(
   # cor_sem_dado: cor das células vazias (e, no mapa, dos países/estados sem valor).
   cor_sem_dado = "grey88",
 
+  # mostrar_ticks: TRUE = traços de eixo nas células do mapa de calor (por padrão ficam sem traços: só os nomes).
+  mostrar_ticks = FALSE,
+
   # barra_posicao: onde fica a barra de cores (vale para o mapa de calor e os mapas; manda sobre cfg$legenda$posicao).
   #   OPÇÕES: "direita" | "esquerda" | "topo" | "base" | "dentro"
   barra_posicao = "direita",
@@ -792,6 +824,13 @@ cfg$mapa <- list(
   #   "nenhum" | "nome" | "nome_valor" | "valor"
   rotulos = "nenhum",
   rotulos_tamanho_pt = NULL,
+  # rotulos_fonte / rotulos_negrito / rotulos_italico / rotulos_cor: texto dos nomes no mapa. NULL = fonte do gráfico, normal e cor automática
+  #   (clara sobre cor escura, escura sobre cor clara; nomes que saem do local usam a cor do texto do gráfico).
+  rotulos_fonte = NULL, rotulos_negrito = NULL, rotulos_italico = NULL, rotulos_cor = NULL,
+  # rotulos_posicoes: nomes movidos à mão: "Brazil=x,y; LATAM=x,y" (centro do nome; x e y na unidade do mapa projetado). No app: arraste o nome.
+  rotulos_posicoes = NULL,
+  # linha_guia: fio ligando o nome que saiu do seu local.   OPÇÕES: TRUE | FALSE
+  linha_guia = TRUE,
 
   # mundo_geojson / mundo_regioes_csv / brasil_geojson: caminhos dos contornos e da tabela de regiões (NULL = os da pasta mapas/).
   mundo_geojson = NULL,

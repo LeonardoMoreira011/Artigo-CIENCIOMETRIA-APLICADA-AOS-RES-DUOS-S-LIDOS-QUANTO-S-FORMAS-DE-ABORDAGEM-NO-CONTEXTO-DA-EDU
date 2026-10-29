@@ -216,10 +216,11 @@
 .geometria_caixas <- function(g, cfg, prep = NULL) {
   if (!is.null(attr(g, "partes")) || inherits(g, "patchwork") || is.null(g$layers)) return(NULL)
   ls <- Filter(function(l) !is.null(attr(l, "caixa")) && (isTRUE(attr(l, "caixa")$fracao) || isTRUE(attr(l, "caixa")$dados)), g$layers)
-  if (!length(ls)) return(NULL)
+  if (!length(ls) && is.null(attr(g, "info")$rotulos)) return(NULL)
   faixa <- if (any(vapply(ls, function(l) isTRUE(attr(l, "caixa")$dados), NA))) .faixa_dados_painel(g) else NULL
   ls <- Filter(function(l) { d <- attr(l, "caixa"); isTRUE(d$fracao) || (isTRUE(d$dados) && !is.null(faixa) && all(is.finite(d$lim))) }, ls)
-  if (!length(ls)) return(NULL)
+  rot <- attr(g, "info")$rotulos                                    # nomes (PCA/CA/CCA, mapas) que se arrastam
+  if (!length(ls) && is.null(rot)) return(NULL)
   prep <- prep %||% .preparar_saida(g, cfg)
   dtmp <- .abrir_dispositivo_tmp(prep$larg, prep$alt); on.exit(grDevices::dev.off(dtmp), add = TRUE)
   gt <- prep$grob %||% attr(g, "gt") %||% ggplot2::ggplotGrob(g)
@@ -255,6 +256,13 @@
          dados = if (dados) TRUE, regiao = if (dados && all(grid::unitType(d$W) == "npc")) TRUE,
          rect = unname(round(c(esq / pg[1], (pt + ph - base - bh) / pg[2], bw / pg[1], bh / pg[2]), 5)), vert = vert))
   })
+  if (!is.null(rot)) {                                              # nomes arrastáveis: o retângulo de cada um, em fração da página
+    ri <- rot$itens; fxr <- (ri$x - rot$lim_x[1]) / diff(rot$lim_x); fyr <- (ri$y - rot$lim_y[1]) / diff(rot$lim_y)
+    rect <- cbind((pl + fxr * pw - ri$w_in / 2) / pg[1], (pt + (1 - fyr) * ph - ri$h_in / 2) / pg[2], ri$w_in / pg[1], ri$h_in / pg[2])
+    itens <- c(itens, lapply(seq_len(nrow(ri)), function(i)
+      list(id = paste0("rt", i), tipo = "rotulo", chave = ri$chave[i], campo = rot$campo, grupo = ri$conj[i], rect = unname(round(rect[i, ], 5)),
+           lx = rot$lim_x, ly = rot$lim_y)))
+  }
   out <- list(painel = round(c(pl / pg[1], pt / pg[2], pw / pg[1], ph / pg[2]), 5), itens = unname(itens))
   if (!is.null(faixa)) out$faixa <- faixa
   out

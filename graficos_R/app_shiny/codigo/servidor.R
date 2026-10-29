@@ -197,6 +197,11 @@ servidor <- function(input, output, session) {
   # ---- séries (tabela por série) ------------------------------------------------------------------------------
   series_nomes <- reactive({
     d <- rv$dados; req(d)
+    tp0 <- input$tipo_grafico %||% "linha_pontos"
+    if (tp0 %in% c("pca", "ca", "cca")) {                  # ordenações: cada GRUPO é uma "série" (cor, símbolo, tamanho e nome na legenda)
+      g <- input$coluna_grupo
+      return(if (!is.null(g) && nzchar(g) && g %in% names(d)) unique(as.character(d[[g]][!is.na(d[[g]])])) else character(0))
+    }
     x <- input$coluna_x; if (is.null(x) || !nzchar(x)) x <- names(d)[1]
     num <- setdiff(names(d)[vapply(d, is.numeric, NA)], x)
     err <- input$colunas_erro                              # coluna de erro não é série
@@ -210,8 +215,10 @@ servidor <- function(input, output, session) {
     nomes_chave(); d <- rv$dados
     if (is.null(d)) return(UI(div(class = "vazio", "Carregue os dados para editar cada série.")))
     tp <- input$tipo_grafico %||% "linha_pontos"
-    if (!tp %in% c("pontos", "linha", "linha_pontos", "area", "area_empilhada"))
-      return(UI(div(class = "vazio", "A edição série por série vale para gráficos de linha, pontos e área.")))
+    if (!tp %in% c("pontos", "linha", "linha_pontos", "area", "area_empilhada", "pca", "ca", "cca"))
+      return(UI(div(class = "vazio", "A edição série por série vale para gráficos de linha, pontos, área e para os grupos do PCA, CA e CCA.")))
+    if (tp %in% c("pca", "ca", "cca") && !length(series_nomes_seguro()))
+      return(UI(div(class = "vazio", "Escolha a coluna dos grupos (em Dados) para editar a cor, o símbolo e o nome de cada grupo.")))
     nomes <- isolate(series_nomes())
     UI(div(class = "series", lapply(seq_along(nomes), function(i) ui_serie(i, nomes[i]))))
   })

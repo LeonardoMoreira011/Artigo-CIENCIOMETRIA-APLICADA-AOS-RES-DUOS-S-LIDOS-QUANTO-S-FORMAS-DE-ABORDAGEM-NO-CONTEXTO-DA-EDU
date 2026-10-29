@@ -348,3 +348,10 @@ Seis tipos novos em **Dados e tipo de gráfico**. Usam os pacotes `sf` (mapas), 
 - Os gráficos de mapa e o mapa de calor não têm eixos numéricos: não valem a quebra de eixo, o eixo da direita nem o ajuste de curva. A caixa de tamanho fixo não se aplica aos mapas (a proporção do mapa é mantida). Cores, fonte, título, legenda (a barra de cores) e exportação valem normalmente.
 - No código: `cfg$grafico$tipo <- "cca"`; blocos `cfg$multivariada`, `cfg$mapa_calor` e `cfg$mapa` (`ajuda("multivariada")`, `ajuda("mapa_calor")`, `ajuda("mapa")`); no painel: `multi_*`, `calor_*`, `mapa_*` e `coluna_grupo` (seção 1b e 1c do `painel_de_ajustes.R`).
 
+### Aparência dos novos gráficos: tudo editável (veja `AUDITORIA_ESTETICA.md`)
+
+- **Nomes que se arrastam.** No PCA, CA, CCA e nos mapas com nomes, cada nome (variável, ambiental, país, região) tem uma moldura sobre o gráfico: **arraste** para onde quiser. A posição vai para o campo "Posição dos nomes que você moveu" (e para o código e o projeto); **duplo clique** devolve o nome à posição automática. Os nomes que você não mexe se posicionam sozinhos, sem cobrir pontos, setas nem outros nomes (com um fio quando ficam longe).
+- **Texto:** fonte, tamanho, negrito, itálico e cor de cada tipo de nome (Mais opções, em Dados).
+- **Grupos:** a tabela de grupos (aba Cores) edita cor, símbolo, tamanho e nome na legenda de cada grupo do PCA/CA/CCA.
+- **Setas e elipses:** grossura, ponta, símbolo das variáveis, preenchimento. **Escala igual** nos dois eixos por padrão (biplot fiel).
+

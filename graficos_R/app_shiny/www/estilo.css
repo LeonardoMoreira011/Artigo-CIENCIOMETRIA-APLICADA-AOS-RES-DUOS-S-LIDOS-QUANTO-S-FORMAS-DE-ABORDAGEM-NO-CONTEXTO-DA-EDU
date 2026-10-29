@@ -178,6 +178,8 @@ pre { background: var(--tinta); color: var(--creme); border-radius: 10px; paddin
 /* ---- caixas móveis sobre a prévia (estatística, texto, forma, figura): moldura sempre visível, alças nos cantos e lados, "sombra" ao arrastar ---- */
 .caixa-movel { position: absolute; z-index: 6; box-sizing: border-box; cursor: move; touch-action: none; border: 1.5px dashed rgba(47,102,112,.45); border-radius: 3px; }
 .caixa-movel:hover { border-color: var(--petroleo); background: rgba(47,102,112,.08); }
+.caixa-movel.rotulo { border: 1px dashed transparent; border-radius: 2px; cursor: grab; }
+.caixa-movel.rotulo:hover, .caixa-movel.rotulo.ativa { border: 1px dashed var(--vermelho); background: rgba(201,106,74,.12); }
 .caixa-movel.ativa { border: 2px solid var(--vermelho); background: rgba(201,106,74,.08); z-index: 7; }
 .caixa-movel .cm-rot { position: absolute; left: -2px; top: -18px; font-size: 10.5px; font-weight: 700; color: var(--creme); background: var(--petroleo);
                        padding: 1px 7px; border-radius: 4px 4px 0 0; pointer-events: none; white-space: nowrap; display: none; }
