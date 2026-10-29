@@ -184,6 +184,7 @@ ui_faixa <- function() {
         .menu_faixa("Forma", lapply(seq_along(.TIPOS_FORMA)[-1], function(i) .rapido(names(.TIPOS_FORMA)[i], acao = "forma", tipo = unname(.TIPOS_FORMA[i])))),
         .rapido("Figura", acao = "figura")),
     div(class = "faixa-grupo faixa-dir", uiOutput("botoes_baixar", inline = TRUE),
+        tags$button(type = "button", class = "faixa-btn faixa-dash", id = "abrir_dashboard", title = "Reúne os gráficos das suas abas numa folha que você arruma (mover, esticar, alinhar) e baixa em PDF ou HTML.", HTML("&#9638; Dashboard")),
         tags$button(type = "button", class = "faixa-btn faixa-max", id = "maximizar", `data-sair` = "Mostrar painéis", title = "Esconde o trilho e o painel para o gráfico ocupar a tela toda (Esc volta).", "Maximizar")))
 }
 

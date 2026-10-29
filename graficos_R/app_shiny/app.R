@@ -19,7 +19,8 @@ suppressMessages(source(file.path(raiz, "02_motor.R"), encoding = "UTF-8"))
 CFG0 <- .completar_cfg(cfg)
 assign("raiz", raiz, envir = globalenv()); assign("CFG0", CFG0, envir = globalenv())   # usados pelos arquivos de R/
 addResourcePath("fontes", file.path(raiz, "fontes"))
-for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8", local = FALSE)
+for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "dashboard.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8", local = FALSE)
+addResourcePath("painel", DASH_DIR)               # as páginas do Dashboard montadas nesta sessão (e os PDFs)
 
 carregar_dicionarios(file.path("idiomas"))      # (pasta ausente de propósito: só português; veja idiomas_arquivados/)
 

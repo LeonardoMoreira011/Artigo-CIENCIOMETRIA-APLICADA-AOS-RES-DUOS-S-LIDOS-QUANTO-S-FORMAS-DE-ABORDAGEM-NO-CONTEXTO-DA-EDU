@@ -92,7 +92,7 @@
     <li>Deixando o gráfico do seu jeito <span>eixos, cores, texto, legenda, estilos prontos</span></li>
     <li>Análises <span>ajuste de curva, média ± DP, barras de erro, normalidade, ANOVA, Kruskal-Wallis</span></li>
     <li>Anotações no gráfico <span>texto, formas, figuras</span></li>
-    <li>Exportar <span>PNG, PDF, SVG, TIFF… e o tamanho certo</span></li>
+    <li>Exportar <span>PNG, PDF, SVG, TIFF… o tamanho certo e o Dashboard (todos os gráficos numa folha)</span></li>
     <li>Guardar e retomar o trabalho <span>salvamento automático, projeto, abas, código</span></li>
     <li>Boas práticas, perguntas frequentes e pedido de ajuda</li>
   </ol>
@@ -189,7 +189,7 @@ Listening on http://127.0.0.1:8421</div>
     <tr><td><b>2</b></td><td>Abas</td><td>Um gráfico por aba: <b>+ Nova aba</b>, <b>Duplicar</b> (cópia para variar) e <b>Renomear</b>.</td></tr>
     <tr><td><b>3</b></td><td>Trilho de painéis</td><td>Os 7 ícones abrem cada painel: <b>1 Dados</b> · <b>2 Eixos</b> · <b>3 Cores e símbolos</b> · <b>4 Fonte e textos</b> · <b>5 Legenda</b> · <b>6 Análises e anotações</b> · <b>7 Tamanho e exportação</b>.</td></tr>
     <tr><td><b>4</b></td><td>Painel aberto</td><td>As opções do painel escolhido. Seções recolhidas (▸) abrem com um clique. Cada passo tem uma <b>dica</b> colorida explicando o essencial.</td></tr>
-    <tr><td><b>5</b></td><td>Faixa de ferramentas</td><td><b>Análise:</b> Ajuste de curva, Média ± DP, Caixa de estatística, Tabelas e testes · <b>Anotar:</b> Texto, Forma, Figura · <b>Baixar PNG / PDF</b> · <b>Maximizar</b> (esconde os painéis para o gráfico ocupar a tela; <b>Esc</b> volta).</td></tr>
+    <tr><td><b>5</b></td><td>Faixa de ferramentas</td><td><b>Análise:</b> Ajuste de curva, Média ± DP, Caixa de estatística, Tabelas e testes · <b>Anotar:</b> Texto, Forma, Figura · <b>Baixar PNG / PDF</b> · <b>▦ Dashboard</b> (todos os gráficos das abas numa folha; veja 9.1) · <b>Maximizar</b> (esconde os painéis para o gráfico ocupar a tela; <b>Esc</b> volta).</td></tr>
     <tr><td><b>6</b></td><td>Gráfico</td><td>Prévia ao vivo. <b>Arraste</b> a legenda e as caixas com o mouse; <b>clique</b> num título ou eixo para editá-lo ali mesmo. Com "Atualizar sozinho" ligado o gráfico se refaz após cada mudança; senão, use <b>Atualizar agora</b>.</td></tr>
     <tr><td><b>7</b></td><td>Rodapé</td><td>Tamanho da página, fonte e a lista <b>"O que você mudou"</b>, que mostra tudo o que saiu do padrão.</td></tr>
   </table>
@@ -442,6 +442,31 @@ Listening on http://127.0.0.1:8421</div>
   </ul>
   <div class="atencao"><b>Atenção (PDF e a fonte Barlow)</b> O PDF usa as fontes <i>instaladas no Windows</i>. Para o PDF sair em Barlow, instale a fonte (abra os arquivos <code>.ttf</code> da pasta <code>fontes\Barlow</code> e clique em <i>Instalar</i>). PNG, TIFF e SVG já usam a Barlow direto, sem instalar.</div>
   <div class="dica"><b>Regra prática</b> Word/PowerPoint → PNG (300–600 dpi). Revista → o formato que ela pede (TIFF 600 dpi ou PDF/SVG). Edição posterior → SVG ou PDF.</div>
+
+  <h2>9.1 Dashboard: todos os gráficos numa folha, em PDF</h2>
+  <p>Para apresentar o trabalho todo numa página, use o botão <b>▦ Dashboard</b> (faixa de ferramentas, ao lado de <i>Maximizar</i>). Ele reúne os gráficos das suas abas, números-chave e destaques escritos a partir dos números.</p>
+  <figure class="sem-borda"><img src="img/32_dashboard_botao.png" alt="Botão Dashboard" style="width:100%;border:1px solid #E0D2BC"><figcaption>O botão Dashboard, na faixa de ferramentas.</figcaption></figure>
+  <div class="lado">
+    <div class="texto">
+      <ol>
+        <li>Faça os gráficos nas abas, como de costume. <b>Dê nomes às abas</b>: eles viram os títulos dos blocos.</li>
+        <li>Clique em <b>Dashboard</b>, marque as abas que entram, a página (A4 paisagem ou retrato) e se quer os <b>destaques automáticos</b>.</li>
+        <li>O Cinabro monta a primeira folha. <b>Arrume do seu jeito</b> no editor (abaixo).</li>
+        <li>Clique em <b>Exportar PDF</b> (ou <b>Salvar HTML</b>, um arquivo só que abre em qualquer computador).</li>
+      </ol>
+    </div>
+    <figure><img src="img/33_dashboard_janela.png" alt="Janela do Dashboard" style="width:82mm"><figcaption>A janela de escolha.</figcaption></figure>
+  </div>
+  <figure class="sem-borda"><img src="img/34_dashboard_editor.png" alt="Editor do Dashboard" style="width:100%;border:1px solid #E0D2BC"><figcaption>O editor: blocos à esquerda, a folha no centro (com um bloco selecionado) e as opções do bloco à direita.</figcaption></figure>
+  <ul>
+    <li><b>Mover e esticar:</b> arraste o bloco; puxe os quadradinhos vermelhos para mudar o tamanho (Shift mantém a proporção). <b>Guias</b> azuis mostram o alinhamento com os outros blocos; a <b>grade de 5 mm</b> pode ser ligada e desligada.</li>
+    <li><b>Vários blocos:</b> Shift + clique seleciona mais de um; o painel da direita oferece <b>alinhar</b> e <b>distribuir</b>. <b>Alt</b> ao soltar um bloco sobre outro troca os dois de lugar.</li>
+    <li><b>Texto:</b> duplo clique em qualquer texto (título, números, destaques) para editar. Os destaques são um <b>rascunho</b>: edite ou apague.</li>
+    <li><b>Atalhos:</b> setas empurram o bloco (Shift = 10 mm), <b>Ctrl+D</b> duplica, <b>Del</b> apaga, <b>Ctrl+Z</b> / <b>Ctrl+Y</b> desfazem e refazem.</li>
+    <li><b>Identidade:</b> o botão <b>Identidade</b> escolhe entre as <b>cores padrão do Cinabro</b> e o <b>logo e as cores da sua instituição</b> (o logo aparece no cabeçalho).</li>
+  </ul>
+  <figure><img src="img/35_dashboard_folha.png" alt="Folha pronta" style="width:150mm"><figcaption>A folha pronta, como sai no PDF e no HTML.</figcaption></figure>
+  <div class="dica"><b>PDF sem instalar nada</b> O Cinabro usa o Edge (ou o Chrome) que já vêm no Windows, em modo invisível. O PDF sai com texto de verdade e a mesma fonte Barlow dos gráficos. Se nenhum for encontrado, o Cinabro abre a impressão do navegador: escolha <i>Salvar como PDF</i>.</div>
 </section>
 
 <!-- ===================== 10. GUARDAR E RETOMAR ===================== -->

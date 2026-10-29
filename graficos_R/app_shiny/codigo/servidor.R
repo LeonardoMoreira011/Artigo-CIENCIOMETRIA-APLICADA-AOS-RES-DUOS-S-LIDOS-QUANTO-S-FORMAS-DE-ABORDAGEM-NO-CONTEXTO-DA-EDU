@@ -681,6 +681,58 @@ servidor <- function(input, output, session) {
       tags$span(class = "aba-acao", onclick = "Shiny.setInputValue('aba_renomear', Date.now(), {priority: 'event'})", "Renomear")))
   })
 
+  # ---- Dashboard: reúne os gráficos das abas numa folha editável (a página fica em www/dashboard/, o R só prepara o conteúdo) --------------------
+  rv_dash <- new.env(); rv_dash$id <- NULL; rv_dash$graficos <- NULL; rv_dash$arquivos <- character(0)
+  observeEvent(input$abrir_dashboard, {
+    cur <- rv$aba; rv$abas[[cur]]$snap <- capturar()                       # a aba aberta também entra, como está agora
+    n <- length(rv$abas); com <- vapply(seq_len(n), function(i) !is.null(rv$abas[[i]]$snap$dados), NA)
+    if (!any(com)) return(showNotification(T("Carregue os dados em pelo menos uma aba para montar o dashboard."), type = "warning"))
+    nomes <- vapply(seq_len(n), nome_aba, "")
+    showModal(UI(modalDialog(title = "Dashboard", size = "m", easyClose = TRUE,
+      footer = tagList(if (!is.null(rv_dash$id)) actionButton("dash_reabrir", "Voltar ao último", class = "btn-sec"), modalButton("Cancelar"), actionButton("dash_montar", "Montar o dashboard", class = "btn-verde")),
+      tags$p("Reúne os gráficos das suas abas numa folha: números-chave, destaques escritos a partir dos números e os gráficos. Depois você arruma na tela (mover, esticar, alinhar) e baixa em PDF ou HTML."),
+      checkboxGroupInput("dash_abas", "Abas que entram", choices = stats::setNames(which(com), nomes[com]), selected = which(com)),
+      if (any(!com)) tags$p(class = "ajuda", paste0("Sem dados (ficam de fora): ", paste(nomes[!com], collapse = ", "), ".")),
+      div(class = "campos",
+          div(class = "campo", selectInput("dash_formato", "Página", choices = c("A4 paisagem" = "a4h", "A4 retrato" = "a4v"), selectize = FALSE)),
+          div(class = "campo", selectInput("dash_qualidade", "Gráficos", choices = c("Vetoriais (nítidos; arquivo maior)" = "vetorial", "Imagem leve (para e-mail)" = "leve"), selectize = FALSE))),
+      checkboxInput("dash_destaques", "Escrever destaques automáticos (rascunho que você edita)", TRUE),
+      textInput("dash_titulo", "Título", value = "Painel de acompanhamento", width = "100%"),
+      textInput("dash_subtitulo", "Subtítulo", value = paste0("atualizado em ", format(Sys.Date(), "%d/%m/%Y")), width = "100%"),
+      tags$p(class = "ajuda", "Logo e cores da sua instituição: no editor, botão \"Identidade\" (ou fique com as cores padrão do Cinabro)."))))
+  })
+  observeEvent(input$dash_reabrir, { removeModal(); session$sendCustomMessage("dash_abrir", list(url = paste0("painel/dash_", rv_dash$id, ".html"))) })
+  observeEvent(input$dash_montar, {
+    sel <- as.integer(input$dash_abas); sel <- sel[sel >= 1 & sel <= length(rv$abas)]
+    if (!length(sel)) return(showNotification(T("Marque pelo menos uma aba."), type = "warning"))
+    abas <- lapply(sel, function(i) { sn <- rv$abas[[i]]$snap; list(nome = nome_aba(i), dados = sn$dados, valores = sn$valores, series = sn$series) })
+    t0 <- Sys.time()
+    r <- withProgress(message = T("Montando o dashboard..."), value = 0, {
+      dash_construir(abas, list(formato = input$dash_formato, qualidade = input$dash_qualidade, destaques = isTRUE(input$dash_destaques),
+                                titulo = trimws(input$dash_titulo %||% ""), subtitulo = trimws(input$dash_subtitulo %||% "")),
+                     function(i, n, nome) setProgress(value = (i - 1) / n, detail = nome))
+    })
+    if (!length(r$graficos)) return(showNotification(paste(c(T("Nenhum gráfico pôde entrar no dashboard."), r$avisos), collapse = " "), type = "error", duration = 12))
+    json <- .dash_json(r$graficos)
+    unlink(rv_dash$arquivos); rv_dash$id <- r$estado$id; rv_dash$graficos <- json
+    arq <- file.path(DASH_DIR, paste0("dash_", r$estado$id, ".html")); rv_dash$arquivos <- arq
+    writeLines(dash_html(r$estado, json, "editar"), arq, useBytes = TRUE)
+    registrar_log("dashboard: ", length(r$graficos), " gráfico(s) em ", sprintf("%.1f", as.numeric(difftime(Sys.time(), t0, units = "secs"))), " s; ", round(file.size(arq) / 1024), " KB; avisos: ", length(r$avisos))
+    removeModal(); session$sendCustomMessage("dash_abrir", list(url = paste0("painel/dash_", r$estado$id, ".html")))
+    if (length(r$avisos)) showNotification(paste(r$avisos, collapse = " "), type = "warning", duration = 15)
+  })
+  observeEvent(input$dash_pdf, {                 # o editor pede o PDF: o R imprime a página pelo Edge/Chrome em modo invisível
+    d <- input$dash_pdf; req(rv_dash$id)
+    nome <- gsub("^_+|_+$", "", gsub("[^A-Za-z0-9_.-]+", "_", iconv(d$nome %||% "dashboard", to = "ASCII//TRANSLIT"))); if (!nzchar(nome)) nome <- "dashboard"
+    ok <- withProgress(message = T("Gerando o PDF..."), value = 0.5, {
+      arq <- file.path(DASH_DIR, paste0("pdf_", rv_dash$id, ".html")); pdf <- file.path(DASH_DIR, paste0(nome, ".pdf"))
+      writeLines(dash_html(d$estado, rv_dash$graficos, "pdf"), arq, useBytes = TRUE)
+      r <- tryCatch(dash_gerar_pdf(arq, pdf), error = function(e) FALSE); unlink(arq); r
+    })
+    registrar_log("dashboard: PDF ", if (ok) "gerado" else "NÃO gerado (sem Edge/Chrome ou falha)")
+    session$sendCustomMessage("dash_pdf", list(ok = ok, url = paste0("painel/", utils::URLencode(paste0(nome, ".pdf")), "?t=", as.integer(Sys.time())), nome = paste0(nome, ".pdf")))
+  })
+
   # ---- estilos prontos, restaurar, guia ------------------------------------------------------------------------------------
   restaurar_campos <- function() {
     cong <- ids_congelados()

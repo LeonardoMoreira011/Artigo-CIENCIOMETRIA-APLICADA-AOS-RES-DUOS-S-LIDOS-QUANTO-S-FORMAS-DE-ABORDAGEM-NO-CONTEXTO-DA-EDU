@@ -36,6 +36,17 @@
   $(document).on('click', '[data-sel-limpar]', function (e) {
     e.preventDefault(); var s = seletor($(this).data('sel-limpar')); if (s) s.clear(false);
   });
+  // ---- Dashboard: o editor abre em tela cheia (iframe); "Voltar ao Cinabro" só esconde, e o que foi arrumado fica ----------------------------------
+  function dashQuadro() { return document.getElementById('dash-frame'); }
+  window.cinabroDashFechar = function () { var o = document.getElementById('dash-overlay'); if (o) o.style.display = 'none'; document.body.style.overflow = ''; };
+  $(document).on('click', '#abrir_dashboard', function () { Shiny.setInputValue('abrir_dashboard', Date.now(), { priority: 'event' }); });
+  Shiny.addCustomMessageHandler('dash_abrir', function (m) {
+    var o = document.getElementById('dash-overlay');
+    if (!o) { o = document.createElement('div'); o.id = 'dash-overlay'; o.innerHTML = '<iframe id="dash-frame" title="Dashboard"></iframe>'; document.body.appendChild(o); }
+    var f = dashQuadro(); if (f.getAttribute('data-url') !== m.url) { f.setAttribute('data-url', m.url); f.src = m.url; }
+    o.style.display = 'block'; document.body.style.overflow = 'hidden';
+  });
+  Shiny.addCustomMessageHandler('dash_pdf', function (m) { var f = dashQuadro(); if (f && f.contentWindow && f.contentWindow.cinabroDash) f.contentWindow.cinabroDash.pdfPronto({ ok: m.ok, nome: m.nome, url: new URL(m.url, document.baseURI).href }); });       // (o endereço é relativo à página do Cinabro, não à do editor)
   // ---- estúdio: trilho de ícones, gaveta de painéis, faixa de ferramentas, maximizar ----------------------------------------------
   function ajustarTopo() {
     var h = ($('.topo').outerHeight() || 0) + ($('.abas-barra').outerHeight() || 0);

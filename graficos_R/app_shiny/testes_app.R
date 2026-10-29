@@ -14,7 +14,7 @@ options(cinabro.sem_log = TRUE, cinabro.sem_sessao = TRUE)   # os testes não es
 raiz <- normalizePath("..", winslash = "/")
 source(file.path(raiz, "01_config.R"), encoding = "UTF-8"); suppressMessages(source(file.path(raiz, "02_motor.R"), encoding = "UTF-8"))
 CFG0 <- .completar_cfg(cfg)
-for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8")
+for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "dashboard.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8")
 carregar_dicionarios("idiomas")             # (pasta ausente: só português)
 
 # ---- projeto (.cinabro): configuração + dados num arquivo só ---------------------------------------------------------------
@@ -376,6 +376,61 @@ testServer(servidor, {
   teste("servidor: fechar a aba ativa volta para a anterior", length(rv$abas) == 2 && rv$aba == 2)
   session$setInputs(aba_nome_novo = "Meu gráfico", aba_nome_ok = 1)
   teste("servidor: renomear a aba", identical(nome_aba(rv$aba), "Meu gráfico"))
+  session$setInputs(abrir_dashboard = 1)
+  session$setInputs(dash_abas = c("1", "2"), dash_formato = "a4h", dash_qualidade = "leve", dash_destaques = TRUE, dash_titulo = "Teste", dash_subtitulo = "", dash_montar = 1)
+  teste("servidor: Dashboard monta a página com as abas que têm dados e guarda os gráficos", !is.null(rv_dash$id) && file.exists(file.path(DASH_DIR, paste0("dash_", rv_dash$id, ".html"))) &&
+        length(jsonlite::fromJSON(rv_dash$graficos, simplifyVector = FALSE)) >= 1)
+  if (!is.na(.dash_navegador())) {
+    est <- as.character(jsonlite::toJSON(list(versao = 1, id = rv_dash$id, titulo = "Teste do PDF", formato = "a4h", paginas = list(), identidade = list(modo = "cinabro")), auto_unbox = TRUE))
+    session$setInputs(dash_pdf = list(id = rv_dash$id, estado = est, nome = "Teste do PDF", t = 1))
+    teste("servidor: o editor pede o PDF e o servidor devolve um arquivo PDF", file.exists(file.path(DASH_DIR, "Teste_do_PDF.pdf")) && identical(readBin(file.path(DASH_DIR, "Teste_do_PDF.pdf"), "raw", 4), charToRaw("%PDF")))
+  }
 })
+# ---- Dashboard: números-chave, destaques, imagens, página HTML e PDF ---------------------------------------------------------------
+L <- function(f) suppressMessages(suppressWarnings(ler_csv(file.path(raiz, "dados", f), utils::modifyList(CFG0$dados, list(relatorio = FALSE)))))
+teste("dashboard: números em português (vírgula decimal, ponto de milhar, p < 0,001)", identical(.dash_num(1234.5, 1), "1.234,5") && identical(.dash_p(0.0004), "p < 0,001") && identical(.dash_p(0.0312), "p = 0,031") && identical(.dash_pct(0.704), "70,4%"))
+teste("dashboard: textos dos dados são escapados (nada de HTML vindo da planilha)", identical(.dash_b("<i>x</i> & y"), "<b>&lt;i&gt;x&lt;/i&gt; &amp; y</b>"))
+svg1 <- "<svg viewBox='0 0 1 1'><defs><clipPath id='cpAB='><rect/></clipPath></defs><g clip-path='url(#cpAB=)'/></svg>"
+a1 <- .dash_svg_limpo(svg1, 1); a2 <- .dash_svg_limpo(svg1, 2)
+teste("dashboard: dois SVG na mesma página não repetem ids (cada gráfico tem o seu prefixo)", grepl("id='c1-cpAB='", a1, fixed = TRUE) && grepl("url(#c1-cpAB=)", a1, fixed = TRUE) && grepl("id='c2-cpAB='", a2, fixed = TRUE) && !grepl("width=", a1))
+abas_d <- list(
+  list(nome = "PCA", dados = L("ordenacao_amostras_variaveis_ambientais.csv"), valores = list(tipo_grafico = "pca", coluna_grupo = "Local", multi_variaveis = c("Aquila", "Boreus", "Caelum", "Draco", "Eridanus"), multi_ambientais = c("pH", "Salinidade")), series = NULL),
+  list(nome = "Barras", dados = L("resistencia_materiais.csv"), valores = list(tipo_grafico = "barras"), series = NULL),
+  list(nome = "Linhas", dados = L("ensaio_temperatura.csv"), valores = list(tipo_grafico = "linha_pontos", colunas_y = c("Amostra A", "Amostra B")), series = NULL),
+  list(nome = "Sem dados", dados = NULL, valores = list(), series = NULL),
+  list(nome = "Com erro", dados = L("ordenacao_amostras_variaveis_ambientais.csv"), valores = list(tipo_grafico = "cca", coluna_grupo = "Local", multi_variaveis = c("Aquila", "Boreus", "Caelum")), series = NULL))
+dd <- suppressWarnings(dash_construir(abas_d, list(qualidade = "vetorial", titulo = "Meu <painel>")))
+teste("dashboard: monta os gráficos das abas com dados e deixa de fora (com aviso) a aba sem dados e a que dá erro", length(dd$graficos) == 3 && length(dd$avisos) == 2 &&
+      any(grepl("Sem dados", dd$avisos)) && any(grepl("Com erro", dd$avisos)) && identical(vapply(dd$graficos, function(g) g$id, ""), c("g1", "g2", "g3")))
+teste("dashboard: gráficos vetoriais (SVG) com proporção, tipo e nome", all(vapply(dd$graficos, function(g) g$formato, "") == "svg") && all(vapply(dd$graficos, function(g) g$ar > 0.3 && g$ar < 5, NA)) &&
+      identical(vapply(dd$graficos, function(g) g$tipo, ""), c("pca", "barras", "linha_pontos")) && grepl("^<svg", dd$graficos[[1]]$conteudo))
+teste("dashboard: PCA entrega % explicada como número-chave, destaques e as linhas do resumo", identical(dd$graficos[[1]]$kpi$rotulo, "PC1 + PC2") && grepl("%$", dd$graficos[[1]]$kpi$valor) &&
+      any(grepl("explicam", unlist(dd$graficos[[1]]$frases))) && length(dd$graficos[[1]]$resumo) >= 3)
+teste("dashboard: barras e linhas entregam maior valor / variação, com vírgula decimal", any(grepl("maior valor", unlist(dd$graficos[[2]]$frases))) && any(grepl("subiu <b>[0-9]+,[0-9]%</b>", unlist(dd$graficos[[3]]$frases))) &&
+      grepl("variação", dd$graficos[[3]]$kpi$rotulo))
+d_leve <- suppressWarnings(dash_construir(abas_d[2], list(qualidade = "leve", destaques = FALSE)))
+teste("dashboard: qualidade leve vai em PNG e 'destaques desligados' não escreve frases nem número-chave", d_leve$graficos[[1]]$formato == "png" && grepl("^data:image/png;base64,[A-Za-z0-9+/=]+$", d_leve$graficos[[1]]$conteudo) &&
+      length(d_leve$graficos[[1]]$frases) == 0 && is.null(d_leve$graficos[[1]]$kpi))
+for (tp in list(c("boxplot", "replicatas.csv"), c("mapa_calor", "mapa_de_calor.csv"), c("pizza", "composicao_liga.csv"), c("mapa_mundo", "mapa_mundo_vendas.csv"), c("mapa_brasil", "mapa_brasil_estados.csv"), c("histograma", "replicatas.csv"))) {
+  r1 <- suppressWarnings(dash_construir(list(list(nome = tp[1], dados = L(tp[2]), valores = list(tipo_grafico = tp[1]), series = NULL)), list(qualidade = "vetorial")))
+  teste(paste0("dashboard: ", tp[1], " entra no dashboard com destaque e número-chave"), length(r1$graficos) == 1 && length(r1$graficos[[1]]$frases) >= 1 && !is.null(r1$graficos[[1]]$kpi))
+}
+h <- dash_html(dd$estado, dd$graficos, "editar")
+teste("dashboard: a página HTML não deixa marcadores sem preencher e o título é escapado", !grepl("@@[A-Z]+@@", h) && grepl('data-modo="editar"', h, fixed = TRUE) && grepl("<title>Meu &lt;painel&gt;</title>", h, fixed = TRUE))
+mi <- regmatches(h, regexec('<script id="estado" type="application/json">(.*?)</script>', h))[[1]][2]; mg <- regmatches(h, regexec('<script id="graficos" type="application/json">(.*?)</script>', h))[[1]][2]
+js_e <- jsonlite::fromJSON(mi, simplifyVector = FALSE); js_g <- jsonlite::fromJSON(mg, simplifyVector = FALSE)
+teste("dashboard: o estado e os gráficos vão dentro da página como JSON que volta igual", identical(js_e$titulo, "Meu <painel>") && identical(js_e$formato, "a4h") && length(js_g) == 3 && identical(js_g[[1]]$kpi$rotulo, "PC1 + PC2") && is.list(js_g[[1]]$frases))
+h2 <- dash_html(list(titulo = "x</script><b>"), "[]", "pdf")
+teste("dashboard: '</script>' vindo de um texto não fecha a página antes da hora", !grepl("x</script><b>", h2, fixed = TRUE) && grepl('data-modo="pdf"', h2, fixed = TRUE))
+teste("dashboard: a Barlow vai dentro da página (4 estilos, base64 de uma linha só)", length(gregexpr("@font-face", h, fixed = TRUE)[[1]]) == 4 && !grepl("base64,[A-Za-z0-9+/=]+[\r\n]+[A-Za-z0-9+/=]", .dash_fontes_css()) && !grepl("\n", .dash_b64(file.path(raiz, "fontes", "Barlow", "Barlow-Regular.ttf")), fixed = TRUE))
+js_src <- paste(readLines(file.path(.DASH_WWW, "editor.js"), encoding = "UTF-8", warn = FALSE), collapse = "\n")
+teste("dashboard: editor.js não usa os marcadores do modelo nem fecha o <script>", !grepl("@@", js_src, fixed = TRUE) && !grepl("</script", js_src, fixed = TRUE) && file.exists(file.path(.DASH_WWW, "editor.css")) && file.exists(file.path(.DASH_WWW, "modelo.html")))
+if (nzchar(Sys.which("node"))) teste("dashboard: editor.js tem sintaxe válida (node --check)", system2(Sys.which("node"), c("--check", shQuote(file.path(.DASH_WWW, "editor.js"))), stdout = FALSE, stderr = FALSE) == 0)
+teste("dashboard: o botão Dashboard está na faixa de ferramentas", grepl("abrir_dashboard", as.character(ui_faixa()), fixed = TRUE))
+if (!is.na(.dash_navegador())) {
+  arq_h <- file.path(DASH_DIR, "teste_pdf.html"); arq_p <- file.path(DASH_DIR, "teste_pdf.pdf"); writeLines(dash_html(dd$estado, dd$graficos, "pdf"), arq_h, useBytes = TRUE)
+  teste("dashboard: o PDF sai pelo navegador do computador, com uma página por folha da página", dash_gerar_pdf(arq_h, arq_p) && identical(readBin(arq_p, "raw", 4), charToRaw("%PDF")) && file.size(arq_p) > 5000)
+} else cat("[PULOU ] dashboard: PDF (nenhum Edge/Chrome achado neste computador)\n")
+
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", ok, falhas))
 if (falhas) quit(status = 1)

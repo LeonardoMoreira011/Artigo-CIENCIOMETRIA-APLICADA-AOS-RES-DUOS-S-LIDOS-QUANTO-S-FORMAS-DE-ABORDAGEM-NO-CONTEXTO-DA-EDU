@@ -105,6 +105,7 @@
   list(tipo = tipo, sites = as.matrix(sc_sites), vars = as.matrix(sc_vars), amb = if (!is.null(amb)) as.matrix(amb), rotulos = rotulos,
        grupo = grupo, eixos = nomes_eixos, prop = as.numeric(prop[ch]), escalonamento = esc,
        resumo = list(prop_total = as.numeric(prop), eixos_total = names(ev), n = nrow(X), n_vars = ncol(X), tipo = tipo, ch = ch, ord = ord, X = X, E = E,
+                     vars = as.matrix(sc_vars), amb = if (!is.null(amb)) as.matrix(amb), eixos = nomes_eixos,      # (o Dashboard lê daqui os destaques)
                      restrita = if (tipo == "cca") ord$CCA$tot.chi / ord$tot.chi else NA_real_))
 }
 

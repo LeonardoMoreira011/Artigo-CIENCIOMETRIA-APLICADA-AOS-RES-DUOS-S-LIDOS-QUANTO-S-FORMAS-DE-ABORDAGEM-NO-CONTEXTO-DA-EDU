@@ -329,6 +329,11 @@ a:hover { color: var(--vermelho); }
 .faixa-lista .faixa-btn { border: none; background: transparent; border-radius: 8px; text-align: left; padding: 7px 10px; width: 100%; }
 .faixa-lista .faixa-btn:hover { background: rgba(201,106,74,.2); }
 .faixa-max { background: var(--tinta); color: var(--creme); border-color: var(--tinta); }
+.faixa-dash { background: var(--vermelho); color: var(--creme); border-color: var(--vermelho); }
+.faixa-dash:hover { background: #98202a; }
+/* Dashboard: o editor ocupa a tela toda */
+#dash-overlay { position: fixed; inset: 0; z-index: 2000; background: var(--creme); display: none; }
+#dash-overlay iframe { width: 100%; height: 100%; border: 0; display: block; }
 .faixa .botoes-baixar { margin: 0; gap: 6px; }
 .faixa .btn-baixar { min-width: 0; padding: 4px 12px !important; font-size: 13.5px; border-radius: 999px !important; }
 .faixa .shiny-html-output { display: inline-flex; }
@@ -362,3 +367,4 @@ a:hover { color: var(--vermelho); }
 #cb-desconectado span { opacity: .85; font-size: 12px; }
 
 a.btn-topo, .topo-acoes button.btn-topo { display: inline-flex; align-items: center; margin: 0; vertical-align: middle; }
+#dash_abas .shiny-options-group { display: flex; flex-direction: column; gap: 2px; }
