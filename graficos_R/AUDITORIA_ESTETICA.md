@@ -20,6 +20,10 @@ Feita olhando as figuras como três pessoas: **analista de dados** (dá para ler
 | 12 | **Mapas com faixas brancas** enormes em cima e embaixo, e nomes de região em cima uns dos outros (LATAM/Brazil). | Espaço | A caixa do mapa tem a **proporção do mapa**; nomes e valores usam o mesmo posicionador (no local se couber, ao lado com fio se não), cor automática pelo contraste do fundo, e podem ser arrastados. |
 | 13 | **Barra de cores e texto da legenda maiores que os eixos.** | Hierarquia | Barra mais fina; tamanho do texto continua pelo bloco Fonte. |
 
+## Resumo estatístico
+
+A caixa de resumo (abrangência dos dois eixos, inércia restrita, testes) escolhe sozinha o retângulo que **não toca** pontos, corpo das setas nem nomes (mede o texto real); se o gráfico estiver cheio demais, o resumo pode ir para uma linha sob a figura.
+
 ## Tudo é editável
 
 - **Texto:** fonte, tamanho, negrito, itálico e cor de cada tipo de nome (amostras, variáveis, ambientais e nomes do mapa); número nas células do mapa de calor.

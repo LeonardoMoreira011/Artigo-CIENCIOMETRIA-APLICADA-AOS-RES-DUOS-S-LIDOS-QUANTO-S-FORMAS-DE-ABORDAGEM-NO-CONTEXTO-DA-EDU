@@ -815,6 +815,27 @@ cfg$multivariada <- list(
   #   ela não cobre os pontos). OPÇÕES: "direita" | "esquerda" | "topo" | "base" | "dentro"
   legenda_posicao = "direita",
 
+  # resumo: caixa com o resumo estatístico da ordenação (variância explicada pelos dois eixos mostrados e acumulada, inércia
+  #   restrita no CCA, testes de permutação). Já vem ligada; arraste-a no gráfico ou use resumo_x / resumo_y (0 a 1 da caixa).
+  #   OPÇÕES: TRUE | FALSE
+  resumo = TRUE,
+
+  # resumo_itens: o que a caixa escreve, na ordem. "variancia" (% de cada eixo mostrado) | "acumulada" (% dos dois eixos juntos) |
+  #   "n" (amostras e variáveis) | "inercia" (CCA: % restrita pelas ambientais) | "teste" (CCA: teste de permutação global) |
+  #   "teste_termos" (CCA: uma linha por ambiental) | "teste_eixos" (CCA: p de cada eixo mostrado) | "envfit" (PCA e CA: R² e p de cada ambiental)
+  #   (a % de cada eixo já está no título dos eixos; por isso o padrão não repete "variancia"). EX.: cfg$multivariada$resumo_itens <- c("variancia", "acumulada", "teste")
+  resumo_itens = c("acumulada", "inercia", "teste", "envfit"),
+
+  # resumo_posicao: "caixa" (caixa sobre o gráfico, no lugar mais vazio; dá para arrastar) | "rodape" (uma linha de texto sob a figura:
+  #   nunca cobre nada; boa quando o gráfico está cheio).
+  resumo_posicao = "caixa",
+
+  # resumo_x / resumo_y / resumo_tamanho_pt / resumo_negrito / resumo_casas: posição (0 a 1; NULL = o canto mais vazio), letra e casas.
+  resumo_x = NULL, resumo_y = NULL, resumo_tamanho_pt = NULL, resumo_negrito = FALSE, resumo_casas = 1,
+
+  # permutacoes / semente: número de permutações dos testes (mais = p mais fino, mais lento) e a semente (mesmo p toda vez).
+  permutacoes = 999, semente = 123,
+
   # linhas_zero: linhas tracejadas passando pela origem (0, 0).
   linhas_zero = TRUE,
 
@@ -2479,6 +2500,7 @@ colunas <- function(dados) {
   "mapa_calor$normalizar" = c("nenhum", "linha", "coluna"),
   "mapa_calor$agrupar" = c("nenhum", "linhas", "colunas", "ambos"),
   "mapa_calor$esquema_cor" = c("cinabro", "petroleo", "divergente", "viridis", "magma", "inferno", "turbo"),
+  "multivariada$resumo_posicao" = c("caixa", "rodape"),
   "multivariada$legenda_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "mapa_calor$barra_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "mapa$nivel" = c("pais", "estado", "regiao"),
@@ -2667,6 +2689,10 @@ colunas <- function(dados) {
       .erro("cfg$multivariada$", k, " deve ser um número inteiro >= 1 (1 = primeiro eixo da ordenação).")
   if (!is.null(mv$elipse_nivel) && (!is.numeric(mv$elipse_nivel) || mv$elipse_nivel <= 0 || mv$elipse_nivel >= 1))
     .erro("cfg$multivariada$elipse_nivel deve estar entre 0 e 1 (ex.: 0.95).")
+  if (!is.null(mv$permutacoes) && (!is.numeric(mv$permutacoes) || mv$permutacoes < 9 || mv$permutacoes > 99999))
+    .erro("cfg$multivariada$permutacoes deve ser um número entre 9 e 99999 (ex.: 999).")
+  ri <- setdiff(mv$resumo_itens, c("variancia", "acumulada", "n", "inercia", "teste", "teste_termos", "teste_eixos", "envfit"))
+  if (length(ri)) .erro("cfg$multivariada$resumo_itens: item '", ri[1], "' não existe. OPÇÕES: \"variancia\" | \"acumulada\" | \"n\" | \"inercia\" | \"teste\" | \"teste_termos\" | \"teste_eixos\" | \"envfit\"")
   if (!is.null(mv$max_variaveis) && (!is.numeric(mv$max_variaveis) || mv$max_variaveis < 1))
     .erro("cfg$multivariada$max_variaveis deve ser NULL ou um número >= 1.")
   mc <- cfg$mapa_calor
@@ -4653,6 +4679,10 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
   if (!is.null(sec_x)) gm$x.sec <- guide_axis(minor.ticks = length(info$ax_x$menores) > 0)
   if (!is.null(sec_y)) gm$y.sec <- guide_axis(minor.ticks = is.null(info$y2) && length(info$ax_y$menores) > 0)
   g <- g + do.call(guides, gm)
+  if (!is.null(aju$rodape)) {                                    # resumo da ordenação em uma linha sob a figura
+    g <- g + labs(caption = aju$rodape) + theme(plot.caption = element_text(hjust = 0, size = (cfg$multivariada$resumo_tamanho_pt %||% cfg$texto$tamanho_base_pt * 0.8),
+                                                                           family = .fonte(cfg$texto$fonte), colour = .cor(cfg$texto$cor), margin = margin(t = 6)))
+  }
   g <- g + labs(x = .texto(info$titulo_x, .neg(cfg, cfg$eixo_x$negrito_titulo)),
                 y = .texto(info$titulo_y, .neg(cfg, cfg$eixo_y$negrito_titulo)),
                 title = .texto(cfg$titulos$titulo, .neg(cfg, cfg$titulos$negrito_titulo)),
@@ -5533,6 +5563,9 @@ jsonlite_b64 <- function(txt) {
   multi_ambientais_italico = c("multivariada", "ambientais_italico"),
   multi_amostras_cor = c("multivariada", "amostras_cor"),
   multi_rotulos_posicoes = c("multivariada", "rotulos_posicoes"),
+  multi_resumo_ativo = c("multivariada", "resumo"), multi_resumo_itens = c("multivariada", "resumo_itens"), multi_resumo_posicao = c("multivariada", "resumo_posicao"),
+  multi_resumo_x = c("multivariada", "resumo_x"), multi_resumo_y = c("multivariada", "resumo_y"), multi_resumo_tamanho_pt = c("multivariada", "resumo_tamanho_pt"),
+  multi_resumo_negrito = c("multivariada", "resumo_negrito"), multi_resumo_casas = c("multivariada", "resumo_casas"), multi_permutacoes = c("multivariada", "permutacoes"),
   multi_escala_igual = c("multivariada", "escala_igual"),
   multi_linha_guia = c("multivariada", "linha_guia"),
   multi_variaveis_simbolo = c("multivariada", "variaveis_simbolo"),
@@ -6745,7 +6778,33 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
         depois[[length(depois) + 1]] <- ac
       }
   }
-  list(antes = antes, depois = depois)
+  if (!is.null(info$ordenacao) && isTRUE(cfg$multivariada$resumo %||% TRUE) && !identical(cfg$.interno$parte, "inferior")) {
+    lc <- tryCatch(.linhas_resumo_ordenacao(info$ordenacao, cfg), error = function(e) { .aviso("Resumo da ordenação: ", conditionMessage(e)); NULL })
+    if (!is.null(lc) && identical(cfg$multivariada$resumo_posicao, "rodape")) {
+      rodape <- paste(lc$linhas, collapse = "   ·   ")
+      lc <- NULL
+    }
+    if (!is.null(lc)) {
+      M <- cfg$multivariada; tam <- M$resumo_tamanho_pt %||% cfg$texto$tamanho_base_pt * 0.72
+      # lugar da caixa: o retângulo (tamanho medido do texto) que menos toca pontos, setas e nomes; empate: os cantos de cima, depois os de baixo
+      fx <- .painel_cm(cfg); pw_in <- (fx$w %||% 10) / 2.54; ph_in <- (fx$h %||% 7.5) / 2.54
+      me <- .medir_textos(lc$linhas, tam, .fonte(cfg$texto$fonte)); bw <- max(me$w) + 14 / 72 + 0.20; bh <- sum(me$h) + 0.045 * length(lc$linhas) + 14 / 72 + 0.08
+      ob <- info$obstaculos; lx <- range(info$ax_x$limites); ly <- range(info$ax_y$limites)
+      ox1 <- (ob$rect$x1 - lx[1]) * ob$sx; ox2 <- (ob$rect$x2 - lx[1]) * ob$sx; oy1 <- (ob$rect$y1 - ly[1]) * ob$sy; oy2 <- (ob$rect$y2 - ly[1]) * ob$sy   # em polegadas, a partir do canto de baixo à esquerda
+      cand <- expand.grid(x0 = seq(0.04, max(0.04, pw_in - bw - 0.04), length.out = 9), y0 = seq(0.04, max(0.04, ph_in - bh - 0.04), length.out = 9))
+      cand$custo <- vapply(seq_len(nrow(cand)), function(k) sum(pmax(0, pmin(cand$x0[k] + bw, ox2) - pmax(cand$x0[k], ox1)) * pmax(0, pmin(cand$y0[k] + bh, oy2) - pmax(cand$y0[k], oy1))), 0)
+      cand$pref <- (cand$y0 < (ph_in - bh) / 2) * 0.0004 + (abs(cand$x0 - (pw_in - bw) / 2) < 0.5 * pw_in / 9) * 0.0004     # empate: de cima, e nos cantos
+      k0 <- cand[order(cand$custo + cand$pref), ][1, ]
+      ca <- "sup_esq"; cantos <- list(sup_esq = c(k0$x0 / pw_in, (k0$y0 + bh) / ph_in))
+      it <- list(tipo = "texto", unidade = "fracao", x = M$resumo_x %||% cantos[[ca]][1], y = M$resumo_y %||% cantos[[ca]][2], ancora = ca,
+                 fundo = "white", opacidade_fundo = 0.92, borda = TRUE, borda_cor = "grey55", borda_pt = 0.5, raio_pt = 4, margem_pt = 5, tamanho_pt = tam,
+                 alinhamento = "esquerda", negrito = isTRUE(M$resumo_negrito))
+      f <- .grob_forma(it, cfg, linhas = lc$linhas, cores = rep(.cor(cfg$texto$cor), length(lc$linhas)), negritos = lc$negritos)
+      ac <- .ann_forma(f, info); attr(ac, "caixa") <- c(f$caixa, list(grupo = "caixas_estatisticas", id = "multi_resumo"))
+      depois[[length(depois) + 1]] <- ac
+    }
+  }
+  list(antes = antes, depois = depois, rodape = if (exists("rodape", inherits = FALSE)) rodape)
 }
 
 .camada_curva <- function(cfg, info, f) {
@@ -7311,8 +7370,35 @@ if (requireNamespace("grid", quietly = TRUE)) {
   }
   list(tipo = tipo, sites = as.matrix(sc_sites), vars = as.matrix(sc_vars), amb = if (!is.null(amb)) as.matrix(amb), rotulos = rotulos,
        grupo = grupo, eixos = nomes_eixos, prop = as.numeric(prop[ch]), escalonamento = esc,
-       resumo = list(prop_total = as.numeric(prop), eixos_total = names(ev), n = nrow(X), n_vars = ncol(X),
+       resumo = list(prop_total = as.numeric(prop), eixos_total = names(ev), n = nrow(X), n_vars = ncol(X), tipo = tipo, ch = ch, ord = ord, X = X, E = E,
                      restrita = if (tipo == "cca") ord$CCA$tot.chi / ord$tot.chi else NA_real_))
+}
+
+# Linhas da caixa de resumo da ordenação. Entra: info$ordenacao (de .ordenacao) e cfg. Sai: NULL ou list(linhas, negritos).
+.linhas_resumo_ordenacao <- function(R, cfg) {
+  M <- cfg$multivariada; itens <- M$resumo_itens %||% c("acumulada", "inercia", "teste", "envfit")
+  ca <- M$resumo_casas %||% 1; ch <- R$ch; ev <- R$prop_total; eix <- R$eixos_total
+  L <- character(0); N <- logical(0); add <- function(t, neg = FALSE) { L <<- c(L, t); N <<- c(N, neg) }
+  pp <- function(p) if (is.na(p)) "p = NA" else if (p < 0.001) "p < 0.001" else paste0("p = ", formatC(p, format = "f", digits = 3))      # (com 999 permutações o menor p é 0.001)
+  perm <- as.integer(M$permutacoes %||% 999); rng <- .guardar_rng(); on.exit(rng(), add = TRUE)
+  teste <- function(...) { set.seed(M$semente %||% 123); tryCatch(suppressWarnings(vegan::anova.cca(R$ord, permutations = perm, ...)), error = function(e) NULL) }
+  for (id in itens) switch(id,
+    variancia = for (k in ch) add(paste0(eix[k], ": ", .nf(ev[k] * 100, ca), "% da variação")),
+    acumulada = add(paste0(eix[ch[1]], " + ", eix[ch[2]], " = ", .nf(sum(ev[ch]) * 100, ca), "%"), TRUE),
+    n = add(paste0("n = ", R$n, " amostras, ", R$n_vars, " variáveis")),
+    inercia = if (R$tipo == "cca" && is.finite(R$restrita)) add(paste0("Restrita (ambientais): ", .nf(R$restrita * 100, ca), "%")),
+    teste = if (R$tipo == "cca") { a <- teste(); if (!is.null(a)) { add(paste0("Permutação (", perm, "):")); add(paste0("F = ", .nf(a$F[1], 2), "; ", pp(a$`Pr(>F)`[1]))) } },
+    teste_termos = if (R$tipo == "cca") { a <- teste(by = "margin"); if (!is.null(a)) { nm <- rownames(a); k <- which(nm != "Residual")
+      for (i in k) add(paste0(nm[i], ": F = ", .nf(a$F[i], 2), "; ", pp(a$`Pr(>F)`[i]))) } },
+    teste_eixos = if (R$tipo == "cca") { a <- teste(by = "axis"); if (!is.null(a)) { nm <- rownames(a)
+      for (k in ch) if (eix[k] %in% nm) { i <- match(eix[k], nm); add(paste0(eix[k], ": F = ", .nf(a$F[i], 2), "; ", pp(a$`Pr(>F)`[i]))) } } },
+    envfit = if (R$tipo != "cca" && !is.null(R$E)) { Ez <- R$E[vapply(R$E, is.numeric, NA)]
+      if (ncol(Ez)) { set.seed(M$semente %||% 123)
+        ef <- tryCatch(suppressWarnings(vegan::envfit(R$ord, Ez, choices = ch, permutations = perm)), error = function(e) NULL)
+        if (!is.null(ef) && !is.null(ef$vectors)) { add(paste0("Ambientais (", perm, " perm.)"), TRUE)
+          for (nm in names(ef$vectors$r)) add(paste0(nm, ": R² = ", .nf(ef$vectors$r[[nm]], 2), "; ", pp(ef$vectors$pvals[[nm]]))) } } })
+  if (!length(L)) return(NULL)
+  list(linhas = L, negritos = N)
 }
 
 # ---- posicionamento dos nomes (rótulos) ----------------------------------------------------------------------------------------
@@ -7489,6 +7575,7 @@ if (requireNamespace("grid", quietly = TRUE)) {
       if (!is.null(f)) fios[[length(fios) + 1]] <- geom_segment(data = f, aes(x = x, y = y, xend = xend, yend = yend), colour = cj$e$cor, linewidth = .lw(0.3), alpha = 0.6, show.legend = FALSE) }
     lista_rot[[length(lista_rot) + 1]] <- data.frame(chave = d$rot, x = pos$x, y = pos$y, w_in = me$w, h_in = me$h, conj = cj$tipo, stringsAsFactors = FALSE)
   }
+  corpo_pts <- function(P, est) if (is.null(P) || !identical(est, "setas")) NULL else do.call(rbind, lapply(c(0.3, 0.6), function(t) data.frame(x = P$x * t, y = P$y * t)))   # corpo das setas (para a caixa de resumo desviar)
   cam <- list()
   if (isTRUE(M$linhas_zero))
     cam <- c(cam, list(geom_hline(yintercept = 0, colour = "grey65", linewidth = .lw(0.4), linetype = "dashed"),
@@ -7518,9 +7605,22 @@ if (requireNamespace("grid", quietly = TRUE)) {
   if (is.null(cfg$legenda$titulo) && !is.null(gcol)) cfg$legenda$titulo <- gcol                     # o título da legenda é o nome da coluna dos grupos
   escalas <- if (isTRUE(M$mostrar_amostras)) .escalas_legenda(est, aes_leg, cfg) else list()
   tit <- function(i) paste0(o$eixos[i], " (", .fmt_num(o$prop[i] * 100, 1), "%)")
+  # retângulos (unidades dos dados) que algo ocupa: pontos, corpo das setas, nomes — a caixa de resumo procura um lugar sem tocar nenhum
+  obstaculos_rect <- function() {
+    ret <- function(x, y, rx, ry) data.frame(x1 = x - rx, x2 = x + rx, y1 = y - ry, y2 = y + ry)
+    out <- list(ret(S$x, S$y, 0.06 / sx, 0.06 / sy))
+    seta <- function(P) if (is.null(P)) NULL else do.call(rbind, lapply(seq_len(nrow(P)), function(i) {
+      n <- max(2, ceiling(sqrt((P$x[i] * sx)^2 + (P$y[i] * sy)^2) / 0.07)); t <- seq(0, 1, length.out = n); ret(P$x[i] * t, P$y[i] * t, 0.03 / sx, 0.03 / sy) }))
+    if (!is.null(V)) out[[length(out) + 1]] <- if (identical(estilo_v, "setas")) seta(V) else ret(V$x, V$y, 0.05 / sx, 0.05 / sy)
+    if (!is.null(A)) out[[length(out) + 1]] <- seta(A)
+    if (length(lista_rot)) { L <- do.call(rbind, lista_rot); out[[length(out) + 1]] <- data.frame(x1 = L$x - L$w_in / 2 / sx, x2 = L$x + L$w_in / 2 / sx, y1 = L$y - L$h_in / 2 / sy, y2 = L$y + L$h_in / 2 / sy) }
+    if (!is.null(el)) out[[length(out) + 1]] <- ret(el$x, el$y, 0.02 / sx, 0.02 / sy)
+    list(rect = do.call(rbind, out), sx = sx, sy = sy)
+  }
   list(camadas = c(cam, escalas),
        info = list(ax_x = ax_x, ax_y = ax_y, flip = FALSE, titulo_x = cfg$eixo_x$titulo %||% tit(1), titulo_y = cfg$eixo_y$titulo %||% tit(2),
                    legenda_auto = length(grupos) > 1, faixa_x = lx, faixa_y = ly, ordenacao = o$resumo, titulo_barra = gcol,
+                   obstaculos = obstaculos_rect(),
                    rotulos = if (length(lista_rot)) list(campo = "multi_rotulos_posicoes", itens = do.call(rbind, lista_rot), lim_x = lx, lim_y = ly)))
 }
 
@@ -11033,6 +11133,15 @@ multi_ambientais_tamanho_pt <- NULL
 multi_ambientais_negrito <- NULL
 multi_ambientais_italico <- NULL
 multi_amostras_cor <- NULL      # cor dos nomes das amostras
+multi_resumo_ativo <- NULL      # TRUE/FALSE: caixa de resumo estatístico da ordenação (já vem ligada)
+multi_resumo_itens <- NULL      # o que escrever: c("acumulada", "inercia", "teste", "envfit") | "variancia" | "n" | "teste_termos" | "teste_eixos"
+multi_resumo_posicao <- NULL    # "caixa" (sobre o gráfico, arrastável) | "rodape" (uma linha sob a figura)
+multi_resumo_x <- NULL          # posição da caixa (0 a 1 da caixa do gráfico). NULL = o lugar mais vazio
+multi_resumo_y <- NULL
+multi_resumo_tamanho_pt <- NULL # tamanho da letra da caixa
+multi_resumo_negrito <- NULL    # TRUE = tudo em negrito
+multi_resumo_casas <- NULL      # casas decimais das porcentagens
+multi_permutacoes <- NULL       # permutações dos testes (padrão 999)
 multi_rotulos_posicoes <- NULL # nomes movidos à mão: "Aquila=-0.8,0.3; pH=1,0.5" (no app: arraste o nome)
 multi_escala_igual <- NULL     # TRUE = mesma escala nos dois eixos (biplot fiel)
 multi_linha_guia <- NULL       # TRUE = fio entre o nome e o ponto/seta quando ele sai do lugar

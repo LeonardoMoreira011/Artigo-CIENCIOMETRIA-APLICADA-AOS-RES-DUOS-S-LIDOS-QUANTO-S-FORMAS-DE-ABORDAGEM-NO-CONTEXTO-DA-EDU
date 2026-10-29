@@ -79,6 +79,15 @@ multi_ambientais_tamanho_pt <- NULL
 multi_ambientais_negrito <- NULL
 multi_ambientais_italico <- NULL
 multi_amostras_cor <- NULL      # cor dos nomes das amostras
+multi_resumo_ativo <- NULL      # TRUE/FALSE: caixa de resumo estatístico da ordenação (já vem ligada)
+multi_resumo_itens <- NULL      # o que escrever: c("acumulada", "inercia", "teste", "envfit") | "variancia" | "n" | "teste_termos" | "teste_eixos"
+multi_resumo_posicao <- NULL    # "caixa" (sobre o gráfico, arrastável) | "rodape" (uma linha sob a figura)
+multi_resumo_x <- NULL          # posição da caixa (0 a 1 da caixa do gráfico). NULL = o lugar mais vazio
+multi_resumo_y <- NULL
+multi_resumo_tamanho_pt <- NULL # tamanho da letra da caixa
+multi_resumo_negrito <- NULL    # TRUE = tudo em negrito
+multi_resumo_casas <- NULL      # casas decimais das porcentagens
+multi_permutacoes <- NULL       # permutações dos testes (padrão 999)
 multi_rotulos_posicoes <- NULL # nomes movidos à mão: "Aquila=-0.8,0.3; pH=1,0.5" (no app: arraste o nome)
 multi_escala_igual <- NULL     # TRUE = mesma escala nos dois eixos (biplot fiel)
 multi_linha_guia <- NULL       # TRUE = fio entre o nome e o ponto/seta quando ele sai do lugar

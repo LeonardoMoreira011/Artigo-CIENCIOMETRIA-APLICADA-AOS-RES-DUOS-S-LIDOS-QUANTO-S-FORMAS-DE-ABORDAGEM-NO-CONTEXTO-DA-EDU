@@ -28,6 +28,15 @@ const ok = (nome, cond, extra) => { console.log((cond ? 'OK   ' : 'FALHA') + ' '
   await page.selectOption('#multi_elipses', 'dados'); await assenta();
   ok('CCA com variáveis, ambientais e grupo monta sem erro', (await erros()).length === 0, (await erros()).join(' | '));
   await foto('cca');
+  // resumo estatístico: aparece por padrão, arrasta, e pode ser desligado
+  ok('o resumo estatístico aparece sozinho (caixa arrastável)', (await page.$$('.caixa-movel[data-id="multi_resumo"]')).length === 1);
+  const rb = await page.$eval('.caixa-movel[data-id="multi_resumo"]', e => { const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await page.mouse.move(rb.x, rb.y); await page.mouse.down(); await page.mouse.move(rb.x + 40, rb.y + 30, { steps: 6 }); await page.mouse.up(); await assenta();
+  const rx = await page.$eval('#multi_resumo_x', e => e.value); ok('arrastar o resumo grava a posição nos campos', rx !== '' && !isNaN(parseFloat(rx)), rx);
+  await page.uncheck('#multi_resumo_ativo'); await assenta();
+  ok('desmarcar "Resumo estatístico no gráfico" tira a caixa', (await page.$$('.caixa-movel[data-id="multi_resumo"]')).length === 0);
+  await page.check('#multi_resumo_ativo'); await page.evaluate(() => ['multi_resumo_x', 'multi_resumo_y'].forEach(id => $('#' + id).val('').trigger('input').trigger('change'))); await assenta();
+  ok('ligar de novo traz a caixa de volta', (await page.$$('.caixa-movel[data-id="multi_resumo"]')).length === 1);
   // nomes arrastáveis: arrastar grava "Nome=x,y" no campo; duplo clique devolve à posição automática
   const nomes = await page.$$eval('.caixa-movel.rotulo', els => els.map(e => e.dataset.id + ':' + e.querySelector('.cm-rot').textContent));
   ok('os nomes das variáveis e ambientais ganham moldura para arrastar', nomes.length >= 8, nomes.length + ' nomes');

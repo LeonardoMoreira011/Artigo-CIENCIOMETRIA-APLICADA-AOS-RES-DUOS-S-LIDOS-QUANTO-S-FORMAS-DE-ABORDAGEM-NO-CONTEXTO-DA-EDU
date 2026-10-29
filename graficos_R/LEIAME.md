@@ -355,3 +355,10 @@ Seis tipos novos em **Dados e tipo de gráfico**. Usam os pacotes `sf` (mapas), 
 - **Grupos:** a tabela de grupos (aba Cores) edita cor, símbolo, tamanho e nome na legenda de cada grupo do PCA/CA/CCA.
 - **Setas e elipses:** grossura, ponta, símbolo das variáveis, preenchimento. **Escala igual** nos dois eixos por padrão (biplot fiel).
 
+### Resumo estatístico da ordenação (PCA, CA, CCA)
+
+- **Sempre aparece, por padrão**, como uma caixa sobre o gráfico (no lugar mais vazio; **arraste** para mudar). Os **dois primeiros eixos** são os mostrados por padrão (`eixo_horizontal` 1 e `eixo_vertical` 2), e a caixa traz a **abrangência**: a % da variação que os dois juntos explicam (ex.: `PC1 + PC2 = 70,4%`). A % de cada eixo está no título dos eixos (`PC1 (53,7%)`).
+- **CCA:** % da inércia **restrita** pelas ambientais e o **teste de permutação** global (F e p). **PCA e CA:** R² e p de cada ambiental (`envfit`). Opcionais: p de cada ambiental e de cada eixo (CCA), % de cada eixo, número de amostras e variáveis.
+- **Opcional, não obrigatório:** em **Dados > Resumo estatístico no gráfico** você desliga a caixa, escolhe só o que quer mostrar (**O que o resumo escreve**), ou manda o resumo para **uma linha de texto sob a figura** (rodapé), sem cobrir nada. Letra, casas decimais e número de permutações ficam em Mais opções. A semente é fixa: o mesmo gráfico dá o mesmo p.
+- No código: `cfg$multivariada$resumo`, `resumo_itens`, `resumo_posicao`, `permutacoes`; no painel: `multi_resumo_*` e `multi_permutacoes`.
+

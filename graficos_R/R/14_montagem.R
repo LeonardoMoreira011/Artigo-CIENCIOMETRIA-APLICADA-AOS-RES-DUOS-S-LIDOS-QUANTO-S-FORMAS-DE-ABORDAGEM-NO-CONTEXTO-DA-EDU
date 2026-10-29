@@ -142,6 +142,10 @@
   if (!is.null(sec_x)) gm$x.sec <- guide_axis(minor.ticks = length(info$ax_x$menores) > 0)
   if (!is.null(sec_y)) gm$y.sec <- guide_axis(minor.ticks = is.null(info$y2) && length(info$ax_y$menores) > 0)
   g <- g + do.call(guides, gm)
+  if (!is.null(aju$rodape)) {                                    # resumo da ordenação em uma linha sob a figura
+    g <- g + labs(caption = aju$rodape) + theme(plot.caption = element_text(hjust = 0, size = (cfg$multivariada$resumo_tamanho_pt %||% cfg$texto$tamanho_base_pt * 0.8),
+                                                                           family = .fonte(cfg$texto$fonte), colour = .cor(cfg$texto$cor), margin = margin(t = 6)))
+  }
   g <- g + labs(x = .texto(info$titulo_x, .neg(cfg, cfg$eixo_x$negrito_titulo)),
                 y = .texto(info$titulo_y, .neg(cfg, cfg$eixo_y$negrito_titulo)),
                 title = .texto(cfg$titulos$titulo, .neg(cfg, cfg$titulos$negrito_titulo)),

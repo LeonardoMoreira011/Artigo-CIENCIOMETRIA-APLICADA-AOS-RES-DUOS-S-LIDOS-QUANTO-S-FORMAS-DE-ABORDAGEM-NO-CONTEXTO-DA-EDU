@@ -104,8 +104,35 @@
   }
   list(tipo = tipo, sites = as.matrix(sc_sites), vars = as.matrix(sc_vars), amb = if (!is.null(amb)) as.matrix(amb), rotulos = rotulos,
        grupo = grupo, eixos = nomes_eixos, prop = as.numeric(prop[ch]), escalonamento = esc,
-       resumo = list(prop_total = as.numeric(prop), eixos_total = names(ev), n = nrow(X), n_vars = ncol(X),
+       resumo = list(prop_total = as.numeric(prop), eixos_total = names(ev), n = nrow(X), n_vars = ncol(X), tipo = tipo, ch = ch, ord = ord, X = X, E = E,
                      restrita = if (tipo == "cca") ord$CCA$tot.chi / ord$tot.chi else NA_real_))
+}
+
+# Linhas da caixa de resumo da ordenação. Entra: info$ordenacao (de .ordenacao) e cfg. Sai: NULL ou list(linhas, negritos).
+.linhas_resumo_ordenacao <- function(R, cfg) {
+  M <- cfg$multivariada; itens <- M$resumo_itens %||% c("acumulada", "inercia", "teste", "envfit")
+  ca <- M$resumo_casas %||% 1; ch <- R$ch; ev <- R$prop_total; eix <- R$eixos_total
+  L <- character(0); N <- logical(0); add <- function(t, neg = FALSE) { L <<- c(L, t); N <<- c(N, neg) }
+  pp <- function(p) if (is.na(p)) "p = NA" else if (p < 0.001) "p < 0.001" else paste0("p = ", formatC(p, format = "f", digits = 3))      # (com 999 permutações o menor p é 0.001)
+  perm <- as.integer(M$permutacoes %||% 999); rng <- .guardar_rng(); on.exit(rng(), add = TRUE)
+  teste <- function(...) { set.seed(M$semente %||% 123); tryCatch(suppressWarnings(vegan::anova.cca(R$ord, permutations = perm, ...)), error = function(e) NULL) }
+  for (id in itens) switch(id,
+    variancia = for (k in ch) add(paste0(eix[k], ": ", .nf(ev[k] * 100, ca), "% da variação")),
+    acumulada = add(paste0(eix[ch[1]], " + ", eix[ch[2]], " = ", .nf(sum(ev[ch]) * 100, ca), "%"), TRUE),
+    n = add(paste0("n = ", R$n, " amostras, ", R$n_vars, " variáveis")),
+    inercia = if (R$tipo == "cca" && is.finite(R$restrita)) add(paste0("Restrita (ambientais): ", .nf(R$restrita * 100, ca), "%")),
+    teste = if (R$tipo == "cca") { a <- teste(); if (!is.null(a)) { add(paste0("Permutação (", perm, "):")); add(paste0("F = ", .nf(a$F[1], 2), "; ", pp(a$`Pr(>F)`[1]))) } },
+    teste_termos = if (R$tipo == "cca") { a <- teste(by = "margin"); if (!is.null(a)) { nm <- rownames(a); k <- which(nm != "Residual")
+      for (i in k) add(paste0(nm[i], ": F = ", .nf(a$F[i], 2), "; ", pp(a$`Pr(>F)`[i]))) } },
+    teste_eixos = if (R$tipo == "cca") { a <- teste(by = "axis"); if (!is.null(a)) { nm <- rownames(a)
+      for (k in ch) if (eix[k] %in% nm) { i <- match(eix[k], nm); add(paste0(eix[k], ": F = ", .nf(a$F[i], 2), "; ", pp(a$`Pr(>F)`[i]))) } } },
+    envfit = if (R$tipo != "cca" && !is.null(R$E)) { Ez <- R$E[vapply(R$E, is.numeric, NA)]
+      if (ncol(Ez)) { set.seed(M$semente %||% 123)
+        ef <- tryCatch(suppressWarnings(vegan::envfit(R$ord, Ez, choices = ch, permutations = perm)), error = function(e) NULL)
+        if (!is.null(ef) && !is.null(ef$vectors)) { add(paste0("Ambientais (", perm, " perm.)"), TRUE)
+          for (nm in names(ef$vectors$r)) add(paste0(nm, ": R² = ", .nf(ef$vectors$r[[nm]], 2), "; ", pp(ef$vectors$pvals[[nm]]))) } } })
+  if (!length(L)) return(NULL)
+  list(linhas = L, negritos = N)
 }
 
 # ---- posicionamento dos nomes (rótulos) ----------------------------------------------------------------------------------------
@@ -282,6 +309,7 @@
       if (!is.null(f)) fios[[length(fios) + 1]] <- geom_segment(data = f, aes(x = x, y = y, xend = xend, yend = yend), colour = cj$e$cor, linewidth = .lw(0.3), alpha = 0.6, show.legend = FALSE) }
     lista_rot[[length(lista_rot) + 1]] <- data.frame(chave = d$rot, x = pos$x, y = pos$y, w_in = me$w, h_in = me$h, conj = cj$tipo, stringsAsFactors = FALSE)
   }
+  corpo_pts <- function(P, est) if (is.null(P) || !identical(est, "setas")) NULL else do.call(rbind, lapply(c(0.3, 0.6), function(t) data.frame(x = P$x * t, y = P$y * t)))   # corpo das setas (para a caixa de resumo desviar)
   cam <- list()
   if (isTRUE(M$linhas_zero))
     cam <- c(cam, list(geom_hline(yintercept = 0, colour = "grey65", linewidth = .lw(0.4), linetype = "dashed"),
@@ -311,8 +339,21 @@
   if (is.null(cfg$legenda$titulo) && !is.null(gcol)) cfg$legenda$titulo <- gcol                     # o título da legenda é o nome da coluna dos grupos
   escalas <- if (isTRUE(M$mostrar_amostras)) .escalas_legenda(est, aes_leg, cfg) else list()
   tit <- function(i) paste0(o$eixos[i], " (", .fmt_num(o$prop[i] * 100, 1), "%)")
+  # retângulos (unidades dos dados) que algo ocupa: pontos, corpo das setas, nomes — a caixa de resumo procura um lugar sem tocar nenhum
+  obstaculos_rect <- function() {
+    ret <- function(x, y, rx, ry) data.frame(x1 = x - rx, x2 = x + rx, y1 = y - ry, y2 = y + ry)
+    out <- list(ret(S$x, S$y, 0.06 / sx, 0.06 / sy))
+    seta <- function(P) if (is.null(P)) NULL else do.call(rbind, lapply(seq_len(nrow(P)), function(i) {
+      n <- max(2, ceiling(sqrt((P$x[i] * sx)^2 + (P$y[i] * sy)^2) / 0.07)); t <- seq(0, 1, length.out = n); ret(P$x[i] * t, P$y[i] * t, 0.03 / sx, 0.03 / sy) }))
+    if (!is.null(V)) out[[length(out) + 1]] <- if (identical(estilo_v, "setas")) seta(V) else ret(V$x, V$y, 0.05 / sx, 0.05 / sy)
+    if (!is.null(A)) out[[length(out) + 1]] <- seta(A)
+    if (length(lista_rot)) { L <- do.call(rbind, lista_rot); out[[length(out) + 1]] <- data.frame(x1 = L$x - L$w_in / 2 / sx, x2 = L$x + L$w_in / 2 / sx, y1 = L$y - L$h_in / 2 / sy, y2 = L$y + L$h_in / 2 / sy) }
+    if (!is.null(el)) out[[length(out) + 1]] <- ret(el$x, el$y, 0.02 / sx, 0.02 / sy)
+    list(rect = do.call(rbind, out), sx = sx, sy = sy)
+  }
   list(camadas = c(cam, escalas),
        info = list(ax_x = ax_x, ax_y = ax_y, flip = FALSE, titulo_x = cfg$eixo_x$titulo %||% tit(1), titulo_y = cfg$eixo_y$titulo %||% tit(2),
                    legenda_auto = length(grupos) > 1, faixa_x = lx, faixa_y = ly, ordenacao = o$resumo, titulo_barra = gcol,
+                   obstaculos = obstaculos_rect(),
                    rotulos = if (length(lista_rot)) list(campo = "multi_rotulos_posicoes", itens = do.call(rbind, lista_rot), lim_x = lx, lim_y = ly)))
 }

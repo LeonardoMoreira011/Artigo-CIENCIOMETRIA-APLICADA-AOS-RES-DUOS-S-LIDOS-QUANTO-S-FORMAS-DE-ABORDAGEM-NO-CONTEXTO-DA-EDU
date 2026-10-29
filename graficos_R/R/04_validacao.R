@@ -45,6 +45,7 @@
   "mapa_calor$normalizar" = c("nenhum", "linha", "coluna"),
   "mapa_calor$agrupar" = c("nenhum", "linhas", "colunas", "ambos"),
   "mapa_calor$esquema_cor" = c("cinabro", "petroleo", "divergente", "viridis", "magma", "inferno", "turbo"),
+  "multivariada$resumo_posicao" = c("caixa", "rodape"),
   "multivariada$legenda_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "mapa_calor$barra_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "mapa$nivel" = c("pais", "estado", "regiao"),
@@ -233,6 +234,10 @@
       .erro("cfg$multivariada$", k, " deve ser um número inteiro >= 1 (1 = primeiro eixo da ordenação).")
   if (!is.null(mv$elipse_nivel) && (!is.numeric(mv$elipse_nivel) || mv$elipse_nivel <= 0 || mv$elipse_nivel >= 1))
     .erro("cfg$multivariada$elipse_nivel deve estar entre 0 e 1 (ex.: 0.95).")
+  if (!is.null(mv$permutacoes) && (!is.numeric(mv$permutacoes) || mv$permutacoes < 9 || mv$permutacoes > 99999))
+    .erro("cfg$multivariada$permutacoes deve ser um número entre 9 e 99999 (ex.: 999).")
+  ri <- setdiff(mv$resumo_itens, c("variancia", "acumulada", "n", "inercia", "teste", "teste_termos", "teste_eixos", "envfit"))
+  if (length(ri)) .erro("cfg$multivariada$resumo_itens: item '", ri[1], "' não existe. OPÇÕES: \"variancia\" | \"acumulada\" | \"n\" | \"inercia\" | \"teste\" | \"teste_termos\" | \"teste_eixos\" | \"envfit\"")
   if (!is.null(mv$max_variaveis) && (!is.numeric(mv$max_variaveis) || mv$max_variaveis < 1))
     .erro("cfg$multivariada$max_variaveis deve ser NULL ou um número >= 1.")
   mc <- cfg$mapa_calor

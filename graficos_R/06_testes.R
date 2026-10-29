@@ -1320,6 +1320,25 @@ if (.tem("vegan")) {
     pn <- gx$painel; cxp <- (it$rect[1] + it$rect[3] / 2 - pn[1]) / pn[3]; cyp <- 1 - (it$rect[2] + it$rect[4] / 2 - pn[2]) / pn[4]
     abs(a$x - 0.9) < 1e-9 && abs(a$y + 1.4) < 1e-9 && length(its) == nrow(ri) && identical(it$campo, "multi_rotulos_posicoes") &&
       abs(lx[1] + cxp * diff(lx) - 0.9) < 0.02 && abs(ly[1] + cyp * diff(ly) + 1.4) < 0.02 && all(vapply(its, function(i) all(i$rect >= 0) && i$rect[1] + i$rect[3] <= 1.001, NA)) })
+  caixa_resumo_ <- function(g) any(vapply(g$layers, function(l) identical(attr(l, "caixa")$id, "multi_resumo"), NA))
+  teste("resumo estatístico: a caixa aparece por padrão no PCA, CA e CCA; desligar, ou escolher 'rodapé', tira a caixa (o rodapé vira a legenda de baixo da figura)", {
+    g0 <- suppressWarnings(plotar(do2_, cm2_("cca"))); g1 <- suppressWarnings(plotar(do2_, cm2_("cca", multivariada = list(resumo = FALSE))))
+    g2 <- suppressWarnings(plotar(do2_, cm2_("cca", multivariada = list(resumo_posicao = "rodape"))))
+    caixa_resumo_(g0) && caixa_resumo_(suppressWarnings(plotar(do2_, cm2_("pca")))) && caixa_resumo_(suppressWarnings(plotar(do2_, cm2_("ca")))) &&
+      !caixa_resumo_(g1) && !caixa_resumo_(g2) && grepl("CCA1 \\+ CCA2", g2$labels$caption) && is.null(g0$labels$caption) })
+  teste("resumo estatístico: a % acumulada dos dois eixos é a soma das duas; CCA traz inércia restrita e permutação (F e p iguais ao anova.cca, mesma semente); PCA traz R² e p de cada ambiental; itens à escolha", {
+    gc <- suppressWarnings(plotar(do2_, cm2_("cca"))); R <- attr(gc, "info")$ordenacao
+    L <- .linhas_resumo_ordenacao(R, gc$labels$cfg_dummy %||% attr(gc, "cfg"))$linhas
+    set.seed(123); a <- vegan::anova.cca(R$ord, permutations = 999)
+    gp <- suppressWarnings(plotar(do2_, cm2_("pca"))); Lp <- .linhas_resumo_ordenacao(attr(gp, "info")$ordenacao, attr(gp, "cfg"))$linhas
+    cp <- attr(gp, "cfg"); cp$multivariada$resumo_itens <- c("variancia", "n"); Lv <- .linhas_resumo_ordenacao(attr(gp, "info")$ordenacao, cp)$linhas
+    ac <- sprintf("%.1f", sum(R$prop_total[1:2]) * 100)
+    any(grepl(paste0("= ", ac, "%"), L, fixed = TRUE)) && any(grepl("Restrita", L)) && any(grepl(sprintf("F = %.2f", a$F[1]), L, fixed = TRUE)) &&
+      any(grepl("Ambientais", Lp)) && sum(grepl("R² = ", Lp)) == 3 && length(Lv) == 3 && grepl("PC1: ", Lv[1]) && grepl("n = 30", Lv[3]) })
+  teste("resumo estatístico: item inexistente e permutações absurdas dão erro claro; o app recebe a caixa como arrastável ('multi_resumo', com x, y e letra)", {
+    gg <- suppressWarnings(plotar(do2_, cm2_("cca"))); gx <- .geometria_caixas(gg, cm2_("cca")); it <- Filter(function(i) identical(i$id, "multi_resumo"), gx$itens)
+    da_erro(plotar(do2_, cm2_("cca", multivariada = list(resumo_itens = "xx"))), "resumo_itens") && da_erro(plotar(do2_, cm2_("cca", multivariada = list(permutacoes = 2))), "permutacoes") &&
+      length(it) == 1 && identical(it[[1]]$tipo, "estatistica") && all(it[[1]]$rect >= 0) })
   teste("PCA: tabela de grupos (cfg$series) muda cor, símbolo e nome na legenda de cada grupo", {
     c4 <- cm2_(); c4$series <- list(Foz = list(cor = "#FF8800", simbolo = "quadrado", nome_legenda = "Foz do rio"))
     g4 <- suppressWarnings(plotar(do2_, c4)); b4 <- ggplot2::ggplot_build(g4)

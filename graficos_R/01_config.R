@@ -693,6 +693,27 @@ cfg$multivariada <- list(
   #   ela não cobre os pontos). OPÇÕES: "direita" | "esquerda" | "topo" | "base" | "dentro"
   legenda_posicao = "direita",
 
+  # resumo: caixa com o resumo estatístico da ordenação (variância explicada pelos dois eixos mostrados e acumulada, inércia
+  #   restrita no CCA, testes de permutação). Já vem ligada; arraste-a no gráfico ou use resumo_x / resumo_y (0 a 1 da caixa).
+  #   OPÇÕES: TRUE | FALSE
+  resumo = TRUE,
+
+  # resumo_itens: o que a caixa escreve, na ordem. "variancia" (% de cada eixo mostrado) | "acumulada" (% dos dois eixos juntos) |
+  #   "n" (amostras e variáveis) | "inercia" (CCA: % restrita pelas ambientais) | "teste" (CCA: teste de permutação global) |
+  #   "teste_termos" (CCA: uma linha por ambiental) | "teste_eixos" (CCA: p de cada eixo mostrado) | "envfit" (PCA e CA: R² e p de cada ambiental)
+  #   (a % de cada eixo já está no título dos eixos; por isso o padrão não repete "variancia"). EX.: cfg$multivariada$resumo_itens <- c("variancia", "acumulada", "teste")
+  resumo_itens = c("acumulada", "inercia", "teste", "envfit"),
+
+  # resumo_posicao: "caixa" (caixa sobre o gráfico, no lugar mais vazio; dá para arrastar) | "rodape" (uma linha de texto sob a figura:
+  #   nunca cobre nada; boa quando o gráfico está cheio).
+  resumo_posicao = "caixa",
+
+  # resumo_x / resumo_y / resumo_tamanho_pt / resumo_negrito / resumo_casas: posição (0 a 1; NULL = o canto mais vazio), letra e casas.
+  resumo_x = NULL, resumo_y = NULL, resumo_tamanho_pt = NULL, resumo_negrito = FALSE, resumo_casas = 1,
+
+  # permutacoes / semente: número de permutações dos testes (mais = p mais fino, mais lento) e a semente (mesmo p toda vez).
+  permutacoes = 999, semente = 123,
+
   # linhas_zero: linhas tracejadas passando pela origem (0, 0).
   linhas_zero = TRUE,
 

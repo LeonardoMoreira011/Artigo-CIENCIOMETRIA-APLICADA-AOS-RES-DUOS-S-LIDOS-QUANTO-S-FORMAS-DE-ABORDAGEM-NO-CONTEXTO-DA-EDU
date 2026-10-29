@@ -156,7 +156,7 @@
   // ---- caixas móveis (estatística, texto, forma, figura): arrastar, puxar as alças (tamanho), setas (ajuste fino) e clicar (editar) --------
   // Uma moldura fina já aparece sobre cada caixa; clicar seleciona (alças nos cantos e nos lados); arrastar move com uma "sombra" do conteúdo,
   // que acompanha o mouse; ao soltar, os valores caem nos campos do cartão (em fração do gráfico ou nas unidades dos eixos).
-  var PAINEL_DE = { cx: 'estatistica', fm: 'formas', im: 'formas' };
+  var PAINEL_DE = { cx: 'estatistica', fm: 'formas', im: 'formas', multi_resumo: 'dados' };
   var CAMPOS_RAPIDOS = { estatistica: ['itens', 'tamanho_pt', 'negrito', 'casas'], texto: ['texto', 'tamanho_pt', 'negrito', 'fundo'],
                          forma: ['texto', 'tamanho_pt', 'fundo', 'borda_cor'], figura: ['largura', 'opacidade', 'angulo'] };
   var ALCAS_CANTO = ['nw', 'ne', 'sw', 'se'], ALCAS_TODAS = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];

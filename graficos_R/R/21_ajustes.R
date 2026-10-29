@@ -490,7 +490,33 @@ estatisticas <- function(dados, cfg = get("cfg", envir = globalenv()), testes = 
         depois[[length(depois) + 1]] <- ac
       }
   }
-  list(antes = antes, depois = depois)
+  if (!is.null(info$ordenacao) && isTRUE(cfg$multivariada$resumo %||% TRUE) && !identical(cfg$.interno$parte, "inferior")) {
+    lc <- tryCatch(.linhas_resumo_ordenacao(info$ordenacao, cfg), error = function(e) { .aviso("Resumo da ordenação: ", conditionMessage(e)); NULL })
+    if (!is.null(lc) && identical(cfg$multivariada$resumo_posicao, "rodape")) {
+      rodape <- paste(lc$linhas, collapse = "   ·   ")
+      lc <- NULL
+    }
+    if (!is.null(lc)) {
+      M <- cfg$multivariada; tam <- M$resumo_tamanho_pt %||% cfg$texto$tamanho_base_pt * 0.72
+      # lugar da caixa: o retângulo (tamanho medido do texto) que menos toca pontos, setas e nomes; empate: os cantos de cima, depois os de baixo
+      fx <- .painel_cm(cfg); pw_in <- (fx$w %||% 10) / 2.54; ph_in <- (fx$h %||% 7.5) / 2.54
+      me <- .medir_textos(lc$linhas, tam, .fonte(cfg$texto$fonte)); bw <- max(me$w) + 14 / 72 + 0.20; bh <- sum(me$h) + 0.045 * length(lc$linhas) + 14 / 72 + 0.08
+      ob <- info$obstaculos; lx <- range(info$ax_x$limites); ly <- range(info$ax_y$limites)
+      ox1 <- (ob$rect$x1 - lx[1]) * ob$sx; ox2 <- (ob$rect$x2 - lx[1]) * ob$sx; oy1 <- (ob$rect$y1 - ly[1]) * ob$sy; oy2 <- (ob$rect$y2 - ly[1]) * ob$sy   # em polegadas, a partir do canto de baixo à esquerda
+      cand <- expand.grid(x0 = seq(0.04, max(0.04, pw_in - bw - 0.04), length.out = 9), y0 = seq(0.04, max(0.04, ph_in - bh - 0.04), length.out = 9))
+      cand$custo <- vapply(seq_len(nrow(cand)), function(k) sum(pmax(0, pmin(cand$x0[k] + bw, ox2) - pmax(cand$x0[k], ox1)) * pmax(0, pmin(cand$y0[k] + bh, oy2) - pmax(cand$y0[k], oy1))), 0)
+      cand$pref <- (cand$y0 < (ph_in - bh) / 2) * 0.0004 + (abs(cand$x0 - (pw_in - bw) / 2) < 0.5 * pw_in / 9) * 0.0004     # empate: de cima, e nos cantos
+      k0 <- cand[order(cand$custo + cand$pref), ][1, ]
+      ca <- "sup_esq"; cantos <- list(sup_esq = c(k0$x0 / pw_in, (k0$y0 + bh) / ph_in))
+      it <- list(tipo = "texto", unidade = "fracao", x = M$resumo_x %||% cantos[[ca]][1], y = M$resumo_y %||% cantos[[ca]][2], ancora = ca,
+                 fundo = "white", opacidade_fundo = 0.92, borda = TRUE, borda_cor = "grey55", borda_pt = 0.5, raio_pt = 4, margem_pt = 5, tamanho_pt = tam,
+                 alinhamento = "esquerda", negrito = isTRUE(M$resumo_negrito))
+      f <- .grob_forma(it, cfg, linhas = lc$linhas, cores = rep(.cor(cfg$texto$cor), length(lc$linhas)), negritos = lc$negritos)
+      ac <- .ann_forma(f, info); attr(ac, "caixa") <- c(f$caixa, list(grupo = "caixas_estatisticas", id = "multi_resumo"))
+      depois[[length(depois) + 1]] <- ac
+    }
+  }
+  list(antes = antes, depois = depois, rodape = if (exists("rodape", inherits = FALSE)) rodape)
 }
 
 .camada_curva <- function(cfg, info, f) {
