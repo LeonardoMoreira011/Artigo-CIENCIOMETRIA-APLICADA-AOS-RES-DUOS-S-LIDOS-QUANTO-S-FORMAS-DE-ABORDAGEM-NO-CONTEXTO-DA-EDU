@@ -128,6 +128,11 @@
   if (!is.null(forcar)) auto <- forcar
   ini_usuario <- if (!is.null(tempo)) .tempo_num(e$inicio, tempo, "cfg$eixo_x$inicio") else e$inicio
   fim_usuario <- if (!is.null(tempo)) .tempo_num(e$fim, tempo, "cfg$eixo_x$fim") else e$fim
+  if (!is.null(categorias) && is.null(forcar) && (!is.null(ini_usuario) || !is.null(fim_usuario))) {      # eixo de categorias: não há "início" nem "fim" em número
+    .aviso("Este eixo é de categorias (barras, caixas, mapa de calor): início e fim do eixo não se aplicam e foram ignorados. ",
+           "Para mostrar só algumas categorias, escolha as colunas (ou cfg$grafico$ordem_itens).")
+    ini_usuario <- NULL; fim_usuario <- NULL
+  }
   lo <- ini_usuario %||% auto[1]; hi <- fim_usuario %||% auto[2]
   if (lo >= hi) {
     if (!is.null(tempo) && !is.null(ini_usuario) && !is.null(fim_usuario))

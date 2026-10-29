@@ -339,6 +339,11 @@ pee <- list2env(list(tipo_grafico = "pontos", coluna_x = 1, erro_por_serie = c(M
 ce <- suppressMessages(aplicar_painel(c0, pee, dados = dp))
 ge <- suppressWarnings(plotar(dp, ce))
 camadas_erro <- Filter(function(l) inherits(l$geom, "GeomErrorbar"), ge$layers)
+avis_ax <- FALSE
+cc_ax <- c0; cc_ax$grafico$tipo <- "barras"; cc_ax$eixo_x$inicio <- 3
+res_ax <- tryCatch(withCallingHandlers({ g <- plotar(data.frame(Material = c("A", "B", "C", "D"), V = c(1, 2, 3, 4)), cc_ax); ggplot2::ggplotGrob(g); "ok" },
+                                       warning = function(w) { if (grepl("categorias", conditionMessage(w))) avis_ax <<- TRUE; invokeRestart("muffleWarning") }), error = function(e) conditionMessage(e))
+teste("eixo de categorias: início/fim do eixo são ignorados com aviso (antes: erro obscuro 'breaks and labels must have the same length')", identical(res_ax, "ok") && isTRUE(avis_ax))
 teste("painel: erro_por_serie liga a barra de erro (coluna de erro não vira série) e erro_lado/espessura chegam ao cfg",
       identical(ce$series$Media$coluna_erro, "DP") && identical(ce$linhas$erro_lado, "superior") && ce$linhas$erro_espessura_pt == 2 &&
       length(camadas_erro) == 1 && nrow(camadas_erro[[1]]$data) == 8 && identical(sort(unique(as.character(camadas_erro[[1]]$data$serie))), c("Media", "Media2")))
