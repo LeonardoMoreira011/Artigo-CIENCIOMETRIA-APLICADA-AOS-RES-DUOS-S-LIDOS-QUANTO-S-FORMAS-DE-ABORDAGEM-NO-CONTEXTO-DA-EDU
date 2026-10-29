@@ -78,6 +78,46 @@ const ok = (nome, cond, extra) => { console.log((cond ? 'OK   ' : 'FALHA') + ' '
   await page.keyboard.press('Shift+ArrowDown'); await page.waitForTimeout(900); await assenta();
   ok('setas movem a caixa selecionada', (await val('fm1_x')) > ax, ax + ' -> ' + (await val('fm1_x')));
   await page.screenshot({ path: SP + '/cx_2_final.png' });
+  // 7) texto, polígono e figura empilhados no centro (o pior caso): cada um tem que ser alcançável, mover e esticar (cantos e lados)
+  const pg2 = await (await browser.newContext({ viewport: { width: 1500, height: 950 } })).newPage();
+  pg2.on('pageerror', e => { console.log('PAGEERROR', e.message); falhas++; });
+  const page2 = pg2;
+  const idle2 = async () => { await page2.waitForTimeout(500); await page2.waitForFunction(() => !document.documentElement.classList.contains('shiny-busy'), null, { timeout: 90000 }); await page2.waitForTimeout(500); };
+  const assenta2 = async () => { await idle2(); await page2.waitForTimeout(900); await idle2(); };
+  await page2.goto(URL); await page2.waitForTimeout(2500); if (await page2.$('#retomar_nao')) { await page2.click('#retomar_nao'); await page2.waitForTimeout(600); }
+  await page2.selectOption('#exemplo', 'ensaio_temperatura.csv'); await page2.waitForFunction(() => document.querySelector('#previa img')); await idle2();
+  await page2.click('.faixa-btn:has-text("Texto")'); await assenta2();
+  await page2.click('summary:has-text("Forma")'); await page2.click('.faixa-lista >> text=Polígono livre'); await assenta2();
+  await page2.click('.faixa-btn:has-text("Figura")'); await page2.waitForTimeout(600);
+  await page2.setInputFiles('#im1_arquivo', SP + '/logo_teste.png'); await page2.waitForTimeout(1500); await assenta2();
+  const v2 = async id => (await page2.$eval('#' + id, e => e.value));
+  const b2 = id => page2.$eval('.caixa-movel[data-id="' + id + '"]', e => { const r = e.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  const a2 = async (id, h) => { const q = await b2(id); await page2.mouse.move(q.x + q.w / 2, q.y + q.h / 2); await page2.waitForTimeout(150); return a2b(id, h); };       // as alças só aparecem com o mouse em cima
+  const a2b = (id, h) => page2.$eval('.caixa-movel[data-id="' + id + '"] .cm-alca[data-h="' + h + '"]', e => { const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  const dono = async id => { const b = await b2(id); return page2.evaluate(([x, y]) => { const e = document.elementFromPoint(x, y); return (e.closest('.caixa-movel') || { dataset: {} }).dataset.id; }, [b.x + b.w / 2, b.y + b.h / 2]); };
+  const arr2 = async (de, para) => { await page2.mouse.move(de.x, de.y); await page2.mouse.down(); await page2.mouse.move(para.x, para.y, { steps: 8 }); await page2.mouse.up(); await assenta2(); };
+  ok('texto (menor) fica por cima do polígono e da figura maiores', (await dono('fm1')) === 'fm1', await dono('fm1'));
+  ok('polígono é alcançável por uma parte livre (o centro está coberto pelos menores)', await page2.evaluate(() => { const e = document.querySelector('.caixa-movel[data-id="fm2"]'); const r = e.getBoundingClientRect(); const x = r.left + 8, y = r.bottom - 8; const t = document.elementFromPoint(x, y); return t && t.closest('.caixa-movel') && t.closest('.caixa-movel').dataset.id === 'fm2'; }));
+  // texto: mover e esticar pelo canto (letra) e por um lado (largura e altura próprias)
+  let t = await b2('fm1'); const tx0 = parseFloat(await v2('fm1_x'));
+  await arr2({ x: t.x + t.w / 2, y: t.y + t.h / 2 }, { x: t.x + t.w / 2 - 200, y: t.y + t.h / 2 - 150 });
+  ok('texto: arrastar muda a posição', parseFloat(await v2('fm1_x')) < tx0, tx0 + ' -> ' + (await v2('fm1_x')));
+  t = await b2('fm1'); await arr2(await a2('fm1', 'se'), { x: t.x + t.w + 40, y: t.y + t.h + 20 });
+  ok('texto: puxar o canto muda o tamanho da letra', (await v2('fm1_tamanho_pt')) !== '', 'tamanho_pt=' + (await v2('fm1_tamanho_pt')));
+  t = await b2('fm1'); await arr2(await a2('fm1', 'e'), { x: t.x + t.w + 60, y: t.y + t.h / 2 });
+  ok('texto: puxar o lado dá largura e altura próprias', (await v2('fm1_largura')) !== '' && (await v2('fm1_altura')) !== '', 'larg=' + (await v2('fm1_largura')) + ' alt=' + (await v2('fm1_altura')));
+  // figura: canto (proporção) e lado (largura e altura livres)
+  let f = await b2('im1'); await arr2(await a2('im1', 'se'), { x: f.x + f.w + 40, y: f.y + f.h + 40 });
+  ok('figura: o canto muda só a largura (proporção mantida)', (await v2('im1_largura')) !== '' && (await v2('im1_altura')) === '', 'larg=' + (await v2('im1_largura')));
+  f = await b2('im1'); await arr2(await a2('im1', 's'), { x: f.x + f.w / 2, y: f.y + f.h + 50 });
+  ok('figura: puxar o lado de baixo dá altura própria', (await v2('im1_altura')) !== '', 'alt=' + (await v2('im1_altura')));
+  // polígono: mover e esticar por um lado
+  let pgn = await b2('fm2'); const vv0 = await v2('fm2_vertices');
+  await arr2({ x: pgn.x + 10, y: pgn.y + pgn.h - 10 }, { x: pgn.x - 60, y: pgn.y + pgn.h - 60 });
+  const vv1 = await v2('fm2_vertices'); ok('polígono: arrastar muda os vértices', vv1 !== vv0, vv0 + ' -> ' + vv1);
+  pgn = await b2('fm2'); await arr2(await a2('fm2', 'w'), { x: pgn.x - 50, y: pgn.y + pgn.h / 2 });
+  ok('polígono: puxar o lado esquerdo estica os vértices', (await v2('fm2_vertices')) !== vv1, vv1 + ' -> ' + (await v2('fm2_vertices')));
+  await page2.screenshot({ path: SP + '/cx_3_empilhados.png' });
   await browser.close();
   console.log(falhas ? ('==== ' + falhas + ' FALHOU ====') : '==== tudo certo ====');
   process.exit(falhas ? 1 : 0);

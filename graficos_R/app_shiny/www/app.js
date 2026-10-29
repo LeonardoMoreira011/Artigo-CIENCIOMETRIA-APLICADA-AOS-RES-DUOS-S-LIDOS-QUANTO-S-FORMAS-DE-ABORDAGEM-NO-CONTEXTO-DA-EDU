@@ -168,9 +168,11 @@
   function colocarCaixas() {
     $('.caixa-movel').remove();
     var m = medidasImg(); if (!m || !geo.caixas || !geo.caixas.itens || !$('#arrastar').is(':checked')) { return; }
-    geo.caixas.itens.forEach(function (it) {
+    // as menores por cima: uma caixa grande (polígono, caixa de estatística) nunca esconde o texto ou a figura que está sobre ela
+    var ordem = geo.caixas.itens.slice().sort(function (a, b) { return b.rect[2] * b.rect[3] - a.rect[2] * a.rect[3]; });
+    ordem.forEach(function (it) {
       var $b = $('<div class="caixa-movel" data-id="' + it.id + '"><b class="cm-fant"></b><span class="cm-rot"></span></div>');
-      (it.auto ? ALCAS_CANTO : ALCAS_TODAS).forEach(function (h) { $b.append('<i class="cm-alca" data-h="' + h + '"></i>'); });
+      ALCAS_TODAS.forEach(function (h) { $b.append('<i class="cm-alca" data-h="' + h + '"></i>'); });
       $b.find('.cm-rot').text(rotulo('cx_' + it.tipo)); $b.attr('title', rotulo('cx_dica')).data('it', it);
       $b.css({ left: m.ox + it.rect[0] * m.W, top: m.oy + it.rect[1] * m.H, width: Math.max(it.rect[2] * m.W, 14), height: Math.max(it.rect[3] * m.H, 14) });
       if (it.id === cmAtiva) $b.addClass('ativa');
@@ -207,6 +209,7 @@
   // grava nos campos do cartão o que o gesto deixou (l, t, w, h em px); g guarda o retângulo de antes
   function gravarCaixa(g, R) {
     var it = g.it, m = g.m, P = pixelsPainel(m), F = geo.caixas.faixa, dados = !!it.dados && F, redim = g.modo === 'tam';
+    var livre = !it.auto || !!g.lado;                                 // tamanho próprio (largura e altura) em vez de proporção / tamanho da letra
     var fx = function (px) { return (px - P.l) / P.w; }, fy = function (py) { return ((P.t + P.h) - py) / P.h; };        // fração do painel (y de baixo para cima)
     var X = function (f) { return dados ? arred(F.x[0] + f * (F.x[1] - F.x[0]), casasDe(F.x)) : arred(f, 3); };
     var Y = function (f) { return dados ? arred(F.y[0] + f * (F.y[1] - F.y[0]), casasDe(F.y)) : arred(f, 3); };
@@ -219,7 +222,7 @@
       });
       setCampo(it.id + '_vertices', nv.join('; ')); return;
     }
-    if (dados && it.regiao) {                                       // retângulo/figura em unidades dos eixos: x, y = centro; largura e altura = tamanho
+    if (dados && (it.regiao || (redim && livre))) {                                       // retângulo/figura em unidades dos eixos: x, y = centro; largura e altura = tamanho
       setCampo(it.id + '_x', X(fx(R.l + R.w / 2))); setCampo(it.id + '_y', Y(fy(R.t + R.h / 2)));
       if (redim) { setCampo(it.id + '_largura', LX(R.w)); setCampo(it.id + '_altura', LY(R.h)); }
       return;
@@ -227,8 +230,8 @@
     setCampo(it.id + '_x', X(fx(R.l + it.jx * R.w))); setCampo(it.id + '_y', Y(fy(R.t + (1 - it.jy) * R.h)));
     if (!redim) return;
     if (it.tipo === 'figura') {
-      setCampo(it.id + '_largura', arred(R.w / P.w, 3)); if (!it.auto) setCampo(it.id + '_altura', arred(R.h / P.h, 3));
-    } else if (it.auto) {
+      setCampo(it.id + '_largura', arred(R.w / P.w, 3)); if (livre) setCampo(it.id + '_altura', arred(R.h / P.h, 3));
+    } else if (!livre) {
       setCampo(it.id + '_tamanho_pt', Math.max(4, arred((it.tam || 11) * (R.w / g.w0), 1)));
     } else {
       setCampo(it.id + '_largura', arred(R.w / P.w, 3)); setCampo(it.id + '_altura', arred(R.h / P.h, 3));
@@ -238,7 +241,8 @@
     var m = medidasImg(); if (!m || !geo.caixas) return;
     var $b = $(this), it = $b.data('it'), $al = $(e.target).closest('.cm-alca'), alca = $al.length ? String($al.data('h')) : null;
     if (ng) { clearTimeout(ng.timer); ng = null; }
-    cm = { modo: alca ? 'tam' : 'mover', alca: alca, prop: !!it.auto || (e.shiftKey && alca && alca.length === 2), x0: e.clientX, y0: e.clientY,
+    cm = { modo: alca ? 'tam' : 'mover', alca: alca, lado: !!alca && alca.length === 1,
+           prop: !!alca && alca.length === 2 && (it.auto ? !e.shiftKey : e.shiftKey), x0: e.clientX, y0: e.clientY,
            l0: parseFloat($b.css('left')), t0: parseFloat($b.css('top')), w0: $b.outerWidth(), h0: $b.outerHeight(), m: m, it: it, moveu: false };
     cmAtiva = it.id; $('.caixa-movel').removeClass('ativa'); $b.addClass('ativa');
     this.setPointerCapture(e.pointerId); e.preventDefault();
