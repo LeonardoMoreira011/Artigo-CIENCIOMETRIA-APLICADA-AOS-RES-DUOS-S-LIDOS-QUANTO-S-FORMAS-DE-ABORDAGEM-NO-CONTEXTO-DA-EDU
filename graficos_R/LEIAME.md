@@ -381,3 +381,9 @@ Seis tipos novos em **Dados e tipo de gráfico**. Usam os pacotes `sf` (mapas), 
 ## Auditoria final
 
 `AUDITORIA_FINAL.md` traz o parecer, tudo o que foi rodado (motor, app, exemplos, navegador, fuzz, desempenho, CI no Windows), os 11 achados corrigidos e o que ainda poderia ser otimizado. `ferramentas/fuzz_tipos.R` varre os campos da tela nos tipos novos.
+
+## Licença e como citar
+
+- **Licença MIT** (arquivo `LICENSE`): você pode usar, copiar, modificar e distribuir o Cinabro, em trabalhos científicos ou não, desde que mantenha o aviso de copyright. Os pacotes do R e os outros trabalhos usados mantêm as suas licenças (`NOTICE.md`).
+- **Como citar** (também em `CITATION.cff`): Moreira, L. (2026). *Cinabro: laboratório de gráficos científicos* (versão 0.2.0) [Software]. Quando o projeto tiver um DOI (Zenodo), use-o na citação.
+- **Nos métodos do artigo**, uma frase como: "As figuras foram feitas com o Cinabro (Moreira, 2026), um programa em R baseado em ggplot2." Cite também o R e os pacotes que a análise usou (PCA e CCA: vegan; mapas: sf).

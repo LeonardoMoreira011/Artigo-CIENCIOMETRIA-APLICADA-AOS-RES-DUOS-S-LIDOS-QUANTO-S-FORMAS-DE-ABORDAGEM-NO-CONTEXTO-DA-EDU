@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "Se você usar o Cinabro em uma publicação, cite-o assim (If you use Cinabro in a publication, please cite it as below)."
+title: "Cinabro: laboratório de gráficos científicos"
+type: software
+version: 0.2.0
+date-released: 2026-11-09
+license: MIT
+authors:
+  - family-names: Moreira
+    given-names: Leonardo
+    # orcid: "https://orcid.org/0000-0000-0000-0000"   # (opcional) tire o # e ponha o seu ORCID
+abstract: >-
+  Programa em R, com aplicativo no navegador e em português, que transforma planilhas CSV em figuras científicas editáveis
+  (linhas, barras com erro, boxplot, histograma, PCA, CA, CCA, mapa de calor, mapa-múndi e mapa do Brasil), com ajuste de curva,
+  testes estatísticos, painéis de resumo (Dashboard) e exportação em PNG, TIFF, SVG e PDF.
+keywords:
+  - gráficos científicos
+  - R
+  - Shiny
+  - PCA
+  - ggplot2
+  - visualização de dados
+# repository-code: "https://github.com/..."   # preencha com o endereço público do projeto quando publicar
+# doi: "10.5281/zenodo...."                    # preencha com o DOI do Zenodo quando existir

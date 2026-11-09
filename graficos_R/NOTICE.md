@@ -1,5 +1,11 @@
 # Avisos de terceiros (NOTICE)
 
+## Licença do Cinabro e uso de IA
+
+- O código do Cinabro é de Leonardo Moreira e está sob a **licença MIT** (arquivo `LICENSE`). Para citar, veja `CITATION.cff` e a seção "Licença e como citar" do `LEIAME.md`.
+- **Transparência:** a concepção do programa, os requisitos, as decisões de design, a revisão e os testes são do autor. O código foi desenvolvido com a **assistência de ferramentas de IA generativa** (Claude, da Anthropic), sob a direção e a revisão do autor.
+- O nome "Cinabro" e o emblema não são licenciados como marca para terceiros. Os pacotes do R e os trabalhos listados abaixo mantêm as suas próprias licenças.
+
 O Cinabro usa, sem alterar, os trabalhos abaixo. Cada um tem a sua licença; os avisos exigidos estão aqui e nos cabeçalhos dos arquivos.
 
 ## Fontes do letreiro (nome e frase do cabeçalho)

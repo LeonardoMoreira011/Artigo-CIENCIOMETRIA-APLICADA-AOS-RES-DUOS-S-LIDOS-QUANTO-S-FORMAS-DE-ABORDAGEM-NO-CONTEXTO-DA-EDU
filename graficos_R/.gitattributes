@@ -8,3 +8,5 @@ planejamento export-ignore
 # as saídas de exemplo (PNG gerados pelo 05_exemplos.R) e a galeria de referência não vão no ZIP: o 05_exemplos.R as refaz
 saida/exemplos export-ignore
 saida/galeria_referencia.pdf export-ignore
+# o roteiro do registro no INPI fica só no repositório
+registro_inpi export-ignore
