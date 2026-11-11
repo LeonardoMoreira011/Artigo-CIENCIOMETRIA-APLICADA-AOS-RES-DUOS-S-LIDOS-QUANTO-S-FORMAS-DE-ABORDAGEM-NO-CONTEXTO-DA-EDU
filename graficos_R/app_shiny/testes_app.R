@@ -523,7 +523,7 @@ teste("cores suaves, faixas de cor, linhas 3D e radar no app: os campos novos ch
   r7 <- construir_grafico(L("espectros_cascata.csv"), list(tipo_grafico = "linhas_3d", tri_linhas_preencher = "branco", tri_linhas_faixas = 5, tri_linhas_cor = "navy", tri_linhas_espessura_pt = 0.6), CFG0)
   r8 <- construir_grafico(L("radar_materiais.csv"), list(tipo_grafico = "radar", radar_aneis = 4, radar_normalizar = TRUE, radar_formato_grade = "circulo", radar_opacidade = 0.4, radar_pontos = FALSE, radar_rotulos_aneis = FALSE, radar_legenda_posicao = "base"), CFG0)
   is.null(r6$erro) && is.null(r7$erro) && is.null(r8$erro) && r6$cfg$mapa_calor$niveis_cor == 8 && r6$cfg$mapa_calor$barra_intervalo == 10 && r6$cfg$tridimensional$suavizar == 4 && r6$cfg$tridimensional$niveis_espessura_pt == 0.8 &&
-    identical(r7$cfg$tridimensional$linhas_preencher, "branco") && r7$cfg$tridimensional$linhas_faixas == 5 && isTRUE(r8$cfg$radar$normalizar) && identical(r8$cfg$radar$formato_grade, "circulo") && identical(r8$cfg$legenda$posicao, "base") &&
+    identical(r7$cfg$tridimensional$linhas_preencher, "branco") && r7$cfg$tridimensional$linhas_faixas == 5 && isTRUE(r8$cfg$radar$normalizar) && identical(r8$cfg$radar$formato_grade, "circulo") && identical(r8$cfg$radar$legenda_posicao, "base") && identical(attr(r8$g, "cfg")$legenda$posicao, "base") &&
     all(c("linhas_3d", "radar") %in% unname(.TIPOS)) && all(c("calor_niveis_cor", "tri_linhas_preencher", "radar_aneis", "radar_legenda_posicao") %in% names(ESPEC_CAMPOS)) })
 teste("radar e linhas 3D no app: erro do motor chega claro, em inglês e espanhol", {
   e_en <- construir_grafico(L("radar_materiais.csv")[, 1:3], list(tipo_grafico = "radar"), CFG0, idioma = "en")$erro

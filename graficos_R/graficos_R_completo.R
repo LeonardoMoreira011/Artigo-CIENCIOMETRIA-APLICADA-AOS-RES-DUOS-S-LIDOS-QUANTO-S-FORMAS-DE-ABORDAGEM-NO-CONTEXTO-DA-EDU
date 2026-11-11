@@ -185,7 +185,7 @@ cfg$grafico <- list(
   #   OPÇÕES: "pontos" | "linha" | "linha_pontos" | "area" | "area_empilhada" |
   #           "barras" | "pizza" | "histograma" | "densidade" | "ecdf" | "boxplot" |
   #           "mapa_calor" | "pca" | "ca" | "cca" | "mapa_mundo" | "mapa_brasil" |
-  #           "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d"
+  #           "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d" | "linhas_3d" | "radar"
   #   EX.: cfg$grafico$tipo <- "boxplot"
   tipo = "linha_pontos",
 
@@ -939,6 +939,13 @@ cfg$mapa_calor <- list(
   #   OPÇÕES: "direita" | "esquerda" | "topo" | "base" | "dentro"
   barra_posicao = "direita",
 
+  # niveis_cor: divide o gradiente em N faixas de cor (mais marcado; ex.: 8). NULL ou 0 = gradiente contínuo, suave.
+  niveis_cor = NULL,
+
+  # barra_intervalo / barra_casas: de quanto em quanto aparecem os números da barra de cores (NULL = automático) e quantas casas decimais eles têm.
+  barra_intervalo = NULL,
+  barra_casas = NULL,
+
   # barra_altura_cm / barra_largura_cm: tamanho da barra de cores (cm).
   barra_altura_cm = 4,
   barra_largura_cm = 0.4
@@ -969,22 +976,77 @@ cfg$tridimensional <- list(
   cor_grade = "#D9D9D9",
   cor_caixa = "#8C8C8C",
 
-  # suavizar: divide cada célula da grade em N pedaços por interpolação (superfície e mapa de cor). 1 = sem suavizar.
-  suavizar = 1,
+  # suavizar: divide cada célula da grade em N pedaços por interpolação cúbica (superfície e mapa de cor): cores e relevo fluidos. 1 = sem suavizar
+  #   (blocos). NULL = automático (o bastante para uma grade fina, até 12). Quanto maior, mais suave (e mais pesado).
+  suavizar = NULL,
+
+  # sombreado: a superfície 3D clareia e escurece conforme a inclinação (luz do alto, à esquerda). malha: mostra as linhas da grade sobre a superfície
+  #   (cor e grossura de cfg$mapa_calor$contorno_cor e contorno_espessura_pt).
+  sombreado = TRUE,
+  malha = FALSE,
 
   # niveis: quantidade aproximada de linhas de nível no mapa de cor (0 = sem linhas). cor_niveis: cor das linhas.
   niveis = 0,
   cor_niveis = "#333333",
+  niveis_espessura_pt = 0.4,
 
   # barras_largura: largura da barra em relação à célula (0 a 1). cor_borda_barras: contorno das faces (NA = sem).
   barras_largura = 0.7,
   cor_borda_barras = "white",
+
+  # linhas 3D (cascata): linhas_preencher "gradiente" (cada linha preenchida com o gradiente do Z, em linhas_faixas faixas) | "branco" (preenche de branco: a linha da frente
+  #   esconde a de trás) | "nenhum" (só as linhas). linhas_cor / linhas_espessura_pt: o traço de cada linha.
+  linhas_preencher = "gradiente",
+  linhas_faixas = 10,
+  linhas_cor = "black",
+  linhas_espessura_pt = 0.4,
 
   # dispersão: ponto_tamanho_pt, cor_borda_pontos (NA = sem), hastes (linha de cada ponto até o piso) e cor_hastes
   ponto_tamanho_pt = 6,
   cor_borda_pontos = "white",
   hastes = FALSE,
   cor_hastes = "#9A9A9A"
+)
+
+# -----------------------------------------------------------------------------
+# RADAR — gráfico de radar / teia de aranha (tipo "radar")
+# -----------------------------------------------------------------------------
+#  Planilha: a 1ª coluna traz o nome de cada série (uma linha = um polígono); as outras colunas numéricas são os eixos do radar (3 ou mais).
+cfg$radar <- list(
+  # aneis: quantidade aproximada de anéis da grade. anel_min / anel_max: onde a escala começa e termina (NULL = automático: do 0 ao maior valor, em números redondos).
+  aneis = 5,
+  anel_min = NULL,
+  anel_max = NULL,
+
+  # normalizar: TRUE põe cada eixo na escala de 0 a 1 (compara colunas de unidades diferentes).
+  normalizar = FALSE,
+
+  # formato_grade: "poligono" (anéis retos, como a teia) | "circulo"
+  formato_grade = "poligono",
+
+  # sentido: "horario" | "antihorario". angulo_inicial: onde fica o 1º eixo (graus; 0 = em cima).
+  sentido = "horario",
+  angulo_inicial = 0,
+
+  # preencher_opacidade: transparência do preenchimento de cada série (0 = só a linha, 1 = sólido). linha_espessura_pt: o contorno.
+  preencher_opacidade = 0.25,
+  linha_espessura_pt = 1.2,
+
+  # pontos: marca o valor em cada eixo. ponto_tamanho_pt: tamanho da marca.
+  pontos = TRUE,
+  ponto_tamanho_pt = 4,
+
+  # grade_cor / grade_espessura_pt: anéis e eixos de fundo. rotulos_aneis: escreve o valor de cada anel; rotulos_casas: casas decimais.
+  grade_cor = "#BDBDBD",
+  grade_espessura_pt = 0.5,
+  rotulos_aneis = TRUE,
+  rotulos_casas = NULL,
+
+  # rotulos_tamanho_pt: tamanho dos nomes dos eixos (NULL = o tamanho base).
+  rotulos_tamanho_pt = NULL,
+
+  # legenda_posicao: "direita" | "esquerda" | "topo" | "base" | "dentro"
+  legenda_posicao = "direita"
 )
 
 # -----------------------------------------------------------------------------
@@ -2942,6 +3004,48 @@ suppressPackageStartupMessages({
 .ROTULOS_IDIOMA$en <- c(.ROTULOS_IDIOMA$en, "Nota z" = "z-score")
 .ROTULOS_IDIOMA$es <- c(.ROTULOS_IDIOMA$es, "Nota z" = "Puntuación z")
 
+# ---- mensagens acrescentadas depois (PCA/CA/CCA, mapas, mapa de cor e 3D) ----
+.TRAD_MOTOR$en <- c(.TRAD_MOTOR$en, c(
+    "cfg$tridimensional$linhas_faixas deve estar entre 1 e 40 (faixas de cor de cada linha)." = "cfg$tridimensional$linhas_faixas must be between 1 and 40 (color bands of each line).",
+    "cfg$radar$aneis deve estar entre 1 e 20 (anéis da grade)." = "cfg$radar$aneis must be between 1 and 20 (grid rings).",
+    ") deve ser menor que anel_max (" = ") must be smaller than anel_max (",
+    "cfg$radar$preencher_opacidade deve estar entre 0 e 1." = "cfg$radar$preencher_opacidade must be between 0 and 1.",
+    " geraria " = " would produce ",
+    " números na barra; usei o automático." = " numbers on the bar; I used the automatic one.",
+    "As linhas 3D precisam de números na coluna do eixo X ('" = "The 3D lines need numbers in the X axis column ('",
+    "'), por exemplo o comprimento de onda." = "'), for example the wavelength.",
+    "As linhas 3D precisam de pelo menos 2 colunas de série: cada coluna é uma linha e o cabeçalho dela diz onde fica na profundidade (um número, como o tempo, ou um nome)." = "The 3D lines need at least 2 series columns: each column is a line and its header says where it sits in depth (a number, like time, or a name).",
+    "A tabela tem " = "The table has ",
+    " séries; para o desenho não ficar pesado, usei 80 delas." = " series; to keep the drawing light, I used 80 of them.",
+    "O radar precisa de pelo menos 3 colunas numéricas: cada coluna é um eixo do radar e cada linha da planilha é uma série (o nome dela fica na 1ª coluna)." = "The radar needs at least 3 numeric columns: each column is a radar axis and each row of the sheet is a series (its name is in the 1st column).",
+    "': acrescentei números para diferenciar as séries." = "': I added numbers to tell the series apart.",
+    "Não há valores numéricos para desenhar no radar." = "There are no numeric values to draw in the radar.",
+    "O radar precisa de valores diferentes entre si (a escala vai de " = "The radar needs values that differ from each other (the scale goes from ",
+    " valor(es) fora da escala do radar (" = " value(s) outside the radar scale (",
+    "Células vazias no radar foram desenhadas no centro (valor mínimo da escala)." = "Empty cells in the radar were drawn at the center (minimum of the scale)."))
+.TRAD_MOTOR$es <- c(.TRAD_MOTOR$es, c(
+    "cfg$tridimensional$linhas_faixas deve estar entre 1 e 40 (faixas de cor de cada linha)." = "cfg$tridimensional$linhas_faixas debe estar entre 1 y 40 (franjas de color de cada línea).",
+    "cfg$radar$aneis deve estar entre 1 e 20 (anéis da grade)." = "cfg$radar$aneis debe estar entre 1 y 20 (anillos de la cuadrícula).",
+    ") deve ser menor que anel_max (" = ") debe ser menor que anel_max (",
+    "cfg$radar$preencher_opacidade deve estar entre 0 e 1." = "cfg$radar$preencher_opacidade debe estar entre 0 y 1.",
+    " geraria " = " generaría ",
+    " números na barra; usei o automático." = " números en la barra; usé el automático.",
+    "As linhas 3D precisam de números na coluna do eixo X ('" = "Las líneas 3D necesitan números en la columna del eje X ('",
+    "'), por exemplo o comprimento de onda." = "'), por ejemplo la longitud de onda.",
+    "As linhas 3D precisam de pelo menos 2 colunas de série: cada coluna é uma linha e o cabeçalho dela diz onde fica na profundidade (um número, como o tempo, ou um nome)." = "Las líneas 3D necesitan al menos 2 columnas de serie: cada columna es una línea y su encabezado dice dónde queda en profundidad (un número, como el tiempo, o un nombre).",
+    "A tabela tem " = "La tabla tiene ",
+    " séries; para o desenho não ficar pesado, usei 80 delas." = " series; para que el dibujo no quede pesado, usé 80 de ellas.",
+    "O radar precisa de pelo menos 3 colunas numéricas: cada coluna é um eixo do radar e cada linha da planilha é uma série (o nome dela fica na 1ª coluna)." = "El radar necesita al menos 3 columnas numéricas: cada columna es un eje del radar y cada fila de la hoja es una serie (su nombre está en la 1.ª columna).",
+    "': acrescentei números para diferenciar as séries." = "': añadí números para diferenciar las series.",
+    "Não há valores numéricos para desenhar no radar." = "No hay valores numéricos para dibujar en el radar.",
+    "O radar precisa de valores diferentes entre si (a escala vai de " = "El radar necesita valores distintos entre sí (la escala va de ",
+    " valor(es) fora da escala do radar (" = " valor(es) fuera de la escala del radar (",
+    "Células vazias no radar foram desenhadas no centro (valor mínimo da escala)." = "Las celdas vacías en el radar se dibujaron en el centro (mínimo de la escala)."))
+.TRAD_MOTOR$en <- c(.TRAD_MOTOR$en, c("cfg$mapa_calor$niveis_cor deve ser 0 (gradiente contínuo) ou um número de 2 a 64 (faixas de cor)." = "cfg$mapa_calor$niveis_cor must be 0 (continuous gradient) or a number from 2 to 64 (color bands).",
+  "cfg$mapa_calor$barra_intervalo deve ser um número maior que 0 (ou NULL)." = "cfg$mapa_calor$barra_intervalo must be a number greater than 0 (or NULL)."))
+.TRAD_MOTOR$es <- c(.TRAD_MOTOR$es, c("cfg$mapa_calor$niveis_cor deve ser 0 (gradiente contínuo) ou um número de 2 a 64 (faixas de cor)." = "cfg$mapa_calor$niveis_cor debe ser 0 (degradado continuo) o un número de 2 a 64 (franjas de color).",
+  "cfg$mapa_calor$barra_intervalo deve ser um número maior que 0 (ou NULL)." = "cfg$mapa_calor$barra_intervalo debe ser un número mayor que 0 (o NULL)."))
+
 # -----------------------------------------------------------------------------
 #  03_leitura.R
 # -----------------------------------------------------------------------------
@@ -3219,7 +3323,7 @@ colunas <- function(dados) {
 .OPCOES <- list(
   "grafico$tipo" = c("pontos", "linha", "linha_pontos", "area", "area_empilhada", "barras",
                      "pizza", "histograma", "densidade", "ecdf", "boxplot", "mapa_calor", "pca", "ca", "cca",
-                     "mapa_mundo", "mapa_brasil", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d"),
+                     "mapa_mundo", "mapa_brasil", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d", "linhas_3d", "radar"),
   "cores$preenchimento" = c("solido", "gradiente"),
   "cores$gradiente_direcao" = c("vertical", "vertical_invertido", "horizontal",
                                 "horizontal_invertido", "diagonal", "radial"),
@@ -3253,6 +3357,10 @@ colunas <- function(dados) {
   "multivariada$resumo_posicao" = c("caixa", "rodape"),
   "multivariada$legenda_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "tridimensional$caixa" = c("paredes", "base", "aberta"),
+  "tridimensional$linhas_preencher" = c("gradiente", "branco", "nenhum"),
+  "radar$formato_grade" = c("poligono", "circulo"),
+  "radar$sentido" = c("horario", "antihorario"),
+  "radar$legenda_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "mapa_calor$barra_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "mapa$nivel" = c("pais", "estado", "regiao"),
   "mapa$agregacao" = c("soma", "media", "maximo"),
@@ -3452,6 +3560,13 @@ colunas <- function(dados) {
   if (!is.null(mc$limite_min) && !is.null(mc$limite_max) && mc$limite_min >= mc$limite_max)
     .erro("cfg$mapa_calor$limite_min (", mc$limite_min, ") deve ser menor que limite_max (", mc$limite_max, ").")
   tr3 <- cfg$tridimensional
+  if (!is.null(mc$niveis_cor) && (!is.numeric(mc$niveis_cor) || mc$niveis_cor < 0 || mc$niveis_cor > 64)) .erro("cfg$mapa_calor$niveis_cor deve ser 0 (gradiente contínuo) ou um número de 2 a 64 (faixas de cor).")
+  if (!is.null(mc$barra_intervalo) && (!is.numeric(mc$barra_intervalo) || mc$barra_intervalo <= 0)) .erro("cfg$mapa_calor$barra_intervalo deve ser um número maior que 0 (ou NULL).")
+  if (!is.null(tr3$linhas_faixas) && (!is.numeric(tr3$linhas_faixas) || tr3$linhas_faixas < 1 || tr3$linhas_faixas > 40)) .erro("cfg$tridimensional$linhas_faixas deve estar entre 1 e 40 (faixas de cor de cada linha).")
+  rd <- cfg$radar
+  if (!is.null(rd$aneis) && (!is.numeric(rd$aneis) || rd$aneis < 1 || rd$aneis > 20)) .erro("cfg$radar$aneis deve estar entre 1 e 20 (anéis da grade).")
+  if (!is.null(rd$anel_min) && !is.null(rd$anel_max) && rd$anel_min >= rd$anel_max) .erro("cfg$radar$anel_min (", rd$anel_min, ") deve ser menor que anel_max (", rd$anel_max, ").")
+  if (!is.null(rd$preencher_opacidade) && (!is.numeric(rd$preencher_opacidade) || rd$preencher_opacidade < 0 || rd$preencher_opacidade > 1)) .erro("cfg$radar$preencher_opacidade deve estar entre 0 e 1.")
   if (!is.null(tr3$azimute) && (!is.numeric(tr3$azimute) || length(tr3$azimute) != 1 || !is.finite(tr3$azimute))) .erro("cfg$tridimensional$azimute deve ser um número em graus (ex.: 40).")
   if (!is.null(tr3$elevacao) && (!is.numeric(tr3$elevacao) || tr3$elevacao < 0 || tr3$elevacao > 90)) .erro("cfg$tridimensional$elevacao deve estar entre 0 e 90 graus (ex.: 28).")
   if (!is.null(tr3$altura_relativa) && (!is.numeric(tr3$altura_relativa) || tr3$altura_relativa < 0.1 || tr3$altura_relativa > 3)) .erro("cfg$tridimensional$altura_relativa deve estar entre 0.1 e 3 (ex.: 0.7).")
@@ -5385,6 +5500,8 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
     superficie_3d = .construir_superficie_3d(dados, cfg),
     barras_3d = .construir_barras_3d(dados, cfg),
     dispersao_3d = .construir_dispersao_3d(dados, cfg),
+    linhas_3d = .construir_linhas_3d(dados, cfg),
+    radar = .construir_radar(dados, cfg),
     mapa_mundo = , mapa_brasil = .construir_mapa(dados, cfg))
   info <- res$info
   if (isTRUE(so_info)) return(info)
@@ -5521,11 +5638,12 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 # (cfg$caixa$espessura_pt) — mudar a moldura padroniza tudo; escrever o valor no eixo vale mais.
 .resolver_herancas <- function(cfg) {
   # gráficos com barra de cores (mapa de calor e mapas): a barra vai para onde cfg$mapa_calor$barra_posicao manda (padrão: direita)
-  if (cfg$grafico$tipo %in% c("mapa_calor", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d", "mapa_mundo", "mapa_brasil")) cfg$legenda$posicao <- cfg$mapa_calor$barra_posicao %||% "direita"
+  if (cfg$grafico$tipo %in% c("mapa_calor", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d", "linhas_3d", "mapa_mundo", "mapa_brasil")) cfg$legenda$posicao <- cfg$mapa_calor$barra_posicao %||% "direita"
   if (identical(cfg$grafico$tipo, "mapa_calor") && !isTRUE(cfg$mapa_calor$mostrar_ticks)) {   # células não precisam de traços de eixo
     for (ax in c("eixo_x", "eixo_y")) { cfg[[ax]]$direcao_maiores <- "nenhum"; cfg[[ax]]$direcao_menores <- "nenhum"; cfg[[ax]]$n_menores <- 0 }
   }
   if (cfg$grafico$tipo %in% c("pca", "ca", "cca")) cfg$legenda$posicao <- cfg$multivariada$legenda_posicao %||% "direita"
+  if (identical(cfg$grafico$tipo, "radar")) cfg$legenda$posicao <- cfg$radar$legenda_posicao %||% "direita"
   for (ax in c("eixo_x", "eixo_y")) {
     cfg[[ax]]$espessura_ticks_pt <- cfg[[ax]]$espessura_ticks_pt %||% cfg$caixa$espessura_pt
     cfg[[ax]]$espessura_linha_pt <- cfg[[ax]]$espessura_linha_pt %||% cfg$caixa$espessura_pt
@@ -5659,7 +5777,7 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
 .plotar_quebra <- function(dados, cfg) {
   Q <- cfg$quebra
   if (is.null(Q$de) || is.null(Q$ate) || Q$de >= Q$ate) .erro("cfg$quebra: defina de < ate (ex.: de = 20, ate = 80).")
-  if (cfg$grafico$tipo %in% c("pizza", "mapa_mundo", "mapa_brasil", "mapa_calor", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d", "pca", "ca", "cca")) .erro("Quebra de eixo não se aplica a este tipo de gráfico (", cfg$grafico$tipo, ").")
+  if (cfg$grafico$tipo %in% c("pizza", "mapa_mundo", "mapa_brasil", "mapa_calor", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d", "linhas_3d", "radar", "pca", "ca", "cca")) .erro("Quebra de eixo não se aplica a este tipo de gráfico (", cfg$grafico$tipo, ").")
   base <- cfg; base$quebra$ativo <- FALSE
   inf <- .plotar_um(dados, base, so_info = TRUE)
   lim <- inf$ax_y$limites
@@ -6350,6 +6468,15 @@ jsonlite_b64 <- function(txt) {
   tri_cor_borda_barras = c("tridimensional", "cor_borda_barras"), tri_ponto_tamanho_pt = c("tridimensional", "ponto_tamanho_pt"), tri_hastes = c("tridimensional", "hastes"),
   tri_cor_hastes = c("tridimensional", "cor_hastes"), tri_cor_borda_pontos = c("tridimensional", "cor_borda_pontos"), tri_cor_paredes = c("tridimensional", "cor_paredes"),
   tri_cor_grade = c("tridimensional", "cor_grade"), tri_cor_caixa = c("tridimensional", "cor_caixa"),
+  tri_sombreado = c("tridimensional", "sombreado"), tri_malha = c("tridimensional", "malha"), tri_niveis_espessura_pt = c("tridimensional", "niveis_espessura_pt"),
+  tri_linhas_preencher = c("tridimensional", "linhas_preencher"), tri_linhas_faixas = c("tridimensional", "linhas_faixas"), tri_linhas_cor = c("tridimensional", "linhas_cor"),
+  tri_linhas_espessura_pt = c("tridimensional", "linhas_espessura_pt"),
+  calor_niveis_cor = c("mapa_calor", "niveis_cor"), calor_barra_intervalo = c("mapa_calor", "barra_intervalo"), calor_barra_casas = c("mapa_calor", "barra_casas"),
+  radar_aneis = c("radar", "aneis"), radar_min = c("radar", "anel_min"), radar_max = c("radar", "anel_max"), radar_normalizar = c("radar", "normalizar"),
+  radar_formato_grade = c("radar", "formato_grade"), radar_sentido = c("radar", "sentido"), radar_angulo = c("radar", "angulo_inicial"), radar_opacidade = c("radar", "preencher_opacidade"),
+  radar_linha_espessura_pt = c("radar", "linha_espessura_pt"), radar_pontos = c("radar", "pontos"), radar_ponto_tamanho_pt = c("radar", "ponto_tamanho_pt"),
+  radar_rotulos_aneis = c("radar", "rotulos_aneis"), radar_rotulos_casas = c("radar", "rotulos_casas"), radar_rotulos_tamanho_pt = c("radar", "rotulos_tamanho_pt"),
+  radar_grade_cor = c("radar", "grade_cor"), radar_legenda_posicao = c("radar", "legenda_posicao"),
   calor_tamanho_valores_pt = c("mapa_calor", "tamanho_valores_pt"),
   mapa_rotulos_tamanho_pt = c("mapa", "rotulos_tamanho_pt"),
   mapa_rotulos_fonte = c("mapa", "rotulos_fonte"),
@@ -8424,7 +8551,9 @@ if (requireNamespace("grid", quietly = TRUE)) {
   if (isTRUE(H$inverter_cores)) rev(cores) else cores
 }
 
-# Escala contínua de preenchimento (com barra de cores). Entra: cfg e os valores Z. Sai: list(escala, limites, cor_de).
+# Escala de preenchimento (com barra de cores). Entra: cfg e os valores Z. Sai: list(escala, escala_cor, limites, titulo, cor_de).
+# Contínua por padrão; com cfg$mapa_calor$niveis_cor = N, o gradiente vira N faixas de cor. barra_intervalo e barra_casas mandam nos números da barra.
+# escala_cor é a mesma escala para a aesthetic "colour" (sem legenda): serve para o contorno de cada polígono ficar da cor do preenchimento (sem fios claros).
 .escala_z <- function(cfg, z, nome) {
   H <- cfg$mapa_calor; z <- z[is.finite(z)]
   if (!length(z)) .erro("Não há valores numéricos para colorir.")
@@ -8437,12 +8566,27 @@ if (requireNamespace("grid", quietly = TRUE)) {
     meio <- NULL
   }
   resc <- if (is.null(meio)) scales::rescale else function(x, to = c(0, 1), from = range(x, na.rm = TRUE)) scales::rescale_mid(x, to, from, mid = meio)
-  barra <- guide_colourbar(theme = theme(legend.key.height = unit(H$barra_altura_cm, "cm"), legend.key.width = unit(H$barra_largura_cm, "cm")),
-                           ticks.colour = "white", frame.colour = NA)
-  esc <- scale_fill_gradientn(colours = cores, limits = lim, rescaler = resc, oob = scales::squish, na.value = .cor(H$cor_sem_dado),
-                              name = .texto(H$titulo_barra %||% nome), guide = barra)
+  nn <- as.integer(H$niveis_cor %||% 0); faixas <- !is.na(nn) && nn >= 2
+  passo <- H$barra_intervalo
+  quebras <- if (!is.null(passo) && is.finite(passo) && passo > 0) { s <- seq(ceiling(lim[1] / passo - 1e-9) * passo, lim[2] + 1e-9, by = passo); if (length(s) > 60) { .aviso("barra_intervalo ", passo, " geraria ", length(s), " números na barra; usei o automático."); ggplot2::waiver() } else round(s, 10) } else ggplot2::waiver()
+  rotulos <- if (!is.null(H$barra_casas)) function(x) .fmt_num(x, H$barra_casas) else if (faixas) function(x) .fmt_num(signif(x, 3)) else ggplot2::waiver()
+  tam <- theme(legend.key.height = unit(H$barra_altura_cm, "cm"), legend.key.width = unit(H$barra_largura_cm, "cm"))
   pal <- scales::pal_gradient_n(cores)
-  list(escala = esc, limites = lim, titulo = H$titulo_barra %||% nome, cor_de = function(v) pal(resc(v, from = lim)))
+  if (faixas) {                                                # N faixas de cor, de tamanho igual
+    borda <- seq(lim[1], lim[2], length.out = nn + 1); meios <- (borda[-1] + borda[-length(borda)]) / 2
+    q <- if (inherits(quebras, "waiver")) borda[-c(1, length(borda))] else quebras[quebras > lim[1] & quebras < lim[2]]
+    esc <- scale_fill_stepsn(colours = cores, limits = lim, breaks = q, labels = rotulos, rescaler = resc, oob = scales::squish, na.value = .cor(H$cor_sem_dado),
+                             name = .texto(H$titulo_barra %||% nome), guide = guide_coloursteps(theme = tam, even.steps = FALSE, show.limits = FALSE))
+    esc_cor <- scale_colour_stepsn(colours = cores, limits = lim, breaks = q, rescaler = resc, oob = scales::squish, na.value = .cor(H$cor_sem_dado), guide = "none")
+    cor_de <- function(v) { k <- findInterval(v, borda, all.inside = TRUE); pal(resc(meios[k], from = lim)) }
+  } else {
+    barra <- guide_colourbar(theme = tam, ticks.colour = "white", frame.colour = NA)
+    esc <- scale_fill_gradientn(colours = cores, limits = lim, rescaler = resc, oob = scales::squish, na.value = .cor(H$cor_sem_dado), breaks = quebras, labels = rotulos,
+                                name = .texto(H$titulo_barra %||% nome), guide = barra)
+    esc_cor <- scale_colour_gradientn(colours = cores, limits = lim, rescaler = resc, oob = scales::squish, na.value = .cor(H$cor_sem_dado), guide = "none")
+    cor_de <- function(v) pal(resc(v, from = lim))
+  }
+  list(escala = esc, escala_cor = esc_cor, limites = lim, titulo = H$titulo_barra %||% nome, cor_de = cor_de)
 }
 
 # Rótulo de contraste (preto ou branco) para escrever sobre uma cor.
@@ -8765,14 +8909,29 @@ if (requireNamespace("grid", quietly = TRUE)) {
   m$x <- m$x[ix]; m$y <- m$y[iy]; m$Z <- m$Z[iy, ix, drop = FALSE]; m
 }
 
-# Refina a grade por interpolação linear (n subdivisões por célula). Só para eixos numéricos.
+# Refina a grade por interpolação em spline cúbico (n subdivisões por célula): as cores e a superfície ficam fluidas, sem as quebras de uma grade grossa.
+# Os valores não passam do menor e do maior da tabela. Só para eixos numéricos; com célula vazia (NA) a grade fica como está.
 .refinar_grade <- function(m, n) {
   if (n < 2 || !is.numeric(m$x) || !is.numeric(m$y) || length(m$x) < 2 || length(m$y) < 2 || anyNA(m$Z)) return(m)
   sub <- function(v) unique(unlist(lapply(seq_len(length(v) - 1), function(i) seq(v[i], v[i + 1], length.out = n + 1))))
   nx <- sub(m$x); ny <- sub(m$y)
-  Zx <- t(apply(m$Z, 1, function(r) stats::approx(m$x, r, nx)$y))
-  if (length(ny) && nrow(m$Z) > 1) Zx <- apply(Zx, 2, function(cl) stats::approx(m$y, cl, ny)$y) else Zx <- matrix(Zx, nrow = length(ny))
-  m$x <- nx; m$y <- ny; m$Z <- matrix(Zx, length(ny), length(nx)); m
+  f <- function(x, y, xo) if (length(x) >= 3) stats::spline(x, y, xout = xo, method = "natural")$y else stats::approx(x, y, xout = xo)$y
+  Zx <- t(apply(m$Z, 1, function(r) f(m$x, r, nx)))
+  Zy <- matrix(apply(Zx, 2, function(cl) f(m$y, cl, ny)), length(ny), length(nx))
+  m$x <- nx; m$y <- ny; m$Z <- pmin(pmax(Zy, min(m$Z)), max(m$Z)); m
+}
+# Subdivisões por célula: o que o usuário escolheu (cfg$tridimensional$suavizar) ou, no automático, o bastante para chegar a ~alvo células no eixo maior.
+.n_suavizar <- function(s, m, alvo) {
+  if (!is.null(s) && is.finite(s)) return(as.integer(s))
+  if (!is.numeric(m$x) || !is.numeric(m$y)) return(1L)
+  as.integer(max(1, min(12, ceiling(alvo / max(length(m$x) - 1, length(m$y) - 1, 1)))))
+}
+# Clareia (f > 1) ou escurece (f < 1) uma cor.
+.sombrear <- function(cor, f) {
+  m <- grDevices::col2rgb(cor); f <- rep_len(f, ncol(m)); esc <- f < 1
+  r <- m; r[, esc] <- t(t(m[, esc, drop = FALSE]) * f[esc])                                   # escurece
+  r[, !esc] <- 255 - t(t(255 - m[, !esc, drop = FALSE]) * pmax(2 - f[!esc], 0))             # clareia
+  grDevices::rgb(pmin(pmax(r[1, ], 0), 255), pmin(pmax(r[2, ], 0), 255), pmin(pmax(r[3, ], 0), 255), maxColorValue = 255)
 }
 
 # ---- eixos ---------------------------------------------------------------------------------------
@@ -8892,7 +9051,7 @@ if (requireNamespace("grid", quietly = TRUE)) {
   }
   # arestas do piso mais perto de quem olha
   y_fr <- if (cos(a) > 1e-9 || abs(cos(a)) <= 1e-9) 0 else 1
-  x_fr <- if (sin(a) > 1e-9) 0 else if (sin(a) < -1e-9) 1 else 0
+  x_fr <- if (abs(sin(a)) < 0.45) (if (sin(a) >= 0) 1 else 0) else if (sin(a) > 0) 0 else 1      # vista quase de frente: o eixo de profundidade vai para o lado de fora, longe dos números do X
   px <- function(t) P(t, y_fr, 0); py <- function(t) P(x_fr, t, 0)
   eixo_aresta(px, tx, E$x$rot, titulos$x); eixo_aresta(py, ty, E$y$rot, titulos$y)
   # eixo Z: a aresta vertical que fica mais à esquerda na tela
@@ -8941,7 +9100,7 @@ if (requireNamespace("grid", quietly = TRUE)) {
 # ---- superfície 3D ------------------------------------------------------------------------------------
 .construir_superficie_3d <- function(dados, cfg) {
   T <- cfg$tridimensional; H <- cfg$mapa_calor
-  m <- .limitar_grade(.refinar_grade(.grade_xyz(dados, cfg), T$suavizar %||% 1))
+  m0 <- .grade_xyz(dados, cfg); m <- .limitar_grade(.refinar_grade(m0, .n_suavizar(T$suavizar, m0, 70)))
   nx <- length(m$x); ny <- length(m$y)
   if (nx < 2 || ny < 2) .erro("A superfície precisa de pelo menos 2 valores em X e 2 em Y (a planilha tem ", nx, " x ", ny, ").")
   if (all(is.na(m$Z))) .erro("Não há valores numéricos de Z para desenhar.")
@@ -8960,8 +9119,20 @@ if (requireNamespace("grid", quietly = TRUE)) {
     dep <- (pr[[1]]$d + pr[[2]]$d + pr[[3]]$d + pr[[4]]$d) / 4; zm <- (cs[[1]]$v[ok] + cs[[2]]$v[ok] + cs[[3]]$v[ok] + cs[[4]]$v[ok]) / 4
     o <- order(dep, decreasing = TRUE)
     cx <- cbind(pr[[1]]$sx, pr[[2]]$sx, pr[[3]]$sx, pr[[4]]$sx)[o, , drop = FALSE]; cy <- cbind(pr[[1]]$sy, pr[[2]]$sy, pr[[3]]$sy, pr[[4]]$sy)[o, , drop = FALSE]
-    tab <- .tabela_faces(cx, cy, list(z = zm[o]))
-    cam <- list(geom_polygon(data = tab, aes(x = x, y = y, group = grp, fill = z), colour = if (is.na(H$contorno_cor)) NA else .cor(H$contorno_cor), linewidth = .lw(if ((T$suavizar %||% 1) > 1) min(H$contorno_espessura_pt, 0.12) else H$contorno_espessura_pt)), esc$escala)
+    # luz: vem do alto, à esquerda de quem olha; a inclinação de cada face (a partir dos cantos) clareia ou escurece a cor
+    ang <- T$azimute * pi / 180
+    zx <- ((cs[[2]]$z - cs[[1]]$z) + (cs[[3]]$z - cs[[4]]$z))[ok] / 2 / pmax(cs[[2]]$x[ok] - cs[[1]]$x[ok], 1e-9)
+    zy <- ((cs[[4]]$z - cs[[1]]$z) + (cs[[3]]$z - cs[[2]]$z))[ok] / 2 / pmax(cs[[4]]$y[ok] - cs[[1]]$y[ok], 1e-9)
+    nxv <- -zx * cos(ang) + zy * sin(ang); nyv <- -zx * sin(ang) - zy * cos(ang); nzv <- 1
+    nl <- sqrt(nxv^2 + nyv^2 + nzv^2); L <- c(-0.45, -0.55, 0.7); L <- L / sqrt(sum(L^2))
+    luz <- (nxv * L[1] + nyv * L[2] + nzv * L[3]) / nl
+    f <- if (isTRUE(T$sombreado %||% TRUE)) 0.62 + 0.62 * pmax(luz, 0) else rep(1, length(luz))
+    cor <- .sombrear(esc$cor_de(zm), f)[o]
+    tab <- .tabela_faces(cx, cy, list(cor = cor)); tab$cor <- I(tab$cor)
+    borda <- if (isTRUE(T$malha)) list(colour = if (is.na(H$contorno_cor)) NA else .cor(H$contorno_cor), linewidth = .lw(H$contorno_espessura_pt)) else NULL
+    cam <- list(.camada_barra3d(esc),
+                if (is.null(borda)) geom_polygon(data = tab, aes(x = x, y = y, group = grp, fill = I(cor), colour = I(cor)), linewidth = .lw(0.35))
+                else geom_polygon(data = tab, aes(x = x, y = y, group = grp, fill = I(cor)), colour = borda$colour, linewidth = borda$linewidth), esc$escala)
     list(camadas = cam, caixa = cbind(tab$x, tab$y))
   }
   r <- .montar3d(cfg, E, titulos, dados3d)
@@ -9044,26 +9215,171 @@ if (requireNamespace("grid", quietly = TRUE)) {
   m0 <- .grade_xyz(dados, cfg)
   if (!is.numeric(m0$x) || !is.numeric(m0$y)) .erro("O mapa de cor precisa de números nos dois eixos (a 1ª coluna e os cabeçalhos). Para nomes (genes, amostras...), use o mapa de calor.")
   if (length(m0$x) < 2 || length(m0$y) < 2) .erro("O mapa de cor precisa de pelo menos 2 valores em X e 2 em Y.")
-  m <- .limitar_grade(.refinar_grade(m0, T$suavizar %||% 1))
-  bordas <- function(v) { mid <- (v[-1] + v[-length(v)]) / 2; c(v[1] - (v[2] - v[1]) / 2, mid, v[length(v)] + (v[length(v)] - v[length(v) - 1]) / 2) }
+  ns <- .n_suavizar(T$suavizar, m0, 190)
+  m <- .limitar_grade(.refinar_grade(m0, ns))
+  # bordas das células: com a grade suavizada (células finas) a 1ª e a última acabam exatamente nos extremos dos dados, e a cor ocupa o painel todo, sem margem branca;
+  # com a tabela original (ns = 1), cada célula é uma célula inteira, e o eixo vai de uma borda à outra
+  bordas <- function(v) { mid <- (v[-1] + v[-length(v)]) / 2
+    if (ns > 1) c(v[1], mid, v[length(v)]) else c(v[1] - (v[2] - v[1]) / 2, mid, v[length(v)] + (v[length(v)] - v[length(v) - 1]) / 2) }
   bx <- bordas(m$x); by <- bordas(m$y); nx <- length(m$x); ny <- length(m$y)
   ex <- 0.01 * min(diff(bx)); ey <- 0.01 * min(diff(by))       # as células se sobrepõem um pouco: sem fios claros entre elas
   d <- data.frame(xmin = rep(bx[-(nx + 1)], each = ny) - ex, xmax = rep(bx[-1], each = ny) + ex, ymin = rep(by[-(ny + 1)], times = nx) - ey, ymax = rep(by[-1], times = nx) + ey, z = as.vector(m$Z),
                   x = rep(m$x, each = ny), y = rep(m$y, times = nx))
+  d$xmin[d$xmin < min(bx)] <- min(bx); d$xmax[d$xmax > max(bx)] <- max(bx); d$ymin[d$ymin < min(by)] <- min(by); d$ymax[d$ymax > max(by)] <- max(by)
   esc <- .escala_z(cfg, d$z, m$nome_z %||% .rot("Valor"))
-  cam <- list(geom_rect(data = d, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = z), colour = NA, na.rm = FALSE), esc$escala)
+  cam <- list(geom_rect(data = d, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = z, colour = z), linewidth = .lw(0.3), na.rm = FALSE), esc$escala, esc$escala_cor)
   nn <- T$niveis %||% 0
   if (nn > 0 && !anyNA(m$Z)) {
     lim <- esc$limites; qb <- pretty(lim, n = nn + 1); qb <- qb[qb > lim[1] & qb < lim[2]]
-    cam[[length(cam) + 1]] <- tryCatch(geom_contour(data = d, aes(x = x, y = y, z = z), breaks = qb, colour = .cor(T$cor_niveis), linewidth = .lw(0.4), inherit.aes = FALSE),
+    cam[[length(cam) + 1]] <- tryCatch(geom_contour(data = d, aes(x = x, y = y, z = z), breaks = qb, colour = .cor(T$cor_niveis), linewidth = .lw(T$niveis_espessura_pt %||% 0.4), inherit.aes = FALSE),
                                         error = function(e) { .aviso("Não consegui traçar as linhas de nível: ", conditionMessage(e)); NULL })
     cam <- Filter(Negate(is.null), cam)
   }
-  ax_x <- .calc_eixo(cfg$eixo_x, range(bx), forcar = cfg$.interno$forcar_x)
-  ax_y <- .calc_eixo(cfg$eixo_y, range(by), forcar = cfg$.interno$forcar_y)
+  lim_x <- if (is.null(cfg$eixo_x$inicio) && is.null(cfg$eixo_x$fim)) range(bx) else NULL       # o eixo acompanha a cor (sem margem), a não ser que você escolha início e fim
+  lim_y <- if (is.null(cfg$eixo_y$inicio) && is.null(cfg$eixo_y$fim)) range(by) else NULL
+  ax_x <- .calc_eixo(cfg$eixo_x, range(bx), forcar = cfg$.interno$forcar_x %||% lim_x)
+  ax_y <- .calc_eixo(cfg$eixo_y, range(by), forcar = cfg$.interno$forcar_y %||% lim_y)
   list(camadas = cam,
        info = list(ax_x = ax_x, ax_y = ax_y, flip = FALSE, titulo_x = cfg$eixo_x$titulo %||% m$nome_x, titulo_y = cfg$eixo_y$titulo %||% m$nome_y,
                    legenda_auto = TRUE, faixa_x = range(bx), faixa_y = range(by), titulo_barra = esc$titulo))
+}
+
+# ---- linhas 3D (cascata) -------------------------------------------------------------------------------
+# Planilha: a 1ª coluna é o X (número); cada outra coluna é uma linha (uma série) e o cabeçalho dela diz onde fica na profundidade (Y): um número (tempo, dose...)
+# ou um nome. Entra: dados e cfg. Sai: list(x, Z (linhas = X, colunas = séries), y (posição de cada série), ynomes, ycat, nome_x).
+.series_xyz <- function(dados, cfg) {
+  G <- cfg$grafico
+  xcol <- .coluna(dados, G$coluna_x %||% 1, "cfg$grafico$coluna_x")
+  if (!is.numeric(dados[[xcol]])) .erro("As linhas 3D precisam de números na coluna do eixo X ('", xcol, "'), por exemplo o comprimento de onda.")
+  ycols <- .colunas_y(dados, cfg, excluir = xcol)
+  if (length(ycols) < 2) .erro("As linhas 3D precisam de pelo menos 2 colunas de série: cada coluna é uma linha e o cabeçalho dela diz onde fica na profundidade (um número, como o tempo, ou um nome).")
+  hy <- .tri_num(ycols); ycat <- !all(is.finite(hy))
+  x <- dados[[xcol]]; o <- order(x); o <- o[is.finite(x[o])]
+  Z <- as.matrix(dados[ycols])[o, , drop = FALSE]; storage.mode(Z) <- "double"; x <- x[o]
+  if (!ycat) { oy <- order(hy); ycols <- ycols[oy]; hy <- hy[oy]; Z <- Z[, oy, drop = FALSE] }
+  list(x = x, Z = unname(Z), y = if (ycat) seq_along(ycols) else hy, ynomes = ycols, ycat = ycat, nome_x = xcol)
+}
+
+.construir_linhas_3d <- function(dados, cfg) {
+  T <- cfg$tridimensional; H <- cfg$mapa_calor
+  s <- .series_xyz(dados, cfg)
+  if (ncol(s$Z) > 80) { k <- unique(round(seq(1, ncol(s$Z), length.out = 80))); .aviso("A tabela tem ", ncol(s$Z), " séries; para o desenho não ficar pesado, usei 80 delas."); s$Z <- s$Z[, k, drop = FALSE]; s$y <- s$y[k]; s$ynomes <- s$ynomes[k] }
+  if (length(s$x) > 300) { k <- unique(round(seq(1, length(s$x), length.out = 300))); s$x <- s$x[k]; s$Z <- s$Z[k, , drop = FALSE] }
+  ns <- ncol(s$Z); if (all(is.na(s$Z))) .erro("Não há valores numéricos de Z para desenhar.")
+  E <- list(x = .eixo3d(cfg$eixo_x, s$x), y = .eixo3d(cfg$eixo_y, if (s$ycat) s$ynomes else s$y, s$ycat), z = .eixo3d(.eixo_z(cfg), c(0, s$Z)))
+  Xn <- .n3(E$x, s$x); Yn <- .n3(E$y, if (s$ycat) seq_len(ns) else s$y)
+  esc <- .escala_z(cfg, s$Z, .rot("Valor"))
+  titulos <- list(x = cfg$eixo_x$titulo %||% s$nome_x, y = cfg$eixo_y$titulo %||% "", z = T$z_titulo %||% .rot("Valor"))
+  modo <- T$linhas_preencher %||% "gradiente"; B <- max(1L, as.integer(T$linhas_faixas %||% 10))
+  dados3d <- function(P, Hh) {
+    base <- min(max(0, E$z$lo), E$z$hi); zb0 <- (base - E$z$lo) / (E$z$hi - E$z$lo) * Hh
+    zn <- .n3(E$z, s$Z) * Hh; zn[!is.finite(zn)] <- zb0; zn <- pmax(zn, zb0)
+    ordem <- order(P(0.5, Yn, 0)$d, decreasing = TRUE)                       # da série mais longe para a mais perto
+    niv <- seq(zb0, Hh, length.out = B + 1); niv_dado <- E$z$lo + niv / Hh * (E$z$hi - E$z$lo)
+    cam <- list(.camada_barra3d(esc)); pts <- matrix(numeric(0), 0, 2)
+    for (j in ordem) {
+      zc <- zn[, j]; tab <- NULL
+      if (identical(modo, "gradiente")) {
+        partes <- list(); g <- 0L
+        for (b in seq_len(B)) {
+          topo <- pmin(zc, niv[b + 1]); fundo <- pmin(zc, niv[b])
+          if (max(topo - fundo) <= 1e-9) next
+          p <- P(c(Xn, rev(Xn)), Yn[j], c(topo, rev(fundo))); g <- g + 1L
+          partes[[g]] <- data.frame(x = p$sx, y = p$sy, grp = g, cor = esc$cor_de((niv_dado[b] + niv_dado[b + 1]) / 2))
+        }
+        if (length(partes)) tab <- do.call(rbind, partes)
+      } else if (identical(modo, "branco")) {
+        p <- P(c(Xn, rev(Xn)), Yn[j], c(zc, rep(zb0, length(Xn)))); tab <- data.frame(x = p$sx, y = p$sy, grp = 1L, cor = "white")
+      }
+      if (!is.null(tab)) { tab$cor <- I(tab$cor); cam[[length(cam) + 1]] <- geom_polygon(data = tab, aes(x = x, y = y, group = grp, fill = I(cor), colour = I(cor)), linewidth = .lw(0.3)) }
+      pl <- P(Xn, Yn[j], zc); linha <- data.frame(x = pl$sx, y = pl$sy)
+      cam[[length(cam) + 1]] <- geom_path(data = linha, aes(x = x, y = y), colour = .cor(T$linhas_cor %||% "black"), linewidth = .lw(T$linhas_espessura_pt %||% 0.4), lineend = "round")
+      pts <- rbind(pts, cbind(pl$sx, pl$sy))
+    }
+    list(camadas = c(cam, list(esc$escala)), caixa = pts)
+  }
+  r <- .montar3d(cfg, E, titulos, dados3d)
+  list(camadas = r$camadas, info = list(mapa = TRUE, xlim = r$xlim, ylim = r$ylim, legenda_auto = TRUE, flip = FALSE, titulo_barra = esc$titulo))
+}
+
+# -----------------------------------------------------------------------------
+#  27_tipo_radar.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/27_tipo_radar.R — radar (teia de aranha)
+# =============================================================================
+#  Planilha: a 1ª coluna (cfg$grafico$coluna_x) traz o nome de cada série; as outras colunas numéricas (ou cfg$grafico$colunas_y) são os eixos do radar (3 ou mais).
+#  Cada linha vira um polígono. As cores e a legenda seguem a paleta e as opções de série, como nos outros gráficos. Opções em cfg$radar.
+# =============================================================================
+
+# Entra: dados e cfg. Sai: list(camadas, info) (info$mapa = TRUE: o gráfico é desenhado em coordenadas próprias, sem eixos comuns).
+.construir_radar <- function(dados, cfg) {
+  R <- cfg$radar; G <- cfg$grafico
+  xcol <- .coluna(dados, G$coluna_x %||% 1, "cfg$grafico$coluna_x")
+  eixos <- .colunas_y(dados, cfg, excluir = xcol)
+  if (length(eixos) < 3) .erro("O radar precisa de pelo menos 3 colunas numéricas: cada coluna é um eixo do radar e cada linha da planilha é uma série (o nome dela fica na 1ª coluna).")
+  nomes <- as.character(dados[[xcol]])
+  if (anyDuplicated(nomes)) { .aviso("Nomes repetidos em '", xcol, "': acrescentei números para diferenciar as séries."); nomes <- make.unique(nomes) }
+  V <- as.matrix(dados[eixos]); storage.mode(V) <- "double"; K <- length(eixos); ns <- nrow(V)
+  if (isTRUE(R$normalizar))
+    V <- apply(V, 2, function(v) { r <- range(v, na.rm = TRUE); if (!all(is.finite(r)) || diff(r) == 0) v * 0 + 0.5 else (v - r[1]) / diff(r) })
+  if (!is.matrix(V)) V <- matrix(V, ns)
+  if (all(is.na(V))) .erro("Não há valores numéricos para desenhar no radar.")
+  rmin <- R$anel_min %||% min(0, min(V, na.rm = TRUE)); rmax <- R$anel_max %||% max(V, na.rm = TRUE)
+  br <- pretty(c(rmin, rmax), n = R$aneis %||% 5)
+  if (is.null(R$anel_min)) rmin <- min(br); if (is.null(R$anel_max)) rmax <- max(br)
+  if (rmax <= rmin) .erro("O radar precisa de valores diferentes entre si (a escala vai de ", rmin, " a ", rmax, ").")
+  aneis <- br[br >= rmin - 1e-9 & br <= rmax + 1e-9]
+  fora <- sum(is.finite(V) & (V < rmin - 1e-9 | V > rmax + 1e-9))
+  if (fora) .aviso(fora, " valor(es) fora da escala do radar (", rmin, " a ", rmax, ") foram encostados na borda.")
+  if (anyNA(V)) .aviso("Células vazias no radar foram desenhadas no centro (valor mínimo da escala).")
+  rn <- function(v) { v[!is.finite(v)] <- rmin; pmin(pmax((v - rmin) / (rmax - rmin), 0), 1) }
+  dir <- if (identical(R$sentido, "antihorario")) -1 else 1
+  th <- ((R$angulo_inicial %||% 0) + dir * 360 * (seq_len(K) - 1) / K) * pi / 180
+  fonte <- .fonte(cfg$texto$fonte); pt_r <- R$rotulos_tamanho_pt %||% cfg$texto$tamanho_base_pt
+  cor_grade <- .cor(R$grade_cor %||% "#BDBDBD"); lw_grade <- .lw(R$grade_espessura_pt %||% 0.5)
+  cam <- list()
+  # grade: anéis (polígono ou círculo) e os eixos
+  rr <- (aneis - rmin) / (rmax - rmin); rr <- rr[rr > 1e-9]
+  if (length(rr)) {
+    circ <- identical(R$formato_grade, "circulo"); ang <- if (circ) seq(0, 2 * pi, length.out = 181) else c(th, th[1])
+    g <- do.call(rbind, lapply(seq_along(rr), function(i) data.frame(x = rr[i] * sin(ang), y = rr[i] * cos(ang), grp = i)))
+    cam[[length(cam) + 1]] <- geom_path(data = g, aes(x = x, y = y, group = grp), colour = cor_grade, linewidth = lw_grade)
+  }
+  cam[[length(cam) + 1]] <- geom_segment(data = data.frame(x = 0, y = 0, xend = sin(th), yend = cos(th)), aes(x = x, y = y, xend = xend, yend = yend), colour = cor_grade, linewidth = lw_grade)
+  # séries
+  est <- .estilos(cfg, nomes)
+  pol <- do.call(rbind, lapply(seq_len(ns), function(i) { r <- rn(V[i, ]); data.frame(x = c(r * sin(th), r[1] * sin(th[1])), y = c(r * cos(th), r[1] * cos(th[1])), serie = nomes[i]) }))
+  pol$serie <- factor(pol$serie, levels = nomes)
+  op <- R$preencher_opacidade %||% 0.25
+  cam[[length(cam) + 1]] <- geom_polygon(data = pol, aes(x = x, y = y, group = serie, fill = serie, colour = serie), alpha = op, linewidth = .lw(R$linha_espessura_pt %||% 1.2))
+  if (isTRUE(R$pontos %||% TRUE)) {
+    pp <- do.call(rbind, lapply(seq_len(ns), function(i) { r <- rn(V[i, ]); data.frame(x = r * sin(th), y = r * cos(th), serie = nomes[i]) })); pp$serie <- factor(pp$serie, levels = nomes)
+    cam[[length(cam) + 1]] <- geom_point(data = pp, aes(x = x, y = y, colour = serie), size = .tx(R$ponto_tamanho_pt %||% 4), show.legend = FALSE)
+  }
+  # nomes dos eixos e valores dos anéis; o tamanho do texto é fixo em pontos, então os limites do desenho se ajustam ao espaço que ele ocupa (duas passadas)
+  rot_r <- 1.09; sx <- sin(th); cy <- cos(th)
+  lab <- data.frame(x = rot_r * sx, y = rot_r * cy, rot = eixos, hj = ifelse(sx > 0.25, 0, ifelse(sx < -0.25, 1, 0.5)), vj = ifelse(cy > 0.25, 0, ifelse(cy < -0.25, 1, 0.5)))
+  cam[[length(cam) + 1]] <- geom_text(data = lab, aes(x = x, y = y, label = rot, hjust = hj, vjust = vj), size = .tx(pt_r), colour = .cor(cfg$texto$cor), family = fonte,
+                                      fontface = if (.neg(cfg)) "bold" else "plain", lineheight = 0.9)
+  if (isTRUE(R$rotulos_aneis %||% TRUE) && length(rr)) {
+    va <- data.frame(x = rr * sin(th[1]) + 0.025, y = rr * cos(th[1]), rot = .fmt_num(aneis[(aneis - rmin) / (rmax - rmin) > 1e-9], R$rotulos_casas))
+    cam[[length(cam) + 1]] <- geom_text(data = va, aes(x = x, y = y, label = rot), size = .tx(pt_r * 0.8), colour = .cor(cfg$texto$cor), family = fonte, hjust = 0, vjust = 0.5)
+  }
+  larg_in <- function(txt) max(nchar(strsplit(txt, "\n", fixed = TRUE)[[1]]), 1) * pt_r * 0.52 / 72
+  pw_in <- (cfg$caixa$painel_largura_cm %||% 12) / 2.54; wl <- vapply(eixos, larg_in, 0)
+  lim_x <- c(-1.2, 1.2)
+  for (k in 1:3) {
+    upi <- diff(lim_x) / pw_in
+    ex <- c(lab$x - ifelse(lab$hj == 1, wl * upi, ifelse(lab$hj == 0.5, wl * upi / 2, 0)), lab$x + ifelse(lab$hj == 0, wl * upi, ifelse(lab$hj == 0.5, wl * upi / 2, 0)))
+    lim_x <- range(c(ex, -1, 1)) + c(-0.03, 0.03) * upi * 2
+  }
+  upi <- diff(lim_x) / pw_in; alt <- pt_r / 72 * upi
+  lim_y <- range(c(lab$y + ifelse(lab$vj == 0, alt * 1.2, ifelse(lab$vj == 1, -alt * 1.2, 0)), -1, 1)) + c(-0.03, 0.03)
+  # a figura é quadrada em unidades: iguala os dois lados para o círculo não ficar achatado
+  cx <- mean(lim_x); cyy <- mean(lim_y); meia <- max(diff(lim_x), diff(lim_y)) / 2
+  list(camadas = c(cam, .escalas_legenda(est, c("colour", "fill"), cfg)),
+       info = list(mapa = TRUE, xlim = c(cx - meia, cx + meia), ylim = c(cyy - meia, cyy + meia), legenda_auto = ns > 1, flip = FALSE))
 }
 
 # -----------------------------------------------------------------------------
@@ -9093,7 +9409,8 @@ if (requireNamespace("grid", quietly = TRUE)) {
                tempo = "eixo_x", data = "eixo_x", datas = "eixo_x", ordenar_x = "linhas",
                pca = "multivariada", ca = "multivariada", cca = "multivariada", ordenacao = "multivariada", biplot = "multivariada",
                mapa_mundo = "mapa", mapa_brasil = "mapa", mundo = "mapa", brasil = "mapa", heatmap = "mapa_calor", calor = "mapa_calor",
-               mapa_cor = "tridimensional", superficie_3d = "tridimensional", barras_3d = "tridimensional", dispersao_3d = "tridimensional", "3d" = "tridimensional", z = "tridimensional")
+               mapa_cor = "tridimensional", superficie_3d = "tridimensional", barras_3d = "tridimensional", dispersao_3d = "tridimensional", linhas_3d = "tridimensional", "3d" = "tridimensional", z = "tridimensional",
+               teia = "radar")
 
 ajuda <- function(bloco = NULL) {
   L <- .config_linhas()
@@ -9131,6 +9448,8 @@ TIPOS DE GRÁFICO  (cfg$grafico$tipo)            colunas usadas / bloco de opç�
   "mapa_brasil"     mapa do Brasil (estados, regiões) coluna_x (sigla ou nome) + colunas_y[1] -> ajuda("mapa")
   "mapa_cor"        mapa de cor (X, Y, Z)        matriz (1ª coluna = Y, cabeçalhos = X, células = Z) ou longo (X, Y, Z) -> ajuda("tridimensional")
   "superficie_3d" | "barras_3d" | "dispersao_3d"  gráficos 3D, Z em cor e altura      mesma planilha -> ajuda("tridimensional")
+  "linhas_3d"       cascata: uma linha por coluna    coluna_x (número) + colunas de série (cabeçalho = profundidade) -> ajuda("tridimensional")
+  "radar"           radar (teia de aranha)           coluna_x (nome da série) + colunas numéricas (os eixos) -> ajuda("radar")
 
 RECURSOS QUE VALEM PARA TODOS (exceto pizza, mapas, mapa de calor e 3D, que não têm eixos comuns): eixo_x, eixo_y, eixo_y2, caixa, grade,
   legenda, titulos, texto, referencias, anotacoes, quebra, paineis, exportacao.
@@ -12223,7 +12542,7 @@ demonstracao <- function(tipo = c("linha", "barras", "pizza", "boxplot", "datas"
 
 # ---- 1. ARQUIVO E TIPO DE GRÁFICO -----------------------------------------------------------
 ARQUIVO_CSV <- ""        # caminho do CSV. EX.: "C:/pasta/dados.csv". Vazio = só carrega o template.
-tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barras" | "pizza" | "boxplot" | "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d"...
+tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barras" | "pizza" | "boxplot" | "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d" | "linhas_3d" | "radar"...
 coluna_x     <- NULL     # coluna do eixo X: número ou "nome". EX.: 1  |  "Years"
 colunas_y    <- NULL     # colunas Y. NULL = todas as outras numéricas. EX.: c(2, 3)  |  c("WORLD", "LATAM")
 coluna_grupo <- NULL     # coluna que separa as amostras em grupos (cores e elipses do PCA/CA/CCA; colunas do mapa de calor "longo"). EX.: "Local"
@@ -12341,6 +12660,33 @@ tri_cor_borda_pontos <- NULL # contorno dos pontos (NA = sem)
 tri_cor_paredes <- NULL   # cor do piso e das paredes
 tri_cor_grade <- NULL     # cor da grade das paredes
 tri_cor_caixa <- NULL     # cor das arestas da caixa
+tri_sombreado <- NULL   # TRUE/FALSE: superfície clareia e escurece conforme a inclinação
+tri_malha <- NULL   # TRUE = linhas da grade sobre a superfície
+tri_niveis_espessura_pt <- NULL   # grossura das linhas de nível (pt)
+tri_linhas_preencher <- NULL   # linhas 3D: "gradiente" | "branco" | "nenhum"
+tri_linhas_faixas <- NULL   # linhas 3D: faixas de cor de cada linha (1 a 40)
+tri_linhas_cor <- NULL   # linhas 3D: cor do traço
+tri_linhas_espessura_pt <- NULL   # linhas 3D: grossura do traço (pt)
+calor_niveis_cor <- NULL   # gradiente em N faixas de cor (NULL ou 0 = contínuo)
+calor_barra_intervalo <- NULL   # distância entre os números da barra de cores
+calor_barra_casas <- NULL   # casas decimais da barra de cores
+# Radar (tipo_grafico "radar"): a 1ª coluna traz o nome de cada série; as outras colunas numéricas são os eixos.
+radar_aneis <- NULL   # radar: quantidade de anéis da grade
+radar_min <- NULL   # radar: onde a escala começa
+radar_max <- NULL   # radar: onde a escala termina
+radar_normalizar <- NULL   # radar: TRUE = cada eixo de 0 a 1
+radar_formato_grade <- NULL   # radar: "poligono" | "circulo"
+radar_sentido <- NULL   # radar: "horario" | "antihorario"
+radar_angulo <- NULL   # radar: ângulo do 1º eixo (graus; 0 = em cima)
+radar_opacidade <- NULL   # radar: opacidade do preenchimento (0 a 1)
+radar_linha_espessura_pt <- NULL   # radar: grossura da linha (pt)
+radar_pontos <- NULL   # radar: TRUE = marca o valor em cada eixo
+radar_ponto_tamanho_pt <- NULL   # radar: tamanho das marcas (pt)
+radar_rotulos_aneis <- NULL   # radar: TRUE = escreve o valor de cada anel
+radar_rotulos_casas <- NULL   # radar: casas decimais dos anéis
+radar_rotulos_tamanho_pt <- NULL   # radar: tamanho dos nomes dos eixos (pt)
+radar_grade_cor <- NULL   # radar: cor da grade
+radar_legenda_posicao <- NULL   # radar: "direita" | "esquerda" | "topo" | "base" | "dentro"
 
 
 # ---- 2. INTERVALOS DOS EIXOS (início, fim, passo e grossura dos traços) -------------------------
