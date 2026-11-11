@@ -184,7 +184,8 @@ cfg$grafico <- list(
   # tipo: tipo de gráfico.
   #   OPÇÕES: "pontos" | "linha" | "linha_pontos" | "area" | "area_empilhada" |
   #           "barras" | "pizza" | "histograma" | "densidade" | "ecdf" | "boxplot" |
-  #           "mapa_calor" | "pca" | "ca" | "cca" | "mapa_mundo" | "mapa_brasil"
+  #           "mapa_calor" | "pca" | "ca" | "cca" | "mapa_mundo" | "mapa_brasil" |
+  #           "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d"
   #   EX.: cfg$grafico$tipo <- "boxplot"
   tipo = "linha_pontos",
 
@@ -941,6 +942,49 @@ cfg$mapa_calor <- list(
   # barra_altura_cm / barra_largura_cm: tamanho da barra de cores (cm).
   barra_altura_cm = 4,
   barra_largura_cm = 0.4
+)
+
+# -----------------------------------------------------------------------------
+# TRIDIMENSIONAL — mapa de cor (X, Y, Z), superfície 3D, barras 3D e dispersão 3D
+# -----------------------------------------------------------------------------
+#  Tipos: "mapa_cor" (plano, Z em cores, com linhas de nível se quiser) | "superficie_3d" | "barras_3d" | "dispersao_3d".
+#  Planilha, formato "matriz" (padrão, cfg$mapa_calor$formato): 1ª coluna = valores de Y; cabeçalhos das outras colunas = valores de X; células = Z.
+#  Formato "longo": uma linha por ponto, com X (cfg$grafico$coluna_x), Y (cfg$grafico$coluna_grupo; vazio = a 2ª coluna) e Z (a 1ª de colunas_y; vazio = a 3ª).
+#  A cor de Z, os limites e a barra de cores são os do mapa de calor (cfg$mapa_calor). Os títulos de X e Y: cfg$eixo_x$titulo e cfg$eixo_y$titulo.
+cfg$tridimensional <- list(
+  # azimute: giro da vista em volta do eixo vertical (graus). elevacao: altura do olhar (0 = de lado, 90 = de cima). altura_relativa: altura do eixo Z em relação à base.
+  azimute = 40,
+  elevacao = 28,
+  altura_relativa = 0.7,
+
+  # eixo Z (vertical): título (NULL = nome da coluna do valor), início, fim e intervalo dos números (NULL = automático).
+  z_titulo = NULL,
+  z_inicio = NULL,
+  z_fim = NULL,
+  z_intervalo = NULL,
+
+  # caixa: "paredes" (piso e paredes de trás com grade) | "base" (só o piso) | "aberta" (só os eixos)
+  caixa = "paredes",
+  cor_paredes = "#F4F4F4",
+  cor_grade = "#D9D9D9",
+  cor_caixa = "#8C8C8C",
+
+  # suavizar: divide cada célula da grade em N pedaços por interpolação (superfície e mapa de cor). 1 = sem suavizar.
+  suavizar = 1,
+
+  # niveis: quantidade aproximada de linhas de nível no mapa de cor (0 = sem linhas). cor_niveis: cor das linhas.
+  niveis = 0,
+  cor_niveis = "#333333",
+
+  # barras_largura: largura da barra em relação à célula (0 a 1). cor_borda_barras: contorno das faces (NA = sem).
+  barras_largura = 0.7,
+  cor_borda_barras = "white",
+
+  # dispersão: ponto_tamanho_pt, cor_borda_pontos (NA = sem), hastes (linha de cada ponto até o piso) e cor_hastes
+  ponto_tamanho_pt = 6,
+  cor_borda_pontos = "white",
+  hastes = FALSE,
+  cor_hastes = "#9A9A9A"
 )
 
 # -----------------------------------------------------------------------------
@@ -1963,17 +2007,19 @@ suppressPackageStartupMessages({
 }
 
 # Emite um aviso (warning) em português, sem mostrar a chamada interna.
-# Idioma das mensagens e dos textos que o motor escreve sozinho: SÓ PORTUGUÊS (o inglês e o espanhol estão arquivados em idiomas_arquivados/;
-# para reativar, peça). As mensagens ficam escritas em português e o resto da máquina de tradução (.traduzir_msg, .rot, .re) continua aqui, desligada.
-# Versão que lia o idioma (guardada para reativar):
-#   .idioma <- function() { i <- getOption("cinabro.idioma", "pt"); if (i %in% c("pt", "en", "es")) i else "pt" }
-.idioma <- function() "pt"
+# Idioma das mensagens e dos textos que o motor escreve sozinho: options(cinabro.idioma = "pt" | "en" | "es") (no painel: idioma <- "en").
+# As mensagens são escritas em português e traduzidas pelo dicionário de R/02_traducoes_motor.R (pedaços fixos; o que não tem tradução fica em português).
+.idioma <- function() { i <- getOption("cinabro.idioma", "pt"); if (i %in% c("pt", "en", "es")) i else "pt" }
+.cache_trad <- new.env()      # o padrão (regex) de cada idioma é montado uma vez só, não a cada mensagem
 .traduzir_msg <- function(msg) {
   i <- .idioma()
   if (i == "pt" || !exists(".TRAD_MOTOR", inherits = TRUE)) return(msg)
   d <- .TRAD_MOTOR[[i]]; if (is.null(d) || !length(d)) return(msg)
-  chaves <- names(d)[order(-nchar(names(d)))]                       # as mais longas primeiro; uma passada só (não retraduz o que já traduziu)
-  pad <- paste(gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", chaves), collapse = "|")
+  pad <- .cache_trad[[i]]
+  if (is.null(pad)) {
+    chaves <- names(d)[order(-nchar(names(d)))]                     # as mais longas primeiro; uma passada só (não retraduz o que já traduziu)
+    pad <- paste(gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", chaves), collapse = "|"); .cache_trad[[i]] <- pad
+  }
   m <- gregexpr(pad, msg, perl = TRUE)
   if (m[[1]][1] != -1) regmatches(msg, m) <- list(unname(d[regmatches(msg, m)[[1]]]))
   msg
@@ -1981,7 +2027,7 @@ suppressPackageStartupMessages({
 # Texto padrão que aparece dentro do gráfico (títulos de eixo automáticos), no idioma escolhido.
 .rot <- function(x) {
   i <- .idioma(); if (i == "pt" || !exists(".ROTULOS_IDIOMA", inherits = TRUE)) return(x)
-  r <- .ROTULOS_IDIOMA[[i]][x]; ifelse(is.na(r), x, r)
+  r <- .ROTULOS_IDIOMA[[i]][x]; unname(ifelse(is.na(r), x, r))
 }
 .aviso <- function(...) warning(.traduzir_msg(paste0(...)), call. = FALSE, immediate. = TRUE)
 .erro  <- function(...) stop(.traduzir_msg(paste0(...)), call. = FALSE)
@@ -2027,6 +2073,7 @@ suppressPackageStartupMessages({
   if (length(x) == 3 && is.numeric(x)) return(grDevices::rgb(x[1], x[2], x[3], maxColorValue = 255))
   if (length(x) == 1 && is.na(x)) return(NA_character_)
   if (identical(x, "transparente")) return("transparent")
+  if (is.character(x) && any(grepl("^#[0-9A-Fa-f]{3}$", x))) x <- ifelse(grepl("^#[0-9A-Fa-f]{3}$", x), vapply(x, function(h) paste0("#", paste(rep(strsplit(substr(h, 2, 4), "")[[1]], each = 2), collapse = "")), ""), x)   # #RGB -> #RRGGBB (o R antigo não entende)
   ok <- tryCatch({ grDevices::col2rgb(x); TRUE }, error = function(e) FALSE)
   if (!ok) .erro("Cor inválida em ", onde, ": '", x, "'. Use nome (\"red\"), \"#RRGGBB\" ou c(R,G,B).")
   x
@@ -2191,6 +2238,709 @@ suppressPackageStartupMessages({
   }
   base
 }
+
+# -----------------------------------------------------------------------------
+#  02_traducoes_motor.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/02_traducoes_motor.R — dicionário das mensagens do motor (en, es) e dos títulos automáticos do gráfico
+# =============================================================================
+#  As mensagens do motor são escritas em português; options(cinabro.idioma = "en") (ou idioma <- "en" no painel) troca cada pedaço fixo
+#  pelo texto daqui (veja .traduzir_msg em R/01_base.R). Pedaço sem tradução fica em português.
+#  Gerado a partir de tradução assistida; revise com calma antes de publicar.
+# =============================================================================
+.TRAD_MOTOR <- list(
+  en = c(
+    "Cor inválida em " = "Invalid color in ",
+    "'. Use nome (\"red\"), \"#RRGGBB\" ou c(R,G,B)." = "'. Use a name (\"red\"), \"#RRGGBB\", or c(R,G,B).",
+    "Paleta '" = "Palette '",
+    "' precisa do pacote viridisLite." = "' needs the viridisLite package.",
+    "Paleta ColorBrewer '" = "ColorBrewer palette '",
+    "' não existe. Opções: " = "' does not exist. Options: ",
+    "' desconhecida. Opções: " = "' is unknown. Options: ",
+    ", personalizada. Veja mostrar_paletas()." = ", custom. See mostrar_paletas().",
+    "' inválida." = "' is invalid.",
+    "Não consegui decodificar '" = "Could not decode '",
+    "' como " = "' as ",
+    ". Salve como CSV UTF-8 ou defina cfg$dados$codificacao." = ". Save as UTF-8 CSV or set cfg$dados$codificacao.",
+    "Não consegui ler '" = "Could not read '",
+    "' com separador '" = "' with separator '",
+    "\n  Tente definir cfg$dados$separador manualmente." = "\n  Try setting cfg$dados$separador manually.",
+    "Arquivo não encontrado: '" = "File not found: '",
+    "'.\n  Pasta atual: " = "'.\n  Current folder: ",
+    "\n  Dica: use o caminho completo do arquivo (ex.: 'C:/pasta/dados.csv') ou confira a pasta de trabalho com getwd()." = "\n  Tip: open the project through the graficos_R.Rproj file or use the full path.",
+    "O arquivo '" = "The file '",
+    "' está vazio." = "' is empty.",
+    "Nenhuma linha com dados em '" = "No rows with data in '",
+    "Leitura de '" = "Reading '",
+    ": coluna número " = ": column number ",
+    " não existe (o arquivo tem " = " does not exist (the file has ",
+    " colunas)." = " columns).",
+    ": coluna '" = ": column '",
+    "' não encontrada." = "' not found.",
+    "\n  Colunas disponíveis: " = "\n  Available columns: ",
+    "' não é válido." = "' is not valid.",
+    "\n  OPÇÕES: " = "\n  OPTIONS: ",
+    "Bloco cfg$" = "Block cfg$",
+    " não existe e será ignorado." = " does not exist and will be ignored.",
+    "Parâmetro cfg$" = "Parameter cfg$",
+    "$tempo deve ser \"auto\", TRUE ou FALSE." = "$tempo must be \"auto\", TRUE, or FALSE.",
+    "$inicio e $fim devem ser números (use ponto decimal: 2.5)." = "$inicio and $fim must be numbers (use a decimal point: 2.5).",
+    ") deve ser menor que cfg$" = ") must be less than cfg$",
+    "). Para inverter o eixo use cfg$" = "). To reverse the axis use cfg$",
+    "$ticks_modo = \"incremento\" exige cfg$" = "$ticks_modo = \"incremento\" requires cfg$",
+    "$incremento (ex.: 10)." = "$incremento (e.g.: 10).",
+    "$incremento deve ser um número > 0 (ou, em eixo de datas, um passo como \"1 mes\")." = "$incremento must be a number > 0 (or, on a date axis, a step like \"1 mes\").",
+    "$ticks_modo = \"quantidade\" exige cfg$" = "$ticks_modo = \"quantidade\" requires cfg$",
+    "$quantidade (ex.: 5)." = "$quantidade (e.g.: 5).",
+    "$ticks_modo = \"manual\" exige cfg$" = "$ticks_modo = \"manual\" requires cfg$",
+    "$ticks_manuais (ex.: c(0, 5, 10))." = "$ticks_manuais (e.g.: c(0, 5, 10)).",
+    "$rotulos_manuais tem " = "$rotulos_manuais has ",
+    " textos mas ticks_manuais tem " = " texts but ticks_manuais has ",
+    " posições." = " positions.",
+    "cfg$legenda$dentro_x e dentro_y devem estar entre 0 e 1." = "cfg$legenda$dentro_x and dentro_y must be between 0 and 1.",
+    " deve ser um número entre 0 e 1." = " must be a number between 0 and 1.",
+    " deve ser um número maior que 0 (cm)." = " must be a number greater than 0 (cm).",
+    "cfg$legenda$escala deve ser um número maior que 0 (ex.: 0.8)." = "cfg$legenda$escala must be a number greater than 0 (e.g.: 0.8).",
+    " deve ser um número maior que 0 (pt)." = " must be a number greater than 0 (pt).",
+    "cfg$legenda$espaco_chave_texto_pt deve ser um número >= 0 (pt)." = "cfg$legenda$espaco_chave_texto_pt must be a number >= 0 (pt).",
+    "cfg$legenda$distancia_pt deve ser um número >= 0 ou c(horizontal, vertical), em pt." = "cfg$legenda$distancia_pt must be a number >= 0 or c(horizontal, vertical), in pt.",
+    "\" não serve para a legenda em \"" = "\" does not work for a legend at \"",
+    "\". OPÇÕES: " = "\". OPTIONS: ",
+    "cfg$legenda$sombra_deslocamento_pt deve ser um número ou c(direita, baixo), em pt." = "cfg$legenda$sombra_deslocamento_pt must be a number or c(right, down), in pt.",
+    "cfg$pizza$raio_furo deve estar entre 0 e 0.9." = "cfg$pizza$raio_furo must be between 0 and 0.9.",
+    "cfg$legenda$mostrar deve ser \"auto\", TRUE ou FALSE." = "cfg$legenda$mostrar must be \"auto\", TRUE, or FALSE.",
+    "\"]] não corresponde a nenhuma série/categoria deste gráfico. " = "\"]] does not match any series/category in this plot. ",
+    "Disponíveis: " = "Available: ",
+    " não existe." = " does not exist.",
+    ": não entendi a data '" = ": could not parse the date '",
+    "'. Use \"2024-03-15\", \"15/03/2024\" ou \"15/03/2024 14:30\"." = "'. Use \"2024-03-15\", \"15/03/2024\", or \"15/03/2024 14:30\".",
+    "O eixo tem só datas (sem hora): use passos de dia, semana, mês ou ano em vez de '" = "The axis has dates only (no time): use steps of day, week, month, or year instead of '",
+    "O passo '" = "The step '",
+    "' geraria mais de 2000 ticks no eixo. Use um passo maior." = "' would generate more than 2000 ticks on the axis. Use a larger step.",
+    "' não é um passo de tempo válido. " = "' is not a valid time step. ",
+    "Exemplos: \"1 day\", \"2 semanas\", \"1 mes\", \"6 horas\", \"30 min\"." = "Examples: \"1 day\", \"2 semanas\", \"1 mes\", \"6 horas\", \"30 min\".",
+    "Escala logarítmica precisa de valores > 0." = "Log scale needs values > 0.",
+    "Eixo de datas/horas exige escala linear (cfg$eixo_x$escala = \"linear\")." = "A date/time axis requires a linear scale (cfg$eixo_x$escala = \"linear\").",
+    "Escala " = "Scale ",
+    " valor(es) <= 0 não podem ser desenhados e serão omitidos." = " value(s) <= 0 cannot be drawn and will be omitted.",
+    "Escala recíproca: valores iguais a 0 (1/0 = infinito) serão omitidos." = "Reciprocal scale: values equal to 0 (1/0 = infinity) will be omitted.",
+    "cfg$eixo_x$inicio deve ser anterior a cfg$eixo_x$fim." = "cfg$eixo_x$inicio must be before cfg$eixo_x$fim.",
+    "Escala logarítmica: o início do eixo deve ser > 0 (atual: " = "Log scale: the axis start must be > 0 (current: ",
+    "Escala recíproca não pode incluir o zero (" = "Reciprocal scale cannot include zero (",
+    "Escala raiz: o início do eixo deve ser >= 0." = "Square-root scale: the axis start must be >= 0.",
+    "incremento muito pequeno: geraria " = "increment too small: it would generate ",
+    "O intervalo " = "The interval ",
+    " gera " = " generates ",
+    " traços entre " = " ticks between ",
+    " (os números ficariam um sobre o outro); usando " = " (the numbers would overlap); using ",
+    " neste eixo. " = " on this axis. ",
+    "Com quebra de eixo, defina o intervalo de cada parte (quebra_y_intervalo_* / quebra_y2_intervalo_*)." = "With an axis break, set the interval for each part (quebra_y_intervalo_* / quebra_y2_intervalo_*).",
+    "Fonte '" = "Font '",
+    "' não encontrada" = "' not found",
+    "; usando 'sans'. Veja listar_fontes()." = "; using 'sans'. See listar_fontes().",
+    "Coluna de erro '" = "Error column '",
+    "' não é numérica." = "' is not numeric.",
+    "Nenhuma coluna Y numérica encontrada. Defina cfg$grafico$colunas_y." = "No numeric Y column found. Set cfg$grafico$colunas_y.",
+    "A coluna '" = "Column '",
+    "' não é numérica (veja o relatório de leitura). " = "' is not numeric (see the reading report). ",
+    "Se o arquivo usa vírgula decimal, defina cfg$dados$decimal_virgula <- TRUE." = "If the file uses a decimal comma, set cfg$dados$decimal_virgula <- TRUE.",
+    "Eixo " = "Axis ",
+    " em escala " = " on scale ",
+    " ponto(s) com valor " = " point(s) with value ",
+    " não existe(m) nessa escala e foi(ram) omitido(s) do gráfico." = " cannot exist on that scale and were omitted from the plot.",
+    "cfg$eixo_x$tempo = TRUE, mas a coluna X não é reconhecida como data. " = "cfg$eixo_x$tempo = TRUE, but the X column is not recognized as a date. ",
+    "Defina cfg$eixo_x$formato_data (ex.: \"%d/%m/%Y %H:%M\")." = "Set cfg$eixo_x$formato_data (e.g.: \"%d/%m/%Y %H:%M\").",
+    "cfg$cores$mapear_coluna: a coluna '" = "cfg$cores$mapear_coluna: the column '",
+    "' precisa ser numérica." = "' must be numeric.",
+    "eixo_y2 ativo no modo \"independente\", mas nenhuma série tem eixo = \"y2\".\n" = "eixo_y2 is active in \"independente\" mode, but no series has eixo = \"y2\".\n",
+    "  Ex.: cfg$series[[\"" = "  E.g.: cfg$series[[\"",
+    "area_empilhada não combina com eixo_y2." = "area_empilhada does not combine with eixo_y2.",
+    "eixo_y2 \"independente\" exige eixo_y linear." = "eixo_y2 \"independente\" requires a linear eixo_y.",
+    "cfg$grafico$ordem_itens: não existe(m) a(s) categoria(s) " = "cfg$grafico$ordem_itens: these categories do not exist: ",
+    ". A ordem foi ignorada. Categorias: " = ". The order was ignored. Categories: ",
+    "Pizza: valores negativos em '" = "Pie: negative values in '",
+    "' foram ignorados." = "' were ignored.",
+    "cfg$pizza$explodir: não existe(m) a(s) categoria(s) " = "cfg$pizza$explodir: these categories do not exist: ",
+    ". Categorias: " = ". Categories: ",
+    "Distribuição: a(s) série(s) " = "Distribution: series ",
+    " tem(têm) menos de 2 valores." = " have fewer than 2 values.",
+    ") é maior que o menor dado (" = ") is greater than the smallest data value (",
+    "Boxplot: série(s) sem dados: " = "Boxplot: series with no data: ",
+    "Violino: o grupo '" = "Violin: the group '",
+    "' tem " = "' has ",
+    " valor; são precisos pelo menos 2 para " = " value; at least 2 are needed to ",
+    "estimar a densidade. O violino desse grupo não foi desenhado." = "estimate the density. The violin for that group was not drawn.",
+    "cfg$referencias: cada linha precisa de 'valor'." = "cfg$referencias: each row needs a 'valor'.",
+    "eixo_y2 \"transformado\" não é suportado em barras/caixas horizontais." = "eixo_y2 \"transformado\" is not supported in horizontal bars/boxplots.",
+    "eixo_y2 \"transformado\" exige eixo_y linear." = "eixo_y2 \"transformado\" requires a linear eixo_y.",
+    "cfg$eixo_y2$fator não pode ser 0." = "cfg$eixo_y2$fator cannot be 0.",
+    "eixo_y2 \"transformado\": os limites seguem o eixo_y (" = "eixo_y2 \"transformado\": the limits follow eixo_y (",
+    "); inicio/fim do y2 ignorados." = "); the y2 inicio/fim are ignored.",
+    "plotar(dados, cfg): 'dados' deve ser o resultado de ler_csv()." = "plotar(dados, cfg): 'dados' must be the result of ler_csv().",
+    "cfg$paineis$ativo = TRUE, mas cfg$paineis$lista está vazia. Veja o exemplo na PARTE 1 deste script." = "cfg$paineis$ativo = TRUE, but cfg$paineis$lista is empty. See the example in 01_config.R.",
+    "Painel " = "Panel ",
+    ": ajustes em " = ": settings in ",
+    " são ignorados — o " = " are ignored — the ",
+    " é comum a todos os painéis." = " is shared by all panels.",
+    "Pizza não pode ser usada em painéis com eixo comum." = "Pie cannot be used in panels with a shared axis.",
+    "\"]] não corresponde a nenhuma coluna/categoria dos dados." = "\"]] does not match any column/category in the data.",
+    "cfg$paineis$tamanhos deve ter " = "cfg$paineis$tamanhos must have ",
+    " valores (um por painel)." = " values (one per panel).",
+    "Preciso de pelo menos 2 valores Y diferentes para procurar um vazio." = "At least 2 different Y values are needed to look for a gap.",
+    "cfg$quebra: defina de < ate (ex.: de = 20, ate = 80)." = "cfg$quebra: set de < ate (e.g.: de = 20, ate = 80).",
+    "Quebra de eixo não se aplica a pizza." = "Axis break does not apply to pie plots.",
+    "cfg$quebra: o trecho omitido (" = "cfg$quebra: the omitted range (",
+    ") precisa estar dentro do eixo Y (" = ") must be within the Y axis (",
+    "cfg$quebra: o trecho omitido do eixo Y da direita (" = "cfg$quebra: the omitted range of the right Y axis (",
+    ") não cabe no eixo direito (" = ") does not fit on the right axis (",
+    "; y2_de e y2_ate são valores DESTE eixo, não do esquerdo). Usei a mesma posição do trecho do eixo esquerdo." = "; y2_de and y2_ate are values of THIS axis, not of the left one). The same position as the left axis range was used.",
+    "cfg$quebra: não consegui derivar o trecho omitido do eixo Y da direita (eixo de " = "cfg$quebra: could not derive the omitted range of the right Y axis (axis from ",
+    "). Defina y2_de < y2_ate dentro desse eixo (ex.: y2_de = 2000, y2_ate = 6000)." = "). Set y2_de < y2_ate within that axis (e.g.: y2_de = 2000, y2_ate = 6000).",
+    "cfg$quebra$y2_de/y2_ate ignorados: não há eixo Y da direita com séries próprias (eixo_y2)." = "cfg$quebra$y2_de/y2_ate ignored: there is no right Y axis with its own series (eixo_y2).",
+    "A quebra de eixo precisa do pacote gtable (vem com o ggplot2)." = "The axis break needs the gtable package (it comes with ggplot2).",
+    "Quebra de eixo: as duas partes ficaram com colunas diferentes. " = "Axis break: the two parts ended up with different columns. ",
+    "Tente cfg$legenda$posicao <- \"dentro\"." = "Try cfg$legenda$posicao <- \"dentro\".",
+    "Formato emf precisa do pacote devEMF (rode 00_instalar_pacotes.R)." = "The emf format needs the devEMF package (run 00_instalar_pacotes.R).",
+    "Formato '" = "Format '",
+    "' desconhecido. OPÇÕES: png, tiff, jpeg, pdf, svg, emf" = "' is unknown. OPTIONS: png, tiff, jpeg, pdf, svg, emf",
+    "O gráfico (caixa de tamanho fixo + números, títulos e legenda) tem " = "The plot (fixed-size plot box + numbers, titles, and legend) measures ",
+    " cm e não cabe na página de " = " cm and does not fit on the page of ",
+    " cm: parte será cortada. Aumente a página ou use exportacao$ajustar_pagina <- TRUE." = " cm: part of it will be cut off. Enlarge the page or use exportacao$ajustar_pagina <- TRUE.",
+    "O formato '" = "The format '",
+    "' não suporta gradiente; usando cor sólida neste arquivo " = "' does not support gradients; using a solid color in this file ",
+    "(o gráfico é refeito a partir do cfg: ajustes feitos depois com + theme() ou " = "(the plot is rebuilt from the cfg: adjustments made afterward with + theme() or ",
+    "+ camadas não entram nele)." = "+ layers are not included in it).",
+    "Nenhum CSV em '" = "No CSV in '",
+    " usa as fontes instaladas no Windows e a '" = " uses the fonts installed on Windows, and '",
+    "' só está carregada pelo template: " = "' is only loaded by the template: ",
+    "o texto sairá em outra fonte. Instale-a (abra os arquivos .ttf de fontes/Barlow e clique em Instalar) " = "the text will come out in another font. Install it (open the .ttf files in fontes/Barlow and click Install) ",
+    "ou exporte em PNG, TIFF ou SVG, que usam a Barlow direto." = "or export to PNG, TIFF, or SVG, which use Barlow directly.",
+    "Estilo '" = "Style '",
+    "' não encontrado. Disponíveis: " = "' not found. Available: ",
+    "registrar_fonte() precisa do pacote systemfonts (vem com ragg)." = "registrar_fonte() needs the systemfonts package (it comes with ragg).",
+    "registrar_fonte(nome): informe o nome da fonte, ex.: \"Barlow\"." = "registrar_fonte(nome): provide the font name, e.g.: \"Barlow\".",
+    "registrar_fonte: a pasta '" = "registrar_fonte: the folder '",
+    "' não existe. " = "' does not exist. ",
+    "Use o caminho da pasta com os .ttf, ex.: \"C:/Users/voce/Downloads/Barlow\"." = "Use the path of the folder with the .ttf files, e.g.: \"C:/Users/voce/Downloads/Barlow\".",
+    "registrar_fonte: não achei o arquivo \"" = "registrar_fonte: could not find the file \"",
+    "-Regular.ttf\" em '" = "-Regular.ttf\" in '",
+    "  Arquivos .ttf/.otf encontrados lá: " = "  .ttf/.otf files found there: ",
+    "\n  Use os arquivos estáticos (Barlow-Regular.ttf...), não o arquivo de fonte variável (com colchetes no nome)." = "\n  Use the static files (Barlow-Regular.ttf...), not the variable font file (with brackets in the name).",
+    "fonte_pasta precisa de 'fonte' (o nome), ex.: fonte <- \"Barlow\"." = "fonte_pasta needs 'fonte' (the name), e.g.: fonte <- \"Barlow\".",
+    "' não é válido. OPÇÕES: " = "' is not valid. OPTIONS: ",
+    "O painel tem " = "The panel has ",
+    " preenchido(s), mas o eixo direito (Y2) não está ativo — " = " filled in, but the right axis (Y2) is not active — ",
+    "ajuste ignorado. Preencha y2_series (ex.: y2_series <- \"Temperatura\") para ligar o Y2." = "the setting is ignored. Fill in y2_series (e.g.: y2_series <- \"Temperatura\") to turn on Y2.",
+    "cores_por_serie precisa de nomes: c(\"WORLD\" = \"#000000\", \"BRAZIL\" = \"#1F4E9E\")." = "cores_por_serie needs names: c(\"WORLD\" = \"#000000\", \"BRAZIL\" = \"#1F4E9E\").",
+    "legenda_nomes precisa de nomes: c(\"WORLD\" = \"Mundo\", \"BRAZIL\" = \"Brasil\")." = "legenda_nomes needs names: c(\"WORLD\" = \"Mundo\", \"BRAZIL\" = \"Brasil\").",
+    "idioma precisa ser \"pt\", \"en\" ou \"es\"." = "idioma must be \"pt\", \"en\", or \"es\".",
+    "' não é um símbolo válido. OPÇÕES: um número de 0 a 25 ou " = "' is not a valid marker. OPTIONS: a number from 0 to 25 or ",
+    "A largura pedida para a legenda (" = "The requested legend width (",
+    " pt) é maior que a caixa do gráfico." = " pt) is greater than the plot box.",
+    ": este eixo é de categorias; use dentro_x / dentro_y (de 0 a 1)." = ": this axis is categorical; use dentro_x / dentro_y (from 0 to 1).",
+    " não existe neste eixo." = " does not exist on this axis.",
+    " fica fora do eixo (" = " is outside the axis (",
+    "); a legenda foi colocada na borda." = "); the legend was placed at the edge.",
+    "Legenda reduzida para " = "Legend reduced to ",
+    "% para caber dentro da caixa " = "% to fit inside the box ",
+    "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam)." = "(cfg$legenda$ajustar_caixa <- FALSE turns this off; legenda$escala, or fewer series/columns, also help).",
+    " Você quis dizer '" = " Did you mean '",
+    " Você quis dizer cfg$" = " Did you mean cfg$",
+    " a " = " to ",
+    " e " = " and ",
+    " (pasta fontes/Barlow ausente)" = " (fontes/Barlow folder missing)",
+    " no sistema" = " on this system",
+    "igual a 0" = "equal to 0",
+    " precisa de números com o nome da série: c(\"WORLD\" = 1, \"BRAZIL\" = 3)." = " needs numbers named after the series: c(\"WORLD\" = 1, \"BRAZIL\" = 3).",
+    "O formato " = "The format ",
+    "cfg$ajustes: o tipo \"formula\" precisa de 'formula' (ex.: \"a*exp(-b*x) + c\")." = "cfg$ajustes: type \"formula\" requires 'formula' (e.g.: \"a*exp(-b*x) + c\").",
+    "cfg$ajustes: não entendi a fórmula '" = "cfg$ajustes: could not understand the formula '",
+    "'. Escreva como em a*exp(-b*x) + c (use x para o eixo X)." = "'. Write it as in a*exp(-b*x) + c (use x for the X axis).",
+    "cfg$ajustes: a fórmula deve ser uma expressão só." = "cfg$ajustes: the formula must be a single expression.",
+    "cfg$ajustes: nome '" = "cfg$ajustes: name '",
+    "' não pode ser parâmetro na fórmula." = "' cannot be a parameter in the formula.",
+    "cfg$ajustes: a fórmula usa '" = "cfg$ajustes: the formula uses '",
+    "', que não é permitido. Use + - * / ^ e exp, log, log10, log2, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, abs." = "', which is not allowed. Use + - * / ^ and exp, log, log10, log2, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, abs.",
+    "cfg$ajustes: a fórmula precisa usar x (o eixo X)." = "cfg$ajustes: the formula must use x (the X axis).",
+    "cfg$ajustes: a fórmula precisa de pelo menos um parâmetro a ajustar (a, b, c...)." = "cfg$ajustes: the formula needs at least one parameter to fit (a, b, c...).",
+    "cfg$ajustes: a fórmula tem parâmetros demais (máximo 8)." = "cfg$ajustes: the formula has too many parameters (maximum 8).",
+    "cfg$ajustes: tipo '" = "cfg$ajustes: type '",
+    "' não é válido.\n  OPÇÕES: " = "' is not valid.\n  OPTIONS: ",
+    "cfg$ajustes: grau deve ser um inteiro de 1 a 8." = "cfg$ajustes: degree must be an integer from 1 to 8.",
+    "]]: a série '" = "]]: series '",
+    "' não existe no gráfico." = "' does not exist in the chart.",
+    "Ajuste " = "Fit ",
+    " da série '" = " of series '",
+    "' não existe.\n  OPÇÕES: " = "' does not exist.\n  OPTIONS: ",
+    "cfg$marcas_estatisticas: faixa '" = "cfg$marcas_estatisticas: band '",
+    "' não é válida.\n  OPÇÕES: \"dp\" | \"ep\" | \"ic95\" | \"minmax\" | \"nenhuma\"" = "' is not valid.\n  OPTIONS: \"dp\" | \"ep\" | \"ic95\" | \"minmax\" | \"nenhuma\"",
+    "cfg$marcas_estatisticas: centro '" = "cfg$marcas_estatisticas: center '",
+    "' não é válido.\n  OPÇÕES: \"media\" | \"mediana\" | \"nenhum\"" = "' is not valid.\n  OPTIONS: \"media\" | \"mediana\" | \"nenhum\"",
+    "cfg$formas: tipo '" = "cfg$formas: type '",
+    "cfg$formas: unidade deve ser \"fracao\" ou \"dados\"." = "cfg$formas: unit must be \"fracao\" or \"dados\".",
+    "cfg$formas: o polígono precisa de pelo menos 3 vértices (ex.: vertices = \"0.2,0.2; 0.4,0.2; 0.3,0.5\")." = "cfg$formas: the polygon needs at least 3 vertices (e.g.: vertices = \"0.2,0.2; 0.4,0.2; 0.3,0.5\").",
+    "cfg$formas: ancora '" = "cfg$formas: anchor '",
+    "' não é válida.\n  OPÇÕES: " = "' is not valid.\n  OPTIONS: ",
+    "cfg$formas: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\")." = "cfg$formas: in data units, provide width and height (or use unidade = \"fracao\").",
+    "poucos pontos (" = "too few points (",
+    "exige X > 0" = "requires X > 0",
+    "faltam os valores de: " = "missing values for: ",
+    " (campo 'parametros')" = " ('parametros' field)",
+    "informe 'pontos' (X,Y) ou 'formula' com 'parametros'" = "give 'pontos' (X,Y) or 'formula' with 'parametros'",
+    "o suavizado (loess) não convergiu" = "the smoothed fit (loess) did not converge",
+    "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "the fit did not converge (provide initial values in 'inicio')",
+    "cfg$imagens: cada figura precisa de 'arquivo' (caminho de um PNG ou JPEG)." = "cfg$imagens: each picture needs 'arquivo' (the path of a PNG or JPEG).",
+    "cfg$imagens: não achei a figura '" = "cfg$imagens: could not find the picture '",
+    "cfg$imagens: formato '." = "cfg$imagens: format '.",
+    "' não é aceito; use PNG ou JPEG." = "' is not accepted; use PNG or JPEG.",
+    "Para usar figuras é preciso o pacote " = "To use pictures you need the package ",
+    ": rode install.packages(\"" = ": run install.packages(\"",
+    "\") (ou 00_instalar_pacotes.R)." = "\") (or 00_instalar_pacotes.R).",
+    "cfg$imagens: não consegui ler '" = "cfg$imagens: could not read '",
+    "' (arquivo corrompido?)." = "' (corrupted file?).",
+    "cfg$imagens: unidade deve ser \"fracao\" ou \"dados\"." = "cfg$imagens: unidade must be \"fracao\" or \"dados\".",
+    "cfg$imagens: ancora '" = "cfg$imagens: ancora '",
+    "cfg$imagens: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\")." = "cfg$imagens: in data units, give largura and altura (or use unidade = \"fracao\")."
+  ),
+  es = c(
+    "Cor inválida em " = "Color no válido en ",
+    "'. Use nome (\"red\"), \"#RRGGBB\" ou c(R,G,B)." = "'. Usa un nombre (\"red\"), \"#RRGGBB\" o c(R,G,B).",
+    "' precisa do pacote viridisLite." = "' necesita el paquete viridisLite.",
+    "' não existe. Opções: " = "' no existe. Opciones: ",
+    "' desconhecida. Opções: " = "' desconocida. Opciones: ",
+    ", personalizada. Veja mostrar_paletas()." = ", personalizada. Consulta mostrar_paletas().",
+    "' inválida." = "' no es válida.",
+    "Não consegui decodificar '" = "No pude decodificar '",
+    ". Salve como CSV UTF-8 ou defina cfg$dados$codificacao." = ". Guárdalo como CSV UTF-8 o define cfg$dados$codificacao.",
+    "Não consegui ler '" = "No pude leer '",
+    "' com separador '" = "' con separador '",
+    "\n  Tente definir cfg$dados$separador manualmente." = "\n  Intenta definir cfg$dados$separador manualmente.",
+    "Arquivo não encontrado: '" = "Archivo no encontrado: '",
+    "'.\n  Pasta atual: " = "'.\n  Carpeta actual: ",
+    "\n  Dica: use o caminho completo do arquivo (ex.: 'C:/pasta/dados.csv') ou confira a pasta de trabalho com getwd()." = "\n  Consejo: abre el proyecto desde el archivo graficos_R.Rproj o usa la ruta completa.",
+    "O arquivo '" = "El archivo '",
+    "' está vazio." = "' está vacío.",
+    "Nenhuma linha com dados em '" = "No hay ninguna fila con datos en '",
+    "Leitura de '" = "Lectura de '",
+    ": coluna número " = ": columna número ",
+    " não existe (o arquivo tem " = " no existe (el archivo tiene ",
+    " colunas)." = " columnas).",
+    ": coluna '" = ": columna '",
+    "' não encontrada." = "' no encontrada.",
+    "\n  Colunas disponíveis: " = "\n  Columnas disponibles: ",
+    "' não é válido." = "' no es válido.",
+    "\n  OPÇÕES: " = "\n  OPCIONES: ",
+    "Bloco cfg$" = "Bloque cfg$",
+    " não existe e será ignorado." = " no existe y se ignorará.",
+    "Parâmetro cfg$" = "Parámetro cfg$",
+    "$tempo deve ser \"auto\", TRUE ou FALSE." = "$tempo debe ser \"auto\", TRUE o FALSE.",
+    "$inicio e $fim devem ser números (use ponto decimal: 2.5)." = "$inicio y $fim deben ser números (usa punto decimal: 2.5).",
+    ") deve ser menor que cfg$" = ") debe ser menor que cfg$",
+    "). Para inverter o eixo use cfg$" = "). Para invertir el eje usa cfg$",
+    "$incremento (ex.: 10)." = "$incremento (ej.: 10).",
+    "$incremento deve ser um número > 0 (ou, em eixo de datas, um passo como \"1 mes\")." = "$incremento debe ser un número > 0 (o, en un eje de fechas, un paso como \"1 mes\").",
+    "$quantidade (ex.: 5)." = "$quantidade (ej.: 5).",
+    "$ticks_manuais (ex.: c(0, 5, 10))." = "$ticks_manuais (ej.: c(0, 5, 10)).",
+    "$rotulos_manuais tem " = "$rotulos_manuais tiene ",
+    " textos mas ticks_manuais tem " = " textos pero ticks_manuais tiene ",
+    " posições." = " posiciones.",
+    "cfg$legenda$dentro_x e dentro_y devem estar entre 0 e 1." = "cfg$legenda$dentro_x y dentro_y deben estar entre 0 y 1.",
+    " deve ser um número entre 0 e 1." = " debe ser un número entre 0 y 1.",
+    " deve ser um número maior que 0 (cm)." = " debe ser un número mayor que 0 (cm).",
+    "cfg$legenda$escala deve ser um número maior que 0 (ex.: 0.8)." = "cfg$legenda$escala debe ser un número mayor que 0 (ej.: 0.8).",
+    " deve ser um número maior que 0 (pt)." = " debe ser un número mayor que 0 (pt).",
+    "cfg$legenda$espaco_chave_texto_pt deve ser um número >= 0 (pt)." = "cfg$legenda$espaco_chave_texto_pt debe ser un número >= 0 (pt).",
+    "cfg$legenda$distancia_pt deve ser um número >= 0 ou c(horizontal, vertical), em pt." = "cfg$legenda$distancia_pt debe ser un número >= 0 o c(horizontal, vertical), en pt.",
+    "\" não serve para a legenda em \"" = "\" no sirve para la leyenda en \"",
+    "\". OPÇÕES: " = "\". OPCIONES: ",
+    "cfg$legenda$sombra_deslocamento_pt deve ser um número ou c(direita, baixo), em pt." = "cfg$legenda$sombra_deslocamento_pt debe ser un número o c(derecha, abajo), en pt.",
+    "cfg$pizza$raio_furo deve estar entre 0 e 0.9." = "cfg$pizza$raio_furo debe estar entre 0 y 0.9.",
+    "cfg$legenda$mostrar deve ser \"auto\", TRUE ou FALSE." = "cfg$legenda$mostrar debe ser \"auto\", TRUE o FALSE.",
+    "\"]] não corresponde a nenhuma série/categoria deste gráfico. " = "\"]] no corresponde a ninguna serie/categoría de este gráfico. ",
+    "Disponíveis: " = "Disponibles: ",
+    " não existe." = " no existe.",
+    ": não entendi a data '" = ": no entendí la fecha '",
+    "'. Use \"2024-03-15\", \"15/03/2024\" ou \"15/03/2024 14:30\"." = "'. Usa \"2024-03-15\", \"15/03/2024\" o \"15/03/2024 14:30\".",
+    "O eixo tem só datas (sem hora): use passos de dia, semana, mês ou ano em vez de '" = "El eje tiene solo fechas (sin hora): usa pasos de día, semana, mes o año en vez de '",
+    "O passo '" = "El paso '",
+    "' geraria mais de 2000 ticks no eixo. Use um passo maior." = "' generaría más de 2000 marcas en el eje. Usa un paso mayor.",
+    "' não é um passo de tempo válido. " = "' no es un paso de tiempo válido. ",
+    "Exemplos: \"1 day\", \"2 semanas\", \"1 mes\", \"6 horas\", \"30 min\"." = "Ejemplos: \"1 day\", \"2 semanas\", \"1 mes\", \"6 horas\", \"30 min\".",
+    "Escala logarítmica precisa de valores > 0." = "La escala logarítmica necesita valores > 0.",
+    "Eixo de datas/horas exige escala linear (cfg$eixo_x$escala = \"linear\")." = "El eje de fechas/horas exige escala lineal (cfg$eixo_x$escala = \"linear\").",
+    " valor(es) <= 0 não podem ser desenhados e serão omitidos." = " valor(es) <= 0 no se pueden dibujar y se omitirán.",
+    "Escala recíproca: valores iguais a 0 (1/0 = infinito) serão omitidos." = "Escala recíproca: los valores iguales a 0 (1/0 = infinito) se omitirán.",
+    "cfg$eixo_x$inicio deve ser anterior a cfg$eixo_x$fim." = "cfg$eixo_x$inicio debe ser anterior a cfg$eixo_x$fim.",
+    "Escala logarítmica: o início do eixo deve ser > 0 (atual: " = "Escala logarítmica: el inicio del eje debe ser > 0 (actual: ",
+    "Escala recíproca não pode incluir o zero (" = "La escala recíproca no puede incluir el cero (",
+    "Escala raiz: o início do eixo deve ser >= 0." = "Escala raíz: el inicio del eje debe ser >= 0.",
+    "incremento muito pequeno: geraria " = "incremento muy pequeño: generaría ",
+    " ticks." = " marcas.",
+    "O intervalo " = "El intervalo ",
+    " gera " = " genera ",
+    " traços entre " = " marcas entre ",
+    " (os números ficariam um sobre o outro); usando " = " (los números quedarían uno sobre otro); usando ",
+    " neste eixo. " = " en este eje. ",
+    "Com quebra de eixo, defina o intervalo de cada parte (quebra_y_intervalo_* / quebra_y2_intervalo_*)." = "Con interrupción del eje, define el intervalo de cada parte (quebra_y_intervalo_* / quebra_y2_intervalo_*).",
+    "Fonte '" = "Fuente '",
+    "' não encontrada" = "' no encontrada",
+    "; usando 'sans'. Veja listar_fontes()." = "; usando 'sans'. Consulta listar_fontes().",
+    "Coluna de erro '" = "Columna de error '",
+    "' não é numérica." = "' no es numérica.",
+    "Nenhuma coluna Y numérica encontrada. Defina cfg$grafico$colunas_y." = "No se encontró ninguna columna Y numérica. Define cfg$grafico$colunas_y.",
+    "A coluna '" = "La columna '",
+    "' não é numérica (veja o relatório de leitura). " = "' no es numérica (consulta el informe de lectura). ",
+    "Se o arquivo usa vírgula decimal, defina cfg$dados$decimal_virgula <- TRUE." = "Si el archivo usa coma decimal, define cfg$dados$decimal_virgula <- TRUE.",
+    "Eixo " = "Eje ",
+    " em escala " = " en escala ",
+    " ponto(s) com valor " = " punto(s) con valor ",
+    " não existe(m) nessa escala e foi(ram) omitido(s) do gráfico." = " no existe(n) en esa escala y fue(ron) omitido(s) del gráfico.",
+    "cfg$eixo_x$tempo = TRUE, mas a coluna X não é reconhecida como data. " = "cfg$eixo_x$tempo = TRUE, pero la columna X no se reconoce como fecha. ",
+    "Defina cfg$eixo_x$formato_data (ex.: \"%d/%m/%Y %H:%M\")." = "Define cfg$eixo_x$formato_data (ej.: \"%d/%m/%Y %H:%M\").",
+    "cfg$cores$mapear_coluna: a coluna '" = "cfg$cores$mapear_coluna: la columna '",
+    "' precisa ser numérica." = "' debe ser numérica.",
+    "eixo_y2 ativo no modo \"independente\", mas nenhuma série tem eixo = \"y2\".\n" = "eixo_y2 activo en el modo \"independente\", pero ninguna serie tiene eixo = \"y2\".\n",
+    "  Ex.: cfg$series[[\"" = "  Ej.: cfg$series[[\"",
+    "area_empilhada não combina com eixo_y2." = "area_empilhada no se combina con eixo_y2.",
+    "eixo_y2 \"independente\" exige eixo_y linear." = "eixo_y2 \"independente\" exige eixo_y lineal.",
+    "cfg$grafico$ordem_itens: não existe(m) a(s) categoria(s) " = "cfg$grafico$ordem_itens: no existe(n) la(s) categoría(s) ",
+    ". A ordem foi ignorada. Categorias: " = ". Se ignoró el orden. Categorías: ",
+    "Pizza: valores negativos em '" = "Pastel: los valores negativos en '",
+    "' foram ignorados." = "' se ignoraron.",
+    "cfg$pizza$explodir: não existe(m) a(s) categoria(s) " = "cfg$pizza$explodir: no existe(n) la(s) categoría(s) ",
+    ". Categorias: " = ". Categorías: ",
+    "Distribuição: a(s) série(s) " = "Distribución: la(s) serie(s) ",
+    " tem(têm) menos de 2 valores." = " tiene(n) menos de 2 valores.",
+    ") é maior que o menor dado (" = ") es mayor que el menor dato (",
+    "Boxplot: série(s) sem dados: " = "Boxplot: serie(s) sin datos: ",
+    "Violino: o grupo '" = "Violín: el grupo '",
+    "' tem " = "' tiene ",
+    " valor; são precisos pelo menos 2 para " = " valor; se necesitan al menos 2 para ",
+    "estimar a densidade. O violino desse grupo não foi desenhado." = "estimar la densidad. El violín de ese grupo no se dibujó.",
+    "cfg$referencias: cada linha precisa de 'valor'." = "cfg$referencias: cada fila necesita 'valor'.",
+    "eixo_y2 \"transformado\" não é suportado em barras/caixas horizontais." = "eixo_y2 \"transformado\" no es compatible con barras/cajas horizontales.",
+    "eixo_y2 \"transformado\" exige eixo_y linear." = "eixo_y2 \"transformado\" exige eixo_y lineal.",
+    "cfg$eixo_y2$fator não pode ser 0." = "cfg$eixo_y2$fator no puede ser 0.",
+    "eixo_y2 \"transformado\": os limites seguem o eixo_y (" = "eixo_y2 \"transformado\": los límites siguen a eixo_y (",
+    "); inicio/fim do y2 ignorados." = "); inicio/fim del y2 ignorados.",
+    "plotar(dados, cfg): 'dados' deve ser o resultado de ler_csv()." = "plotar(dados, cfg): 'dados' debe ser el resultado de ler_csv().",
+    "cfg$paineis$ativo = TRUE, mas cfg$paineis$lista está vazia. Veja o exemplo na PARTE 1 deste script." = "cfg$paineis$ativo = TRUE, pero cfg$paineis$lista está vacía. Consulta el ejemplo en 01_config.R.",
+    "Painel " = "Panel ",
+    ": ajustes em " = ": los ajustes en ",
+    " são ignorados — o " = " se ignoran — el ",
+    " é comum a todos os painéis." = " es común a todos los paneles.",
+    "Pizza não pode ser usada em painéis com eixo comum." = "El gráfico de pastel no puede usarse en paneles con eje común.",
+    "\"]] não corresponde a nenhuma coluna/categoria dos dados." = "\"]] no corresponde a ninguna columna/categoría de los datos.",
+    "cfg$paineis$tamanhos deve ter " = "cfg$paineis$tamanhos debe tener ",
+    " valores (um por painel)." = " valores (uno por panel).",
+    "Preciso de pelo menos 2 valores Y diferentes para procurar um vazio." = "Necesito al menos 2 valores Y diferentes para buscar un vacío.",
+    "cfg$quebra: defina de < ate (ex.: de = 20, ate = 80)." = "cfg$quebra: define de < ate (ej.: de = 20, ate = 80).",
+    "Quebra de eixo não se aplica a pizza." = "La interrupción del eje no se aplica al gráfico de pastel.",
+    "cfg$quebra: o trecho omitido (" = "cfg$quebra: el tramo omitido (",
+    ") precisa estar dentro do eixo Y (" = ") debe estar dentro del eje Y (",
+    "cfg$quebra: o trecho omitido do eixo Y da direita (" = "cfg$quebra: el tramo omitido del eje Y derecho (",
+    ") não cabe no eixo direito (" = ") no cabe en el eje derecho (",
+    "; y2_de e y2_ate são valores DESTE eixo, não do esquerdo). Usei a mesma posição do trecho do eixo esquerdo." = "; y2_de y y2_ate son valores de ESTE eje, no del izquierdo). Usé la misma posición del tramo del eje izquierdo.",
+    "cfg$quebra: não consegui derivar o trecho omitido do eixo Y da direita (eixo de " = "cfg$quebra: no pude derivar el tramo omitido del eje Y derecho (eje de ",
+    "). Defina y2_de < y2_ate dentro desse eixo (ex.: y2_de = 2000, y2_ate = 6000)." = "). Define y2_de < y2_ate dentro de ese eje (ej.: y2_de = 2000, y2_ate = 6000).",
+    "cfg$quebra$y2_de/y2_ate ignorados: não há eixo Y da direita com séries próprias (eixo_y2)." = "cfg$quebra$y2_de/y2_ate se ignoraron: no hay eje Y derecho con series propias (eixo_y2).",
+    "A quebra de eixo precisa do pacote gtable (vem com o ggplot2)." = "La interrupción del eje necesita el paquete gtable (viene con ggplot2).",
+    "Quebra de eixo: as duas partes ficaram com colunas diferentes. " = "Interrupción del eje: las dos partes quedaron con columnas diferentes. ",
+    "Tente cfg$legenda$posicao <- \"dentro\"." = "Prueba cfg$legenda$posicao <- \"dentro\".",
+    "Formato emf precisa do pacote devEMF (rode 00_instalar_pacotes.R)." = "El formato emf necesita el paquete devEMF (ejecuta 00_instalar_pacotes.R).",
+    "' desconhecido. OPÇÕES: png, tiff, jpeg, pdf, svg, emf" = "' desconocido. OPCIONES: png, tiff, jpeg, pdf, svg, emf",
+    "O gráfico (caixa de tamanho fixo + números, títulos e legenda) tem " = "El gráfico (área de tamaño fijo + números, títulos y leyenda) mide ",
+    " cm e não cabe na página de " = " cm y no cabe en la página de ",
+    " cm: parte será cortada. Aumente a página ou use exportacao$ajustar_pagina <- TRUE." = " cm: una parte se cortará. Aumenta la página o usa exportacao$ajustar_pagina <- TRUE.",
+    "O formato '" = "El formato '",
+    "' não suporta gradiente; usando cor sólida neste arquivo " = "' no admite degradado; se usa color sólido en este archivo ",
+    "(o gráfico é refeito a partir do cfg: ajustes feitos depois com + theme() ou " = "(el gráfico se rehace a partir de cfg: los ajustes hechos después con + theme() o ",
+    "+ camadas não entram nele)." = "+ capas no entran en él).",
+    "Nenhum CSV em '" = "No hay ningún CSV en '",
+    " usa as fontes instaladas no Windows e a '" = " usa las fuentes instaladas en Windows y '",
+    "' só está carregada pelo template: " = "' solo está cargada por la plantilla: ",
+    "o texto sairá em outra fonte. Instale-a (abra os arquivos .ttf de fontes/Barlow e clique em Instalar) " = "el texto saldrá en otra fuente. Instálala (abre los archivos .ttf de fontes/Barlow y haz clic en Instalar) ",
+    "ou exporte em PNG, TIFF ou SVG, que usam a Barlow direto." = "o exporta en PNG, TIFF o SVG, que usan Barlow directamente.",
+    "' não encontrado. Disponíveis: " = "' no encontrado. Disponibles: ",
+    "registrar_fonte() precisa do pacote systemfonts (vem com ragg)." = "registrar_fonte() necesita el paquete systemfonts (viene con ragg).",
+    "registrar_fonte(nome): informe o nome da fonte, ex.: \"Barlow\"." = "registrar_fonte(nome): indica el nombre de la fuente, ej.: \"Barlow\".",
+    "registrar_fonte: a pasta '" = "registrar_fonte: la carpeta '",
+    "' não existe. " = "' no existe. ",
+    "Use o caminho da pasta com os .ttf, ex.: \"C:/Users/voce/Downloads/Barlow\"." = "Usa la ruta de la carpeta con los .ttf, ej.: \"C:/Users/voce/Downloads/Barlow\".",
+    "registrar_fonte: não achei o arquivo \"" = "registrar_fonte: no encontré el archivo \"",
+    "-Regular.ttf\" em '" = "-Regular.ttf\" en '",
+    "  Arquivos .ttf/.otf encontrados lá: " = "  Archivos .ttf/.otf encontrados allí: ",
+    "\n  Use os arquivos estáticos (Barlow-Regular.ttf...), não o arquivo de fonte variável (com colchetes no nome)." = "\n  Usa los archivos estáticos (Barlow-Regular.ttf...), no el archivo de fuente variable (con corchetes en el nombre).",
+    "fonte_pasta precisa de 'fonte' (o nome), ex.: fonte <- \"Barlow\"." = "fonte_pasta necesita 'fonte' (el nombre), ej.: fonte <- \"Barlow\".",
+    "' não é válido. OPÇÕES: " = "' no es válido. OPCIONES: ",
+    "O painel tem " = "El panel tiene ",
+    " preenchido(s), mas o eixo direito (Y2) não está ativo — " = " rellenado(s), pero el eje derecho (Y2) no está activo — ",
+    "ajuste ignorado. Preencha y2_series (ex.: y2_series <- \"Temperatura\") para ligar o Y2." = "ajuste ignorado. Completa y2_series (ej.: y2_series <- \"Temperatura\") para activar el Y2.",
+    "cores_por_serie precisa de nomes: c(\"WORLD\" = \"#000000\", \"BRAZIL\" = \"#1F4E9E\")." = "cores_por_serie necesita nombres: c(\"WORLD\" = \"#000000\", \"BRAZIL\" = \"#1F4E9E\").",
+    "legenda_nomes precisa de nomes: c(\"WORLD\" = \"Mundo\", \"BRAZIL\" = \"Brasil\")." = "legenda_nomes necesita nombres: c(\"WORLD\" = \"Mundo\", \"BRAZIL\" = \"Brasil\").",
+    "idioma precisa ser \"pt\", \"en\" ou \"es\"." = "idioma debe ser \"pt\", \"en\" o \"es\".",
+    "' não é um símbolo válido. OPÇÕES: um número de 0 a 25 ou " = "' no es un marcador válido. OPCIONES: un número de 0 a 25 o ",
+    "A largura pedida para a legenda (" = "El ancho pedido para la leyenda (",
+    " pt) é maior que a caixa do gráfico." = " pt) es mayor que el área del gráfico.",
+    ": este eixo é de categorias; use dentro_x / dentro_y (de 0 a 1)." = ": este eje es de categorías; usa dentro_x / dentro_y (de 0 a 1).",
+    " não existe neste eixo." = " no existe en este eje.",
+    " fica fora do eixo (" = " queda fuera del eje (",
+    "); a legenda foi colocada na borda." = "); la leyenda se colocó en el borde.",
+    "Legenda reduzida para " = "Leyenda reducida a ",
+    "% para caber dentro da caixa " = "% para que quepa dentro del área ",
+    "(cfg$legenda$ajustar_caixa <- FALSE desliga; legenda$escala, ou menos séries/colunas, também ajudam)." = "(cfg$legenda$ajustar_caixa <- FALSE lo desactiva; legenda$escala, o menos series/columnas, también ayudan).",
+    " Você quis dizer '" = " ¿Quisiste decir '",
+    " Você quis dizer cfg$" = " ¿Quisiste decir cfg$",
+    " e " = " y ",
+    " (pasta fontes/Barlow ausente)" = " (falta la carpeta fontes/Barlow)",
+    " no sistema" = " en el sistema",
+    " precisa de números com o nome da série: c(\"WORLD\" = 1, \"BRAZIL\" = 3)." = " necesita números con el nombre de la serie: c(\"WORLD\" = 1, \"BRAZIL\" = 3).",
+    "O formato " = "El formato ",
+    "cfg$ajustes: o tipo \"formula\" precisa de 'formula' (ex.: \"a*exp(-b*x) + c\")." = "cfg$ajustes: el tipo \"formula\" requiere 'formula' (ej.: \"a*exp(-b*x) + c\").",
+    "cfg$ajustes: não entendi a fórmula '" = "cfg$ajustes: no entendí la fórmula '",
+    "'. Escreva como em a*exp(-b*x) + c (use x para o eixo X)." = "'. Escríbela como en a*exp(-b*x) + c (usa x para el eje X).",
+    "cfg$ajustes: a fórmula deve ser uma expressão só." = "cfg$ajustes: la fórmula debe ser una sola expresión.",
+    "cfg$ajustes: nome '" = "cfg$ajustes: el nombre '",
+    "' não pode ser parâmetro na fórmula." = "' no puede ser parámetro en la fórmula.",
+    "cfg$ajustes: a fórmula usa '" = "cfg$ajustes: la fórmula usa '",
+    "', que não é permitido. Use + - * / ^ e exp, log, log10, log2, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, abs." = "', que no está permitido. Usa + - * / ^ y exp, log, log10, log2, sqrt, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, abs.",
+    "cfg$ajustes: a fórmula precisa usar x (o eixo X)." = "cfg$ajustes: la fórmula debe usar x (el eje X).",
+    "cfg$ajustes: a fórmula precisa de pelo menos um parâmetro a ajustar (a, b, c...)." = "cfg$ajustes: la fórmula necesita al menos un parámetro por ajustar (a, b, c...).",
+    "cfg$ajustes: a fórmula tem parâmetros demais (máximo 8)." = "cfg$ajustes: la fórmula tiene demasiados parámetros (máximo 8).",
+    "cfg$ajustes: tipo '" = "cfg$ajustes: el tipo '",
+    "' não é válido.\n  OPÇÕES: " = "' no es válido.\n  OPCIONES: ",
+    "cfg$ajustes: grau deve ser um inteiro de 1 a 8." = "cfg$ajustes: el grado debe ser un entero de 1 a 8.",
+    "]]: a série '" = "]]: la serie '",
+    "' não existe no gráfico." = "' no existe en el gráfico.",
+    " da série '" = " de la serie '",
+    "cfg$caixas_estatisticas: item '" = "cfg$caixas_estatisticas: el elemento '",
+    "' não existe.\n  OPÇÕES: " = "' no existe.\n  OPCIONES: ",
+    "cfg$marcas_estatisticas: faixa '" = "cfg$marcas_estatisticas: la banda '",
+    "' não é válida.\n  OPÇÕES: \"dp\" | \"ep\" | \"ic95\" | \"minmax\" | \"nenhuma\"" = "' no es válida.\n  OPCIONES: \"dp\" | \"ep\" | \"ic95\" | \"minmax\" | \"nenhuma\"",
+    "cfg$marcas_estatisticas: centro '" = "cfg$marcas_estatisticas: el centro '",
+    "' não é válido.\n  OPÇÕES: \"media\" | \"mediana\" | \"nenhum\"" = "' no es válido.\n  OPCIONES: \"media\" | \"mediana\" | \"nenhum\"",
+    "cfg$formas: tipo '" = "cfg$formas: el tipo '",
+    "cfg$formas: unidade deve ser \"fracao\" ou \"dados\"." = "cfg$formas: la unidad debe ser \"fracao\" o \"dados\".",
+    "cfg$formas: o polígono precisa de pelo menos 3 vértices (ex.: vertices = \"0.2,0.2; 0.4,0.2; 0.3,0.5\")." = "cfg$formas: el polígono necesita al menos 3 vértices (ej.: vertices = \"0.2,0.2; 0.4,0.2; 0.3,0.5\").",
+    "cfg$formas: ancora '" = "cfg$formas: el ancla '",
+    "' não é válida.\n  OPÇÕES: " = "' no es válida.\n  OPCIONES: ",
+    "cfg$formas: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\")." = "cfg$formas: en unidades de los datos, indica el ancho y el alto (o usa unidade = \"fracao\").",
+    "poucos pontos (" = "pocos puntos (",
+    "exige X > 0" = "requiere X > 0",
+    "faltam os valores de: " = "faltan los valores de: ",
+    " (campo 'parametros')" = " (campo 'parametros')",
+    "informe 'pontos' (X,Y) ou 'formula' com 'parametros'" = "indica 'pontos' (X,Y) o 'formula' con 'parametros'",
+    "o suavizado (loess) não convergiu" = "el suavizado (loess) no convergió",
+    "o ajuste não convergiu (dê valores iniciais em 'inicio')" = "el ajuste no convergió (indica valores iniciales en 'inicio')",
+    "cfg$imagens: cada figura precisa de 'arquivo' (caminho de um PNG ou JPEG)." = "cfg$imagens: cada imagen necesita 'arquivo' (la ruta de un PNG o JPEG).",
+    "cfg$imagens: não achei a figura '" = "cfg$imagens: no encontré la imagen '",
+    "cfg$imagens: formato '." = "cfg$imagens: el formato '.",
+    "' não é aceito; use PNG ou JPEG." = "' no se acepta; usa PNG o JPEG.",
+    "Para usar figuras é preciso o pacote " = "Para usar imágenes se necesita el paquete ",
+    ": rode install.packages(\"" = ": ejecuta install.packages(\"",
+    "\") (ou 00_instalar_pacotes.R)." = "\") (o 00_instalar_pacotes.R).",
+    "cfg$imagens: não consegui ler '" = "cfg$imagens: no pude leer '",
+    "' (arquivo corrompido?)." = "' (¿archivo dañado?).",
+    "cfg$imagens: unidade deve ser \"fracao\" ou \"dados\"." = "cfg$imagens: unidade debe ser \"fracao\" o \"dados\".",
+    "cfg$imagens: ancora '" = "cfg$imagens: ancora '",
+    "cfg$imagens: em unidades dos dados, informe largura e altura (ou use unidade = \"fracao\")." = "cfg$imagens: en unidades de los datos, indica largura y altura (o usa unidade = \"fracao\")."
+  )
+)
+.ROTULOS_IDIOMA <- list(
+  en = c("Percentual (%)" = "Percentage (%)", "Valor" = "Value", "Contagem" = "Count", "Frequência relativa" = "Relative frequency", "Frequência (%)" = "Frequency (%)", "Densidade" = "Density", "Probabilidade acumulada" = "Cumulative probability"),
+  es = c("Percentual (%)" = "Porcentaje (%)", "Valor" = "Valor", "Contagem" = "Conteo", "Frequência relativa" = "Frecuencia relativa", "Frequência (%)" = "Frecuencia (%)", "Densidade" = "Densidad", "Probabilidade acumulada" = "Probabilidad acumulada")
+)
+
+# ---- mensagens acrescentadas depois (PCA/CA/CCA, mapas, mapa de cor e 3D) ----
+.TRAD_MOTOR$en <- c(.TRAD_MOTOR$en, c(
+    " deve ser um número inteiro >= 1 (1 = primeiro eixo da ordenação)." = " must be an integer >= 1 (1 = first ordination axis).",
+    "cfg$multivariada$elipse_nivel deve estar entre 0 e 1 (ex.: 0.95)." = "cfg$multivariada$elipse_nivel must be between 0 and 1 (e.g. 0.95).",
+    "cfg$multivariada$permutacoes deve ser um número entre 9 e 99999 (ex.: 999)." = "cfg$multivariada$permutacoes must be a number between 9 and 99999 (e.g. 999).",
+    "' não existe. OPÇÕES: \"variancia\" | \"acumulada\" | \"n\" | \"inercia\" | \"teste\" | \"teste_termos\" | \"teste_eixos\" | \"envfit\"" = "' does not exist. OPTIONS: \"variancia\" | \"acumulada\" | \"n\" | \"inercia\" | \"teste\" | \"teste_termos\" | \"teste_eixos\" | \"envfit\"",
+    "cfg$multivariada$max_variaveis deve ser NULL ou um número >= 1." = "cfg$multivariada$max_variaveis must be NULL or a number >= 1.",
+    "cfg$mapa_calor$cores_escala deve ter 2 ou mais cores (ex.: c(\"white\", \"red\"))." = "cfg$mapa_calor$cores_escala must have 2 or more colors (e.g. c(\"white\", \"red\")).",
+    ") deve ser menor que limite_max (" = ") must be smaller than limite_max (",
+    "cfg$tridimensional$azimute deve ser um número em graus (ex.: 40)." = "cfg$tridimensional$azimute must be a number in degrees (e.g. 40).",
+    "cfg$tridimensional$elevacao deve estar entre 0 e 90 graus (ex.: 28)." = "cfg$tridimensional$elevacao must be between 0 and 90 degrees (e.g. 28).",
+    "cfg$tridimensional$altura_relativa deve estar entre 0.1 e 3 (ex.: 0.7)." = "cfg$tridimensional$altura_relativa must be between 0.1 and 3 (e.g. 0.7).",
+    ") deve ser menor que z_fim (" = ") must be smaller than z_fim (",
+    "cfg$tridimensional$barras_largura deve estar entre 0 e 1 (ex.: 0.7)." = "cfg$tridimensional$barras_largura must be between 0 and 1 (e.g. 0.7).",
+    "cfg$tridimensional$suavizar deve ser um número de 1 a 12 (1 = sem suavizar)." = "cfg$tridimensional$suavizar must be a number from 1 to 12 (1 = no smoothing).",
+    "Este eixo é de categorias (barras, caixas, mapa de calor): início e fim do eixo não se aplicam e foram ignorados. " = "This is a category axis (bars, boxes, heat map): axis start and end do not apply and were ignored. ",
+    "Para mostrar só algumas categorias, escolha as colunas (ou cfg$grafico$ordem_itens)." = "To show only some categories, choose the columns (or cfg$grafico$ordem_itens).",
+    "Quebra de eixo não se aplica a este tipo de gráfico (" = "Axis break does not apply to this plot type (",
+    "Para usar a fonte embutida é preciso o pacote jsonlite (vem com o shiny/ragg)." = "The jsonlite package is needed to use the embedded font (it comes with shiny/ragg).",
+    "' deve ser uma lista de itens: " = "' must be a list of items: ",
+    "erro_por_serie precisa de nomes: c(\"Média\" = \"DP\") (a série e a coluna que traz o erro)." = "erro_por_serie needs names: c(\"Mean\" = \"SD\") (the series and the column that holds the error).",
+    " precisa do nome da série e da forma: c(\"WORLD\" = \"esfera\", \"BRAZIL\" = \"quadrado\")." = " needs the series name and the shape: c(\"WORLD\" = \"esfera\", \"BRAZIL\" = \"quadrado\").",
+    "Resumo da ordenação: " = "Ordination summary: ",
+    "PCA/CA/CCA precisam de pelo menos 2 variáveis numéricas (colunas). Defina cfg$multivariada$variaveis." = "PCA/CA/CCA need at least 2 numeric variables (columns). Set cfg$multivariada$variaveis.",
+    "A(s) coluna(s) " = "Column(s) ",
+    " não é(são) numérica(s). " = " is/are not numeric. ",
+    "Se o arquivo usa vírgula decimal, veja cfg$dados$decimal_virgula." = "If the file uses a decimal comma, see cfg$dados$decimal_virgula.",
+    "A transformação \"" = "The transformation \"",
+    "\" não aceita valores negativos (há " = "\" does not accept negative values (there are ",
+    " na matriz)." = " in the matrix).",
+    "PCA, CA e CCA precisam do pacote vegan. Instale com install.packages(\"vegan\") (ou rode o 00_instalar_pacotes.R)." = "PCA, CA and CCA need the vegan package. Install it with install.packages(\"vegan\") (or run 00_instalar_pacotes.R).",
+    "CCA precisa das variáveis ambientais: escolha as colunas em \"Variáveis ambientais\" (no código: cfg$multivariada$ambientais). Elas podem estar na mesma planilha." = "CCA needs the environmental variables: choose the columns in \"Environmental variables\" (in code: cfg$multivariada$ambientais). They can be in the same sheet.",
+    " amostra(s) com valor vazio em variáveis/ambientais foram ignoradas na ordenação." = " sample(s) with an empty value in variables/environmental columns were ignored in the ordination.",
+    " amostra(s) ficaram sem valor após a transformação e foram ignoradas." = " sample(s) were left without a value after the transformation and were ignored.",
+    "A ordenação precisa de pelo menos 4 amostras (linhas); há " = "The ordination needs at least 4 samples (rows); there are ",
+    "Variável(is) sem variação foram ignoradas: " = "Variable(s) with no variation were ignored: ",
+    "CA e CCA exigem valores >= 0 (contagens, abundâncias). Há valores negativos na matriz; use o PCA, ou outra transformação." = "CA and CCA require values >= 0 (counts, abundances). There are negative values in the matrix; use PCA, or another transformation.",
+    " amostra(s) com soma zero foram ignoradas (o CA/CCA não as aceita)." = " sample(s) with a zero sum were ignored (CA/CCA do not accept them).",
+    "Sobraram menos de 2 variáveis com variação; confira as colunas escolhidas." = "Fewer than 2 variables with variation remain; check the chosen columns.",
+    "cfg$multivariada: eixo_horizontal e eixo_vertical não podem ser o mesmo eixo." = "cfg$multivariada: eixo_horizontal and eixo_vertical cannot be the same axis.",
+    "A ordenação só tem " = "The ordination only has ",
+    " eixo(s); pedi os eixos " = " axis/axes; I asked for axes ",
+    " (cfg$multivariada$eixo_horizontal/eixo_vertical)." = " (cfg$multivariada$eixo_horizontal/eixo_vertical).",
+    "cfg$multivariada$elipses precisa de grupos: defina cfg$grafico$coluna_grupo." = "cfg$multivariada$elipses needs groups: set cfg$grafico$coluna_grupo.",
+    "Elipse do grupo '" = "Ellipse of group '",
+    "' ignorada (precisa de pelo menos 4 amostras com variação)." = "' ignored (needs at least 4 samples with variation).",
+    "\" precisa do pacote viridisLite; usando \"cinabro\"." = "\" needs the viridisLite package; using \"cinabro\".",
+    "Não há valores numéricos para colorir." = "There are no numeric values to color.",
+    "O centro (" = "The center (",
+    ") está fora dos limites (" = ") is outside the limits (",
+    "); ele será ignorado." = "); it will be ignored.",
+    "Mapa de calor no formato \"longo\": defina a coluna das colunas do mapa em cfg$grafico$coluna_grupo." = "Heat map in \"long\" format: set the column holding the map columns in cfg$grafico$coluna_grupo.",
+    "Há linhas repetidas para o mesmo par (" = "There are repeated rows for the same pair (",
+    "): usei a média." = "): I used the mean.",
+    "O mapa de calor precisa de pelo menos 2 colunas numéricas (além da coluna dos nomes das linhas)." = "The heat map needs at least 2 numeric columns (besides the row-names column).",
+    "Nomes de linha repetidos em '" = "Repeated row names in '",
+    "': acrescentei números para diferenciar." = "': I added numbers to tell them apart.",
+    "Os mapas precisam do pacote sf. Instale com install.packages(\"sf\") (ou rode o 00_instalar_pacotes.R)." = "The maps need the sf package. Install it with install.packages(\"sf\") (or run 00_instalar_pacotes.R).",
+    "Não achei o arquivo de mapa '" = "I could not find the map file '",
+    "'. Ele vem na pasta mapas/ do Cinabro (mantenha a pasta junto do programa)." = "'. It comes in Cinabro's mapas/ folder (keep the folder next to the program).",
+    "O arquivo " = "The file ",
+    " precisa das colunas 'country' e 'region'; usei as regiões do próprio mapa." = " needs the columns 'country' and 'region'; I used the map's own regions.",
+    " país(es) da planilha não foram achados no mapa e ficaram de fora: " = " country(ies) in the sheet were not found on the map and were left out: ",
+    " estado(s) da planilha não foram achados no mapa e ficaram de fora: " = " state(s) in the sheet were not found on the map and were left out: ",
+    ". Use o nome em inglês (veja mapas/mundo_regioes.csv) ou acrescente um apelido em mapas/mundo_apelidos.csv." = ". Use the English name (see mapas/mundo_regioes.csv) or add an alias in mapas/mundo_apelidos.csv.",
+    ". Use a sigla (SP) ou o nome do estado." = ". Use the abbreviation (SP) or the state name.",
+    "Nenhum local da coluna '" = "No place in column '",
+    "' casou com o mapa; confira os nomes (" = "' matched the map; check the names (",
+    "em inglês" = "in English",
+    "sigla ou nome do estado" = "abbreviation or state name",
+    "Formato \"longo\": precisa de três colunas (X, Y e Z). A planilha tem só uma." = "\"Long\" format: needs three columns (X, Y and Z). The sheet has only one.",
+    "Formato \"matriz\": a 1ª coluna traz os valores de Y e as outras colunas (os cabeçalhos são os valores de X) trazem o Z. " = "\"Matrix\" format: the 1st column holds the Y values and the other columns (the headers are the X values) hold Z. ",
+    "Preciso de pelo menos 2 colunas de Z. Se a planilha tem uma linha por ponto, mude o formato para \"longo\"." = "I need at least 2 Z columns. If the sheet has one row per point, change the format to \"long\".",
+    "Valores repetidos na 1ª coluna ('" = "Repeated values in the 1st column ('",
+    "'): usei a média das linhas repetidas." = "'): I used the mean of the repeated rows.",
+    "Há cabeçalhos repetidos entre as colunas de Z (os valores de X devem ser diferentes)." = "There are repeated headers among the Z columns (the X values must be different).",
+    "A dispersão 3D precisa de três colunas numéricas (X, Y e Z)." = "The 3D scatter needs three numeric columns (X, Y and Z).",
+    "Na dispersão 3D, as colunas '" = "In the 3D scatter, the columns '",
+    "' (Y) precisam ser numéricas." = "' (Y) must be numeric.",
+    "Na dispersão 3D, a 1ª coluna e os cabeçalhos precisam ser números (os valores de Y e de X)." = "In the 3D scatter, the 1st column and the headers must be numbers (the Y and X values).",
+    "A grade tem " = "The grid has ",
+    " pontos; para o desenho não ficar pesado, usei 1 a cada " = " points; to keep the drawing light, I used 1 in every ",
+    " em cada eixo." = " on each axis.",
+    "No 3D os eixos são lineares; a escala \"" = "In 3D the axes are linear; the scale \"",
+    "\" foi ignorada." = "\" was ignored.",
+    " valor(es) fora do eixo (" = " value(s) outside the axis (",
+    ") foram encostados na borda." = ") were pushed to the edge.",
+    "A superfície precisa de pelo menos 2 valores em X e 2 em Y (a planilha tem " = "The surface needs at least 2 values in X and 2 in Y (the sheet has ",
+    "Não há valores numéricos de Z para desenhar." = "There are no numeric Z values to draw.",
+    "Todas as células da grade têm algum Z vazio; não há superfície para desenhar." = "Every cell of the grid has an empty Z; there is no surface to draw.",
+    "Não há pontos com X, Y e Z numéricos para desenhar." = "There are no points with numeric X, Y and Z to draw.",
+    "O mapa de cor precisa de números nos dois eixos (a 1ª coluna e os cabeçalhos). Para nomes (genes, amostras...), use o mapa de calor." = "The color map needs numbers on both axes (the 1st column and the headers). For names (genes, samples...), use the heat map.",
+    "O mapa de cor precisa de pelo menos 2 valores em X e 2 em Y." = "The color map needs at least 2 values in X and 2 in Y.",
+    "Não consegui traçar as linhas de nível: " = "I couldn't draw the contour lines: "))
+.TRAD_MOTOR$es <- c(.TRAD_MOTOR$es, c(
+    " deve ser um número inteiro >= 1 (1 = primeiro eixo da ordenação)." = " debe ser un número entero >= 1 (1 = primer eje de la ordenación).",
+    "cfg$multivariada$elipse_nivel deve estar entre 0 e 1 (ex.: 0.95)." = "cfg$multivariada$elipse_nivel debe estar entre 0 y 1 (p. ej., 0.95).",
+    "cfg$multivariada$permutacoes deve ser um número entre 9 e 99999 (ex.: 999)." = "cfg$multivariada$permutacoes debe ser un número entre 9 y 99999 (p. ej., 999).",
+    "' não existe. OPÇÕES: \"variancia\" | \"acumulada\" | \"n\" | \"inercia\" | \"teste\" | \"teste_termos\" | \"teste_eixos\" | \"envfit\"" = "' no existe. OPCIONES: \"variancia\" | \"acumulada\" | \"n\" | \"inercia\" | \"teste\" | \"teste_termos\" | \"teste_eixos\" | \"envfit\"",
+    "cfg$multivariada$max_variaveis deve ser NULL ou um número >= 1." = "cfg$multivariada$max_variaveis debe ser NULL o un número >= 1.",
+    "cfg$mapa_calor$cores_escala deve ter 2 ou mais cores (ex.: c(\"white\", \"red\"))." = "cfg$mapa_calor$cores_escala debe tener 2 o más colores (p. ej., c(\"white\", \"red\")).",
+    ") deve ser menor que limite_max (" = ") debe ser menor que limite_max (",
+    "cfg$tridimensional$azimute deve ser um número em graus (ex.: 40)." = "cfg$tridimensional$azimute debe ser un número en grados (p. ej., 40).",
+    "cfg$tridimensional$elevacao deve estar entre 0 e 90 graus (ex.: 28)." = "cfg$tridimensional$elevacao debe estar entre 0 y 90 grados (p. ej., 28).",
+    "cfg$tridimensional$altura_relativa deve estar entre 0.1 e 3 (ex.: 0.7)." = "cfg$tridimensional$altura_relativa debe estar entre 0.1 y 3 (p. ej., 0.7).",
+    ") deve ser menor que z_fim (" = ") debe ser menor que z_fim (",
+    "cfg$tridimensional$barras_largura deve estar entre 0 e 1 (ex.: 0.7)." = "cfg$tridimensional$barras_largura debe estar entre 0 y 1 (p. ej., 0.7).",
+    "cfg$tridimensional$suavizar deve ser um número de 1 a 12 (1 = sem suavizar)." = "cfg$tridimensional$suavizar debe ser un número de 1 a 12 (1 = sin suavizar).",
+    "Este eixo é de categorias (barras, caixas, mapa de calor): início e fim do eixo não se aplicam e foram ignorados. " = "Este eje es de categorías (barras, cajas, mapa de calor): el inicio y el fin del eje no se aplican y se ignoraron. ",
+    "Para mostrar só algumas categorias, escolha as colunas (ou cfg$grafico$ordem_itens)." = "Para mostrar solo algunas categorías, elige las columnas (o cfg$grafico$ordem_itens).",
+    "Quebra de eixo não se aplica a este tipo de gráfico (" = "La ruptura de eje no se aplica a este tipo de gráfico (",
+    "Para usar a fonte embutida é preciso o pacote jsonlite (vem com o shiny/ragg)." = "Para usar la fuente incluida se necesita el paquete jsonlite (viene con shiny/ragg).",
+    "' deve ser uma lista de itens: " = "' debe ser una lista de elementos: ",
+    "erro_por_serie precisa de nomes: c(\"Média\" = \"DP\") (a série e a coluna que traz o erro)." = "erro_por_serie necesita nombres: c(\"Media\" = \"DE\") (la serie y la columna que trae el error).",
+    " precisa do nome da série e da forma: c(\"WORLD\" = \"esfera\", \"BRAZIL\" = \"quadrado\")." = " necesita el nombre de la serie y la forma: c(\"WORLD\" = \"esfera\", \"BRAZIL\" = \"quadrado\").",
+    "Resumo da ordenação: " = "Resumen de la ordenación: ",
+    "PCA/CA/CCA precisam de pelo menos 2 variáveis numéricas (colunas). Defina cfg$multivariada$variaveis." = "PCA/CA/CCA necesitan al menos 2 variables numéricas (columnas). Define cfg$multivariada$variaveis.",
+    "A(s) coluna(s) " = "La(s) columna(s) ",
+    " não é(são) numérica(s). " = " no es/son numérica(s). ",
+    "Se o arquivo usa vírgula decimal, veja cfg$dados$decimal_virgula." = "Si el archivo usa coma decimal, mira cfg$dados$decimal_virgula.",
+    "A transformação \"" = "La transformación \"",
+    "\" não aceita valores negativos (há " = "\" no acepta valores negativos (hay ",
+    " na matriz)." = " en la matriz).",
+    "PCA, CA e CCA precisam do pacote vegan. Instale com install.packages(\"vegan\") (ou rode o 00_instalar_pacotes.R)." = "PCA, CA y CCA necesitan el paquete vegan. Instálalo con install.packages(\"vegan\") (o ejecuta 00_instalar_pacotes.R).",
+    "CCA precisa das variáveis ambientais: escolha as colunas em \"Variáveis ambientais\" (no código: cfg$multivariada$ambientais). Elas podem estar na mesma planilha." = "CCA necesita las variables ambientales: elige las columnas en \"Variables ambientales\" (en el código: cfg$multivariada$ambientais). Pueden estar en la misma hoja.",
+    " amostra(s) com valor vazio em variáveis/ambientais foram ignoradas na ordenação." = " muestra(s) con valor vacío en variables/ambientales se ignoraron en la ordenación.",
+    " amostra(s) ficaram sem valor após a transformação e foram ignoradas." = " muestra(s) quedaron sin valor tras la transformación y se ignoraron.",
+    "A ordenação precisa de pelo menos 4 amostras (linhas); há " = "La ordenación necesita al menos 4 muestras (filas); hay ",
+    "Variável(is) sem variação foram ignoradas: " = "Variable(s) sin variación se ignoraron: ",
+    "CA e CCA exigem valores >= 0 (contagens, abundâncias). Há valores negativos na matriz; use o PCA, ou outra transformação." = "CA y CCA exigen valores >= 0 (conteos, abundancias). Hay valores negativos en la matriz; usa el PCA u otra transformación.",
+    " amostra(s) com soma zero foram ignoradas (o CA/CCA não as aceita)." = " muestra(s) con suma cero se ignoraron (el CA/CCA no las acepta).",
+    "Sobraram menos de 2 variáveis com variação; confira as colunas escolhidas." = "Quedaron menos de 2 variables con variación; revisa las columnas elegidas.",
+    "cfg$multivariada: eixo_horizontal e eixo_vertical não podem ser o mesmo eixo." = "cfg$multivariada: eixo_horizontal y eixo_vertical no pueden ser el mismo eje.",
+    "A ordenação só tem " = "La ordenación solo tiene ",
+    " eixo(s); pedi os eixos " = " eje(s); pedí los ejes ",
+    " (cfg$multivariada$eixo_horizontal/eixo_vertical)." = " (cfg$multivariada$eixo_horizontal/eixo_vertical).",
+    "cfg$multivariada$elipses precisa de grupos: defina cfg$grafico$coluna_grupo." = "cfg$multivariada$elipses necesita grupos: define cfg$grafico$coluna_grupo.",
+    "Elipse do grupo '" = "Elipse del grupo '",
+    "' ignorada (precisa de pelo menos 4 amostras com variação)." = "' ignorada (necesita al menos 4 muestras con variación).",
+    "\" precisa do pacote viridisLite; usando \"cinabro\"." = "\" necesita el paquete viridisLite; usando \"cinabro\".",
+    "Não há valores numéricos para colorir." = "No hay valores numéricos para colorear.",
+    "O centro (" = "El centro (",
+    ") está fora dos limites (" = ") está fuera de los límites (",
+    "); ele será ignorado." = "); se ignorará.",
+    "Mapa de calor no formato \"longo\": defina a coluna das colunas do mapa em cfg$grafico$coluna_grupo." = "Mapa de calor en formato \"largo\": define la columna de las columnas del mapa en cfg$grafico$coluna_grupo.",
+    "Há linhas repetidas para o mesmo par (" = "Hay filas repetidas para el mismo par (",
+    "): usei a média." = "): usé la media.",
+    "O mapa de calor precisa de pelo menos 2 colunas numéricas (além da coluna dos nomes das linhas)." = "El mapa de calor necesita al menos 2 columnas numéricas (además de la columna de los nombres de las filas).",
+    "Nomes de linha repetidos em '" = "Nombres de fila repetidos en '",
+    "': acrescentei números para diferenciar." = "': añadí números para diferenciarlos.",
+    "Os mapas precisam do pacote sf. Instale com install.packages(\"sf\") (ou rode o 00_instalar_pacotes.R)." = "Los mapas necesitan el paquete sf. Instálalo con install.packages(\"sf\") (o ejecuta 00_instalar_pacotes.R).",
+    "Não achei o arquivo de mapa '" = "No encontré el archivo del mapa '",
+    "'. Ele vem na pasta mapas/ do Cinabro (mantenha a pasta junto do programa)." = "'. Viene en la carpeta mapas/ de Cinabro (mantén la carpeta junto al programa).",
+    "O arquivo " = "El archivo ",
+    " precisa das colunas 'country' e 'region'; usei as regiões do próprio mapa." = " necesita las columnas 'country' y 'region'; usé las regiones del propio mapa.",
+    " país(es) da planilha não foram achados no mapa e ficaram de fora: " = " país(es) de la hoja no se encontraron en el mapa y quedaron fuera: ",
+    " estado(s) da planilha não foram achados no mapa e ficaram de fora: " = " estado(s) de la hoja no se encontraron en el mapa y quedaron fuera: ",
+    ". Use o nome em inglês (veja mapas/mundo_regioes.csv) ou acrescente um apelido em mapas/mundo_apelidos.csv." = ". Usa el nombre en inglés (mira mapas/mundo_regioes.csv) o añade un alias en mapas/mundo_apelidos.csv.",
+    ". Use a sigla (SP) ou o nome do estado." = ". Usa la sigla (SP) o el nombre del estado.",
+    "Nenhum local da coluna '" = "Ningún lugar de la columna '",
+    "' casou com o mapa; confira os nomes (" = "' coincidió con el mapa; revisa los nombres (",
+    "em inglês" = "en inglés",
+    "sigla ou nome do estado" = "sigla o nombre del estado",
+    "Formato \"longo\": precisa de três colunas (X, Y e Z). A planilha tem só uma." = "Formato \"largo\": necesita tres columnas (X, Y y Z). La hoja tiene solo una.",
+    "Formato \"matriz\": a 1ª coluna traz os valores de Y e as outras colunas (os cabeçalhos são os valores de X) trazem o Z. " = "Formato \"matriz\": la 1.ª columna trae los valores de Y y las demás columnas (los encabezados son los valores de X) traen Z. ",
+    "Preciso de pelo menos 2 colunas de Z. Se a planilha tem uma linha por ponto, mude o formato para \"longo\"." = "Necesito al menos 2 columnas de Z. Si la hoja tiene una fila por punto, cambia el formato a \"largo\".",
+    "Valores repetidos na 1ª coluna ('" = "Valores repetidos en la 1.ª columna ('",
+    "'): usei a média das linhas repetidas." = "'): usé la media de las filas repetidas.",
+    "Há cabeçalhos repetidos entre as colunas de Z (os valores de X devem ser diferentes)." = "Hay encabezados repetidos entre las columnas de Z (los valores de X deben ser distintos).",
+    "A dispersão 3D precisa de três colunas numéricas (X, Y e Z)." = "La dispersión 3D necesita tres columnas numéricas (X, Y y Z).",
+    "Na dispersão 3D, as colunas '" = "En la dispersión 3D, las columnas '",
+    "' (Y) precisam ser numéricas." = "' (Y) deben ser numéricas.",
+    "Na dispersão 3D, a 1ª coluna e os cabeçalhos precisam ser números (os valores de Y e de X)." = "En la dispersión 3D, la 1.ª columna y los encabezados deben ser números (los valores de Y y de X).",
+    "A grade tem " = "La cuadrícula tiene ",
+    " pontos; para o desenho não ficar pesado, usei 1 a cada " = " puntos; para que el dibujo no quede pesado, usé 1 de cada ",
+    " em cada eixo." = " en cada eje.",
+    "No 3D os eixos são lineares; a escala \"" = "En el 3D los ejes son lineales; la escala \"",
+    "\" foi ignorada." = "\" se ignoró.",
+    " valor(es) fora do eixo (" = " valor(es) fuera del eje (",
+    ") foram encostados na borda." = ") se pegaron al borde.",
+    "A superfície precisa de pelo menos 2 valores em X e 2 em Y (a planilha tem " = "La superficie necesita al menos 2 valores en X y 2 en Y (la hoja tiene ",
+    "Não há valores numéricos de Z para desenhar." = "No hay valores numéricos de Z para dibujar.",
+    "Todas as células da grade têm algum Z vazio; não há superfície para desenhar." = "Todas las celdas de la cuadrícula tienen algún Z vacío; no hay superficie que dibujar.",
+    "Não há pontos com X, Y e Z numéricos para desenhar." = "No hay puntos con X, Y y Z numéricos para dibujar.",
+    "O mapa de cor precisa de números nos dois eixos (a 1ª coluna e os cabeçalhos). Para nomes (genes, amostras...), use o mapa de calor." = "El mapa de color necesita números en los dos ejes (la 1.ª columna y los encabezados). Para nombres (genes, muestras...), usa el mapa de calor.",
+    "O mapa de cor precisa de pelo menos 2 valores em X e 2 em Y." = "El mapa de color necesita al menos 2 valores en X y 2 en Y.",
+    "Não consegui traçar as linhas de nível: " = "No pude trazar las líneas de nivel: "))
+.ROTULOS_IDIOMA$en <- c(.ROTULOS_IDIOMA$en, "Nota z" = "z-score")
+.ROTULOS_IDIOMA$es <- c(.ROTULOS_IDIOMA$es, "Nota z" = "Puntuación z")
 
 # -----------------------------------------------------------------------------
 #  03_leitura.R
@@ -2469,7 +3219,7 @@ colunas <- function(dados) {
 .OPCOES <- list(
   "grafico$tipo" = c("pontos", "linha", "linha_pontos", "area", "area_empilhada", "barras",
                      "pizza", "histograma", "densidade", "ecdf", "boxplot", "mapa_calor", "pca", "ca", "cca",
-                     "mapa_mundo", "mapa_brasil"),
+                     "mapa_mundo", "mapa_brasil", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d"),
   "cores$preenchimento" = c("solido", "gradiente"),
   "cores$gradiente_direcao" = c("vertical", "vertical_invertido", "horizontal",
                                 "horizontal_invertido", "diagonal", "radial"),
@@ -2502,6 +3252,7 @@ colunas <- function(dados) {
   "mapa_calor$esquema_cor" = c("cinabro", "petroleo", "divergente", "viridis", "magma", "inferno", "turbo"),
   "multivariada$resumo_posicao" = c("caixa", "rodape"),
   "multivariada$legenda_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
+  "tridimensional$caixa" = c("paredes", "base", "aberta"),
   "mapa_calor$barra_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "mapa$nivel" = c("pais", "estado", "regiao"),
   "mapa$agregacao" = c("soma", "media", "maximo"),
@@ -2700,6 +3451,13 @@ colunas <- function(dados) {
     .erro("cfg$mapa_calor$cores_escala deve ter 2 ou mais cores (ex.: c(\"white\", \"red\")).")
   if (!is.null(mc$limite_min) && !is.null(mc$limite_max) && mc$limite_min >= mc$limite_max)
     .erro("cfg$mapa_calor$limite_min (", mc$limite_min, ") deve ser menor que limite_max (", mc$limite_max, ").")
+  tr3 <- cfg$tridimensional
+  if (!is.null(tr3$azimute) && (!is.numeric(tr3$azimute) || length(tr3$azimute) != 1 || !is.finite(tr3$azimute))) .erro("cfg$tridimensional$azimute deve ser um número em graus (ex.: 40).")
+  if (!is.null(tr3$elevacao) && (!is.numeric(tr3$elevacao) || tr3$elevacao < 0 || tr3$elevacao > 90)) .erro("cfg$tridimensional$elevacao deve estar entre 0 e 90 graus (ex.: 28).")
+  if (!is.null(tr3$altura_relativa) && (!is.numeric(tr3$altura_relativa) || tr3$altura_relativa < 0.1 || tr3$altura_relativa > 3)) .erro("cfg$tridimensional$altura_relativa deve estar entre 0.1 e 3 (ex.: 0.7).")
+  if (!is.null(tr3$z_inicio) && !is.null(tr3$z_fim) && tr3$z_inicio >= tr3$z_fim) .erro("cfg$tridimensional$z_inicio (", tr3$z_inicio, ") deve ser menor que z_fim (", tr3$z_fim, ").")
+  if (!is.null(tr3$barras_largura) && (!is.numeric(tr3$barras_largura) || tr3$barras_largura <= 0 || tr3$barras_largura > 1)) .erro("cfg$tridimensional$barras_largura deve estar entre 0 e 1 (ex.: 0.7).")
+  if (!is.null(tr3$suavizar) && (!is.numeric(tr3$suavizar) || tr3$suavizar < 1 || tr3$suavizar > 12)) .erro("cfg$tridimensional$suavizar deve ser um número de 1 a 12 (1 = sem suavizar).")
   if (!identical(cfg$legenda$mostrar, "auto") && !is.logical(cfg$legenda$mostrar))
     .erro("cfg$legenda$mostrar deve ser \"auto\", TRUE ou FALSE.")
   invisible(TRUE)
@@ -4623,6 +5381,10 @@ registerS3method("element_grob", "element_sombra", .element_grob_sombra, envir =
     boxplot = .construir_boxplot(dados, cfg),
     pca = , ca = , cca = .construir_multivariada(dados, cfg),
     mapa_calor = .construir_mapa_calor(dados, cfg),
+    mapa_cor = .construir_mapa_cor(dados, cfg),
+    superficie_3d = .construir_superficie_3d(dados, cfg),
+    barras_3d = .construir_barras_3d(dados, cfg),
+    dispersao_3d = .construir_dispersao_3d(dados, cfg),
     mapa_mundo = , mapa_brasil = .construir_mapa(dados, cfg))
   info <- res$info
   if (isTRUE(so_info)) return(info)
@@ -4759,7 +5521,7 @@ plotar <- function(dados, cfg = get("cfg", envir = globalenv())) {
 # (cfg$caixa$espessura_pt) — mudar a moldura padroniza tudo; escrever o valor no eixo vale mais.
 .resolver_herancas <- function(cfg) {
   # gráficos com barra de cores (mapa de calor e mapas): a barra vai para onde cfg$mapa_calor$barra_posicao manda (padrão: direita)
-  if (cfg$grafico$tipo %in% c("mapa_calor", "mapa_mundo", "mapa_brasil")) cfg$legenda$posicao <- cfg$mapa_calor$barra_posicao %||% "direita"
+  if (cfg$grafico$tipo %in% c("mapa_calor", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d", "mapa_mundo", "mapa_brasil")) cfg$legenda$posicao <- cfg$mapa_calor$barra_posicao %||% "direita"
   if (identical(cfg$grafico$tipo, "mapa_calor") && !isTRUE(cfg$mapa_calor$mostrar_ticks)) {   # células não precisam de traços de eixo
     for (ax in c("eixo_x", "eixo_y")) { cfg[[ax]]$direcao_maiores <- "nenhum"; cfg[[ax]]$direcao_menores <- "nenhum"; cfg[[ax]]$n_menores <- 0 }
   }
@@ -4897,7 +5659,7 @@ sugerir_quebra <- function(dados, cfg = get("cfg", envir = globalenv())) {
 .plotar_quebra <- function(dados, cfg) {
   Q <- cfg$quebra
   if (is.null(Q$de) || is.null(Q$ate) || Q$de >= Q$ate) .erro("cfg$quebra: defina de < ate (ex.: de = 20, ate = 80).")
-  if (cfg$grafico$tipo %in% c("pizza", "mapa_mundo", "mapa_brasil", "mapa_calor", "pca", "ca", "cca")) .erro("Quebra de eixo não se aplica a este tipo de gráfico (", cfg$grafico$tipo, ").")
+  if (cfg$grafico$tipo %in% c("pizza", "mapa_mundo", "mapa_brasil", "mapa_calor", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d", "pca", "ca", "cca")) .erro("Quebra de eixo não se aplica a este tipo de gráfico (", cfg$grafico$tipo, ").")
   base <- cfg; base$quebra$ativo <- FALSE
   inf <- .plotar_um(dados, base, so_info = TRUE)
   lim <- inf$ax_y$limites
@@ -5581,6 +6343,13 @@ jsonlite_b64 <- function(txt) {
   multi_elipse_espessura_pt = c("multivariada", "elipse_espessura_pt"),
   multi_elipse_preencher = c("multivariada", "elipse_preencher"),
   calor_mostrar_ticks = c("mapa_calor", "mostrar_ticks"),
+  tri_azimute = c("tridimensional", "azimute"), tri_elevacao = c("tridimensional", "elevacao"), tri_altura = c("tridimensional", "altura_relativa"),
+  tri_caixa = c("tridimensional", "caixa"), tri_z_titulo = c("tridimensional", "z_titulo"), tri_z_inicio = c("tridimensional", "z_inicio"),
+  tri_z_fim = c("tridimensional", "z_fim"), tri_z_intervalo = c("tridimensional", "z_intervalo"), tri_suavizar = c("tridimensional", "suavizar"),
+  tri_niveis = c("tridimensional", "niveis"), tri_cor_niveis = c("tridimensional", "cor_niveis"), tri_barras_largura = c("tridimensional", "barras_largura"),
+  tri_cor_borda_barras = c("tridimensional", "cor_borda_barras"), tri_ponto_tamanho_pt = c("tridimensional", "ponto_tamanho_pt"), tri_hastes = c("tridimensional", "hastes"),
+  tri_cor_hastes = c("tridimensional", "cor_hastes"), tri_cor_borda_pontos = c("tridimensional", "cor_borda_pontos"), tri_cor_paredes = c("tridimensional", "cor_paredes"),
+  tri_cor_grade = c("tridimensional", "cor_grade"), tri_cor_caixa = c("tridimensional", "cor_caixa"),
   calor_tamanho_valores_pt = c("mapa_calor", "tamanho_valores_pt"),
   mapa_rotulos_tamanho_pt = c("mapa", "rotulos_tamanho_pt"),
   mapa_rotulos_fonte = c("mapa", "rotulos_fonte"),
@@ -5900,9 +6669,8 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
   }
   idm <- pega("idioma")                  # idioma das mensagens e dos textos automáticos do gráfico: "pt" | "en" | "es"
   if (!is.null(idm)) {
-    if (!idm %in% c("pt", "en", "es")) .erro("idioma precisa ser \"pt\".")
-    if (!identical(idm, "pt")) .aviso("Só o português está ativo; o inglês e o espanhol estão arquivados (peça para reativar). Usei o português.")
-    marca("idioma")
+    if (!idm %in% c("pt", "en", "es")) .erro("idioma precisa ser \"pt\", \"en\" ou \"es\".")
+    options(cinabro.idioma = idm); marca("idioma")
   }
   if (length(aplicados)) message("Painel de ajustes aplicado: ", paste(aplicados, collapse = ", "))
   else message("Painel de ajustes: nenhum ajuste ativo (tudo NULL = padrão do template).")
@@ -7919,6 +8687,386 @@ if (requireNamespace("grid", quietly = TRUE)) {
 }
 
 # -----------------------------------------------------------------------------
+#  26_tipo_3d.R
+# -----------------------------------------------------------------------------
+# =============================================================================
+#  R/26_tipo_3d.R — mapa de cor (X, Y, Z), superfície 3D, barras 3D e dispersão 3D
+# =============================================================================
+#  A planilha tem os três eixos. Formato "matriz" (padrão): a 1ª coluna traz os valores de Y, os cabeçalhos das outras colunas são os valores
+#  de X e as células são o Z. Formato "longo": uma linha por ponto, com X (cfg$grafico$coluna_x), Y (cfg$grafico$coluna_grupo; vazio = a 2ª
+#  coluna) e Z (a 1ª das colunas Y; vazio = a 3ª). O formato vem de cfg$mapa_calor$formato e a cor de Z, de cfg$mapa_calor (esquema_cor,
+#  cores_escala, limites, centro, barra), os mesmos do mapa de calor. O ângulo, os eixos e a caixa do 3D vêm de cfg$tridimensional.
+#  O 3D é desenhado aqui mesmo, só com o ggplot2 (projeção ortográfica e pintura das faces de atras para a frente): sem pacote extra.
+# =============================================================================
+
+# ---- leitura da planilha XYZ ----------------------------------------------------------------------
+.tri_num <- function(v) suppressWarnings(as.numeric(gsub(",", ".", as.character(v), fixed = TRUE)))
+
+# Entra: dados e cfg. Sai: list(x, y, Z (linhas = Y, colunas = X), nome_x, nome_y, nome_z). x e y são números ou, se a coluna for texto, nomes.
+.grade_xyz <- function(dados, cfg) {
+  H <- cfg$mapa_calor; G <- cfg$grafico
+  xcol <- .coluna(dados, G$coluna_x %||% 1, "cfg$grafico$coluna_x")
+  if (identical(H$formato, "longo")) {
+    gcol <- if (!is.null(G$coluna_grupo)) .coluna(dados, G$coluna_grupo, "cfg$grafico$coluna_grupo") else setdiff(names(dados), xcol)[1]
+    if (is.na(gcol)) .erro("Formato \"longo\": precisa de três colunas (X, Y e Z). A planilha tem só uma.")
+    zcol <- .colunas_y(dados, cfg, excluir = c(xcol, gcol))[1]
+    vx <- dados[[xcol]]; vy <- dados[[gcol]]
+    ux <- if (is.numeric(vx)) sort(unique(vx[is.finite(vx)])) else unique(as.character(vx[!is.na(vx)]))
+    uy <- if (is.numeric(vy)) sort(unique(vy[is.finite(vy)])) else unique(as.character(vy[!is.na(vy)]))
+    ix <- match(vx, ux); iy <- match(vy, uy)
+    if (anyDuplicated(paste(ix, iy)[!is.na(ix) & !is.na(iy)])) .aviso("Há linhas repetidas para o mesmo par (", xcol, ", ", gcol, "): usei a média.")
+    Z <- tapply(dados[[zcol]], list(factor(iy, seq_along(uy)), factor(ix, seq_along(ux))), mean, na.rm = TRUE)
+    Z <- matrix(as.numeric(Z), length(uy), length(ux)); Z[is.nan(Z)] <- NA
+    return(list(x = ux, y = uy, Z = Z, nome_x = xcol, nome_y = gcol, nome_z = zcol))
+  }
+  ycols <- .colunas_y(dados, cfg, excluir = xcol)
+  if (length(ycols) < 2) .erro("Formato \"matriz\": a 1ª coluna traz os valores de Y e as outras colunas (os cabeçalhos são os valores de X) trazem o Z. ",
+                               "Preciso de pelo menos 2 colunas de Z. Se a planilha tem uma linha por ponto, mude o formato para \"longo\".")
+  hx <- .tri_num(ycols)
+  ux <- if (all(is.finite(hx))) hx else ycols
+  vy <- dados[[xcol]]; uy <- if (is.numeric(vy)) vy else as.character(vy)
+  Z <- as.matrix(dados[ycols]); storage.mode(Z) <- "double"
+  if (anyDuplicated(uy)) {
+    .aviso("Valores repetidos na 1ª coluna ('", xcol, "'): usei a média das linhas repetidas.")
+    f <- factor(uy, levels = unique(uy)); uy <- unique(uy)
+    Z <- matrix(vapply(seq_len(ncol(Z)), function(j) as.numeric(tapply(Z[, j], f, mean, na.rm = TRUE)), numeric(length(uy))), length(uy))
+  }
+  if (anyDuplicated(ux)) .erro("Há cabeçalhos repetidos entre as colunas de Z (os valores de X devem ser diferentes).")
+  oy <- if (is.numeric(uy)) order(uy) else seq_along(uy); ox <- if (is.numeric(ux)) order(ux) else seq_along(ux)
+  Z <- unname(Z[oy, ox, drop = FALSE]); Z[is.nan(Z)] <- NA
+  list(x = ux[ox], y = uy[oy], Z = Z, nome_x = "", nome_y = xcol, nome_z = NULL)
+}
+
+# Pontos (x, y, z) para a dispersão 3D: de um "longo" (uma linha por ponto) ou das células de uma matriz.
+.pontos_xyz <- function(dados, cfg) {
+  H <- cfg$mapa_calor; G <- cfg$grafico
+  if (identical(H$formato, "longo")) {
+    xcol <- .coluna(dados, G$coluna_x %||% 1, "cfg$grafico$coluna_x")
+    ycol <- if (!is.null(G$coluna_grupo)) .coluna(dados, G$coluna_grupo, "cfg$grafico$coluna_grupo") else setdiff(names(dados), xcol)[1]
+    if (is.na(ycol)) .erro("A dispersão 3D precisa de três colunas numéricas (X, Y e Z).")
+    zcol <- .colunas_y(dados, cfg, excluir = c(xcol, ycol))[1]
+    d <- data.frame(x = dados[[xcol]], y = dados[[ycol]], z = dados[[zcol]])
+    if (!is.numeric(d$x) || !is.numeric(d$y)) .erro("Na dispersão 3D, as colunas '", xcol, "' (X) e '", ycol, "' (Y) precisam ser numéricas.")
+    d <- d[is.finite(d$x) & is.finite(d$y) & is.finite(d$z), , drop = FALSE]
+    return(list(d = d, nome_x = xcol, nome_y = ycol, nome_z = zcol))
+  }
+  m <- .grade_xyz(dados, cfg)
+  if (!is.numeric(m$x) || !is.numeric(m$y)) .erro("Na dispersão 3D, a 1ª coluna e os cabeçalhos precisam ser números (os valores de Y e de X).")
+  d <- data.frame(x = rep(m$x, each = length(m$y)), y = rep(m$y, times = length(m$x)), z = as.vector(m$Z))
+  list(d = d[is.finite(d$z), , drop = FALSE], nome_x = m$nome_x, nome_y = m$nome_y, nome_z = m$nome_z)
+}
+
+# Deixa a grade com no máximo `maximo` células (pega 1 a cada k linhas/colunas) e avisa.
+.limitar_grade <- function(m, maximo = 40000) {
+  nx <- length(m$x); ny <- length(m$y)
+  if ((nx - 1) * (ny - 1) <= maximo) return(m)
+  k <- ceiling(sqrt((nx - 1) * (ny - 1) / maximo)); ix <- unique(c(seq(1, nx, by = k), nx)); iy <- unique(c(seq(1, ny, by = k), ny))
+  .aviso("A grade tem ", nx, " x ", ny, " pontos; para o desenho não ficar pesado, usei 1 a cada ", k, " em cada eixo.")
+  m$x <- m$x[ix]; m$y <- m$y[iy]; m$Z <- m$Z[iy, ix, drop = FALSE]; m
+}
+
+# Refina a grade por interpolação linear (n subdivisões por célula). Só para eixos numéricos.
+.refinar_grade <- function(m, n) {
+  if (n < 2 || !is.numeric(m$x) || !is.numeric(m$y) || length(m$x) < 2 || length(m$y) < 2 || anyNA(m$Z)) return(m)
+  sub <- function(v) unique(unlist(lapply(seq_len(length(v) - 1), function(i) seq(v[i], v[i + 1], length.out = n + 1))))
+  nx <- sub(m$x); ny <- sub(m$y)
+  Zx <- t(apply(m$Z, 1, function(r) stats::approx(m$x, r, nx)$y))
+  if (length(ny) && nrow(m$Z) > 1) Zx <- apply(Zx, 2, function(cl) stats::approx(m$y, cl, ny)$y) else Zx <- matrix(Zx, nrow = length(ny))
+  m$x <- nx; m$y <- ny; m$Z <- matrix(Zx, length(ny), length(nx)); m
+}
+
+# ---- eixos ---------------------------------------------------------------------------------------
+# Eixo do 3D: faixa e traços. Numérico: usa os mesmos ajustes do eixo comum (início, fim, intervalo, casas...). Texto: uma posição por nome.
+.eixo3d <- function(e, v, cat = FALSE, folga = 0) {
+  if (cat) return(list(lo = 0.5, hi = length(v) + 0.5, pos = seq_along(v), rot = as.character(v), cat = TRUE))
+  e$margem_percentual <- 0
+  if (!identical(e$escala %||% "linear", "linear")) { .aviso("No 3D os eixos são lineares; a escala \"", e$escala, "\" foi ignorada."); e$escala <- "linear" }
+  ax <- .calc_eixo(e, range(v[is.finite(v)]) + c(-folga, folga))
+  rot <- if (is.function(ax$rotulos)) ax$rotulos(ax$maiores) else ax$rotulos
+  list(lo = ax$limites[1], hi = ax$limites[2], pos = ax$maiores, rot = as.character(rot), cat = FALSE)
+}
+.n3 <- function(ej, v) {
+  if (ej$cat) return((v - ej$lo) / (ej$hi - ej$lo))
+  fora <- is.finite(v) & (v < ej$lo - 1e-9 * abs(ej$hi - ej$lo) | v > ej$hi + 1e-9 * abs(ej$hi - ej$lo))
+  if (any(fora)) .aviso(sum(fora), " valor(es) fora do eixo (", ej$lo, " a ", ej$hi, ") foram encostados na borda.")
+  (pmin(pmax(v, ej$lo), ej$hi) - ej$lo) / (ej$hi - ej$lo)
+}
+# Eixo Z: o estilo vem do eixo Y; início, fim, intervalo e título, de cfg$tridimensional.
+.eixo_z <- function(cfg) {
+  T <- cfg$tridimensional; e <- cfg$eixo_y
+  e$inicio <- T$z_inicio; e$fim <- T$z_fim; e$titulo <- T$z_titulo; e$ticks_modo <- if (is.null(T$z_intervalo)) "auto" else "incremento"
+  e$incremento <- T$z_intervalo; e$quantidade <- NULL; e$primeiro_tick <- NULL; e$ticks_manuais <- NULL; e$rotulos_manuais <- NULL; e$n_menores <- 0
+  e
+}
+
+# ---- projeção ------------------------------------------------------------------------------------
+# Visão ortográfica: gira em volta do eixo vertical (azimute) e inclina (elevação). x e y em 0..1, z em 0..H. d = profundidade (maior = mais longe).
+.proj3d <- function(az, el) {
+  a <- az * pi / 180; e <- el * pi / 180
+  function(x, y, z) {
+    x <- x - 0.5; y <- y - 0.5
+    xr <- x * cos(a) - y * sin(a); yr <- x * sin(a) + y * cos(a)
+    list(sx = xr, sy = z * cos(e) + yr * sin(e), d = yr * cos(e) - z * sin(e))
+  }
+}
+# Escurece uma cor (f < 1) para o lado das barras.
+.escurecer <- function(cor, f) { m <- grDevices::col2rgb(cor) * f; grDevices::rgb(pmin(m[1, ], 255), pmin(m[2, ], 255), pmin(m[3, ], 255), maxColorValue = 255) }
+
+# Polígonos (4 cantos cada) em tabela para o geom_polygon. cx, cy: matrizes n x 4 na ordem de desenho; ordem: do mais longe ao mais perto.
+.tabela_faces <- function(cx, cy, extra = list()) {
+  n <- nrow(cx); out <- data.frame(x = as.vector(t(cx)), y = as.vector(t(cy)), grp = rep(seq_len(n), each = ncol(cx)))
+  for (k in names(extra)) out[[k]] <- rep(extra[[k]], each = ncol(cx))
+  out
+}
+
+# Estilo do texto do 3D
+.estilo3d <- function(cfg) {
+  ex <- cfg$eixo_x; ey <- cfg$eixo_y; b <- cfg$texto$tamanho_base_pt
+  list(fonte = .fonte(cfg$texto$fonte), pt_rot = ex$tamanho_rotulos_pt %||% b * 0.9, pt_tit = ex$tamanho_titulo_pt %||% b,
+       cor_rot = .cor(ex$cor_rotulos %||% cfg$texto$cor), cor_tit = .cor(ex$cor_titulo %||% cfg$texto$cor),
+       face_rot = if (.neg(cfg, ex$negrito_rotulos)) "bold" else "plain", face_tit = if (.neg(cfg, ex$negrito_titulo)) "bold" else "plain",
+       cor_linha = .cor(ex$cor_linha %||% "black"), esp_linha = ex$espessura_linha_pt %||% cfg$caixa$espessura_pt %||% 0.75)
+}
+
+# Fundo do 3D: piso, paredes de atras, grade, eixos, traços, números e títulos. Devolve camadas e a caixa que ocupam (para os limites do gráfico).
+# upi = unidades do desenho por polegada (o tamanho dos textos e dos afastamentos é em pontos, não depende do zoom).
+.fundo3d <- function(P, E, H, cfg, upi, titulos) {
+  T <- cfg$tridimensional; S <- .estilo3d(cfg); a <- T$azimute * pi / 180
+  cam <- list(); ext <- matrix(numeric(0), 0, 2)
+  tick_in <- 0.05; gap_in <- 0.05
+  # paredes de atras: a normal de fora aponta para longe de quem olha
+  paredes <- list(list(n = c(-1, 0), pts = rbind(c(0, 0, 0), c(0, 1, 0), c(0, 1, H), c(0, 0, H))),
+                  list(n = c(1, 0), pts = rbind(c(1, 0, 0), c(1, 1, 0), c(1, 1, H), c(1, 0, H))),
+                  list(n = c(0, -1), pts = rbind(c(0, 0, 0), c(1, 0, 0), c(1, 0, H), c(0, 0, H))),
+                  list(n = c(0, 1), pts = rbind(c(0, 1, 0), c(1, 1, 0), c(1, 1, H), c(0, 1, H))))
+  atras <- Filter(function(w) w$n[1] * sin(a) + w$n[2] * cos(a) > 1e-9, paredes)
+  piso <- list(n = c(0, 0), pts = rbind(c(0, 0, 0), c(1, 0, 0), c(1, 1, 0), c(0, 1, 0)))
+  tx <- .n3(E$x, E$x$pos); ty <- .n3(E$y, E$y$pos); tz <- .n3(E$z, E$z$pos) * H
+  faces <- if (identical(T$caixa, "paredes")) c(list(piso), atras) else if (identical(T$caixa, "base")) list(piso) else list()
+  if (length(faces)) {
+    pol <- do.call(rbind, lapply(seq_along(faces), function(i) { p <- P(faces[[i]]$pts[, 1], faces[[i]]$pts[, 2], faces[[i]]$pts[, 3]); data.frame(x = p$sx, y = p$sy, grp = i) }))
+    cam[[length(cam) + 1]] <- geom_polygon(data = pol, aes(x = x, y = y, group = grp), fill = .cor(T$cor_paredes), colour = .cor(T$cor_caixa), linewidth = .lw(0.4))
+    # grade sobre o piso e as paredes
+    seg <- list(); add <- function(p0, p1) seg[[length(seg) + 1]] <<- c(p0, p1)
+    add_f <- function(f) {
+      if (all(f$n == 0)) { for (t in tx) add(c(t, 0, 0), c(t, 1, 0)); for (t in ty) add(c(0, t, 0), c(1, t, 0)) }
+      else if (f$n[1] != 0) { c0 <- if (f$n[1] < 0) 0 else 1; for (t in ty) add(c(c0, t, 0), c(c0, t, H)); for (t in tz) add(c(c0, 0, t), c(c0, 1, t)) }
+      else { c0 <- if (f$n[2] < 0) 0 else 1; for (t in tx) add(c(t, c0, 0), c(t, c0, H)); for (t in tz) add(c(0, c0, t), c(1, c0, t)) }
+    }
+    for (f in faces) add_f(f)
+    if (length(seg)) {
+      s <- do.call(rbind, seg); p0 <- P(s[, 1], s[, 2], s[, 3]); p1 <- P(s[, 4], s[, 5], s[, 6])
+      cam[[length(cam) + 1]] <- geom_segment(data = data.frame(x = p0$sx, y = p0$sy, xend = p1$sx, yend = p1$sy), aes(x = x, y = y, xend = xend, yend = yend),
+                                              colour = .cor(T$cor_grade), linewidth = .lw(0.3))
+    }
+  }
+  pc <- P(0.5, 0.5, 0); centro <- c(pc$sx, pc$sy)
+  # meia extensão (polegadas) de um texto w x h, girado th graus, na direção u
+  alvo_in <- function(w, h, u, th = 0) { d <- th * pi / 180 - atan2(u[2], u[1]); (w * abs(cos(d)) + h * abs(sin(d))) / 2 }
+  larg_in <- function(txt, pt) max(nchar(txt), 1) * pt * 0.52 / 72
+  rots <- list(); tks <- list(); tits <- list()
+  # eixo ao longo de uma aresta: p(t) = ponto da aresta no parâmetro t (0..1); ticks em t = tt, rótulos em rot.
+  # Se os nomes não cabem lado a lado, ficam em leque: cada um sai do traço, girado na direção para fora.
+  eixo_aresta <- function(p, tt, rot, titulo, u_fix = NULL, ang_fix = NULL) {
+    m <- p(0.5); p0 <- p(0); p1 <- p(1)
+    u <- u_fix %||% { ev <- c(p1$sx - p0$sx, p1$sy - p0$sy); ev <- ev / max(sqrt(sum(ev^2)), 1e-9); pp <- c(-ev[2], ev[1])           # perpendicular à aresta, para fora
+                      if (sum(pp * (c(m$sx, m$sy) - centro)) < 0) -pp else pp }
+    ang <- ang_fix %||% (atan2(p1$sy - p0$sy, p1$sx - p0$sx) * 180 / pi)
+    if (ang > 90) ang <- ang - 180; if (ang <= -90) ang <- ang + 180
+    pt <- p(tt); pt$sx <- rep_len(pt$sx, length(tt)); pt$sy <- rep_len(pt$sy, length(tt)); h <- S$pt_rot / 72
+    ws <- vapply(rot, larg_in, 0, pt = S$pt_rot)
+    colide <- length(tt) > 1 && any(vapply(seq_len(length(tt) - 1), function(i) abs(pt$sx[i + 1] - pt$sx[i]) / upi < (ws[i] + ws[i + 1]) / 2 + 0.02 && abs(pt$sy[i + 1] - pt$sy[i]) / upi < h * 1.15, NA))
+    th <- 0; hj <- 0.5
+    if (colide) { th <- atan2(u[2], u[1]) * 180 / pi; if (abs(th) > 90) { th <- th + if (th > 0) -180 else 180; hj <- 1 } else hj <- 0 }
+    ext_rot <- if (colide) max(ws) else alvo_in(max(ws), h, u)
+    for (i in seq_along(tt)) {
+      d_in <- tick_in + gap_in + if (colide) 0 else alvo_in(ws[i], h, u)
+      tks[[length(tks) + 1]] <<- data.frame(x = pt$sx[i], y = pt$sy[i], xend = pt$sx[i] + u[1] * tick_in * upi, yend = pt$sy[i] + u[2] * tick_in * upi)
+      sobe <- if (!is.null(ang_fix) && tt[i] <= 1e-9) 0.55 * h * upi else 0          # no eixo Z, o número do piso sobe um pouco (não encosta no do eixo Y)
+      rots[[length(rots) + 1]] <<- data.frame(x = pt$sx[i] + u[1] * d_in * upi, y = pt$sy[i] + u[2] * d_in * upi + sobe, lab = rot[i], ang = th, hj = hj, comp = if (colide) ws[i] else 0, xe = pt$sx[i] + u[1] * (d_in + ws[i]) * upi, ye = pt$sy[i] + u[2] * (d_in + ws[i]) * upi + sobe)
+    }
+    if (nzchar(titulo)) {
+      ht <- S$pt_tit / 72; d_in <- tick_in + gap_in + (if (colide) ext_rot else 2 * ext_rot) + gap_in + alvo_in(larg_in(titulo, S$pt_tit), ht, u, ang)
+      tits[[length(tits) + 1]] <<- data.frame(x = m$sx + u[1] * d_in * upi, y = m$sy + u[2] * d_in * upi, lab = titulo, ang = ang)
+    }
+  }
+  # arestas do piso mais perto de quem olha
+  y_fr <- if (cos(a) > 1e-9 || abs(cos(a)) <= 1e-9) 0 else 1
+  x_fr <- if (sin(a) > 1e-9) 0 else if (sin(a) < -1e-9) 1 else 0
+  px <- function(t) P(t, y_fr, 0); py <- function(t) P(x_fr, t, 0)
+  eixo_aresta(px, tx, E$x$rot, titulos$x); eixo_aresta(py, ty, E$y$rot, titulos$y)
+  # eixo Z: a aresta vertical que fica mais à esquerda na tela
+  cantos <- expand.grid(x = c(0, 1), y = c(0, 1)); sxs <- P(cantos$x, cantos$y, 0)$sx; k <- which.min(sxs)
+  pz <- function(t) P(cantos$x[k], cantos$y[k], t * H)
+  eixo_aresta(pz, tz / H, E$z$rot, titulos$z, u_fix = c(-1, 0), ang_fix = 90)
+  lin <- list(px(0), px(1), py(0), py(1), pz(0), pz(1))
+  # aresta dos eixos (linha mais forte) e traços
+  ar <- function(p) { p0 <- p(0); p1 <- p(1); data.frame(x = p0$sx, y = p0$sy, xend = p1$sx, yend = p1$sy) }
+  cam[[length(cam) + 1]] <- geom_segment(data = rbind(ar(px), ar(py), ar(pz)), aes(x = x, y = y, xend = xend, yend = yend), colour = S$cor_linha, linewidth = .lw(S$esp_linha), lineend = "round")
+  tk <- do.call(rbind, tks); if (!is.null(tk)) cam[[length(cam) + 1]] <- geom_segment(data = tk, aes(x = x, y = y, xend = xend, yend = yend), colour = S$cor_linha, linewidth = .lw(S$esp_linha))
+  rt <- do.call(rbind, rots)
+  if (!is.null(rt)) cam[[length(cam) + 1]] <- geom_text(data = rt, aes(x = x, y = y, label = lab, angle = ang, hjust = hj), size = .tx(S$pt_rot), colour = S$cor_rot, family = S$fonte, fontface = S$face_rot)
+  tt <- do.call(rbind, tits)
+  if (!is.null(tt)) cam[[length(cam) + 1]] <- geom_text(data = tt, aes(x = x, y = y, label = lab, angle = ang), size = .tx(S$pt_tit), colour = S$cor_tit, family = S$fonte, fontface = S$face_tit)
+  # caixa ocupada (centros dos textos mais metade do tamanho de cada um)
+  caixa <- rbind(do.call(rbind, lapply(lin, function(p) c(p$sx, p$sy))),
+                 if (!is.null(tk)) cbind(c(tk$x, tk$xend), c(tk$y, tk$yend)),
+                 if (!is.null(rt)) { wl <- vapply(rt$lab, larg_in, 0, pt = S$pt_rot); lf <- rt$comp > 0                      # nomes em leque: do ponto até o fim do texto; senão, centrados
+                   cbind(c(ifelse(lf, rt$x, rt$x - wl / 2 * upi), ifelse(lf, rt$xe, rt$x + wl / 2 * upi)), c(ifelse(lf, rt$y, rt$y - S$pt_rot / 144 * upi), ifelse(lf, rt$ye, rt$y + S$pt_rot / 144 * upi))) },
+                 if (!is.null(tt)) cbind(c(tt$x - vapply(tt$lab, larg_in, 0, pt = S$pt_tit) / 2 * upi, tt$x + vapply(tt$lab, larg_in, 0, pt = S$pt_tit) / 2 * upi), c(tt$y - S$pt_tit / 72 * upi, tt$y + S$pt_tit / 72 * upi)))
+  list(camadas = cam, caixa = caixa)
+}
+
+# Monta o 3D inteiro: fundo (calculado duas vezes, para o tamanho dos textos acertar com o zoom real) + a camada de dados.
+# dados3d(P, H) devolve as camadas de dados e os pontos projetados (para a caixa). Sai: list(camadas, xlim, ylim).
+.montar3d <- function(cfg, E, titulos, dados3d) {
+  T <- cfg$tridimensional; H <- T$altura_relativa; P <- .proj3d(T$azimute, T$elevacao)
+  dd <- dados3d(P, H)
+  cb <- expand.grid(x = c(0, 1), y = c(0, 1), z = c(0, H)); pcb <- P(cb$x, cb$y, cb$z)
+  corpo <- rbind(cbind(pcb$sx, pcb$sy), dd$caixa)
+  pw_in <- (cfg$caixa$painel_largura_cm %||% 12) / 2.54
+  upi <- diff(range(corpo[, 1])) / (pw_in * 0.7)
+  for (k in 1:2) {
+    fu <- .fundo3d(P, E, H, cfg, upi, titulos); cx <- rbind(corpo, fu$caixa)
+    upi <- diff(range(cx[, 1])) / pw_in
+  }
+  fu <- .fundo3d(P, E, H, cfg, upi, titulos); cx <- rbind(corpo, fu$caixa)
+  pad <- 0.04 * upi
+  list(camadas = c(fu$camadas, dd$camadas), xlim = range(cx[, 1]) + c(-pad, pad), ylim = range(cx[, 2]) + c(-pad, pad))
+}
+
+# Camada invisível que só serve para a barra de cores aparecer quando as faces usam cor pronta (I()).
+.camada_barra3d <- function(esc) geom_point(data = data.frame(x = 0, y = 0, z = esc$limites), aes(x = x, y = y, fill = z), shape = 21, alpha = 0, size = 0.1, inherit.aes = FALSE)
+
+# ---- superfície 3D ------------------------------------------------------------------------------------
+.construir_superficie_3d <- function(dados, cfg) {
+  T <- cfg$tridimensional; H <- cfg$mapa_calor
+  m <- .limitar_grade(.refinar_grade(.grade_xyz(dados, cfg), T$suavizar %||% 1))
+  nx <- length(m$x); ny <- length(m$y)
+  if (nx < 2 || ny < 2) .erro("A superfície precisa de pelo menos 2 valores em X e 2 em Y (a planilha tem ", nx, " x ", ny, ").")
+  if (all(is.na(m$Z))) .erro("Não há valores numéricos de Z para desenhar.")
+  E <- list(x = .eixo3d(cfg$eixo_x, m$x, !is.numeric(m$x)), y = .eixo3d(cfg$eixo_y, m$y, !is.numeric(m$y)), z = .eixo3d(.eixo_z(cfg), m$Z))
+  Xn <- .n3(E$x, if (is.numeric(m$x)) m$x else seq_along(m$x)); Yn <- .n3(E$y, if (is.numeric(m$y)) m$y else seq_along(m$y))
+  esc <- .escala_z(cfg, m$Z, m$nome_z %||% if (nzchar(m$nome_x)) .rot("Valor") else .rot("Valor"))
+  titulos <- list(x = cfg$eixo_x$titulo %||% m$nome_x, y = cfg$eixo_y$titulo %||% m$nome_y, z = T$z_titulo %||% m$nome_z %||% .rot("Valor"))
+  dados3d <- function(P, Hh) {
+    Zn <- .n3(E$z, m$Z) * Hh; Zv <- m$Z
+    ii <- rep(seq_len(ny - 1), times = nx - 1); jj <- rep(seq_len(nx - 1), each = ny - 1)
+    cn <- function(di, dj) { i <- ii + di; j <- jj + dj; k <- cbind(i, j); list(x = Xn[j], y = Yn[i], z = Zn[k], v = Zv[k]) }
+    cs <- list(cn(0, 0), cn(0, 1), cn(1, 1), cn(1, 0))
+    ok <- is.finite(cs[[1]]$z + cs[[2]]$z + cs[[3]]$z + cs[[4]]$z)
+    if (!any(ok)) .erro("Todas as células da grade têm algum Z vazio; não há superfície para desenhar.")
+    pr <- lapply(cs, function(c) P(c$x[ok], c$y[ok], c$z[ok]))
+    dep <- (pr[[1]]$d + pr[[2]]$d + pr[[3]]$d + pr[[4]]$d) / 4; zm <- (cs[[1]]$v[ok] + cs[[2]]$v[ok] + cs[[3]]$v[ok] + cs[[4]]$v[ok]) / 4
+    o <- order(dep, decreasing = TRUE)
+    cx <- cbind(pr[[1]]$sx, pr[[2]]$sx, pr[[3]]$sx, pr[[4]]$sx)[o, , drop = FALSE]; cy <- cbind(pr[[1]]$sy, pr[[2]]$sy, pr[[3]]$sy, pr[[4]]$sy)[o, , drop = FALSE]
+    tab <- .tabela_faces(cx, cy, list(z = zm[o]))
+    cam <- list(geom_polygon(data = tab, aes(x = x, y = y, group = grp, fill = z), colour = if (is.na(H$contorno_cor)) NA else .cor(H$contorno_cor), linewidth = .lw(if ((T$suavizar %||% 1) > 1) min(H$contorno_espessura_pt, 0.12) else H$contorno_espessura_pt)), esc$escala)
+    list(camadas = cam, caixa = cbind(tab$x, tab$y))
+  }
+  r <- .montar3d(cfg, E, titulos, dados3d)
+  list(camadas = r$camadas, info = list(mapa = TRUE, xlim = r$xlim, ylim = r$ylim, legenda_auto = TRUE, flip = FALSE, titulo_barra = esc$titulo))
+}
+
+# ---- barras 3D ----------------------------------------------------------------------------------------
+.construir_barras_3d <- function(dados, cfg) {
+  T <- cfg$tridimensional; H <- cfg$mapa_calor
+  m <- .limitar_grade(.grade_xyz(dados, cfg), 20000)
+  nx <- length(m$x); ny <- length(m$y)
+  if (all(is.na(m$Z))) .erro("Não há valores numéricos de Z para desenhar.")
+  px <- if (is.numeric(m$x)) m$x else seq_along(m$x); py <- if (is.numeric(m$y)) m$y else seq_along(m$y)
+  passo <- function(v) if (length(v) > 1) min(diff(sort(v))) else 1
+  E <- list(x = .eixo3d(cfg$eixo_x, m$x, !is.numeric(m$x), folga = passo(px) / 2), y = .eixo3d(cfg$eixo_y, m$y, !is.numeric(m$y), folga = passo(py) / 2),
+            z = .eixo3d(.eixo_z(cfg), c(0, m$Z)))
+  Xn <- .n3(E$x, px); Yn <- .n3(E$y, py); fr <- T$barras_largura %||% 0.7
+  dx <- (if (nx > 1) passo(Xn) else 1) * fr / 2; dy <- (if (ny > 1) passo(Yn) else 1) * fr / 2
+  esc <- .escala_z(cfg, m$Z, m$nome_z %||% .rot("Valor"))
+  titulos <- list(x = cfg$eixo_x$titulo %||% m$nome_x, y = cfg$eixo_y$titulo %||% m$nome_y, z = T$z_titulo %||% m$nome_z %||% .rot("Valor"))
+  dados3d <- function(P, Hh) {
+    base <- min(max(0, E$z$lo), E$z$hi); zb0 <- (base - E$z$lo) / (E$z$hi - E$z$lo) * Hh
+    ii <- rep(seq_len(ny), times = nx); jj <- rep(seq_len(nx), each = ny); v <- m$Z[cbind(ii, jj)]
+    ok <- is.finite(v); ii <- ii[ok]; jj <- jj[ok]; v <- v[ok]; n <- length(v)
+    zv <- .n3(E$z, v) * Hh; zt <- pmax(zv, zb0); zb <- pmin(zv, zb0)
+    x0 <- Xn[jj] - dx; x1 <- Xn[jj] + dx; y0 <- Yn[ii] - dy; y1 <- Yn[ii] + dy
+    a <- T$azimute * pi / 180; cor <- esc$cor_de(v)
+    o <- order(P(Xn[jj], Yn[ii], (zt + zb) / 2)$d, decreasing = TRUE)      # do mais longe ao mais perto
+    posicao <- integer(n); posicao[o] <- seq_len(n)
+    cara <- function(xs, ys, zs, cores, sub) {
+      pp <- lapply(1:4, function(q) P(xs[[q]], ys[[q]], zs[[q]]))
+      data.frame(x = as.vector(rbind(pp[[1]]$sx, pp[[2]]$sx, pp[[3]]$sx, pp[[4]]$sx)), y = as.vector(rbind(pp[[1]]$sy, pp[[2]]$sy, pp[[3]]$sy, pp[[4]]$sy)),
+                 caixa = rep(posicao, each = 4), sub = sub, cor = rep(cores, each = 4), stringsAsFactors = FALSE)
+    }
+    lat <- list(list(n = c(-1, 0), xs = list(x0, x0, x0, x0), ys = list(y0, y1, y1, y0)), list(n = c(1, 0), xs = list(x1, x1, x1, x1), ys = list(y0, y1, y1, y0)),
+                list(n = c(0, -1), xs = list(x0, x1, x1, x0), ys = list(y0, y0, y0, y0)), list(n = c(0, 1), xs = list(x0, x1, x1, x0), ys = list(y1, y1, y1, y1)))
+    partes <- list(); k <- 0L
+    for (l in lat) if (l$n[1] * sin(a) + l$n[2] * cos(a) < -1e-9) {                 # só os lados virados para quem olha
+      k <- k + 1L; sh <- 0.8 - 0.14 * (l$n[1] * cos(a) - l$n[2] * sin(a))
+      partes[[k]] <- cara(l$xs, l$ys, list(zb, zb, zt, zt), .escurecer(cor, sh), k)
+    }
+    partes[[k + 1L]] <- cara(list(x0, x1, x1, x0), list(y0, y0, y1, y1), list(zt, zt, zt, zt), cor, k + 1L)
+    tab <- do.call(rbind, partes); tab <- tab[order(tab$caixa, tab$sub), ]
+    tab$grp <- cumsum(c(TRUE, diff(tab$caixa) != 0 | diff(tab$sub) != 0))
+    tab$cor <- I(tab$cor)
+    cam <- list(.camada_barra3d(esc), geom_polygon(data = tab, aes(x = x, y = y, group = grp, fill = I(cor)), colour = if (is.na(T$cor_borda_barras)) NA else .cor(T$cor_borda_barras), linewidth = .lw(0.25)), esc$escala)
+    list(camadas = cam, caixa = cbind(tab$x, tab$y))
+  }
+  r <- .montar3d(cfg, E, titulos, dados3d)
+  list(camadas = r$camadas, info = list(mapa = TRUE, xlim = r$xlim, ylim = r$ylim, legenda_auto = TRUE, flip = FALSE, titulo_barra = esc$titulo))
+}
+
+# ---- dispersão 3D -------------------------------------------------------------------------------------
+.construir_dispersao_3d <- function(dados, cfg) {
+  T <- cfg$tridimensional; p <- .pontos_xyz(dados, cfg); d <- p$d
+  if (nrow(d) < 1) .erro("Não há pontos com X, Y e Z numéricos para desenhar.")
+  E <- list(x = .eixo3d(cfg$eixo_x, d$x), y = .eixo3d(cfg$eixo_y, d$y), z = .eixo3d(.eixo_z(cfg), c(d$z, if (isTRUE(T$hastes)) 0)))
+  esc <- .escala_z(cfg, d$z, p$nome_z %||% .rot("Valor"))
+  titulos <- list(x = cfg$eixo_x$titulo %||% p$nome_x, y = cfg$eixo_y$titulo %||% p$nome_y, z = T$z_titulo %||% p$nome_z %||% .rot("Valor"))
+  dados3d <- function(P, Hh) {
+    xn <- .n3(E$x, d$x); yn <- .n3(E$y, d$y); zn <- .n3(E$z, d$z) * Hh
+    pr <- P(xn, yn, zn); o <- order(pr$d, decreasing = TRUE)
+    pts <- data.frame(x = pr$sx[o], y = pr$sy[o], z = d$z[o]); cam <- list()
+    if (isTRUE(T$hastes)) {
+      base <- min(max(0, E$z$lo), E$z$hi); zb <- (base - E$z$lo) / (E$z$hi - E$z$lo) * Hh; pb <- P(xn[o], yn[o], zb)
+      cam[[1]] <- geom_segment(data = data.frame(x = pr$sx[o], y = pr$sy[o], xend = pb$sx, yend = pb$sy), aes(x = x, y = y, xend = xend, yend = yend), colour = .cor(T$cor_hastes), linewidth = .lw(0.4))
+    }
+    tam <- T$ponto_tamanho_pt %||% 6
+    cam <- c(cam, list(geom_point(data = pts, aes(x = x, y = y, fill = z), shape = 21, size = .tx(tam), stroke = .lw(0.3),
+                                   colour = if (is.na(T$cor_borda_pontos)) NA else .cor(T$cor_borda_pontos)), esc$escala))
+    list(camadas = cam, caixa = cbind(c(pts$x, if (isTRUE(T$hastes)) pb$sx), c(pts$y, if (isTRUE(T$hastes)) pb$sy)))
+  }
+  r <- .montar3d(cfg, E, titulos, dados3d)
+  list(camadas = r$camadas, info = list(mapa = TRUE, xlim = r$xlim, ylim = r$ylim, legenda_auto = TRUE, flip = FALSE, titulo_barra = esc$titulo))
+}
+
+# ---- mapa de cor (X, Y, Z): plano, com eixos numéricos de verdade ------------------------------------------------------
+.construir_mapa_cor <- function(dados, cfg) {
+  T <- cfg$tridimensional; H <- cfg$mapa_calor
+  m0 <- .grade_xyz(dados, cfg)
+  if (!is.numeric(m0$x) || !is.numeric(m0$y)) .erro("O mapa de cor precisa de números nos dois eixos (a 1ª coluna e os cabeçalhos). Para nomes (genes, amostras...), use o mapa de calor.")
+  if (length(m0$x) < 2 || length(m0$y) < 2) .erro("O mapa de cor precisa de pelo menos 2 valores em X e 2 em Y.")
+  m <- .limitar_grade(.refinar_grade(m0, T$suavizar %||% 1))
+  bordas <- function(v) { mid <- (v[-1] + v[-length(v)]) / 2; c(v[1] - (v[2] - v[1]) / 2, mid, v[length(v)] + (v[length(v)] - v[length(v) - 1]) / 2) }
+  bx <- bordas(m$x); by <- bordas(m$y); nx <- length(m$x); ny <- length(m$y)
+  ex <- 0.01 * min(diff(bx)); ey <- 0.01 * min(diff(by))       # as células se sobrepõem um pouco: sem fios claros entre elas
+  d <- data.frame(xmin = rep(bx[-(nx + 1)], each = ny) - ex, xmax = rep(bx[-1], each = ny) + ex, ymin = rep(by[-(ny + 1)], times = nx) - ey, ymax = rep(by[-1], times = nx) + ey, z = as.vector(m$Z),
+                  x = rep(m$x, each = ny), y = rep(m$y, times = nx))
+  esc <- .escala_z(cfg, d$z, m$nome_z %||% .rot("Valor"))
+  cam <- list(geom_rect(data = d, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = z), colour = NA, na.rm = FALSE), esc$escala)
+  nn <- T$niveis %||% 0
+  if (nn > 0 && !anyNA(m$Z)) {
+    lim <- esc$limites; qb <- pretty(lim, n = nn + 1); qb <- qb[qb > lim[1] & qb < lim[2]]
+    cam[[length(cam) + 1]] <- tryCatch(geom_contour(data = d, aes(x = x, y = y, z = z), breaks = qb, colour = .cor(T$cor_niveis), linewidth = .lw(0.4), inherit.aes = FALSE),
+                                        error = function(e) { .aviso("Não consegui traçar as linhas de nível: ", conditionMessage(e)); NULL })
+    cam <- Filter(Negate(is.null), cam)
+  }
+  ax_x <- .calc_eixo(cfg$eixo_x, range(bx), forcar = cfg$.interno$forcar_x)
+  ax_y <- .calc_eixo(cfg$eixo_y, range(by), forcar = cfg$.interno$forcar_y)
+  list(camadas = cam,
+       info = list(ax_x = ax_x, ax_y = ax_y, flip = FALSE, titulo_x = cfg$eixo_x$titulo %||% m$nome_x, titulo_y = cfg$eixo_y$titulo %||% m$nome_y,
+                   legenda_auto = TRUE, faixa_x = range(bx), faixa_y = range(by), titulo_barra = esc$titulo))
+}
+
+# -----------------------------------------------------------------------------
 #  04_catalogo.R — ajuda(), galeria(), mostrar_paletas()
 # -----------------------------------------------------------------------------
 # =============================================================================
@@ -7944,7 +9092,8 @@ if (requireNamespace("grid", quietly = TRUE)) {
                salvar = "exportacao", grid = "grade", titulo = "titulos", referencia = "referencias",
                tempo = "eixo_x", data = "eixo_x", datas = "eixo_x", ordenar_x = "linhas",
                pca = "multivariada", ca = "multivariada", cca = "multivariada", ordenacao = "multivariada", biplot = "multivariada",
-               mapa_mundo = "mapa", mapa_brasil = "mapa", mundo = "mapa", brasil = "mapa", heatmap = "mapa_calor", calor = "mapa_calor")
+               mapa_mundo = "mapa", mapa_brasil = "mapa", mundo = "mapa", brasil = "mapa", heatmap = "mapa_calor", calor = "mapa_calor",
+               mapa_cor = "tridimensional", superficie_3d = "tridimensional", barras_3d = "tridimensional", dispersao_3d = "tridimensional", "3d" = "tridimensional", z = "tridimensional")
 
 ajuda <- function(bloco = NULL) {
   L <- .config_linhas()
@@ -7980,8 +9129,10 @@ TIPOS DE GRÁFICO  (cfg$grafico$tipo)            colunas usadas / bloco de opç�
   "pca" | "ca" | "cca"  ordenações (biplot)      coluna_x (amostras) + multivariada$variaveis/ambientais -> ajuda("multivariada")
   "mapa_mundo"      mapa-múndi (países, regiões comerciais) coluna_x (país em inglês) + colunas_y[1] -> ajuda("mapa")
   "mapa_brasil"     mapa do Brasil (estados, regiões) coluna_x (sigla ou nome) + colunas_y[1] -> ajuda("mapa")
+  "mapa_cor"        mapa de cor (X, Y, Z)        matriz (1ª coluna = Y, cabeçalhos = X, células = Z) ou longo (X, Y, Z) -> ajuda("tridimensional")
+  "superficie_3d" | "barras_3d" | "dispersao_3d"  gráficos 3D, Z em cor e altura      mesma planilha -> ajuda("tridimensional")
 
-RECURSOS QUE VALEM PARA TODOS (exceto pizza, mapas e mapa de calor, que não têm eixos numéricos): eixo_x, eixo_y, eixo_y2, caixa, grade,
+RECURSOS QUE VALEM PARA TODOS (exceto pizza, mapas, mapa de calor e 3D, que não têm eixos comuns): eixo_x, eixo_y, eixo_y2, caixa, grade,
   legenda, titulos, texto, referencias, anotacoes, quebra, paineis, exportacao.
 ')
     return(invisible())
@@ -11072,7 +12223,7 @@ demonstracao <- function(tipo = c("linha", "barras", "pizza", "boxplot", "datas"
 
 # ---- 1. ARQUIVO E TIPO DE GRÁFICO -----------------------------------------------------------
 ARQUIVO_CSV <- ""        # caminho do CSV. EX.: "C:/pasta/dados.csv". Vazio = só carrega o template.
-tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barras" | "pizza" | "boxplot"...
+tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barras" | "pizza" | "boxplot" | "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d"...
 coluna_x     <- NULL     # coluna do eixo X: número ou "nome". EX.: 1  |  "Years"
 colunas_y    <- NULL     # colunas Y. NULL = todas as outras numéricas. EX.: c(2, 3)  |  c("WORLD", "LATAM")
 coluna_grupo <- NULL     # coluna que separa as amostras em grupos (cores e elipses do PCA/CA/CCA; colunas do mapa de calor "longo"). EX.: "Local"
@@ -11100,10 +12251,10 @@ multi_cor_ambientais <- NULL  # cor das ambientais. EX.: "#B3262E"
 multi_linhas_zero   <- NULL   # TRUE/FALSE: linhas tracejadas em 0
 multi_legenda_posicao <- NULL # onde fica a legenda dos grupos: "direita" | "esquerda" | "topo" | "base" | "dentro"
 
-# ---- 1c. MAPA DE CALOR E MAPAS (tipo_grafico "mapa_calor" | "mapa_mundo" | "mapa_brasil") ---------
+# ---- 1c. MAPA DE CALOR E MAPAS (tipo_grafico "mapa_calor" | "mapa_mundo" | "mapa_brasil"; mais abaixo, o mapa de cor e o 3D) ---------
 #  Mapa de calor: coluna_x = nome das linhas; as demais colunas numéricas viram as colunas do mapa.
 #  Mapas: coluna_x = país (nome em inglês) ou estado (sigla/nome); colunas_y[1] = o valor que vira cor.
-calor_formato    <- NULL   # "matriz" | "longo" (longo: coluna_x = linhas, coluna_grupo = colunas, colunas_y[1] = valor)
+calor_formato    <- NULL   # "matriz" | "longo" (longo: coluna_x = linhas, coluna_grupo = colunas, colunas_y[1] = valor; também vale para o mapa de cor e o 3D)
 calor_normalizar <- NULL   # "nenhum" | "linha" | "coluna" (nota z)
 calor_agrupar    <- NULL   # "nenhum" | "linhas" | "colunas" | "ambos" (ordena por semelhança)
 calor_esquema    <- NULL   # "cinabro" | "petroleo" | "divergente" | "viridis" | "magma" | "inferno" | "turbo"
@@ -11167,6 +12318,29 @@ mapa_rotulos_posicoes <- NULL  # nomes do mapa movidos à mão: "Brazil=x,y" (no
 mapa_linha_guia <- NULL       # TRUE/FALSE: fio entre o nome e o local
 calor_mostrar_ticks <- NULL   # TRUE = traços de eixo nas células do mapa de calor
 calor_tamanho_valores_pt <- NULL # tamanho (pt) do número escrito em cada célula
+
+# ---- Mapa de cor (X, Y, Z) e gráficos 3D: tipos "mapa_cor", "superficie_3d", "barras_3d" e "dispersao_3d" -------------------------
+#  Tabela em matriz (calor_formato "matriz"): 1ª coluna = valores de Y, cabeçalhos = valores de X, células = Z. Em "longo": colunas X, Y e Z.
+tri_azimute <- NULL       # giro da vista em graus (padrão 40)
+tri_elevacao <- NULL      # altura do olhar, 0 a 90 (padrão 28)
+tri_altura <- NULL        # altura do eixo Z em relação à base (padrão 0.7)
+tri_caixa <- NULL         # "paredes" | "base" | "aberta"
+tri_z_titulo <- NULL      # título do eixo Z
+tri_z_inicio <- NULL      # eixo Z começa em
+tri_z_fim <- NULL         # eixo Z termina em
+tri_z_intervalo <- NULL   # distância entre os números do eixo Z
+tri_suavizar <- NULL      # divisões por célula (1 = sem suavizar; superfície e mapa de cor)
+tri_niveis <- NULL        # quantidade de linhas de nível (mapa de cor)
+tri_cor_niveis <- NULL    # cor das linhas de nível
+tri_barras_largura <- NULL # largura das barras 3D, 0 a 1
+tri_cor_borda_barras <- NULL # contorno das barras 3D (NA = sem)
+tri_ponto_tamanho_pt <- NULL # tamanho dos pontos da dispersão 3D (pt)
+tri_hastes <- NULL        # TRUE = linha de cada ponto até o piso
+tri_cor_hastes <- NULL    # cor dessas linhas
+tri_cor_borda_pontos <- NULL # contorno dos pontos (NA = sem)
+tri_cor_paredes <- NULL   # cor do piso e das paredes
+tri_cor_grade <- NULL     # cor da grade das paredes
+tri_cor_caixa <- NULL     # cor das arestas da caixa
 
 
 # ---- 2. INTERVALOS DOS EIXOS (início, fim, passo e grossura dos traços) -------------------------
@@ -11424,7 +12598,7 @@ legenda_sombra_opacidade <- NULL    # 0 a 1. EX.: 0.35
 legenda_sombra_deslocamento_pt <- NULL  # c(para a direita, para baixo) em pt. EX.: c(3, 3)  |  c(5, 2)
 
 # ---- IDIOMA -----------------------------------------------------------------------------------------
-idioma           <- NULL   # só "pt" (português do Brasil). Inglês e espanhol estão arquivados em idiomas_arquivados/ (peça para reativar).
+idioma           <- NULL   # idioma das mensagens e dos textos automáticos do gráfico: "pt" (português do Brasil) | "en" | "es"
 
 # ---- 12. EXPORTAÇÃO ------------------------------------------------------------------------------------
 largura_cm   <- NULL       # EX.: 14   (só vale com painel_fixo <- FALSE ou ajustar_pagina <- FALSE; senão a página se ajusta sozinha)

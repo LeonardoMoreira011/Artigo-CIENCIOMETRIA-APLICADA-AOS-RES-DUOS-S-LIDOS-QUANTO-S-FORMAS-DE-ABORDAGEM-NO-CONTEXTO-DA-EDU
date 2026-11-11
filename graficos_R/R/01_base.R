@@ -86,7 +86,7 @@ suppressPackageStartupMessages({
 # Texto padrão que aparece dentro do gráfico (títulos de eixo automáticos), no idioma escolhido.
 .rot <- function(x) {
   i <- .idioma(); if (i == "pt" || !exists(".ROTULOS_IDIOMA", inherits = TRUE)) return(x)
-  r <- .ROTULOS_IDIOMA[[i]][x]; ifelse(is.na(r), x, r)
+  r <- .ROTULOS_IDIOMA[[i]][x]; unname(ifelse(is.na(r), x, r))
 }
 .aviso <- function(...) warning(.traduzir_msg(paste0(...)), call. = FALSE, immediate. = TRUE)
 .erro  <- function(...) stop(.traduzir_msg(paste0(...)), call. = FALSE)

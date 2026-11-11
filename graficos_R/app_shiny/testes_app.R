@@ -421,7 +421,7 @@ testServer(servidor, {
 })
 # ---- modelos de planilha (modelos_csv/): todos abrem e os de ordenação e mapas montam o gráfico ---------------------------------------
 arqs_m <- list.files(file.path(raiz, "modelos_csv"), "^modelo_[0-9]+[b-z]?_.*\\.csv$", full.names = TRUE); arqs_m <- arqs_m[!grepl("ANTES", arqs_m)]
-teste("modelos_csv: 15 modelos de planilha (14 gráficos + o 'depois' da tabela cruzada)", length(arqs_m) == 15)
+teste("modelos_csv: 18 modelos de planilha (17 gráficos + o 'depois' da tabela cruzada)", length(arqs_m) == 18)
 lidos_m <- lapply(arqs_m, function(a) tryCatch(suppressMessages(ler_csv(a, utils::modifyList(CFG0$dados, list(relatorio = FALSE)))), error = function(e) NULL))
 teste("modelos_csv: todos abrem no Cinabro, com várias colunas e linhas", all(vapply(lidos_m, function(d) !is.null(d) && ncol(d) >= 2 && nrow(d) >= 4, NA)))
 tp_m <- c(modelo_11_pca.csv = "pca", modelo_12_cca.csv = "cca", modelo_13_mapa_mundo.csv = "mapa_mundo", modelo_14_mapa_brasil.csv = "mapa_brasil", modelo_09_mapa_calor.csv = "mapa_calor", modelo_15b_DEPOIS_pca.csv = "pca")
@@ -431,6 +431,13 @@ for (n in names(tp_m)) {
     if (identical(tp_m[[n]], "cca")) v$multi_ambientais <- c("pH", "Temperatura (°C)", "Salinidade (g/L)") }
   r <- suppressWarnings(construir_grafico(d, montar_variaveis(v, CFG0, NULL), CFG0, preview = FALSE))
   teste(paste0("modelos_csv: ", n, " monta o gráfico (", tp_m[[n]], ") sem erro"), is.null(r$erro) && !is.null(r$g))
+}
+tp3 <- list(modelo_16_superficie_matriz.csv = list("superficie_3d", "matriz"), modelo_17_barras_3d.csv = list("barras_3d", "matriz"), modelo_18_dispersao_3d_longo.csv = list("dispersao_3d", "longo"))
+for (n in names(tp3)) {
+  d <- lidos_m[[which(basename(arqs_m) == n)]]
+  r <- suppressWarnings(construir_grafico(d, montar_variaveis(list(tipo_grafico = tp3[[n]][[1]], calor_formato = tp3[[n]][[2]]), CFG0, NULL), CFG0, preview = FALSE))
+  r2 <- if (tp3[[n]][[1]] == "superficie_3d") suppressWarnings(construir_grafico(d, montar_variaveis(list(tipo_grafico = "mapa_cor"), CFG0, NULL), CFG0, preview = FALSE)) else r
+  teste(paste0("modelos_csv: ", n, " monta o gráfico (", tp3[[n]][[1]], if (tp3[[n]][[1]] == "superficie_3d") " e mapa_cor", ") sem erro"), is.null(r$erro) && !is.null(r$g) && is.null(r2$erro) && !is.null(r2$g))
 }
 
 # ---- Dashboard: números-chave, destaques, imagens, página HTML e PDF ---------------------------------------------------------------
