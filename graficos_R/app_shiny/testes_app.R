@@ -151,7 +151,7 @@ textos_codigo <- local({            # textos entre aspas dentro de T(), TF(), tr
   unique(out) })
 for (lg in c("en", "es"))
   teste(paste0("todo texto do app tem tradução em ", lg, " (", length(textos_espec) + length(textos_codigo), " textos conferidos)"),
-        { f <- setdiff(c(textos_espec, textos_codigo), c(names(.i18n$dic[[lg]]), tryCatch(.familias_fontes(), error = function(e) character(0)))); if (length(f)) print(head(f, 10)); length(f) == 0 })   # (nomes de fontes do computador não se traduzem)
+        { f <- setdiff(c(textos_espec, textos_codigo), c(names(.i18n$dic[[lg]]), tryCatch(.familias_fontes(), error = function(e) character(0)))); if (length(f)) message("erro: sem tradução (", lg, "): ", paste(head(f, 12), collapse = " | ")); length(f) == 0 })   # (nomes de fontes do computador não se traduzem)
 teste("tr(), tr_nomes() e trf() traduzem; texto sem tradução volta igual; em português nada muda",
       identical(tr("Mais opções", "en"), "More options") && identical(tr("Mais opções", "pt"), "Mais opções") && identical(tr("texto que não existe", "es"), "texto que não existe") &&
       identical(names(tr_nomes(c("Limpar" = "a", "Sem chave" = "b"), "en")), c("Clear", "Sem chave")) && identical(trf("Maior vazio: de %s a %s.", 1, 2, idioma = "es"), "Mayor vacío: de 1 a 2."))
