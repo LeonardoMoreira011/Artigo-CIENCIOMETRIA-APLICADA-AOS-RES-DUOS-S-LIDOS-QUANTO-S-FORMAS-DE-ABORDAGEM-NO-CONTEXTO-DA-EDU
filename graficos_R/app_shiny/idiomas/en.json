@@ -1331,5 +1331,6 @@
  "· variação": "· change",
  "Superfície 3D / mapa de cor (matriz X, Y, Z)": "3D surface / color map (X, Y, Z matrix)",
  "Barras 3D (região × material)": "3D bars (region × material)",
- "Dispersão 3D (tabela longa X, Y, Z)": "3D scatter (long X, Y, Z table)"
+ "Dispersão 3D (tabela longa X, Y, Z)": "3D scatter (long X, Y, Z table)",
+ "EMF (Word/PowerPoint)": "EMF (Word/PowerPoint)"
 }
