@@ -14,7 +14,7 @@
 .OPCOES <- list(
   "grafico$tipo" = c("pontos", "linha", "linha_pontos", "area", "area_empilhada", "barras",
                      "pizza", "histograma", "densidade", "ecdf", "boxplot", "mapa_calor", "pca", "ca", "cca",
-                     "mapa_mundo", "mapa_brasil"),
+                     "mapa_mundo", "mapa_brasil", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d"),
   "cores$preenchimento" = c("solido", "gradiente"),
   "cores$gradiente_direcao" = c("vertical", "vertical_invertido", "horizontal",
                                 "horizontal_invertido", "diagonal", "radial"),
@@ -47,6 +47,7 @@
   "mapa_calor$esquema_cor" = c("cinabro", "petroleo", "divergente", "viridis", "magma", "inferno", "turbo"),
   "multivariada$resumo_posicao" = c("caixa", "rodape"),
   "multivariada$legenda_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
+  "tridimensional$caixa" = c("paredes", "base", "aberta"),
   "mapa_calor$barra_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "mapa$nivel" = c("pais", "estado", "regiao"),
   "mapa$agregacao" = c("soma", "media", "maximo"),
@@ -245,6 +246,13 @@
     .erro("cfg$mapa_calor$cores_escala deve ter 2 ou mais cores (ex.: c(\"white\", \"red\")).")
   if (!is.null(mc$limite_min) && !is.null(mc$limite_max) && mc$limite_min >= mc$limite_max)
     .erro("cfg$mapa_calor$limite_min (", mc$limite_min, ") deve ser menor que limite_max (", mc$limite_max, ").")
+  tr3 <- cfg$tridimensional
+  if (!is.null(tr3$azimute) && (!is.numeric(tr3$azimute) || length(tr3$azimute) != 1 || !is.finite(tr3$azimute))) .erro("cfg$tridimensional$azimute deve ser um número em graus (ex.: 40).")
+  if (!is.null(tr3$elevacao) && (!is.numeric(tr3$elevacao) || tr3$elevacao < 0 || tr3$elevacao > 90)) .erro("cfg$tridimensional$elevacao deve estar entre 0 e 90 graus (ex.: 28).")
+  if (!is.null(tr3$altura_relativa) && (!is.numeric(tr3$altura_relativa) || tr3$altura_relativa < 0.1 || tr3$altura_relativa > 3)) .erro("cfg$tridimensional$altura_relativa deve estar entre 0.1 e 3 (ex.: 0.7).")
+  if (!is.null(tr3$z_inicio) && !is.null(tr3$z_fim) && tr3$z_inicio >= tr3$z_fim) .erro("cfg$tridimensional$z_inicio (", tr3$z_inicio, ") deve ser menor que z_fim (", tr3$z_fim, ").")
+  if (!is.null(tr3$barras_largura) && (!is.numeric(tr3$barras_largura) || tr3$barras_largura <= 0 || tr3$barras_largura > 1)) .erro("cfg$tridimensional$barras_largura deve estar entre 0 e 1 (ex.: 0.7).")
+  if (!is.null(tr3$suavizar) && (!is.numeric(tr3$suavizar) || tr3$suavizar < 1 || tr3$suavizar > 12)) .erro("cfg$tridimensional$suavizar deve ser um número de 1 a 12 (1 = sem suavizar).")
   if (!identical(cfg$legenda$mostrar, "auto") && !is.logical(cfg$legenda$mostrar))
     .erro("cfg$legenda$mostrar deve ser \"auto\", TRUE ou FALSE.")
   invisible(TRUE)

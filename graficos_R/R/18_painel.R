@@ -54,6 +54,13 @@
   multi_elipse_espessura_pt = c("multivariada", "elipse_espessura_pt"),
   multi_elipse_preencher = c("multivariada", "elipse_preencher"),
   calor_mostrar_ticks = c("mapa_calor", "mostrar_ticks"),
+  tri_azimute = c("tridimensional", "azimute"), tri_elevacao = c("tridimensional", "elevacao"), tri_altura = c("tridimensional", "altura_relativa"),
+  tri_caixa = c("tridimensional", "caixa"), tri_z_titulo = c("tridimensional", "z_titulo"), tri_z_inicio = c("tridimensional", "z_inicio"),
+  tri_z_fim = c("tridimensional", "z_fim"), tri_z_intervalo = c("tridimensional", "z_intervalo"), tri_suavizar = c("tridimensional", "suavizar"),
+  tri_niveis = c("tridimensional", "niveis"), tri_cor_niveis = c("tridimensional", "cor_niveis"), tri_barras_largura = c("tridimensional", "barras_largura"),
+  tri_cor_borda_barras = c("tridimensional", "cor_borda_barras"), tri_ponto_tamanho_pt = c("tridimensional", "ponto_tamanho_pt"), tri_hastes = c("tridimensional", "hastes"),
+  tri_cor_hastes = c("tridimensional", "cor_hastes"), tri_cor_borda_pontos = c("tridimensional", "cor_borda_pontos"), tri_cor_paredes = c("tridimensional", "cor_paredes"),
+  tri_cor_grade = c("tridimensional", "cor_grade"), tri_cor_caixa = c("tridimensional", "cor_caixa"),
   calor_tamanho_valores_pt = c("mapa_calor", "tamanho_valores_pt"),
   mapa_rotulos_tamanho_pt = c("mapa", "rotulos_tamanho_pt"),
   mapa_rotulos_fonte = c("mapa", "rotulos_fonte"),
@@ -373,9 +380,8 @@ aplicar_painel <- function(cfg, painel = globalenv(), dados = NULL) {
   }
   idm <- pega("idioma")                  # idioma das mensagens e dos textos automáticos do gráfico: "pt" | "en" | "es"
   if (!is.null(idm)) {
-    if (!idm %in% c("pt", "en", "es")) .erro("idioma precisa ser \"pt\".")
-    if (!identical(idm, "pt")) .aviso("Só o português está ativo; o inglês e o espanhol estão arquivados (peça para reativar). Usei o português.")
-    marca("idioma")
+    if (!idm %in% c("pt", "en", "es")) .erro("idioma precisa ser \"pt\", \"en\" ou \"es\".")
+    options(cinabro.idioma = idm); marca("idioma")
   }
   if (length(aplicados)) message("Painel de ajustes aplicado: ", paste(aplicados, collapse = ", "))
   else message("Painel de ajustes: nenhum ajuste ativo (tudo NULL = padrão do template).")

@@ -9,7 +9,8 @@
 # Texto com cores (códigos #RRGGBB, #RGB, RRGGBB ou nomes do R, separados por vírgula, espaço ou linha) -> vetor de #RRGGBB.
 ler_cores_texto <- function(txt) {
   p <- strsplit(trimws(paste(txt, collapse = " ")), "[[:space:],;]+")[[1]]; p <- p[nzchar(p)]
-  p <- ifelse(grepl("^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$", p), paste0("#", p), p)
+  p <- ifelse(grepl("^#?[0-9A-Fa-f]{3}$|^#?[0-9A-Fa-f]{6}$", p), paste0("#", sub("^#", "", p)), p)
+  p <- ifelse(grepl("^#[0-9A-Fa-f]{3}$", p), vapply(p, function(x) paste0("#", paste(rep(strsplit(substr(x, 2, 4), "")[[1]], each = 2), collapse = "")), ""), p)   # #RGB -> #RRGGBB (o R antigo não entende)
   ok <- vapply(p, function(x) tryCatch({ grDevices::col2rgb(x); TRUE }, error = function(e) FALSE), NA)
   if (!any(ok)) return(character(0))
   m <- grDevices::col2rgb(p[ok])

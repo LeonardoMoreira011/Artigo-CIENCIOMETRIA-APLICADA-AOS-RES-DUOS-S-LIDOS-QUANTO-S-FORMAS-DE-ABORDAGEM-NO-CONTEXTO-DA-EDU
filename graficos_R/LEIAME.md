@@ -29,11 +29,13 @@ Para quem não quer mexer em código: abra o **Cinabro** (laboratório de gráfi
 - **Grade:** nos traços grandes (`grade_x`, `grade_y`) e nos pequenos (`grade_menor_x`, `grade_menor_y`), cada grupo com tipo, cor, grossura e opacidade; a menor precisa de traços pequenos (`x_ticks_menores` ≥ 1).
 - **Fontes:** o app lista **todas as fontes do computador (systemfonts)**, com busca, e aceita uma fonte de arquivo `.ttf`/`.otf`. No script: `listar_fontes()` e `fonte <- "Nome da fonte"`.
 
-## Idioma: só português (BR)
+## Idiomas: português (BR), English e Español
 
-- O app e o motor falam **só português do Brasil**. O seletor de idioma saiu do cabeçalho e `idioma <- "en"` no painel avisa e usa o português.
-- O **inglês e o espanhol não foram apagados**: dicionários, mensagens do motor e READMEs estão guardados em **`idiomas_arquivados/`** (veja o `LEIA-ME.md` de lá). **Para reativar, peça.**
-- Todo texto novo é escrito só em português.
+- O app e as mensagens do motor falam **três idiomas**. No cabeçalho há o **seletor de idioma**: ao trocar, a página recarrega em 2 a 4 segundos e **o seu trabalho continua** (dados, tipo de gráfico, ajustes e abas voltam sozinhos, sem perguntar). O idioma escolhido fica guardado no navegador (cookie), e também vale o endereço `http://cinabro.localhost:8421/?idioma=en` (ou `es`).
+- **Por que não trava:** a tela de cada idioma é montada **uma única vez** (o português ao abrir o programa; o inglês e o espanhol na primeira vez que alguém os pede, cerca de 1 segundo) e fica guardada na memória: depois disso, abrir ou trocar de idioma custa milésimos. As mensagens do motor (avisos e erros) só são traduzidas quando aparecem.
+- Traduzidos: toda a tela, os avisos, o **Dashboard** (editor, destaques escritos a partir dos números, números no formato do idioma) e as mensagens do motor. O **manual** e este LEIAME continuam em português; `README_EN.md` e `README_ES.md` são guias curtos.
+- No script: `idioma <- "en"` (ou `"es"`) no `painel_de_ajustes.R`, ou `options(cinabro.idioma = "en")`. Os títulos automáticos dos eixos ("Valor", "Frequência"...) e os rótulos das estatísticas saem no idioma.
+- **Texto novo no código** = escreva em português e acrescente a linha nos dois dicionários (`app_shiny/idiomas/en.json` e `es.json`; mensagens do motor em `R/02_traducoes_motor.R`). O `testes_app.R` avisa de qualquer texto que ficou sem tradução.
 
 ## Paletas e licenças
 
@@ -372,9 +374,27 @@ Seis tipos novos em **Dados e tipo de gráfico**. Usam os pacotes `sf` (mapas), 
 - Como é feito: `app_shiny/codigo/dashboard.R` (R: desenha os gráficos em SVG ou PNG, calcula números-chave e destaques, monta a página e chama o navegador para o PDF) e `app_shiny/www/dashboard/` (`editor.js`, `editor.css`, `modelo.html`: a página autônoma). Testes: `testes_app.R` (seção Dashboard) e, no navegador, `ferramentas/teste_navegador/dashboard_editor.js` e `dashboard_app.js`.
 - Ainda não tem (próximas etapas, veja `planejamento/DASHBOARD_PROPOSTA.html`): tabelas como bloco, tema preto e branco, modelos de disposição para o time, atualizar o painel quando os dados mudam, seleção por laço, painel interativo com filtros.
 
+## Mapa de cor (X, Y, Z) e gráficos 3D
+
+Quatro tipos novos em **Dados e tipo de gráfico**, para uma grandeza **Z** que depende de **X** e **Y**. O Z aparece na **cor** (com barra de cores) e, nos 3D, também na **altura**. Não precisam de pacote extra: o 3D é desenhado pelo próprio Cinabro (projeção ortográfica, faces pintadas de trás para a frente) e sai em PNG, TIFF, JPEG, SVG e PDF como os demais.
+
+| Tipo | O que é | Escolhas no app |
+|---|---|---|
+| **Mapa de cor** (`mapa_cor`) | Plano com eixos numéricos de verdade; a cor é o Z. | Suavizar (interpola entre os pontos), linhas de nível, esquema de cores, limites e centro, barra de cores. |
+| **Superfície 3D** (`superficie_3d`) | Superfície colorida pelo Z. | Giro da vista e altura do olhar, altura do eixo Z, caixa (piso e paredes / só o piso / só os eixos), suavizar, contorno das faces. |
+| **Barras 3D** (`barras_3d`) | Uma barra por (X, Y); aceita **nomes** nos dois eixos (região × material). | Largura das barras, ângulo, base no zero (valores negativos descem). |
+| **Dispersão 3D** (`dispersao_3d`) | Um ponto por linha, colorido pelo Z. | Tamanho do ponto, linha de cada ponto até o piso, ângulo. |
+
+- **Planilha em matriz (padrão):** a **1ª coluna traz os valores de Y**, o **cabeçalho das outras colunas traz os valores de X** e as **células são o Z**. Os cabeçalhos e a 1ª coluna precisam ser números (nas Barras 3D podem ser nomes). **Formato longo:** uma linha por ponto, com X, Y e Z (as três primeiras colunas, nessa ordem; ou escolha em *Coluna do eixo X*, *Coluna dos grupos* = Y e *Colunas do eixo Y* = Z). O formato é o campo **Formato da tabela** (o mesmo do mapa de calor).
+- **Eixos:** X e Y usam os blocos de eixos de sempre (início, fim, distância dos números, casas decimais, notação, fonte, cor e títulos). O **eixo Z** tem **título, início, fim e distância dos números** próprios (`Z` no bloco Dados) e herda o estilo do eixo Y. No 3D os eixos são lineares (a escala logarítmica é ignorada, com aviso).
+- **Cor e barra:** os mesmos campos do mapa de calor (esquema `cinabro`, `petroleo`, `divergente`, `viridis`, `magma`, `inferno`, `turbo`, ou as suas cores; limites; centro; título e posição da barra).
+- **Limites:** não valem a quebra de eixo, o eixo da direita nem o ajuste de curva. Grades muito grandes (acima de 40 mil células) são reduzidas com aviso, para o desenho não ficar pesado. Células sem valor ficam em branco na superfície.
+- **No código:** `cfg$grafico$tipo <- "superficie_3d"`; blocos `cfg$tridimensional` (`ajuda("tridimensional")`) e `cfg$mapa_calor` (cor e formato); no painel: variáveis `tri_*` e `calor_*` (seção "Mapa de cor e gráficos 3D" do `painel_de_ajustes.R`). Exemplos na lista de exemplos do app e em `dados/` (`superficie_rendimento.csv`, `barras_3d_residuos.csv`, `dispersao_3d_doses.csv`); modelos de planilha em `modelos_csv/` (16 a 18).
+- Funcionam no **Dashboard** (com destaques: onde o Z é máximo e mínimo) como os outros tipos.
+
 ## Modelos de planilha (CSV) e apêndice do manual
 
-- A pasta **`modelos_csv/`** traz 14 modelos de planilha com **dados inventados** (um por tipo de gráfico: séries, dois eixos, datas, barras com erro, pizza, boxplot em colunas e em formato longo, histograma, mapa de calor em matriz e em formato longo, PCA, CCA, mapa-múndi, mapa do Brasil) e o par **antes/depois** que mostra como transformar a tabela "de lado" do Excel (variáveis nas linhas, tratamentos e tempos nas colunas) na planilha certa para a PCA.
+- A pasta **`modelos_csv/`** traz 17 modelos de planilha com **dados inventados** (um por tipo de gráfico: séries, dois eixos, datas, barras com erro, pizza, boxplot em colunas e em formato longo, histograma, mapa de calor em matriz e em formato longo, PCA, CCA, mapa-múndi, mapa do Brasil, mapa de cor/superfície 3D, barras 3D, dispersão 3D) e o par **antes/depois** que mostra como transformar a tabela "de lado" do Excel (variáveis nas linhas, tratamentos e tempos nas colunas) na planilha certa para a PCA.
 - O **Apêndice do `Manual_Cinabro.pdf`** explica cada modelo: a planilha, o **que marcar no bloco Dados** e o gráfico que sai; mais cinco regras de ouro e uma tabela "cada coluna manda em quê" (cores, grupos, divisões, barras de erro, eixo da direita).
 - `ferramentas/manual/modelos.R` refaz os CSVs, os gráficos do apêndice e o próprio apêndice (entre `MODELOS-INICIO` e `MODELOS-FIM` em `manual/manual.html`). O teste `testes_app.R` confere que todos os modelos abrem no Cinabro.
 
@@ -385,5 +405,5 @@ Seis tipos novos em **Dados e tipo de gráfico**. Usam os pacotes `sf` (mapas), 
 ## Licença e como citar
 
 - **Licença MIT** (arquivo `LICENSE`): você pode usar, copiar, modificar e distribuir o Cinabro, em trabalhos científicos ou não, desde que mantenha o aviso de copyright. Os pacotes do R e os outros trabalhos usados mantêm as suas licenças (`NOTICE.md`).
-- **Como citar** (também em `CITATION.cff`): Moreira, L. (2026). *Cinabro: laboratório de gráficos científicos* (versão 0.2.0) [Software]. Quando o projeto tiver um DOI (Zenodo), use-o na citação.
+- **Como citar** (também em `CITATION.cff`): Moreira, L. (2026). *Cinabro: laboratório de gráficos científicos* (versão 0.3.0) [Software]. Quando o projeto tiver um DOI (Zenodo), use-o na citação.
 - **Nos métodos do artigo**, uma frase como: "As figuras foram feitas com o Cinabro (Moreira, 2026), um programa em R baseado em ggplot2." Cite também o R e os pacotes que a análise usou (PCA e CCA: vegan; mapas: sf).

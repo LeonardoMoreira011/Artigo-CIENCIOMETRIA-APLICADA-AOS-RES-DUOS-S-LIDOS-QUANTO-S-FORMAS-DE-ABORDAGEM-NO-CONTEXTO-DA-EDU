@@ -9,6 +9,7 @@
   if (length(x) == 3 && is.numeric(x)) return(grDevices::rgb(x[1], x[2], x[3], maxColorValue = 255))
   if (length(x) == 1 && is.na(x)) return(NA_character_)
   if (identical(x, "transparente")) return("transparent")
+  if (is.character(x) && any(grepl("^#[0-9A-Fa-f]{3}$", x))) x <- ifelse(grepl("^#[0-9A-Fa-f]{3}$", x), vapply(x, function(h) paste0("#", paste(rep(strsplit(substr(h, 2, 4), "")[[1]], each = 2), collapse = "")), ""), x)   # #RGB -> #RRGGBB (o R antigo não entende)
   ok <- tryCatch({ grDevices::col2rgb(x); TRUE }, error = function(e) FALSE)
   if (!ok) .erro("Cor inválida em ", onde, ": '", x, "'. Use nome (\"red\"), \"#RRGGBB\" ou c(R,G,B).")
   x

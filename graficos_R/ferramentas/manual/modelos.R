@@ -125,6 +125,30 @@ c <- novo("m14_mapa_brasil", 8.5, 8.2); c$grafico$tipo <- "mapa_brasil"; c$grafi
 add("m14", "Mapa do Brasil por estado ou por região", "Um valor por estado. Vale a <b>sigla</b> (SP) ou o <b>nome</b> (São Paulo; o acento não importa).",
     "modelo_14_mapa_brasil.csv", c("<b>Tipo de gráfico:</b> Mapa do Brasil.", "<b>Coluna do eixo X:</b> UF. <b>Colunas do eixo Y:</b> Resíduos (t).", "<b>Pintar por:</b> Estado, ou Região (IBGE) para somar por região."))
 
+# ---- 16 a 18. mapa de cor e gráficos 3D (X, Y e Z) ----------------------------------------------------------------------------------------------------------
+tp <- c(20, 30, 40, 50, 60, 70, 80); ph <- 4:10
+z <- outer(ph, tp, function(p, T) 88 * exp(-((T - 55) / 22)^2 - ((p - 7.2) / 2.1)^2) + 6 + rnorm(length(p), 0, .8))
+m16 <- data.frame(pH = ph, as.data.frame(round(z, 1)), check.names = FALSE); names(m16)[-1] <- tp
+gravar(m16, "modelo_16_superficie_matriz.csv")
+c <- novo("m16_superficie_matriz", 11, 8); c$grafico$tipo <- "superficie_3d"; c$eixo_x$titulo <- "Temperatura (°C)"; c$eixo_y$titulo <- "pH"; c$tridimensional$z_titulo <- "Rendimento (%)"; c$mapa_calor$titulo_barra <- "Rendimento (%)"; gerar(c, lê("modelo_16_superficie_matriz.csv"))
+add("m16", "Mapa de cor e superfície 3D: tabela em matriz (X, Y e Z)", "Uma grandeza (Z) que depende de duas outras (X e Y), medida numa grade: <b>a 1ª coluna traz os valores de Y, o cabeçalho das outras colunas traz os valores de X e as células são o Z</b>. Serve para o <i>Mapa de cor</i>, a <i>Superfície 3D</i> e as <i>Barras 3D</i>.",
+    "modelo_16_superficie_matriz.csv", c("<b>Tipo de gráfico:</b> Superfície 3D (ou Mapa de cor, ou Barras 3D).", "<b>Formato da tabela:</b> Matriz (linhas × colunas).", "<b>Título do eixo Z</b> e <b>Título da barra de cores:</b> o nome e a unidade do Z. Os títulos de X e Y estão nos blocos dos eixos.", "<b>Giro da vista</b> e <b>Altura do olhar:</b> escolha o ângulo; <b>Suavizar</b> (3 a 6) deixa a superfície lisa."),
+    "Os cabeçalhos das colunas precisam ser <b>números</b> (os valores de X) e a 1ª coluna também (os valores de Y). Se forem nomes (espécies, locais), use as <i>Barras 3D</i> (aceitam nomes) ou o <i>Mapa de calor</i>.")
+mat <- c("Plástico", "Papel", "Vidro", "Metal", "Orgânico"); reg <- c("Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul")
+bz <- outer(c(.5, 1.1, .7, 2.4, 1.3), c(1, .8, .35, .3, 2.6)) * 10 * matrix(runif(25, .9, 1.1), 5)
+m17 <- data.frame(Região = reg, as.data.frame(round(bz, 1)), check.names = FALSE); names(m17)[-1] <- mat
+gravar(m17, "modelo_17_barras_3d.csv")
+c <- novo("m17_barras_3d", 11, 8); c$grafico$tipo <- "barras_3d"; c$eixo_y$titulo <- "Região"; c$eixo_x$titulo <- "Material"; c$tridimensional$z_titulo <- "Resíduos (t/mês)"; c$mapa_calor$titulo_barra <- "t/mês"; c$tridimensional$azimute <- 125; gerar(c, lê("modelo_17_barras_3d.csv"))
+add("m17", "Barras 3D: categorias nos dois eixos", "Um valor por combinação de duas categorias (região × material, tratamento × tempo). A 1ª coluna traz os nomes de Y e o cabeçalho das outras, os nomes de X.",
+    "modelo_17_barras_3d.csv", c("<b>Tipo de gráfico:</b> Barras 3D.", "<b>Formato da tabela:</b> Matriz.", "<b>Giro da vista:</b> mude o ângulo até as barras baixas aparecerem atrás das altas (125° neste exemplo).", "<b>Largura das barras:</b> 1 deixa as barras coladas."),
+    "Barras negativas descem a partir do zero. O eixo Z começa no zero sozinho; para outro começo, use <i>Eixo Z começa em</i>.")
+n <- 40; a <- runif(n, 0, 10); b <- runif(n, 0, 10)
+gravar(data.frame(`Dose A (mg)` = r1(a), `Dose B (mg)` = r1(b), `Resposta (u.a.)` = r1(20 + 3.2 * a + 2.1 * b - .18 * a * b + rnorm(n, 0, 3)), check.names = FALSE), "modelo_18_dispersao_3d_longo.csv")
+c <- novo("m18_dispersao_3d_longo", 11, 8); c$grafico$tipo <- "dispersao_3d"; c$mapa_calor$formato <- "longo"; c$eixo_x$titulo <- "Dose A (mg)"; c$eixo_y$titulo <- "Dose B (mg)"; c$tridimensional$hastes <- TRUE; gerar(c, lê("modelo_18_dispersao_3d_longo.csv"))
+add("m18", "Dispersão 3D e tabela longa: uma linha por ponto", "Cada linha é um ponto com <b>três colunas: X, Y e Z</b> (a ordem das colunas é essa). O Z vira a cor do ponto e a altura.",
+    "modelo_18_dispersao_3d_longo.csv", c("<b>Tipo de gráfico:</b> Dispersão 3D.", "<b>Formato da tabela:</b> Longo (linha, coluna, valor).", "<b>Colunas:</b> deixe as três escolhas vazias: o Cinabro usa a 1ª coluna como X, a 2ª como Y e a 3ª como Z. (Para outra ordem: <i>Coluna do eixo X</i> = X, <i>Coluna dos grupos</i> = Y e <i>Colunas do eixo Y</i> = Z.)", "<b>Linha de cada ponto até o piso:</b> marque para ver a posição no espaço."),
+    "A tabela longa também serve para a Superfície 3D, as Barras 3D e o Mapa de cor, se os pontos formarem uma grade (todas as combinações de X e Y).")
+
 # ---- 15. antes e depois: tabela cruzada -> uma linha por amostra ---------------------------------------------------------------------------------------------
 antes <- c(";Dia 1;;;Dia 7;;", ";Controle;Trat. A;Trat. B;Controle;Trat. A;Trat. B",
            "Clorofila;1;1,12;0,95;1;1,31;0,82", "Carotenoides;1;0,97;1,08;1;1,15;1,22", "Prolina;1;1,25;1,4;1;1,9;2,3")

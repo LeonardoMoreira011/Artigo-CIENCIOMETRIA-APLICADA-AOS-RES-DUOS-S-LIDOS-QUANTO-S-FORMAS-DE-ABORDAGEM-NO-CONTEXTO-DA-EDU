@@ -45,12 +45,12 @@
 }
 .motor_pasta <- .achar_pasta_motor()
 
-.MOTOR_ARQUIVOS <- c("01_base.R", "02_paletas_dados.R", "02_cores_texto.R", "03_leitura.R", "04_validacao.R",
+.MOTOR_ARQUIVOS <- c("01_base.R", "02_paletas_dados.R", "02_cores_texto.R", "02_traducoes_motor.R", "03_leitura.R", "04_validacao.R",
                      "05_series.R", "06_eixos.R", "06_eixos_tempo.R", "07_tema.R", "08_tipos_comum.R",
                      "09_tipo_xy.R", "10_tipo_barras.R", "11_tipo_pizza.R",
                      "12_tipo_distribuicao.R", "13_tipo_boxplot.R", "14_montagem.R",
                      "15_entrada_paineis.R", "15_quebra_continua.R", "16_exportacao.R", "17_estilos.R", "18_painel.R", "19_marcadores.R",
-                     "20_legenda_ajuste.R", "21_ajustes.R", "22_formas.R", "23_imagens.R", "24_tipo_multivariada.R", "25_tipo_mapas.R")
+                     "20_legenda_ajuste.R", "21_ajustes.R", "22_formas.R", "23_imagens.R", "24_tipo_multivariada.R", "25_tipo_mapas.R", "26_tipo_3d.R")
 for (.a in .MOTOR_ARQUIVOS) source(file.path(.motor_pasta, "R", .a), encoding = "UTF-8")
 rm(.a)
 

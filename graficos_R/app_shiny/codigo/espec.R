@@ -31,7 +31,8 @@ bloco <- function(id, titulo, resumo, dica = NULL, campos = list(), grupos = NUL
             "Histograma" = "histograma", "Curva de densidade" = "densidade", "Distribuição acumulada" = "ecdf",
             "Boxplot (caixas)" = "boxplot",
             "Mapa de calor (eixo Z em cores)" = "mapa_calor", "PCA (componentes principais)" = "pca", "CA (análise de correspondência)" = "ca",
-            "CCA (correspondência canônica)" = "cca", "Mapa-múndi (países e regiões)" = "mapa_mundo", "Mapa do Brasil (estados)" = "mapa_brasil")
+            "CCA (correspondência canônica)" = "cca", "Mapa-múndi (países e regiões)" = "mapa_mundo", "Mapa do Brasil (estados)" = "mapa_brasil",
+            "Mapa de cor (X, Y e Z)" = "mapa_cor", "Superfície 3D" = "superficie_3d", "Barras 3D" = "barras_3d", "Dispersão 3D" = "dispersao_3d")
 # Fontes: as oficiais (Barlow), as genéricas e TODAS as que o systemfonts enxerga neste computador (e as adicionadas pelo app).
 opcoes_fontes <- function() {
   oficiais <- c("Barlow (oficial)" = "Barlow", "Barlow Condensed" = "Barlow Condensed", "Barlow Semi Condensed" = "Barlow Semi Condensed")
@@ -109,12 +110,15 @@ opcoes_paletas <- function(guardadas = character(0)) {
 .SE_QUEBRA <- "input.quebra_ativar"
 .SE_ERRO <- "input.colunas_erro && input.colunas_erro.length"
 .SE_MULTI <- "['pca','ca','cca'].indexOf(input.tipo_grafico) >= 0"
-.SE_NAO_XY <- "['pca','ca','cca','mapa_calor','mapa_mundo','mapa_brasil'].indexOf(input.tipo_grafico) < 0"
+.SE_NAO_XY <- "['pca','ca','cca','mapa_calor','mapa_mundo','mapa_brasil','mapa_cor','superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) < 0"
+.SE_XYZ <- "['mapa_cor','superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) >= 0"
+.SE_3D <- "['superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) >= 0"
+.SE_TABELA <- "['mapa_calor','mapa_cor','superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) >= 0"
 .SE_PCA <- "input.tipo_grafico == 'pca'"
 .SE_CALOR <- "input.tipo_grafico == 'mapa_calor'"
 .SE_MAPA <- "['mapa_mundo','mapa_brasil'].indexOf(input.tipo_grafico) >= 0"
 .SE_MUNDO <- "input.tipo_grafico == 'mapa_mundo'"
-.SE_Z <- "['mapa_calor','mapa_mundo','mapa_brasil'].indexOf(input.tipo_grafico) >= 0"
+.SE_Z <- "['mapa_calor','mapa_mundo','mapa_brasil','mapa_cor','superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) >= 0"
 .SE_ELIPSE <- "['pca','ca','cca'].indexOf(input.tipo_grafico) >= 0 && input.multi_elipses && input.multi_elipses != 'nenhuma'"
 .SE_QUEBRA_Y2 <- "input.quebra_ativar && input.y2_series && input.y2_series.length"
 
@@ -335,10 +339,10 @@ ESPEC <- list(
         "O arquivo é um CSV com uma linha de títulos. A 1ª coluna costuma ser o eixo X e as demais, as séries (eixo Y).",
         list(
           campo("tipo_grafico", "sel", "Tipo de gráfico", "Linha, pontos, barras, pizza...", opcoes = .TIPOS, padrao = "linha_pontos", largura = 12),
-          campo("coluna_x", "colx", "Coluna do eixo X (ou dos nomes)", "Vazio = a 1ª coluna. No PCA/CA/CCA: o nome de cada amostra. No mapa de calor: o nome das linhas. Nos mapas: o país (em inglês) ou o estado (sigla)."),
-          campo("colunas_y", "colsy", "Colunas do eixo Y (séries)", "Vazio = todas as outras colunas numéricas. No mapa de calor: as colunas do mapa. Nos mapas: a coluna do valor que vira cor (a 1ª).", se = "['pca','ca','cca'].indexOf(input.tipo_grafico) < 0"),
+          campo("coluna_x", "colx", "Coluna do eixo X (ou dos nomes)", "Vazio = a 1ª coluna. No PCA/CA/CCA: o nome de cada amostra. No mapa de calor: o nome das linhas. Nos mapas: o país (em inglês) ou o estado (sigla). No mapa de cor e no 3D: na tabela em matriz, os valores de Y; na tabela longa, os valores de X."),
+          campo("colunas_y", "colsy", "Colunas do eixo Y (séries)", "Vazio = todas as outras colunas numéricas. No mapa de calor: as colunas do mapa. Nos mapas: a coluna do valor que vira cor (a 1ª). No mapa de cor e no 3D: em matriz, as colunas de Z (os cabeçalhos são os valores de X); em tabela longa, a coluna do Z.", se = "['pca','ca','cca'].indexOf(input.tipo_grafico) < 0"),
           campo("colunas_erro", "colsy2", "Colunas de erro (± desvio padrão)", "Barras de erro nos pontos. A 1ª coluna vale para a 1ª série, a 2ª para a 2ª, e assim por diante. Elas não são desenhadas como série.", largura = 12, se = .SE_NAO_XY),
-          campo("coluna_grupo", "colx", "Coluna dos grupos", "Separa as amostras em grupos (cores e elipses). No mapa de calor \"longo\": a coluna dos nomes das colunas do mapa. Vazio = sem grupos.", se = "['pca','ca','cca'].indexOf(input.tipo_grafico) >= 0 || (input.tipo_grafico == 'mapa_calor' && input.calor_formato == 'longo')"),
+          campo("coluna_grupo", "colx", "Coluna dos grupos", "Separa as amostras em grupos (cores e elipses). No mapa de calor \"longo\": a coluna dos nomes das colunas do mapa. No mapa de cor e no 3D \"longo\": a coluna do Y (vazio = a 2ª coluna). Vazio = sem grupos.", se = "['pca','ca','cca'].indexOf(input.tipo_grafico) >= 0 || (['mapa_calor','mapa_cor','superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) >= 0 && input.calor_formato == 'longo')"),
           campo("multi_variaveis", "colsy2", "Variáveis (a matriz principal)", "As colunas da matriz: espécies, parâmetros... Vazio = todas as colunas numéricas que não são ambientais.", largura = 12, se = .SE_MULTI),
           campo("multi_ambientais", "colsy2", "Variáveis ambientais", "pH, temperatura... No CCA elas restringem a ordenação; no PCA e no CA aparecem como setas. Podem ficar na mesma planilha.", largura = 12, se = .SE_MULTI),
           campo("multi_resumo_ativo", "chk", "Resumo estatístico no gráfico", "Já vem ligado: variância dos dois eixos mostrados (e juntos), inércia restrita e testes de permutação. Desmarque para tirar a caixa.", se = .SE_MULTI),
@@ -399,7 +403,7 @@ ESPEC <- list(
           campo("mapa_rotulos_cor", "cor", "Cor dos nomes do mapa", "Vazio = automática (clara sobre cor escura e vice-versa).", se = .SE_MAPA, mais = TRUE),
           campo("mapa_rotulos_posicoes", "txt", "Posição dos nomes que você moveu", "Arraste um nome no mapa e a posição aparece aqui. Duplo clique no nome devolve à posição automática; apagar este campo solta todos.", largura = 12, se = .SE_MAPA, mais = TRUE),
           campo("mapa_linha_guia", "chk", "Fio entre o nome e o local", NULL, se = .SE_MAPA, mais = TRUE),
-          campo("calor_formato", "sel", "Formato da tabela", "Matriz: uma coluna por coluna do mapa. Longo: linhas, colunas e valor em três colunas.", opcoes = c("Matriz (linhas × colunas)" = "matriz", "Longo (linha, coluna, valor)" = "longo"), se = .SE_CALOR),
+          campo("calor_formato", "sel", "Formato da tabela", "Matriz: uma coluna por coluna do mapa (no mapa de cor e no 3D: a 1ª coluna é o Y, os cabeçalhos são o X e as células são o Z). Longo: uma linha por ponto, com três colunas (X, Y e Z).", opcoes = c("Matriz (linhas × colunas)" = "matriz", "Longo (linha, coluna, valor)" = "longo"), se = .SE_TABELA),
           campo("calor_normalizar", "sel", "Normalizar (nota z)", "Compara padrões em vez de valores absolutos.", opcoes = c("Não" = "nenhum", "Por linha" = "linha", "Por coluna" = "coluna"), se = .SE_CALOR),
           campo("calor_agrupar", "sel", "Reordenar por semelhança", "Agrupamento hierárquico das linhas e/ou colunas.", opcoes = c("Não" = "nenhum", "Linhas" = "linhas", "Colunas" = "colunas", "Linhas e colunas" = "ambos"), se = .SE_CALOR),
           campo("mapa_nivel", "sel", "Pintar por", "Mundo: país ou região comercial (Asia Pacific, LATAM, Brazil, North America, Western Europe, Other). Brasil: estado ou região.", opcoes = c("País / estado" = "pais", "Região" = "regiao"), se = .SE_MAPA),
@@ -419,6 +423,26 @@ ESPEC <- list(
           campo("calor_contorno_cor", "cor", "Cor das linhas entre as células / fronteiras", NULL, se = .SE_Z),
           campo("calor_cor_sem_dado", "cor", "Cor de onde não há valor", NULL, se = .SE_Z),
           campo("calor_barra_posicao", "sel", "Posição da barra de cores", NULL, opcoes = c("Direita" = "direita", "Esquerda" = "esquerda", "Em cima" = "topo", "Embaixo" = "base", "Dentro do gráfico" = "dentro"), se = .SE_Z),
+          campo("tri_azimute", "num", "Giro da vista (graus)", "Gira o gráfico em volta do eixo vertical. 40 é o padrão; 0 olha de frente.", min = -360, max = 360, passo = 5, se = .SE_3D),
+          campo("tri_elevacao", "num", "Altura do olhar (graus)", "0 = de lado, 90 = de cima. O padrão é 28.", min = 0, max = 90, passo = 2, se = .SE_3D),
+          campo("tri_altura", "num", "Altura do eixo Z", "Em relação ao tamanho da base. Padrão 0,7; aumente para um gráfico mais alto.", min = 0.1, max = 3, passo = 0.05, se = .SE_3D),
+          campo("tri_caixa", "sel", "Caixa do gráfico", "Paredes de trás com grade, só o piso ou só os eixos.", opcoes = c("Piso e paredes" = "paredes", "Só o piso" = "base", "Só os eixos" = "aberta"), se = .SE_3D),
+          campo("tri_z_titulo", "txt", "Título do eixo Z", "Vazio = o nome da coluna do valor.", se = .SE_3D),
+          campo("tri_z_inicio", "num", "Eixo Z começa em", "Vazio = automático.", se = .SE_3D),
+          campo("tri_z_fim", "num", "Eixo Z termina em", "Vazio = automático.", se = .SE_3D),
+          campo("tri_z_intervalo", "num", "Distância entre os números do eixo Z", "Vazio = automático.", se = .SE_3D),
+          campo("tri_suavizar", "int", "Suavizar a grade (divisões por célula)", "1 = sem suavizar. 3 a 6 deixam a superfície e o mapa de cor lisos, interpolando entre os pontos da tabela.", min = 1, max = 12, se = "['mapa_cor','superficie_3d'].indexOf(input.tipo_grafico) >= 0"),
+          campo("tri_niveis", "int", "Linhas de nível (quantidade)", "0 = sem linhas. No mapa de cor, desenha as curvas de mesmo valor de Z.", min = 0, max = 30, se = "input.tipo_grafico == 'mapa_cor'"),
+          campo("tri_cor_niveis", "cor", "Cor das linhas de nível", NULL, se = "input.tipo_grafico == 'mapa_cor'", mais = TRUE),
+          campo("tri_barras_largura", "num", "Largura das barras (0 a 1)", "Em relação à célula: 1 = barras coladas.", min = 0.1, max = 1, passo = 0.05, se = "input.tipo_grafico == 'barras_3d'"),
+          campo("tri_cor_borda_barras", "cor", "Cor do contorno das barras", NULL, se = "input.tipo_grafico == 'barras_3d'", mais = TRUE),
+          campo("tri_ponto_tamanho_pt", "num", "Tamanho dos pontos (pt)", NULL, min = 1, max = 30, passo = 0.5, se = "input.tipo_grafico == 'dispersao_3d'"),
+          campo("tri_hastes", "chk", "Linha de cada ponto até o piso", "Ajuda a ver a posição do ponto no espaço.", se = "input.tipo_grafico == 'dispersao_3d'"),
+          campo("tri_cor_hastes", "cor", "Cor das linhas até o piso", NULL, se = "input.tipo_grafico == 'dispersao_3d'", mais = TRUE),
+          campo("tri_cor_borda_pontos", "cor", "Cor do contorno dos pontos", NULL, se = "input.tipo_grafico == 'dispersao_3d'", mais = TRUE),
+          campo("tri_cor_paredes", "cor", "Cor das paredes e do piso", NULL, se = .SE_3D, mais = TRUE),
+          campo("tri_cor_grade", "cor", "Cor da grade das paredes", NULL, se = .SE_3D, mais = TRUE),
+          campo("tri_cor_caixa", "cor", "Cor das arestas da caixa", NULL, se = .SE_3D, mais = TRUE),
           campo("erro_lado", "sel", "Lado da barra de erro", "Os dois lados, só para cima ou só para baixo.", opcoes = c("Os dois lados" = "ambos", "Só para cima" = "superior", "Só para baixo" = "inferior"), se = .SE_ERRO),
           campo("erro_cor", "cor", "Cor da barra de erro", "Vazio = a cor de cada série. Com uma cor, as barras ficam dessa cor, independente da cor dos pontos.", se = .SE_ERRO),
           campo("erro_espessura_pt", "num", "Grossura da barra de erro (pt)", "Espessura do traço.", min = 0, max = 10, passo = 0.25, se = .SE_ERRO),

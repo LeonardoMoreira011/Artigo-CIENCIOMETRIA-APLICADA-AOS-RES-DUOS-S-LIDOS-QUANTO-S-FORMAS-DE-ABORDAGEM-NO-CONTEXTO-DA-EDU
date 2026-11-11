@@ -12,7 +12,7 @@
 
 # ---- 1. ARQUIVO E TIPO DE GRÁFICO -----------------------------------------------------------
 ARQUIVO_CSV <- ""        # caminho do CSV. EX.: "C:/pasta/dados.csv". Vazio = só carrega o template.
-tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barras" | "pizza" | "boxplot"...
+tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barras" | "pizza" | "boxplot" | "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d"...
 coluna_x     <- NULL     # coluna do eixo X: número ou "nome". EX.: 1  |  "Years"
 colunas_y    <- NULL     # colunas Y. NULL = todas as outras numéricas. EX.: c(2, 3)  |  c("WORLD", "LATAM")
 coluna_grupo <- NULL     # coluna que separa as amostras em grupos (cores e elipses do PCA/CA/CCA; colunas do mapa de calor "longo"). EX.: "Local"
@@ -40,10 +40,10 @@ multi_cor_ambientais <- NULL  # cor das ambientais. EX.: "#B3262E"
 multi_linhas_zero   <- NULL   # TRUE/FALSE: linhas tracejadas em 0
 multi_legenda_posicao <- NULL # onde fica a legenda dos grupos: "direita" | "esquerda" | "topo" | "base" | "dentro"
 
-# ---- 1c. MAPA DE CALOR E MAPAS (tipo_grafico "mapa_calor" | "mapa_mundo" | "mapa_brasil") ---------
+# ---- 1c. MAPA DE CALOR E MAPAS (tipo_grafico "mapa_calor" | "mapa_mundo" | "mapa_brasil"; mais abaixo, o mapa de cor e o 3D) ---------
 #  Mapa de calor: coluna_x = nome das linhas; as demais colunas numéricas viram as colunas do mapa.
 #  Mapas: coluna_x = país (nome em inglês) ou estado (sigla/nome); colunas_y[1] = o valor que vira cor.
-calor_formato    <- NULL   # "matriz" | "longo" (longo: coluna_x = linhas, coluna_grupo = colunas, colunas_y[1] = valor)
+calor_formato    <- NULL   # "matriz" | "longo" (longo: coluna_x = linhas, coluna_grupo = colunas, colunas_y[1] = valor; também vale para o mapa de cor e o 3D)
 calor_normalizar <- NULL   # "nenhum" | "linha" | "coluna" (nota z)
 calor_agrupar    <- NULL   # "nenhum" | "linhas" | "colunas" | "ambos" (ordena por semelhança)
 calor_esquema    <- NULL   # "cinabro" | "petroleo" | "divergente" | "viridis" | "magma" | "inferno" | "turbo"
@@ -107,6 +107,29 @@ mapa_rotulos_posicoes <- NULL  # nomes do mapa movidos à mão: "Brazil=x,y" (no
 mapa_linha_guia <- NULL       # TRUE/FALSE: fio entre o nome e o local
 calor_mostrar_ticks <- NULL   # TRUE = traços de eixo nas células do mapa de calor
 calor_tamanho_valores_pt <- NULL # tamanho (pt) do número escrito em cada célula
+
+# ---- Mapa de cor (X, Y, Z) e gráficos 3D: tipos "mapa_cor", "superficie_3d", "barras_3d" e "dispersao_3d" -------------------------
+#  Tabela em matriz (calor_formato "matriz"): 1ª coluna = valores de Y, cabeçalhos = valores de X, células = Z. Em "longo": colunas X, Y e Z.
+tri_azimute <- NULL       # giro da vista em graus (padrão 40)
+tri_elevacao <- NULL      # altura do olhar, 0 a 90 (padrão 28)
+tri_altura <- NULL        # altura do eixo Z em relação à base (padrão 0.7)
+tri_caixa <- NULL         # "paredes" | "base" | "aberta"
+tri_z_titulo <- NULL      # título do eixo Z
+tri_z_inicio <- NULL      # eixo Z começa em
+tri_z_fim <- NULL         # eixo Z termina em
+tri_z_intervalo <- NULL   # distância entre os números do eixo Z
+tri_suavizar <- NULL      # divisões por célula (1 = sem suavizar; superfície e mapa de cor)
+tri_niveis <- NULL        # quantidade de linhas de nível (mapa de cor)
+tri_cor_niveis <- NULL    # cor das linhas de nível
+tri_barras_largura <- NULL # largura das barras 3D, 0 a 1
+tri_cor_borda_barras <- NULL # contorno das barras 3D (NA = sem)
+tri_ponto_tamanho_pt <- NULL # tamanho dos pontos da dispersão 3D (pt)
+tri_hastes <- NULL        # TRUE = linha de cada ponto até o piso
+tri_cor_hastes <- NULL    # cor dessas linhas
+tri_cor_borda_pontos <- NULL # contorno dos pontos (NA = sem)
+tri_cor_paredes <- NULL   # cor do piso e das paredes
+tri_cor_grade <- NULL     # cor da grade das paredes
+tri_cor_caixa <- NULL     # cor das arestas da caixa
 
 
 # ---- 2. INTERVALOS DOS EIXOS (início, fim, passo e grossura dos traços) -------------------------
@@ -364,7 +387,7 @@ legenda_sombra_opacidade <- NULL    # 0 a 1. EX.: 0.35
 legenda_sombra_deslocamento_pt <- NULL  # c(para a direita, para baixo) em pt. EX.: c(3, 3)  |  c(5, 2)
 
 # ---- IDIOMA -----------------------------------------------------------------------------------------
-idioma           <- NULL   # só "pt" (português do Brasil). Inglês e espanhol estão arquivados em idiomas_arquivados/ (peça para reativar).
+idioma           <- NULL   # idioma das mensagens e dos textos automáticos do gráfico: "pt" (português do Brasil) | "en" | "es"
 
 # ---- 12. EXPORTAÇÃO ------------------------------------------------------------------------------------
 largura_cm   <- NULL       # EX.: 14   (só vale com painel_fixo <- FALSE ou ajustar_pagina <- FALSE; senão a página se ajusta sozinha)

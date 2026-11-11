@@ -21,7 +21,7 @@ The app speaks **Português (BR)**, **English** and **Español**. Pick the langu
 The page opens at `http://cinabro.localhost:8421`. The R process closes a few seconds after you close the browser tab.
 
 ## What you can do
-- **Chart types:** line, line with points, scatter, area, stacked area, bars, pie/donut, histogram, density, cumulative distribution, boxplot.
+- **Chart types:** line, line with points, scatter, area, stacked area, bars, pie/donut, histogram, density, cumulative distribution, boxplot, heat map, PCA / CA / CCA, world map and map of Brazil, and **color map (X, Y, Z), 3D surface, 3D bars and 3D scatter** (matrix table: first column = Y, headers = X, cells = Z; or a long table with X, Y, Z columns).
 - **Axes:** start/end, tick spacing, minor ticks, first tick, manual ticks, log and other scales, number format, rotation, a divide-by factor, titles with exponents and subscripts (`m^{2}`, `CO_{2}`).
 - **Right Y axis (Y2):** same options as the left axis, with its own scale, color and intervals.
 - **Axis break:** two styles (separate or continuous frame), per-part tick spacing and minor ticks, a button that finds the largest gap in your data.

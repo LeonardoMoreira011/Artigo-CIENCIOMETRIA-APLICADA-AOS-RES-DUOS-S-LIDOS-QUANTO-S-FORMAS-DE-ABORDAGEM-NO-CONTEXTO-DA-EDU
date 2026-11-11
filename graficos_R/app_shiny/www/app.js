@@ -25,8 +25,22 @@
       '<h2 style="color:#B3262E">Cinabro encerrado</h2><p>Pode fechar esta aba. Para voltar a usar, abra o Cinabro pelo atalho ou pelo <b>abrir_app.bat</b>.</p></div>';
     document.body.style.background = '#F5EBDD';
   });
-  // (idioma: só português; o seletor foi retirado. Inglês e espanhol estão arquivados em idiomas_arquivados/.)
-  try { localStorage.removeItem('cinabro_idioma'); } catch (e) {}
+  // idioma: o seletor do cabeçalho grava o cookie "cinabro_idioma" (o servidor lê no próximo carregamento), pede ao servidor para guardar o trabalho
+  // e recarrega a página; ao voltar, o trabalho é retomado sozinho. A tela de cada idioma é traduzida uma vez e fica guardada no servidor.
+  function gravarIdioma(v) { document.cookie = 'cinabro_idioma=' + v + '; path=/; max-age=31536000; SameSite=Lax'; }
+  try { gravarIdioma(window.IDIOMA || 'pt'); localStorage.removeItem('cinabro_idioma'); } catch (e) {}
+  $(document).on('change', '#idioma_sel', function () {
+    var v = this.value; gravarIdioma(v);
+    try { sessionStorage.setItem('cinabro_retomar_auto', '1'); } catch (e) {}
+    $('body').append('<div id="idioma-espera"><div>' + (v === 'en' ? 'Changing language...' : v === 'es' ? 'Cambiando el idioma...' : 'Mudando o idioma...') + '</div></div>');
+    Shiny.setInputValue('trocar_idioma', { idioma: v, t: Date.now() }, { priority: 'event' });
+  });
+  Shiny.addCustomMessageHandler('recarregar_idioma', function (_m) { location.href = location.pathname; });
+  $(document).on('shiny:connected', function () {
+    var auto = false; try { auto = sessionStorage.getItem('cinabro_retomar_auto') === '1'; sessionStorage.removeItem('cinabro_retomar_auto'); } catch (e) {}
+    Shiny.setInputValue('retomar_auto', auto);
+    Shiny.setInputValue('idioma_pagina', window.IDIOMA || 'pt');
+  });
   // "Selecionar todas" / "Limpar" nas listas de colunas
   function seletor(id) { var el = document.getElementById(id); return el && el.selectize; }
   $(document).on('click', '[data-sel-todas]', function (e) {

@@ -81,6 +81,10 @@
     boxplot = .construir_boxplot(dados, cfg),
     pca = , ca = , cca = .construir_multivariada(dados, cfg),
     mapa_calor = .construir_mapa_calor(dados, cfg),
+    mapa_cor = .construir_mapa_cor(dados, cfg),
+    superficie_3d = .construir_superficie_3d(dados, cfg),
+    barras_3d = .construir_barras_3d(dados, cfg),
+    dispersao_3d = .construir_dispersao_3d(dados, cfg),
     mapa_mundo = , mapa_brasil = .construir_mapa(dados, cfg))
   info <- res$info
   if (isTRUE(so_info)) return(info)

@@ -62,7 +62,8 @@ cfg$grafico <- list(
   # tipo: tipo de gráfico.
   #   OPÇÕES: "pontos" | "linha" | "linha_pontos" | "area" | "area_empilhada" |
   #           "barras" | "pizza" | "histograma" | "densidade" | "ecdf" | "boxplot" |
-  #           "mapa_calor" | "pca" | "ca" | "cca" | "mapa_mundo" | "mapa_brasil"
+  #           "mapa_calor" | "pca" | "ca" | "cca" | "mapa_mundo" | "mapa_brasil" |
+  #           "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d"
   #   EX.: cfg$grafico$tipo <- "boxplot"
   tipo = "linha_pontos",
 
@@ -819,6 +820,49 @@ cfg$mapa_calor <- list(
   # barra_altura_cm / barra_largura_cm: tamanho da barra de cores (cm).
   barra_altura_cm = 4,
   barra_largura_cm = 0.4
+)
+
+# -----------------------------------------------------------------------------
+# TRIDIMENSIONAL — mapa de cor (X, Y, Z), superfície 3D, barras 3D e dispersão 3D
+# -----------------------------------------------------------------------------
+#  Tipos: "mapa_cor" (plano, Z em cores, com linhas de nível se quiser) | "superficie_3d" | "barras_3d" | "dispersao_3d".
+#  Planilha, formato "matriz" (padrão, cfg$mapa_calor$formato): 1ª coluna = valores de Y; cabeçalhos das outras colunas = valores de X; células = Z.
+#  Formato "longo": uma linha por ponto, com X (cfg$grafico$coluna_x), Y (cfg$grafico$coluna_grupo; vazio = a 2ª coluna) e Z (a 1ª de colunas_y; vazio = a 3ª).
+#  A cor de Z, os limites e a barra de cores são os do mapa de calor (cfg$mapa_calor). Os títulos de X e Y: cfg$eixo_x$titulo e cfg$eixo_y$titulo.
+cfg$tridimensional <- list(
+  # azimute: giro da vista em volta do eixo vertical (graus). elevacao: altura do olhar (0 = de lado, 90 = de cima). altura_relativa: altura do eixo Z em relação à base.
+  azimute = 40,
+  elevacao = 28,
+  altura_relativa = 0.7,
+
+  # eixo Z (vertical): título (NULL = nome da coluna do valor), início, fim e intervalo dos números (NULL = automático).
+  z_titulo = NULL,
+  z_inicio = NULL,
+  z_fim = NULL,
+  z_intervalo = NULL,
+
+  # caixa: "paredes" (piso e paredes de trás com grade) | "base" (só o piso) | "aberta" (só os eixos)
+  caixa = "paredes",
+  cor_paredes = "#F4F4F4",
+  cor_grade = "#D9D9D9",
+  cor_caixa = "#8C8C8C",
+
+  # suavizar: divide cada célula da grade em N pedaços por interpolação (superfície e mapa de cor). 1 = sem suavizar.
+  suavizar = 1,
+
+  # niveis: quantidade aproximada de linhas de nível no mapa de cor (0 = sem linhas). cor_niveis: cor das linhas.
+  niveis = 0,
+  cor_niveis = "#333333",
+
+  # barras_largura: largura da barra em relação à célula (0 a 1). cor_borda_barras: contorno das faces (NA = sem).
+  barras_largura = 0.7,
+  cor_borda_barras = "white",
+
+  # dispersão: ponto_tamanho_pt, cor_borda_pontos (NA = sem), hastes (linha de cada ponto até o piso) e cor_hastes
+  ponto_tamanho_pt = 6,
+  cor_borda_pontos = "white",
+  hastes = FALSE,
+  cor_hastes = "#9A9A9A"
 )
 
 # -----------------------------------------------------------------------------

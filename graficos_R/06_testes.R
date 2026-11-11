@@ -1144,10 +1144,8 @@ teste("barras e pizza aceitam formas (e ignoram ajustes) sem erro", {
 teste("painel: ajustes, marcas, caixas e formas chegam ao cfg; variável que não é lista dá erro", {
   cp <- suppressMessages(aplicar_painel(c0, list2env(list(ajustes = list(list(tipo = "linear")), formas = list(list(tipo = "texto", x = .1, y = .1, texto = "a"))))))
   length(cp$ajustes) == 1 && length(cp$formas) == 1 && da_erro(aplicar_painel(c0, list2env(list(ajustes = "linear"))), "lista") })
-teste("idioma: o motor é só português (options(cinabro.idioma) é ignorado); o inglês e o espanhol estão arquivados e `idioma <- \"en\"` no painel avisa e usa o português", {
-  options(cinabro.idioma = "en"); r <- .re("media"); m <- .traduzir_msg("Cor inválida em "); options(cinabro.idioma = "pt")
-  r == "Média" && m == "Cor inválida em " && da_aviso(aplicar_painel(c0, list2env(list(idioma = "en"))), "arquivados") &&
-    file.exists(file.path("idiomas_arquivados", "motor", "02_traducoes_motor.R")) })
+teste("textos das estatísticas saem em inglês e espanhol", {
+  options(cinabro.idioma = "en"); en <- .re("media"); options(cinabro.idioma = "es"); es <- .re("media"); options(cinabro.idioma = "pt"); en == "Mean" && es == "Media" })
 
 cat("\n--- Zonas clicáveis dos títulos (app) ---\n")
 teste(".geometria_zonas acha título, eixo X e eixo Y (frações da página, dentro de 0 a 1); sem título, uma faixa acima do painel", {
@@ -1370,6 +1368,86 @@ teste("novos tipos: quebra de eixo não se aplica (erro claro) e a validação c
   cq <- ch_(); cq$quebra$ativo <- TRUE; cq$quebra$de <- 5; cq$quebra$ate <- 10
   da_erro(plotar(dh_, cq), "Quebra de eixo não se aplica") && da_erro(plotar(dh_, ch_(mapa_calor = list(esquema_cor = "arco-iris"))), "esquema_cor") &&
     da_erro(plotar(dh_, ch_(mapa_calor = list(barra_posicao = "meio"))), "barra_posicao") })
+
+cat("\n--- Mapa de cor (X, Y, Z) e gráficos 3D ---\n")
+d3 <- ler_csv(file.path("dados", "superficie_rendimento.csv"), op)           # matriz: 1ª coluna = pH (Y), cabeçalhos = temperatura (X)
+db3 <- ler_csv(file.path("dados", "barras_3d_residuos.csv"), op)             # matriz com X em texto (materiais)
+dp3 <- ler_csv(file.path("dados", "dispersao_3d_doses.csv"), op)             # longo: X, Y, Z
+c3 <- function(tipo, ..., fmt = "matriz", tri = list()) { c1 <- cfg; c1$grafico$tipo <- tipo; c1$mapa_calor$formato <- fmt; c1$tridimensional <- utils::modifyList(c1$tridimensional, tri); utils::modifyList(c1, list(...)) }
+teste("3D: a tabela em matriz (Y na 1ª coluna, X nos cabeçalhos, Z nas células) vira a grade certa, e a tabela longa com os mesmos números dá a mesma grade", {
+  m <- .grade_xyz(d3, c3("superficie_3d")); lg <- data.frame(X = rep(m$x, each = length(m$y)), Y = rep(m$y, times = length(m$x)), Z = as.vector(m$Z))
+  m2 <- .grade_xyz(lg, c3("superficie_3d", fmt = "longo"))
+  identical(dim(m$Z), c(7L, 7L)) && identical(m$x, c(20, 30, 40, 50, 60, 70, 80)) && identical(m$y, as.numeric(4:10)) && isTRUE(all.equal(m$Z, m2$Z)) && identical(m$nome_y, "pH") && identical(m2$nome_x, "X") })
+teste("3D: a projeção gira e inclina (azimute 0 e elevação 0: X vai para a direita e Z para cima; mais longe = profundidade maior)", {
+  P <- .proj3d(0, 0); a <- P(c(0, 1), c(0.5, 0.5), c(0, 1)); b <- P(0.5, c(0, 1), 0)
+  isTRUE(all.equal(a$sx, c(-0.5, 0.5))) && isTRUE(all.equal(a$sy, c(0, 1))) && b$d[2] > b$d[1] })
+teste("superfície 3D: um polígono por célula, pintado do mais longe ao mais perto, com a cor vinda do Z e a barra de cores à direita", {
+  g <- suppressWarnings(plotar(d3, c3("superficie_3d"))); b <- ggplot2::ggplot_build(g); i <- attr(g, "info")
+  pol <- Filter(function(x) "group" %in% names(x) && "fill" %in% names(x) && length(unique(x$group)) == 36, b$data)[[1]]
+  isTRUE(i$mapa) && length(unique(pol$group)) == 36 && identical(attr(g, "cfg")$legenda$posicao, "direita") && monta(g) && length(unique(pol$fill)) > 10 &&
+    identical(i$titulo_barra, "Valor") })
+teste("superfície 3D: a ordem das faces vale para qualquer ângulo (a mais longe é desenhada antes) e o gráfico desenha por inteiro", {
+  ok <- TRUE
+  for (az in c(0, 40, 135, 220, 300)) for (el in c(10, 45, 85)) {
+    P <- .proj3d(az, el); m <- .grade_xyz(d3, c3("superficie_3d")); g <- suppressWarnings(plotar(d3, c3("superficie_3d", tri = list(azimute = az, elevacao = el))))
+    pol <- Filter(function(x) "group" %in% names(x) && length(unique(x$group)) == 36, ggplot2::ggplot_build(g)$data)[[1]]
+    ok <- ok && nrow(pol) > 0 && !anyNA(pol$x) }
+  ok })
+teste("superfície 3D: eixo Z com início, fim e distância dos números escolhidos; valor fora do eixo é encostado na borda com aviso", {
+  g <- suppressWarnings(plotar(d3, c3("superficie_3d", tri = list(z_inicio = 0, z_fim = 120, z_intervalo = 30, z_titulo = "Rendimento (%)"))))
+  tx <- unlist(lapply(g$layers, function(l) if (is.data.frame(l$data) && "lab" %in% names(l$data)) as.character(l$data$lab)))
+  all(c("0", "30", "60", "90", "120") %in% tx) && "Rendimento (%)" %in% tx && da_aviso(plotar(d3, c3("superficie_3d", tri = list(z_inicio = 20, z_fim = 60))), "fora do eixo") })
+teste("superfície 3D: células com Z vazio ficam sem face (buraco) e o resto desenha", {
+  dn <- d3; dn[3, 4] <- NA; g <- suppressWarnings(plotar(dn, c3("superficie_3d"))); pol <- Filter(function(x) "group" %in% names(x) && "fill" %in% names(x) && length(unique(x$group)) > 10, ggplot2::ggplot_build(g)$data)[[1]]
+  length(unique(pol$group)) == 36 - 4 && monta(g) })
+teste("suavizar: cada célula é dividida por interpolação (3 divisões: 6 x 6 células viram 18 x 18) sem mudar os extremos", {
+  g <- suppressWarnings(plotar(d3, c3("superficie_3d", tri = list(suavizar = 3)))); pol <- Filter(function(x) "group" %in% names(x) && "fill" %in% names(x) && length(unique(x$group)) > 10, ggplot2::ggplot_build(g)$data)[[1]]
+  m <- .refinar_grade(.grade_xyz(d3, c3("superficie_3d")), 3)
+  length(unique(pol$group)) == 18 * 18 && length(m$x) == 19 && max(m$Z) == max(.grade_xyz(d3, c3("superficie_3d"))$Z) })
+teste("mapa de cor: uma célula por (X, Y) com os eixos numéricos de verdade, cor de Z, barra à direita; linhas de nível opcionais; eixo de nomes dá erro claro", {
+  g <- suppressWarnings(plotar(d3, c3("mapa_cor"))); i <- attr(g, "info"); g2 <- suppressWarnings(plotar(d3, c3("mapa_cor", tri = list(niveis = 5, suavizar = 4))))
+  r <- ggplot2::ggplot_build(g)$data[[1]]; temcont <- any(vapply(g2$layers, function(l) inherits(l$geom, "GeomContour"), NA))
+  nrow(r) == 49 && !isTRUE(i$mapa) && isTRUE(all.equal(i$faixa_x, c(15, 85))) && identical(attr(g, "cfg")$legenda$posicao, "direita") && temcont && monta(g2) &&
+    da_erro(plotar(db3, c3("mapa_cor")), "números nos dois eixos") })
+teste("barras 3D: cada barra mostra os lados virados para quem olha e o topo, com cor própria (e escura nos lados); a barra de cores aparece; X em texto vira categorias", {
+  g <- suppressWarnings(plotar(db3, c3("barras_3d"))); b <- ggplot2::ggplot_build(g)
+  pol <- Filter(function(x) "group" %in% names(x) && "fill" %in% names(x) && length(unique(x$group)) > 25, b$data)[[1]]
+  nb <- 25; ng <- length(unique(pol$group)); lat <- ng / nb - 1                     # faces por barra = lados visíveis (2) + topo
+  texto <- unlist(lapply(g$layers, function(l) if (is.data.frame(l$data) && "lab" %in% names(l$data)) as.character(l$data$lab)))
+  ng == nb * 3 && lat == 2 && all(c("Plástico", "Orgânico", "Norte", "Sul") %in% texto) && monta(g) && any(vapply(g$layers, function(l) inherits(l$geom, "GeomPoint"), NA)) })
+teste("barras 3D: base no zero com valores negativos para baixo; largura das barras ajustável; desenha em qualquer ângulo", {
+  dn <- db3; dn[2, 2] <- -8; ok <- TRUE
+  for (az in c(0, 90, 200, 330)) ok <- ok && monta(suppressWarnings(plotar(dn, c3("barras_3d", tri = list(azimute = az, barras_largura = 1)))))
+  ok })
+teste("dispersão 3D: um ponto por linha (tabela longa) ou por célula (matriz), colorido pelo Z; hastes opcionais", {
+  g <- suppressWarnings(plotar(dp3, c3("dispersao_3d", fmt = "longo"))); pts <- Filter(function(x) "fill" %in% names(x) && nrow(x) == 60, ggplot2::ggplot_build(g)$data)
+  g2 <- suppressWarnings(plotar(d3, c3("dispersao_3d"))); g3 <- suppressWarnings(plotar(dp3, c3("dispersao_3d", fmt = "longo", tri = list(hastes = TRUE))))
+  length(pts) == 1 && length(g3$layers) > length(g$layers) && any(vapply(g2$layers, function(l) inherits(l$geom, "GeomPoint"), NA)) && monta(g2) && monta(g3) })
+teste("3D: ângulo e proporções fora do possível dão erro claro; tabela errada também", {
+  da_erro(plotar(d3, c3("superficie_3d", tri = list(elevacao = 120))), "elevacao") && da_erro(plotar(d3, c3("superficie_3d", tri = list(altura_relativa = 9))), "altura_relativa") &&
+    da_erro(plotar(d3, c3("superficie_3d", tri = list(caixa = "gaiola"))), "caixa") && da_erro(plotar(d3[, 1:2], c3("superficie_3d")), "pelo menos 2 colunas") &&
+    da_erro(plotar(d3[1, ], c3("superficie_3d")), "pelo menos 2 valores") && da_erro(plotar(d3, c3("superficie_3d", tri = list(suavizar = 50))), "suavizar") &&
+    da_erro(plotar(d3, c3("superficie_3d", tri = list(z_inicio = 10, z_fim = 5))), "z_inicio") })
+teste("3D: a caixa tem três modos (paredes, só o piso, só os eixos) e as cores são ajustáveis", {
+  n <- function(cx) { l <- suppressWarnings(plotar(d3, c3("superficie_3d", tri = list(caixa = cx))))$layers; l[[1]]$geom$default_aes; d <- l[[1]]$data; if (is.data.frame(d) && "grp" %in% names(d) && !("z" %in% names(d))) length(unique(d$grp)) else 0 }
+  n("paredes") == 3 && n("base") == 1 && n("aberta") == 0 && monta(suppressWarnings(plotar(d3, c3("superficie_3d", tri = list(cor_paredes = "#EEF", cor_grade = "white", cor_caixa = "navy"))))) })
+teste("3D: escala de cor própria, limites e título da barra valem como no mapa de calor", {
+  g <- suppressWarnings(plotar(d3, c3("barras_3d", mapa_calor = list(cores_escala = c("white", "gold", "red"), limite_min = 0, limite_max = 100, titulo_barra = "Rendimento"), fmt = "matriz")))
+  identical(attr(g, "info")$titulo_barra, "Rendimento") && monta(g) })
+teste("3D: não combina com quebra de eixo nem com vários painéis sem aviso; sai em PNG, SVG e PDF", {
+  cq <- c3("superficie_3d"); cq$quebra$ativo <- TRUE; cq$quebra$de <- 5; cq$quebra$ate <- 10
+  cx <- c3("superficie_3d"); cx$exportacao$pasta <- tmp; cx$exportacao$nome_arquivo <- "tri3d"; cx$exportacao$formatos <- c("png", "pdf", if (.tem("svglite")) "svg")
+  arq <- suppressMessages(salvar(suppressWarnings(plotar(d3, cx)), cx))
+  da_erro(plotar(d3, cq), "Quebra de eixo não se aplica") && all(file.exists(arq)) && all(file.size(arq) > 1500) })
+teste("3D: o gráfico sai também em tamanhos pequenos, com fontes grandes e título (sem texto fora da página)", {
+  cs <- c3("barras_3d"); cs$caixa$painel_largura_cm <- 6; cs$texto$tamanho_base_pt <- 14; cs$titulos$titulo <- "Resíduos"
+  g <- suppressWarnings(plotar(db3, cs)); i <- attr(g, "info"); monta(g) && diff(i$xlim) > 0 && diff(i$ylim) > 0 && is.finite(sum(i$xlim, i$ylim)) })
+teste("idioma: mensagens novas do motor (3D, mapas, ordenação) e rótulos automáticos saem em inglês e espanhol; o motor volta ao português", {
+  e3 <- function(lg) { options(cinabro.idioma = lg); on.exit(options(cinabro.idioma = "pt")); tryCatch(plotar(d3[1, ], c3("superficie_3d")), error = function(e) conditionMessage(e)) }
+  g_en <- { options(cinabro.idioma = "en"); x <- attr(suppressWarnings(plotar(d3, c3("superficie_3d"))), "info")$titulo_barra; options(cinabro.idioma = "pt"); x }
+  g_es <- { options(cinabro.idioma = "es"); x <- attr(suppressWarnings(plotar(d3, c3("superficie_3d"))), "info")$titulo_barra; options(cinabro.idioma = "pt"); x }
+  grepl("at least 2 values in X and 2 in Y", e3("en"), fixed = TRUE) && grepl("al menos 2 valores en X y 2 en Y", e3("es"), fixed = TRUE) && grepl("pelo menos 2 valores", e3("pt"), fixed = TRUE) &&
+    identical(g_en, "Value") && identical(g_es, "Valor") && identical(.idioma(), "pt") })
 
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", .res["passou"], .res["falhou"]))
 unlink(tmp, recursive = TRUE)

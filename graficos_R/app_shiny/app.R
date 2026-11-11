@@ -22,7 +22,7 @@ addResourcePath("fontes", file.path(raiz, "fontes"))
 for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "dashboard.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8", local = FALSE)
 addResourcePath("painel", DASH_DIR)               # as páginas do Dashboard montadas nesta sessão (e os PDFs)
 
-carregar_dicionarios(file.path("idiomas"))      # (pasta ausente de propósito: só português; veja idiomas_arquivados/)
+carregar_dicionarios(file.path("idiomas"))
 
 EXEMPLOS <- c("Dois eixos + quebra de eixo (Y esquerdo e direito)" = "exemplo_dois_eixos_e_quebra.csv",
               "Série temporal (eixo de datas)" = "serie_temporal.csv",
@@ -32,7 +32,9 @@ EXEMPLOS <- c("Dois eixos + quebra de eixo (Y esquerdo e direito)" = "exemplo_do
               "Composição da liga (pizza)" = "composicao_liga.csv",
               "Replicatas (boxplot)" = "replicatas.csv", "Média e desvio padrão (barras de erro)" = "media_e_desvio.csv", "Vários sinais" = "multissinal.csv",
               "PCA / CA / CCA (amostras × variáveis + ambientais)" = "ordenacao_amostras_variaveis_ambientais.csv", "Mapa de calor (genes × doses)" = "mapa_de_calor.csv",
-              "Mapa-múndi (vendas por país)" = "mapa_mundo_vendas.csv", "Mapa do Brasil (resíduos por estado)" = "mapa_brasil_estados.csv")
+              "Mapa-múndi (vendas por país)" = "mapa_mundo_vendas.csv", "Mapa do Brasil (resíduos por estado)" = "mapa_brasil_estados.csv",
+              "Superfície 3D / mapa de cor (matriz X, Y, Z)" = "superficie_rendimento.csv", "Barras 3D (região × material)" = "barras_3d_residuos.csv",
+              "Dispersão 3D (tabela longa X, Y, Z)" = "dispersao_3d_doses.csv")
 EXEMPLOS <- EXEMPLOS[file.exists(file.path(raiz, "dados", EXEMPLOS))]
 
 cartao_dados <- function() div(class = "dados-cartao",
@@ -65,13 +67,14 @@ extras_do_bloco <- function(b) list(
 
 construir_ui <- function(idioma) fluidPage(
   title = "Cinabro — laboratório de gráficos",
-  tags$head(tags$script(HTML(sprintf("window.IDIOMA = '%s'; $(document).on('shiny:connected', function () { Shiny.setInputValue('idioma_pagina', window.IDIOMA); });", idioma))), tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(HTML(paste0("window.PALETAS = ", jsonlite::toJSON(paletas_js(), auto_unbox = TRUE), ";"))), tags$script(src = "app.js"),
+  tags$head(tags$script(HTML(sprintf("window.IDIOMA = '%s'; ", idioma))), tags$link(rel = "icon", type = "image/png", href = "favicon.png"), tags$link(rel = "stylesheet", href = "estilo.css"), tags$script(HTML(paste0("window.PALETAS = ", jsonlite::toJSON(paletas_js(), auto_unbox = TRUE), ";"))), tags$script(src = "app.js"),
             tags$meta(name = "viewport", content = "width=device-width, initial-scale=1"), tags$meta(name = "theme-color", content = "#20242B")),
   tags$header(class = "topo",
     div(class = "marca", div(class = "marca-ico", tags$img(src = "emblema.svg", alt = "Cinabro")),
         div(tags$h1(class = "nome", "Cinabro"), tags$p(class = "frase", "A punctis ad curvam: ubi data colorem accipiunt."),
             div(class = "fio", tags$i(), tags$i(), tags$i(), tags$i()))),
     div(class = "topo-acoes",
+        selectInput("idioma_sel", NULL, choices = IDIOMAS, selected = idioma, selectize = FALSE, width = "150px"),
         selectInput("estilo", NULL, choices = tr_nomes(c("Estilos prontos..." = "", "Padrão do template" = "padrao", "Publicação (artigo)" = "publicacao",
                                                "Apresentação (slides)" = "apresentacao")), selectize = FALSE, width = "190px"),
         downloadButton("salvar_projeto", "Salvar projeto", class = "btn-topo", icon = NULL, title = "Baixa um arquivo .cinabro com os seus DADOS e a configuração do gráfico. Depois, Abrir projeto volta exatamente a este ponto."),
@@ -114,16 +117,26 @@ construir_ui <- function(idioma) fluidPage(
           div(class = "botoes-config", tags$button(type = "button", class = "btn-sec", id = "copiar-codigo", `data-copiado` = "Copiado!", "Copiar"),
               downloadButton("baixar_codigo", "Baixar script (.R)", class = "btn-sec"))))))
 
-# A tela é montada em português UMA vez, ao abrir o programa, e a mesma serve a todas as abas e recarregamentos. Antes ela era refeita a cada
-# página aberta (cerca de 2 s com o R parado, medidos na auditoria). O idioma pedido no endereço é ignorado: só português.
-.UI_PRONTA <- traduzir_html(construir_ui("pt"), "pt")
-# Montar o HTML final a partir das tags também custava ~1 s por página (5,5 mil tags): a resposta pronta do shiny é guardada na 1ª visita e
-# reaproveitada. Se o shiny não oferecer esse caminho, cai para a tela montada (UI_PRONTA), que é a versão segura.
-.UI_RESPOSTA <- NULL
+# A tela de cada idioma é montada e traduzida UMA vez (o português, ao abrir o programa; o inglês e o espanhol, na primeira vez que alguém os pede,
+# cerca de 3 s) e a mesma serve a todas as abas e recarregamentos. Antes ela era refeita a cada página aberta (cerca de 2 s com o R parado, medidos
+# na auditoria). Montar o HTML final a partir das tags também custava ~1 s (5,5 mil tags): a resposta pronta do shiny é guardada na 1ª visita de
+# cada idioma. Se o shiny não oferecer esse caminho, cai para a tela montada, que é a versão segura.
+.UI_IDIOMA <- new.env()
+.ui_do_idioma <- function(lg) {
+  if (is.null(.UI_IDIOMA[[lg]])) {
+    .i18n$idioma <- lg; on.exit(.i18n$idioma <- "pt", add = TRUE)            # os nomes das opções (tr_nomes) saem no idioma da tela que está sendo montada
+    .UI_IDIOMA[[lg]] <- list(arvore = traduzir_html(construir_ui(lg), lg), resposta = NULL)
+  }
+  .UI_IDIOMA[[lg]]
+}
+invisible(.ui_do_idioma("pt"))
 ui <- function(request) {
-  if (is.null(.UI_RESPOSTA))
-    .UI_RESPOSTA <<- tryCatch({ r <- utils::getFromNamespace("uiHttpHandler", "shiny")(.UI_PRONTA)(request); if (inherits(r, "httpResponse")) r else NULL }, error = function(e) NULL)
-  if (is.null(.UI_RESPOSTA)) .UI_PRONTA else .UI_RESPOSTA
+  lg <- idioma_do_pedido(request); e <- .ui_do_idioma(lg)
+  if (is.null(e$resposta)) {
+    e$resposta <- tryCatch({ r <- utils::getFromNamespace("uiHttpHandler", "shiny")(e$arvore)(request); if (inherits(r, "httpResponse")) r else NULL }, error = function(e2) NULL)
+    .UI_IDIOMA[[lg]] <- e
+  }
+  if (is.null(e$resposta)) e$arvore else e$resposta
 }
 
 # Aquecimento: o primeiro gráfico de um R recém-aberto leva alguns segundos a mais (fontes, pacotes). Desenha um gráfico pequeno agora, ao abrir,

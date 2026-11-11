@@ -12,13 +12,16 @@ dir.create(DASH_DIR, showWarnings = FALSE, recursive = TRUE)
 .dash_b64 <- function(arq) gsub("[\r\n]", "", jsonlite::base64_enc(readBin(arq, "raw", file.size(arq))))      # (o base64 do jsonlite vem com quebras de linha; dentro de url() elas estragam o CSS)
 
 # ---- texto em português ----------------------------------------------------------------------------------------------------------
-.dash_num <- function(x, casas = 0) if (length(x) != 1 || !is.finite(x)) "NA" else format(round(x, casas), big.mark = ".", decimal.mark = ",", nsmall = casas, scientific = FALSE, trim = TRUE)
+.d <- function(x) tr(x, .idioma())                                    # um pedaço de frase, no idioma do dashboard (o motor guarda o idioma em options)
+.dash_num <- function(x, casas = 0) { en <- identical(.idioma(), "en")
+  if (length(x) != 1 || !is.finite(x)) "NA" else format(round(x, casas), big.mark = if (en) "," else ".", decimal.mark = if (en) "." else ",", nsmall = casas, scientific = FALSE, trim = TRUE) }
 .dash_casas <- function(x) if (all(abs(x - round(x)) < 1e-9, na.rm = TRUE)) 0 else if (all(abs(x) >= 100, na.rm = TRUE)) 1 else 2
 .dash_pct <- function(frac, casas = 1) paste0(.dash_num(frac * 100, casas), "%")
-.dash_p <- function(p) if (length(p) != 1 || is.na(p)) "p = NA" else if (p < 0.001) "p < 0,001" else paste0("p = ", formatC(p, format = "f", digits = 3, decimal.mark = ","))
+.dash_p <- function(p) { dm <- if (identical(.idioma(), "en")) "." else ","
+  if (length(p) != 1 || is.na(p)) "p = NA" else if (p < 0.001) paste0("p < 0", dm, "001") else paste0("p = ", formatC(p, format = "f", digits = 3, decimal.mark = dm)) }
 .dash_esc <- function(x) { x <- as.character(x); x <- gsub("&", "&amp;", x, fixed = TRUE); x <- gsub("<", "&lt;", x, fixed = TRUE); gsub(">", "&gt;", x, fixed = TRUE) }
 .dash_b <- function(x) paste0("<b>", .dash_esc(x), "</b>")
-.dash_x <- function(v) if (inherits(v, c("Date", "POSIXct"))) format(v, "%d/%m/%Y") else if (is.numeric(v)) .dash_num(v, .dash_casas(v)) else as.character(v)
+.dash_x <- function(v) if (inherits(v, c("Date", "POSIXct"))) format(v, if (identical(.idioma(), "en")) "%m/%d/%Y" else "%d/%m/%Y") else if (is.numeric(v)) .dash_num(v, .dash_casas(v)) else as.character(v)
 
 # ---- números-chave e destaques (só de contas que o programa já faz) -----------------------------------------------------------
 .dash_vazio <- function() list(frases = character(0), kpi = NULL, resumo = NULL)
@@ -26,31 +29,48 @@ dir.create(DASH_DIR, showWarnings = FALSE, recursive = TRUE)
 .dest_ordenacao <- function(info, cfg) {
   R <- info$ordenacao; if (is.null(R)) return(.dash_vazio())
   ch <- R$ch; ev <- R$prop_total; eix <- R$eixos_total; ac <- sum(ev[ch]); fr <- character(0)
-  fr <- c(fr, paste0(.dash_b(eix[ch[1]]), " e ", .dash_b(eix[ch[2]]), " explicam ", .dash_b(.dash_pct(ac)), " da ", if (R$tipo == "pca") "variação" else "inércia total", "."))
+  fr <- c(fr, paste0(.dash_b(eix[ch[1]]), .d(" e "), .dash_b(eix[ch[2]]), .d(" explicam "), .dash_b(.dash_pct(ac)), .d(" da "), if (R$tipo == "pca") .d("variação") else .d("inércia total"), "."))
   V <- R$vars; ex <- R$eixos[1]
   if (!is.null(V) && nrow(V) >= 2) { top <- rownames(V)[order(abs(V[, 1]), decreasing = TRUE)][1:2]
-    fr <- c(fr, paste0("As variáveis que mais pesam no eixo ", .dash_esc(ex), ": ", .dash_b(top[1]), " e ", .dash_b(top[2]), ".")) }
+    fr <- c(fr, paste0(.d("As variáveis que mais pesam no eixo "), .dash_esc(ex), .d(": "), .dash_b(top[1]), .d(" e "), .dash_b(top[2]), ".")) }
   A <- R$amb
-  if (!is.null(A) && nrow(A) >= 1) fr <- c(fr, paste0(.dash_b(rownames(A)[which.max(abs(A[, 1]))]), " é a variável ambiental mais ligada ao eixo ", .dash_esc(ex), "."))
+  if (!is.null(A) && nrow(A) >= 1) fr <- c(fr, paste0(.dash_b(rownames(A)[which.max(abs(A[, 1]))]), .d(" é a variável ambiental mais ligada ao eixo "), .dash_esc(ex), "."))
   if (identical(R$tipo, "cca") && is.finite(R$restrita)) {
     rng <- .guardar_rng(); on.exit(rng(), add = TRUE)
     set.seed(cfg$multivariada$semente %||% 123)
     a <- tryCatch(suppressWarnings(vegan::anova.cca(R$ord, permutations = as.integer(cfg$multivariada$permutacoes %||% 999))), error = function(e) NULL)
     p <- if (!is.null(a)) a$`Pr(>F)`[1] else NA_real_
-    fr <- c(fr, paste0("As variáveis ambientais explicam ", .dash_b(.dash_pct(R$restrita)), " da inércia", if (!is.na(p)) paste0(" (teste de permutação, ", .dash_p(p), ")"), "."))
+    fr <- c(fr, paste0(.d("As variáveis ambientais explicam "), .dash_b(.dash_pct(R$restrita)), .d(" da inércia"), if (!is.na(p)) paste0(.d(" (teste de permutação, "), .dash_p(p), ")"), "."))
   }
   lc <- tryCatch(.linhas_resumo_ordenacao(R, cfg), error = function(e) NULL)
   list(frases = fr, kpi = list(valor = .dash_pct(ac), rotulo = paste(eix[ch], collapse = " + ")), resumo = if (!is.null(lc)) lc$linhas)
+}
+
+# Mapa de cor e gráficos 3D: onde o Z é maior e menor (e, na dispersão, quantos pontos).
+.dest_xyz <- function(dados, cfg) {
+  if (identical(cfg$grafico$tipo, "dispersao_3d")) {
+    p <- .pontos_xyz(dados, cfg)$d; if (!nrow(p)) return(.dash_vazio())
+    i <- which.max(p$z); j <- which.min(p$z); v <- function(z) .dash_num(z, .dash_casas(p$z))
+    fr <- c(paste0(.d("O maior valor está em "), .dash_b(paste0("(", .dash_num(p$x[i], 2), .d("; "), .dash_num(p$y[i], 2), ")")), " (", v(p$z[i]), ")."),
+            paste0(.d("O menor valor está em "), .dash_b(paste0("(", .dash_num(p$x[j], 2), .d("; "), .dash_num(p$y[j], 2), ")")), " (", v(p$z[j]), ")."))
+    return(list(frases = fr, kpi = list(valor = v(p$z[i]), rotulo = .d("maior valor")), resumo = NULL))
+  }
+  M <- .grade_xyz(dados, cfg); Z <- M$Z; if (!any(is.finite(Z))) return(.dash_vazio())
+  i <- which(Z == max(Z, na.rm = TRUE), arr.ind = TRUE)[1, ]; j <- which(Z == min(Z, na.rm = TRUE), arr.ind = TRUE)[1, ]
+  v <- function(z) .dash_num(z, .dash_casas(c(Z[is.finite(Z)])))
+  onde <- function(k) .dash_b(paste0("(", if (is.numeric(M$x)) .dash_num(M$x[k[2]], 2) else M$x[k[2]], .d("; "), if (is.numeric(M$y)) .dash_num(M$y[k[1]], 2) else M$y[k[1]], ")"))
+  list(frases = c(paste0(.d("O maior valor está em "), onde(i), " (", v(Z[i[1], i[2]]), ")."), paste0(.d("O menor valor está em "), onde(j), " (", v(Z[j[1], j[2]]), ").")),
+       kpi = list(valor = v(Z[i[1], i[2]]), rotulo = .d("maior valor")), resumo = NULL)
 }
 
 .dest_calor <- function(dados, cfg) {
   M <- .matriz_mapa_calor(dados, cfg); Z <- M$Z; if (!any(is.finite(Z))) return(.dash_vazio())
   i <- which(Z == max(Z, na.rm = TRUE), arr.ind = TRUE)[1, ]; j <- which(Z == min(Z, na.rm = TRUE), arr.ind = TRUE)[1, ]
   v <- function(z) .dash_num(z, .dash_casas(c(Z[is.finite(Z)])))
-  fr <- c(paste0("O maior valor está em ", .dash_b(paste(rownames(Z)[i[1]], "×", colnames(Z)[i[2]])), " (", v(Z[i[1], i[2]]), ")."),
-          paste0("O menor valor está em ", .dash_b(paste(rownames(Z)[j[1]], "×", colnames(Z)[j[2]])), " (", v(Z[j[1], j[2]]), ")."))
-  mc <- colMeans(Z, na.rm = TRUE); if (length(mc) >= 2) fr <- c(fr, paste0("A maior média por coluna é a de ", .dash_b(names(mc)[which.max(mc)]), " (", v(max(mc)), ")."))
-  list(frases = fr, kpi = list(valor = v(Z[i[1], i[2]]), rotulo = "maior valor"), resumo = NULL)
+  fr <- c(paste0(.d("O maior valor está em "), .dash_b(paste(rownames(Z)[i[1]], "×", colnames(Z)[i[2]])), " (", v(Z[i[1], i[2]]), ")."),
+          paste0(.d("O menor valor está em "), .dash_b(paste(rownames(Z)[j[1]], "×", colnames(Z)[j[2]])), " (", v(Z[j[1], j[2]]), ")."))
+  mc <- colMeans(Z, na.rm = TRUE); if (length(mc) >= 2) fr <- c(fr, paste0(.d("A maior média por coluna é a de "), .dash_b(names(mc)[which.max(mc)]), " (", v(max(mc)), ")."))
+  list(frases = fr, kpi = list(valor = v(Z[i[1], i[2]]), rotulo = .d("maior valor")), resumo = NULL)
 }
 
 # categorias com valor (barras, pizza, mapas): quem lidera, quanto do total, as três maiores
@@ -60,10 +80,10 @@ dir.create(DASH_DIR, showWarnings = FALSE, recursive = TRUE)
   ok <- !is.na(cat) & !is.na(val); cat <- cat[ok]; val <- val[ok]; if (!length(val)) return(.dash_vazio())
   agg <- sort(tapply(val, cat, sum), decreasing = TRUE); tot <- sum(agg); casas <- .dash_casas(agg); n <- length(agg)
   positivo <- all(agg >= 0) && tot > 0
-  fr <- paste0(.dash_b(names(agg)[1]), " tem o maior valor (", .dash_num(agg[[1]], casas), if (positivo) paste0("; ", .dash_pct(agg[[1]] / tot, 0), " do total"), if (length(ys) > 1) paste0("; soma de ", length(ys), " séries"), ").")
-  if (n >= 5 && positivo) fr <- c(fr, paste0("As três maiores somam ", .dash_b(.dash_pct(sum(agg[1:3]) / tot, 0)), " do total."))
-  if (n >= 2) fr <- c(fr, paste0(.dash_b(names(agg)[n]), " tem o menor valor (", .dash_num(agg[[n]], casas), ")."))
-  kpi <- if (positivo && n >= 2) list(valor = .dash_pct(agg[[1]] / tot, 0), rotulo = paste0(names(agg)[1], " (maior parcela)")) else list(valor = .dash_num(agg[[1]], casas), rotulo = paste0(names(agg)[1], " (maior valor)"))
+  fr <- paste0(.dash_b(names(agg)[1]), .d(" tem o maior valor ("), .dash_num(agg[[1]], casas), if (positivo) paste0(.d("; "), .dash_pct(agg[[1]] / tot, 0), .d(" do total")), if (length(ys) > 1) paste0(.d("; soma de "), length(ys), .d(" séries")), ").")
+  if (n >= 5 && positivo) fr <- c(fr, paste0(.d("As três maiores somam "), .dash_b(.dash_pct(sum(agg[1:3]) / tot, 0)), .d(" do total.")))
+  if (n >= 2) fr <- c(fr, paste0(.dash_b(names(agg)[n]), .d(" tem o menor valor ("), .dash_num(agg[[n]], casas), ")."))
+  kpi <- if (positivo && n >= 2) list(valor = .dash_pct(agg[[1]] / tot, 0), rotulo = paste0(names(agg)[1], .d(" (maior parcela)"))) else list(valor = .dash_num(agg[[1]], casas), rotulo = paste0(names(agg)[1], .d(" (maior valor)")))
   list(frases = fr, kpi = kpi, resumo = NULL)
 }
 
@@ -71,13 +91,13 @@ dir.create(DASH_DIR, showWarnings = FALSE, recursive = TRUE)
 .dest_grupos <- function(dados, cfg) {
   A <- .amostras(dados, cfg)$am; A <- A[vapply(A, length, 0) >= 2]; if (length(A) < 1) return(.dash_vazio())
   med <- vapply(A, stats::median, 0); casas <- .dash_casas(unlist(A)); k <- which.max(med)
-  fr <- paste0(.dash_b(names(A)[k]), " tem a maior mediana (", .dash_num(med[[k]], casas), ").")
+  fr <- paste0(.dash_b(names(A)[k]), .d(" tem a maior mediana ("), .dash_num(med[[k]], casas), ").")
   kpi <- NULL
   if (length(A) >= 2) {
     kw <- tryCatch(stats::kruskal.test(unname(A)), error = function(e) NULL)
     if (!is.null(kw)) { p <- kw$p.value
-      fr <- c(paste0("Os grupos ", if (p < 0.05) .dash_b("diferem") else .dash_b("não diferem"), " (Kruskal-Wallis, ", .dash_p(p), ")."), fr)
-      kpi <- list(valor = .dash_p(p), rotulo = "Kruskal-Wallis") }
+      fr <- c(paste0(.d("Os grupos "), if (p < 0.05) .dash_b(.d("diferem")) else .dash_b(.d("não diferem")), " (Kruskal-Wallis, ", .dash_p(p), ")."), fr)
+      kpi <- list(valor = .dash_p(p), rotulo = .d("Kruskal-Wallis")) }
   }
   list(frases = fr, kpi = kpi, resumo = NULL)
 }
@@ -85,8 +105,8 @@ dir.create(DASH_DIR, showWarnings = FALSE, recursive = TRUE)
 .dest_distribuicao <- function(dados, cfg) {
   A <- .amostras(dados, cfg)$am; v <- unlist(A); v <- v[is.finite(v)]; if (length(v) < 2) return(.dash_vazio())
   ca <- .dash_casas(v)
-  fr <- paste0(.dash_b(paste0("n = ", length(v))), " observações; média ", .dash_b(.dash_num(mean(v), ca + 1)), " ± ", .dash_num(stats::sd(v), ca + 1), " (DP).")
-  list(frases = fr, kpi = list(valor = .dash_num(length(v)), rotulo = "observações"), resumo = NULL)
+  fr <- paste0(.dash_b(paste0("n = ", length(v))), .d(" observações; média "), .dash_b(.dash_num(mean(v), ca + 1)), " ± ", .dash_num(stats::sd(v), ca + 1), .d(" (DP)."))
+  list(frases = fr, kpi = list(valor = .dash_num(length(v)), rotulo = .d("observações")), resumo = NULL)
 }
 
 # séries (linhas, pontos, áreas): variação do primeiro ao último ponto, máximo; em pontos, a correlação entre X e Y
@@ -98,18 +118,18 @@ dir.create(DASH_DIR, showWarnings = FALSE, recursive = TRUE)
     o <- order(x[ok]); xv <- x[ok][o]; vv <- v[ok][o]
     if (identical(cfg$grafico$tipo, "pontos") && is.numeric(x)) {
       r <- stats::cor(xv, vv); if (!is.finite(r)) next
-      fr <- c(fr, paste0("Entre ", .dash_b(xc), " e ", .dash_b(y), ": ", .dash_b(paste0("r = ", .dash_num(r, 2))), " (n = ", length(vv), ")."))
+      fr <- c(fr, paste0(.d("Entre "), .dash_b(xc), .d(" e "), .dash_b(y), .d(": "), .dash_b(paste0("r = ", .dash_num(r, 2))), .d(" (n = "), length(vv), ")."))
       if (is.null(kpi)) kpi <- list(valor = paste0("r = ", .dash_num(r, 2)), rotulo = paste(y, "×", xc))
       next
     }
     a <- vv[1]; b <- vv[length(vv)]; ca <- .dash_casas(vv)
     if (a != 0) { pct <- (b - a) / abs(a)
-      verbo <- if (abs(pct) < 0.005) "ficou estável" else if (pct > 0) "subiu" else "caiu"
-      fr <- c(fr, paste0(.dash_b(y), " ", if (abs(pct) < 0.005) verbo else paste0(verbo, " ", .dash_b(.dash_pct(abs(pct)))), " entre ", .dash_esc(.dash_x(xv[1])), " e ", .dash_esc(.dash_x(xv[length(xv)])),
-                         " (de ", .dash_num(a, ca), " para ", .dash_num(b, ca), ")."))
-      if (is.null(kpi)) kpi <- list(valor = paste0(if (pct > 0) "+" else if (pct < 0) "−" else "", .dash_pct(abs(pct), if (abs(pct) >= 1) 0 else 1)), rotulo = paste(y, "· variação"))
-    } else fr <- c(fr, paste0(.dash_b(y), " foi de ", .dash_num(a, ca), " para ", .dash_num(b, ca), " entre ", .dash_esc(.dash_x(xv[1])), " e ", .dash_esc(.dash_x(xv[length(xv)])), "."))
-    if (length(fr) == 1) { im <- which.max(vv); fr <- c(fr, paste0("O máximo de ", .dash_b(y), " é ", .dash_b(.dash_num(vv[im], ca)), ", em ", .dash_esc(.dash_x(xv[im])), ".")) }
+      verbo <- if (abs(pct) < 0.005) .d("ficou estável") else if (pct > 0) .d("subiu") else .d("caiu")
+      fr <- c(fr, paste0(.dash_b(y), " ", if (abs(pct) < 0.005) verbo else paste0(verbo, " ", .dash_b(.dash_pct(abs(pct)))), .d(" entre "), .dash_esc(.dash_x(xv[1])), .d(" e "), .dash_esc(.dash_x(xv[length(xv)])),
+                         .d(" (de "), .dash_num(a, ca), .d(" para "), .dash_num(b, ca), ")."))
+      if (is.null(kpi)) kpi <- list(valor = paste0(if (pct > 0) "+" else if (pct < 0) "−" else "", .dash_pct(abs(pct), if (abs(pct) >= 1) 0 else 1)), rotulo = paste(y, .d("· variação")))
+    } else fr <- c(fr, paste0(.dash_b(y), .d(" foi de "), .dash_num(a, ca), .d(" para "), .dash_num(b, ca), .d(" entre "), .dash_esc(.dash_x(xv[1])), .d(" e "), .dash_esc(.dash_x(xv[length(xv)])), "."))
+    if (length(fr) == 1) { im <- which.max(vv); fr <- c(fr, paste0(.d("O máximo de "), .dash_b(y), .d(" é "), .dash_b(.dash_num(vv[im], ca)), .d(", em "), .dash_esc(.dash_x(xv[im])), ".")) }
   }
   list(frases = fr, kpi = kpi, resumo = NULL)
 }
@@ -119,6 +139,7 @@ dir.create(DASH_DIR, showWarnings = FALSE, recursive = TRUE)
   r <- tryCatch(switch(tp,
     pca = , ca = , cca = .dest_ordenacao(attr(g, "info"), cfg),
     mapa_calor = .dest_calor(dados, cfg),
+    mapa_cor = , superficie_3d = , barras_3d = , dispersao_3d = .dest_xyz(dados, cfg),
     mapa_mundo = , mapa_brasil = , barras = , pizza = .dest_categorias(dados, cfg),
     boxplot = .dest_grupos(dados, cfg),
     histograma = , densidade = , ecdf = .dest_distribuicao(dados, cfg),
@@ -171,23 +192,24 @@ dir.create(DASH_DIR, showWarnings = FALSE, recursive = TRUE)
 # Sai: list(estado = <layout e textos>, graficos = <imagens e destaques de cada aba>, avisos = <o que ficou de fora e por quê>).
 dash_construir <- function(abas, opcoes = list(), progresso = function(i, n, nome) NULL) {
   vetorial <- !identical(opcoes$qualidade, "leve"); com_dest <- !isFALSE(opcoes$destaques)
+  idm <- opcoes$idioma %||% "pt"; ant_idm <- options(cinabro.idioma = idm); on.exit(options(ant_idm), add = TRUE)   # frases, números e avisos saem no idioma da tela
   gs <- list(); avisos <- character(0)
   for (i in seq_along(abas)) {
-    a <- abas[[i]]; nome <- a$nome %||% paste("Gráfico", i); progresso(i, length(abas), nome)
-    if (is.null(a$dados)) { avisos <- c(avisos, sprintf("\"%s\": sem dados; ficou de fora.", nome)); next }
-    r <- tryCatch(construir_grafico(a$dados, montar_variaveis(a$valores, CFG0, a$series), CFG0, preview = FALSE), error = function(e) list(erro = conditionMessage(e)))
+    a <- abas[[i]]; nome <- a$nome %||% paste(.d("Gráfico"), i); progresso(i, length(abas), nome)
+    if (is.null(a$dados)) { avisos <- c(avisos, sprintf(.d("\"%s\": sem dados; ficou de fora."), nome)); next }
+    r <- tryCatch(construir_grafico(a$dados, montar_variaveis(a$valores, CFG0, a$series), CFG0, preview = FALSE, idioma = idm), error = function(e) list(erro = conditionMessage(e)))
     if (!is.null(r$erro)) { avisos <- c(avisos, sprintf("\"%s\": %s", nome, substr(r$erro, 1, 160))); next }
     k <- length(gs) + 1
     pesado <- .dash_pesado(a$dados, r$cfg)                                  # milhares de pontos: SVG pesaria e levaria mais de 15 s; vai como imagem
-    if (vetorial && pesado) avisos <- c(avisos, sprintf("\"%s\": tem muitos pontos e entrou como imagem (leve), não como vetor.", nome))
-    im <- tryCatch(.dash_imagem(r, vetorial && !pesado, k), error = function(e) { avisos <<- c(avisos, sprintf("\"%s\": não consegui desenhar (%s).", nome, substr(conditionMessage(e), 1, 120))); NULL })
+    if (vetorial && pesado) avisos <- c(avisos, sprintf(.d("\"%s\": tem muitos pontos e entrou como imagem (leve), não como vetor."), nome))
+    im <- tryCatch(.dash_imagem(r, vetorial && !pesado, k), error = function(e) { avisos <<- c(avisos, sprintf(.d("\"%s\": não consegui desenhar (%s)."), nome, substr(conditionMessage(e), 1, 120))); NULL })
     if (is.null(im)) next
     d <- if (com_dest) .dash_destaques(a$dados, r$cfg, r$g) else .dash_vazio()
     gs[[k]] <- list(id = paste0("g", k), nome = nome, tipo = r$cfg$grafico$tipo, formato = im$tipo, conteudo = im$conteudo, ar = round(im$larg / im$alt, 4),
                     frases = as.list(d$frases), kpi = d$kpi, resumo = as.list(d$resumo))
   }
-  list(estado = list(versao = 1, id = as.character(as.integer(Sys.time())), titulo = opcoes$titulo %||% "Painel de acompanhamento",
-                     subtitulo = opcoes$subtitulo %||% paste0("atualizado em ", format(Sys.Date(), "%d/%m/%Y")),
+  list(estado = list(versao = 1, id = as.character(as.integer(Sys.time())), titulo = opcoes$titulo %||% .d("Painel de acompanhamento"), idioma = idm,
+                     subtitulo = opcoes$subtitulo %||% sprintf(.d("atualizado em %s"), format(Sys.Date(), if (idm == "en") "%m/%d/%Y" else "%d/%m/%Y")),
                      rodape = opcoes$rodape %||% "Cinabro", formato = opcoes$formato %||% "a4h", paginas = list(), identidade = list(modo = "cinabro")),
        graficos = unname(gs), avisos = avisos)
 }
@@ -214,6 +236,8 @@ dash_construir <- function(abas, opcoes = list(), progresso = function(i, n, nom
 dash_html <- function(estado, graficos, modo = "editar") {
   tit <- if (is.list(estado)) estado$titulo else tryCatch(jsonlite::fromJSON(estado, simplifyVector = FALSE)$titulo, error = function(e) NULL)
   h <- .dash_ler("modelo.html")
+  idm <- (if (is.list(estado)) estado$idioma else NULL) %||% "pt"
+  h <- sub('lang="pt-BR"', paste0('lang="', c(pt = "pt-BR", en = "en", es = "es")[[idm]], '"'), h, fixed = TRUE)
   h <- .dash_inserir(h, "@@MODO@@", modo)
   h <- .dash_inserir(h, "@@TITULO@@", .dash_esc(tit %||% "Dashboard"))
   h <- .dash_inserir(h, "@@FONTES@@", .dash_fontes_css())

@@ -14,6 +14,40 @@
   var emApp = false; try { emApp = window.parent !== window && !!window.parent.Shiny; } catch (e) { emApp = false; }
   var app = document.getElementById('app'), tela = null, lateral = null, props = null;
 
+  // ---- idioma (pt | en | es): o R grava o idioma em estado.idioma; as frases do cabeçalho e dos destaques já vêm prontas dele ---------------------------------------
+  var IDIOMA = E.idioma || 'pt', I18N = {"en": {"▦ Dashboard": "▦ Dashboard", "A4 paisagem": "A4 landscape", "A4 retrato": "A4 portrait", "Identidade ▾": "Identity ▾", "Grade ✓": "Grid ✓", "Grade": "Grid", "Guias ✓": "Guides ✓", "Guias": "Guides", "↶ Desfazer": "↶ Undo", "↷ Refazer": "↷ Redo", "Ajustar": "Fit", "Salvar HTML": "Save HTML", "Exportar PDF": "Export PDF", "Blocos": "Blocks", "Número-chave": "Key number", "Destaques": "Highlights", "Texto livre": "Free text", "Imagem / logo": "Image / logo", "Gráficos das abas": "Plots from the tabs", "na folha": "on the sheet", "Clique para pôr na folha. Arraste para mover, puxe os quadradinhos para esticar. Duplo clique no texto edita.": "Click to place on the sheet. Drag to move, pull the little squares to stretch. Double-click the text to edit.", "Folha": "Sheet", "Cabeçalho": "Header", "Título": "Title", "Subtítulo": "Subtitle", "Rodapé": "Footer", "Páginas": "Pages", "+ Página em branco": "+ Blank page", "Reorganizar tudo": "Rearrange all", "Clique num bloco para ver as opções dele. Shift + clique seleciona vários (aparecem as opções de alinhar). Alt ao soltar um bloco sobre outro troca os dois de lugar.": "Click a block to see its options. Shift + click selects several (the align options appear). Alt when dropping one block over another swaps the two.", "Formato da página": "Page format", "Zoom (Ctrl + roda do mouse)": "Zoom (Ctrl + mouse wheel)", "Refaz a disposição automática no formato escolhido": "Redoes the automatic layout in the chosen format", "X (mm)": "X (mm)", "Y (mm)": "Y (mm)", "Largura (mm)": "Width (mm)", "Altura (mm)": "Height (mm)", "Tamanho da letra": "Font size", "Borda": "Border", "sem borda": "no border", "fina": "thin", "com sombra": "with shadow", "Ordem": "Order", "Para a frente": "Bring forward", "Para trás": "Send backward", "Travar posição": "Lock position", "Ações": "Actions", "Duplicar (Ctrl+D)": "Duplicate (Ctrl+D)", "Apagar (Del)": "Delete (Del)", "Cor do número": "Number color", "Gráfico": "Plot", "Alinhar": "Align", "⇤ Esquerda": "⇤ Left", "⇔ Centro": "⇔ Center", "⇥ Direita": "⇥ Right", "⤒ Topo": "⤒ Top", "⇕ Meio": "⇕ Middle", "⤓ Base": "⤓ Bottom", "Distribuir": "Distribute", "↔ Na horizontal": "↔ Horizontally", "↕ Na vertical": "↕ Vertically", "Duplicar": "Duplicate", "Apagar": "Delete", "Mesmo espaço entre os blocos (3 ou mais)": "Equal space between blocks (3 or more)", "Identidade do painel": "Dashboard identity", "Cores padrão do Cinabro": "Default Cinabro colors", "Faixa tinta, destaque vermelho.": "Ink band, red highlight.", "Logo e cores institucionais": "Logo and institutional colors", "Use o logo e as cores da sua instituição.": "Use your institution's logo and colors.", "Fechar": "Close", "Voltar ao Cinabro": "Back to Cinabro", "✎ Editar": "✎ Edit", "Resumo estatístico": "Statistical summary", "Texto": "Text", "Imagem": "Image", "(gráfico não encontrado)": "(plot not found)", "Nenhum gráfico veio das abas.": "No plot came from the tabs.", "Nenhum gráfico. Volte ao Cinabro, carregue os dados de uma aba e monte o dashboard de novo.": "No plots. Go back to Cinabro, load the data of a tab and build the dashboard again.", "Imagem: escolha o arquivo no painel da direita": "Image: choose the file in the right panel", "página": "page", "de": "of", "Página": "Page", "excluir esta página": "delete this page", "Excluir a página": "Delete page", "e o que há nela?": "and everything on it?", "Refazer a disposição automática? As posições que você ajustou serão perdidas (dá para desfazer).": "Redo the automatic layout? The positions you adjusted will be lost (you can undo).", "blocos selecionados": "blocks selected", "Negrito no bloco todo (para trechos: selecione o texto e use Ctrl+B)": "Bold on the whole block (for parts: select the text and use Ctrl+B)", "Cor do texto": "Text color", "Trocar a imagem": "Replace the image", "Escolher a imagem...": "Choose the image...", "Cor da faixa": "Band color", "Cor de destaque": "Highlight color", "Trocar o logo...": "Replace the logo...", "Escolher o logo...": "Choose the logo...", "Tirar o logo": "Remove the logo", "O logo aparece no canto direito do cabeçalho. Fica guardado neste computador para os próximos painéis.": "The logo appears in the right corner of the header. It stays saved on this computer for the next dashboards.", "descrição do número": "number description", "Escreva aqui um destaque.": "Write a highlight here.", "Duplo clique para escrever.": "Double-click to write.", "Resumo:": "Summary:", "Para distribuir, selecione 3 blocos ou mais.": "To distribute, select 3 or more blocks.", "Mudou o formato da página. Refazer a disposição automática? (Cancelar mantém as posições, esticadas à nova página.)": "The page format changed. Redo the automatic layout? (Cancel keeps the positions, stretched to the new page.)", "HTML salvo. Ele abre em qualquer computador (o botão \"Editar\" no canto volta a editar).": "HTML saved. It opens on any computer (the \"Edit\" button in the corner goes back to editing).", "Gerando o PDF... (pode levar alguns segundos)": "Generating the PDF... (it may take a few seconds)", "Na janela de impressão que vai abrir, escolha \"Salvar como PDF\" e desmarque \"Cabeçalhos e rodapés\".": "In the print window that will open, choose \"Save as PDF\" and uncheck \"Headers and footers\".", "PDF pronto:": "PDF ready:", "Não achei o Edge nem o Chrome para gerar o PDF sozinho. Vou abrir a impressão: escolha \"Salvar como PDF\".": "I could not find Edge or Chrome to make the PDF by myself. I will open printing: choose \"Save as PDF\".", " · travado": " · locked"}, "es": {"▦ Dashboard": "▦ Dashboard", "A4 paisagem": "A4 horizontal", "A4 retrato": "A4 vertical", "Identidade ▾": "Identidad ▾", "Grade ✓": "Cuadrícula ✓", "Grade": "Cuadrícula", "Guias ✓": "Guías ✓", "Guias": "Guías", "↶ Desfazer": "↶ Deshacer", "↷ Refazer": "↷ Rehacer", "Ajustar": "Ajustar", "Salvar HTML": "Guardar HTML", "Exportar PDF": "Exportar PDF", "Blocos": "Bloques", "Número-chave": "Número clave", "Destaques": "Destacados", "Texto livre": "Texto libre", "Imagem / logo": "Imagen / logo", "Gráficos das abas": "Gráficos de las pestañas", "na folha": "en la hoja", "Clique para pôr na folha. Arraste para mover, puxe os quadradinhos para esticar. Duplo clique no texto edita.": "Haz clic para ponerlo en la hoja. Arrastra para mover, tira de los cuadritos para estirar. Doble clic en el texto para editar.", "Folha": "Hoja", "Cabeçalho": "Encabezado", "Título": "Título", "Subtítulo": "Subtítulo", "Rodapé": "Pie", "Páginas": "Páginas", "+ Página em branco": "+ Página en blanco", "Reorganizar tudo": "Reorganizar todo", "Clique num bloco para ver as opções dele. Shift + clique seleciona vários (aparecem as opções de alinhar). Alt ao soltar um bloco sobre outro troca os dois de lugar.": "Haz clic en un bloque para ver sus opciones. Mayús + clic selecciona varios (aparecen las opciones de alinear). Alt al soltar un bloque sobre otro intercambia los dos.", "Formato da página": "Formato de la página", "Zoom (Ctrl + roda do mouse)": "Zoom (Ctrl + rueda del ratón)", "Refaz a disposição automática no formato escolhido": "Rehace la disposición automática en el formato elegido", "X (mm)": "X (mm)", "Y (mm)": "Y (mm)", "Largura (mm)": "Ancho (mm)", "Altura (mm)": "Alto (mm)", "Tamanho da letra": "Tamaño de la letra", "Borda": "Borde", "sem borda": "sin borde", "fina": "fino", "com sombra": "con sombra", "Ordem": "Orden", "Para a frente": "Traer al frente", "Para trás": "Enviar atrás", "Travar posição": "Bloquear posición", "Ações": "Acciones", "Duplicar (Ctrl+D)": "Duplicar (Ctrl+D)", "Apagar (Del)": "Borrar (Supr)", "Cor do número": "Color del número", "Gráfico": "Gráfico", "Alinhar": "Alinear", "⇤ Esquerda": "⇤ Izquierda", "⇔ Centro": "⇔ Centro", "⇥ Direita": "⇥ Derecha", "⤒ Topo": "⤒ Arriba", "⇕ Meio": "⇕ Medio", "⤓ Base": "⤓ Abajo", "Distribuir": "Distribuir", "↔ Na horizontal": "↔ En horizontal", "↕ Na vertical": "↕ En vertical", "Duplicar": "Duplicar", "Apagar": "Borrar", "Mesmo espaço entre os blocos (3 ou mais)": "Mismo espacio entre los bloques (3 o más)", "Identidade do painel": "Identidad del panel", "Cores padrão do Cinabro": "Colores predeterminados de Cinabro", "Faixa tinta, destaque vermelho.": "Banda de tinta, destacado en rojo.", "Logo e cores institucionais": "Logo y colores institucionales", "Use o logo e as cores da sua instituição.": "Usa el logo y los colores de tu institución.", "Fechar": "Cerrar", "Voltar ao Cinabro": "Volver a Cinabro", "✎ Editar": "✎ Editar", "Resumo estatístico": "Resumen estadístico", "Texto": "Texto", "Imagem": "Imagen", "(gráfico não encontrado)": "(gráfico no encontrado)", "Nenhum gráfico veio das abas.": "Ningún gráfico vino de las pestañas.", "Nenhum gráfico. Volte ao Cinabro, carregue os dados de uma aba e monte o dashboard de novo.": "Ningún gráfico. Vuelve a Cinabro, carga los datos de una pestaña y monta el dashboard de nuevo.", "Imagem: escolha o arquivo no painel da direita": "Imagen: elige el archivo en el panel de la derecha", "página": "página", "de": "de", "Página": "Página", "excluir esta página": "borrar esta página", "Excluir a página": "Borrar la página", "e o que há nela?": "y todo lo que hay en ella?", "Refazer a disposição automática? As posições que você ajustou serão perdidas (dá para desfazer).": "¿Rehacer la disposición automática? Se perderán las posiciones que ajustaste (se puede deshacer).", "blocos selecionados": "bloques seleccionados", "Negrito no bloco todo (para trechos: selecione o texto e use Ctrl+B)": "Negrita en todo el bloque (para fragmentos: selecciona el texto y usa Ctrl+B)", "Cor do texto": "Color del texto", "Trocar a imagem": "Cambiar la imagen", "Escolher a imagem...": "Elegir la imagen...", "Cor da faixa": "Color de la banda", "Cor de destaque": "Color de destacado", "Trocar o logo...": "Cambiar el logo...", "Escolher o logo...": "Elegir el logo...", "Tirar o logo": "Quitar el logo", "O logo aparece no canto direito do cabeçalho. Fica guardado neste computador para os próximos painéis.": "El logo aparece en la esquina derecha del encabezado. Queda guardado en este ordenador para los próximos paneles.", "descrição do número": "descripción del número", "Escreva aqui um destaque.": "Escribe aquí un destacado.", "Duplo clique para escrever.": "Doble clic para escribir.", "Resumo:": "Resumen:", "Para distribuir, selecione 3 blocos ou mais.": "Para distribuir, selecciona 3 bloques o más.", "Mudou o formato da página. Refazer a disposição automática? (Cancelar mantém as posições, esticadas à nova página.)": "Cambió el formato de la página. ¿Rehacer la disposición automática? (Cancelar mantiene las posiciones, estiradas a la nueva página.)", "HTML salvo. Ele abre em qualquer computador (o botão \"Editar\" no canto volta a editar).": "HTML guardado. Se abre en cualquier ordenador (el botón \"Editar\" de la esquina vuelve a editar).", "Gerando o PDF... (pode levar alguns segundos)": "Generando el PDF... (puede tardar unos segundos)", "Na janela de impressão que vai abrir, escolha \"Salvar como PDF\" e desmarque \"Cabeçalhos e rodapés\".": "En la ventana de impresión que se abrirá, elige \"Guardar como PDF\" y desmarca \"Encabezados y pies de página\".", "PDF pronto:": "PDF listo:", "Não achei o Edge nem o Chrome para gerar o PDF sozinho. Vou abrir a impressão: escolha \"Salvar como PDF\".": "No encontré Edge ni Chrome para generar el PDF solo. Voy a abrir la impresión: elige \"Guardar como PDF\".", " · travado": " · bloqueado"}};
+  function tx(s) { var d = I18N[IDIOMA]; return d && Object.prototype.hasOwnProperty.call(d, s) ? d[s] : s; }
+  // texto com número no meio ("2 blocos selecionados", "Página 3", "PDF pronto: nome.pdf")
+  function tp(s) {
+    if (IDIOMA === 'pt' || typeof s !== 'string') return s;
+    var m = /^(\d+) (blocos selecionados)$/.exec(s); if (m) return m[1] + ' ' + tx(m[2]);
+    m = /^(Página) (\d+)$/.exec(s); if (m) return tx(m[1]) + ' ' + m[2];
+    m = /^(PDF pronto:) (.*)$/.exec(s); if (m) return tx(m[1]) + ' ' + m[2];
+    m = /^(Excluir a página) (\d+) (e o que há nela\?)$/.exec(s); if (m) return tx(m[1]) + ' ' + m[2] + ' ' + tx(m[3]);
+    return tx(s);
+  }
+  // traduz a tela do editor (menos a folha, que tem o texto do usuário): botões, rótulos, dicas e opções; uma vez por nó, sem mexer na lógica
+  function trDom(raiz) {
+    if (IDIOMA === 'pt' || !raiz) return;
+    var w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT), ns = [], n;
+    while ((n = w.nextNode())) ns.push(n);
+    ns.forEach(function (n) {
+      var p = n.parentElement; if (!p || /^(SCRIPT|STYLE|TEXTAREA)$/.test(p.tagName) || p.closest('[contenteditable]') || p.closest('svg')) return;
+      if (p.closest('.folha') && !p.closest('.selo, .pagina-rot, .pagina-wrap > button')) return;
+      var v = n.nodeValue, c = v.trim(); if (!c) return; var r = tp(c); if (r !== c) n.nodeValue = v.replace(c, r);
+    });
+    (raiz.querySelectorAll ? raiz.querySelectorAll('[title],[placeholder]') : []).forEach(function (e) {
+      if (e.closest('svg') || e.closest('.folha .bk > :not(.selo)')) return;
+      ['title', 'placeholder'].forEach(function (a) { var v = e.getAttribute(a); if (v) { var r = tp(v); if (r !== v) e.setAttribute(a, r); } });
+    });
+  }
+  if (IDIOMA !== 'pt') {
+    raiz.setAttribute('lang', IDIOMA);
+    var _agenda = false, _obs = new MutationObserver(function () { if (_agenda) return; _agenda = true; requestAnimationFrame(function () { _agenda = false; trDom(document.body); }); });
+    document.addEventListener('DOMContentLoaded', function () { _obs.observe(document.body, { childList: true, subtree: true, characterData: true }); });
+    if (document.body) _obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+  }
+
   // ---- utilidades ------------------------------------------------------------------------------------------------------------------
   function el(tag, cls, html) { var d = document.createElement(tag); if (cls) d.className = cls; if (html != null) d.innerHTML = html; return d; }
   function esc(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -25,7 +59,7 @@
   function paginaDe(id) { for (var p = 0; p < E.paginas.length; p++) for (var i = 0; i < E.paginas[p].blocos.length; i++) if (E.paginas[p].blocos[i].id === id) return p; return -1; }
   function novoId() { return 'b' + (++seq); }
   function novo(tipo, o) { var b = { id: novoId(), tipo: tipo, borda: 'fina' }; for (var k in o) b[k] = o[k]; return b; }
-  function toast(msg, erro) { var t = el('div', 'toast' + (erro ? ' erro' : ''), esc(msg)); document.body.appendChild(t); setTimeout(function () { t.remove(); }, erro ? 6000 : 3200); }
+  function toast(msg, erro) { var tt = el('div', 'toast' + (erro ? ' erro' : ''), esc(tp(msg))); document.body.appendChild(tt); setTimeout(function () { tt.remove(); }, erro ? 6000 : 3200); }
   function lum(h) { var m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(h || ''); if (!m) return 0; var c = [1, 2, 3].map(function (i) { return parseInt(m[i], 16) / 255; }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }
   function pct(v) { return (v * 100).toFixed(4) + '%'; }
   function limitar(v, a, b) { return Math.max(a, Math.min(b, v)); }
@@ -82,7 +116,7 @@
     var paginas = [p1];
     while (resto.length) { var lote = resto.splice(0, 6), cc = celulas(lote.length, { x: A.x0, y: A.y0, w: A.x1 - A.x0, h: A.y1 - A.y0 }), p = { blocos: [] };
       lote.forEach(function (g, i) { p.blocos.push(blocoGrafico(g, cc[i])); }); paginas.push(p); }
-    if (!gs.length) p1.blocos.push(novo('texto', { x: A.x0, y: A.y0, w: A.x1 - A.x0, h: mmy(30), html: 'Nenhum gráfico. Volte ao Cinabro, carregue os dados de uma aba e monte o dashboard de novo.', tam: 16 }));
+    if (!gs.length) p1.blocos.push(novo('texto', { x: A.x0, y: A.y0, w: A.x1 - A.x0, h: mmy(30), html: tx('Nenhum gráfico. Volte ao Cinabro, carregue os dados de uma aba e monte o dashboard de novo.'), tam: 16 }));
     E.paginas = paginas; sel = []; pagAtual = 0;
   }
 
@@ -100,11 +134,11 @@
     var tam = b.tam ? 'font-size:' + b.tam + 'px;' : '';
     function titulo(padrao) { var t = b.titulo == null ? padrao : b.titulo; if (t === '') return null; var e = el('div', 'bk-t', esc(t)); e.setAttribute('data-edit', 'titulo'); d.appendChild(e); return e; }
     if (b.tipo === 'grafico') { var g = ref(b.ref); titulo(g ? g.nome : ''); var c = el('div', 'bk-c');
-      if (!g) c.textContent = '(gráfico não encontrado)'; else if (g.formato === 'svg') c.innerHTML = g.conteudo; else { var im = el('img'); im.src = g.conteudo; im.draggable = false; c.appendChild(im); }
+      if (!g) c.textContent = tx('(gráfico não encontrado)'); else if (g.formato === 'svg') c.innerHTML = g.conteudo; else { var im = el('img'); im.src = g.conteudo; im.draggable = false; c.appendChild(im); }
       d.appendChild(c); }
     else if (b.tipo === 'kpi') { var n = el('div', 'n', esc(b.valor)); n.setAttribute('data-edit', 'valor'); if (b.cor) n.style.color = b.cor; var r = el('div', 'd', esc(b.rotulo)); r.setAttribute('data-edit', 'rotulo'); d.appendChild(n); d.appendChild(r); }
-    else if (b.tipo === 'destaques') { titulo('Destaques'); var ul = el('ul'); ul.setAttribute('style', tam); (b.itens || []).forEach(function (t) { ul.appendChild(el('li', null, t)); }); if (!ul.children.length) ul.appendChild(el('li', null, '')); ul.setAttribute('data-edit', 'itens'); d.appendChild(ul); }
-    else if (b.tipo === 'resumo') { titulo('Resumo estatístico'); var l = el('div', 'lin'); l.setAttribute('style', tam); (b.linhas || []).forEach(function (t) { l.appendChild(el('div', null, esc(t))); }); l.setAttribute('data-edit', 'linhas'); d.appendChild(l); }
+    else if (b.tipo === 'destaques') { titulo(tx('Destaques')); var ul = el('ul'); ul.setAttribute('style', tam); (b.itens || []).forEach(function (t) { ul.appendChild(el('li', null, t)); }); if (!ul.children.length) ul.appendChild(el('li', null, '')); ul.setAttribute('data-edit', 'itens'); d.appendChild(ul); }
+    else if (b.tipo === 'resumo') { titulo(tx('Resumo estatístico')); var l = el('div', 'lin'); l.setAttribute('style', tam); (b.linhas || []).forEach(function (t) { l.appendChild(el('div', null, esc(t))); }); l.setAttribute('data-edit', 'linhas'); d.appendChild(l); }
     else if (b.tipo === 'texto') { var t2 = el('div', null, b.html || ''); t2.setAttribute('data-edit', 'html'); t2.setAttribute('style', 'font-size:' + (b.tam || 14) + 'px;text-align:' + (b.alinh || 'left') + ';' + (b.cor ? 'color:' + b.cor + ';' : '') + (b.negrito ? 'font-weight:700;' : '')); d.appendChild(t2); }
     else if (b.tipo === 'imagem') { if (b.src) { var i2 = el('img'); i2.src = b.src; i2.draggable = false; d.appendChild(i2); } else { fora.className += ' vazio-img'; d.textContent = 'Imagem: escolha o arquivo no painel da direita'; } }
   }
@@ -112,7 +146,7 @@
     var d = el('div', 'bk ' + b.tipo + ' b-' + (b.borda || 'fina') + (b.travado ? ' trava' : '') + (sel.indexOf(b.id) >= 0 ? ' sel' : '') + (sel.length === 1 && sel[0] === b.id ? ' unico' : ''));
     d.setAttribute('data-id', b.id); d.style.left = pct(b.x); d.style.top = pct(b.y); d.style.width = pct(b.w); d.style.height = pct(b.h);
     var inn = el('div', 'bk-in'); d.appendChild(inn); conteudoBloco(b, inn, d);
-    if (modo === 'editar') { ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].forEach(function (h) { var a = el('i', 'alca'); a.setAttribute('data-h', h); d.appendChild(a); }); d.appendChild(el('span', 'selo', NOMES_TIPO[b.tipo] + (b.travado ? ' · travado' : ''))); }
+    if (modo === 'editar') { ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].forEach(function (h) { var a = el('i', 'alca'); a.setAttribute('data-h', h); d.appendChild(a); }); d.appendChild(el('span', 'selo', tx(NOMES_TIPO[b.tipo]) + (b.travado ? tx(' · travado') : ''))); }
     return d;
   }
   function elFolha(p, i) {
@@ -124,7 +158,7 @@
       if (E.identidade.modo === 'institucional' && E.identidade.logo && E.identidade.mostrar_logo !== false) { var lg = el('img'); lg.src = E.identidade.logo; lg.draggable = false; cab.appendChild(lg); }
       fo.appendChild(cab); }
     var rod = el('div', 'rod'); rod.style.height = ROD_MM + 'mm';
-    var r1 = el('span', null, esc(E.rodape)); r1.setAttribute('data-edit', 'rodape'); rod.appendChild(r1); rod.appendChild(el('span', null, 'página ' + (i + 1) + ' de ' + E.paginas.length)); fo.appendChild(rod);
+    var r1 = el('span', null, esc(E.rodape)); r1.setAttribute('data-edit', 'rodape'); rod.appendChild(r1); rod.appendChild(el('span', null, tx('página') + ' ' + (i + 1) + ' ' + tx('de') + ' ' + E.paginas.length)); fo.appendChild(rod);
     p.blocos.forEach(function (b) { fo.appendChild(elBloco(b)); });
     return fo;
   }
@@ -134,7 +168,7 @@
     document.getElementById('pagina-css').textContent = '@page{size:' + F().w + 'mm ' + F().h + 'mm;margin:0}';
     E.paginas.forEach(function (p, i) {
       var w = el('div', 'pagina-wrap'), rot = el('div', 'pagina-rot', 'Página ' + (i + 1));
-      if (modo === 'editar') { if (E.paginas.length > 1) { var x = el('button', null, 'excluir esta página'); x.onclick = function () { if (window.confirm('Excluir a página ' + (i + 1) + ' e o que há nela?')) { E.paginas.splice(i, 1); sel = []; pagAtual = Math.max(0, Math.min(pagAtual, E.paginas.length - 1)); commit(); tudo(); } }; rot.appendChild(x); } w.appendChild(rot); }
+      if (modo === 'editar') { if (E.paginas.length > 1) { var x = el('button', null, 'excluir esta página'); x.onclick = function () { if (window.confirm(tp('Excluir a página ' + (i + 1) + ' e o que há nela?'))) { E.paginas.splice(i, 1); sel = []; pagAtual = Math.max(0, Math.min(pagAtual, E.paginas.length - 1)); commit(); tudo(); } }; rot.appendChild(x); } w.appendChild(rot); }
       var esc1 = el('div', 'escala'); esc1.appendChild(elFolha(p, i)); w.appendChild(esc1); tela.appendChild(w);
     });
     ajustarEscala(); tela.scrollTop = rolagem;
@@ -211,7 +245,7 @@
       var c3 = campo('Rodapé', texto(E.rodape, function (v) { E.rodape = v; commit(); tudo(); })); c3.className += ' col'; props.appendChild(c3);
       props.appendChild(el('h4', null, 'Páginas'));
       props.appendChild(linhaBt(bt2('+ Página em branco', function () { E.paginas.push({ blocos: [] }); pagAtual = E.paginas.length - 1; commit(); tudo(); }),
-                                bt2('Reorganizar tudo', function () { if (window.confirm('Refazer a disposição automática? As posições que você ajustou serão perdidas (dá para desfazer).')) { autoLayout(); commit(); tudo(); } }, '', 'Refaz a disposição automática no formato escolhido')));
+                                bt2('Reorganizar tudo', function () { if (window.confirm(tx('Refazer a disposição automática? As posições que você ajustou serão perdidas (dá para desfazer).'))) { autoLayout(); commit(); tudo(); } }, '', 'Refaz a disposição automática no formato escolhido')));
       props.appendChild(el('p', 'dica', 'Clique num bloco para ver as opções dele. Shift + clique seleciona vários (aparecem as opções de alinhar). Alt ao soltar um bloco sobre outro troca os dois de lugar.'));
       return;
     }
@@ -233,7 +267,7 @@
     props.appendChild(campo('Y (mm)', numero(mm1(b.y * f.h), 1, function (v) { b.y = limitar(v / f.h, 0, 1 - b.h); commit(); tudo(); })));
     props.appendChild(campo('Largura (mm)', numero(mm1(b.w * f.w), 1, function (v) { b.w = limitar(v / f.w, 0.03, 1 - b.x); commit(); tudo(); })));
     props.appendChild(campo('Altura (mm)', numero(mm1(b.h * f.h), 1, function (v) { b.h = limitar(v / f.h, 0.03, 1 - b.y); commit(); tudo(); })));
-    if (b.tipo === 'grafico' || b.tipo === 'destaques' || b.tipo === 'resumo') { var ct = campo('Título', texto(b.titulo == null ? ({ destaques: 'Destaques', resumo: 'Resumo estatístico', grafico: (ref(b.ref) || {}).nome }[b.tipo]) : b.titulo, function (v) { b.titulo = v; commit(); tudo(); })); ct.className += ' col'; props.appendChild(ct); }
+    if (b.tipo === 'grafico' || b.tipo === 'destaques' || b.tipo === 'resumo') { var ct = campo('Título', texto(b.titulo == null ? ({ destaques: tx('Destaques'), resumo: tx('Resumo estatístico'), grafico: (ref(b.ref) || {}).nome }[b.tipo]) : b.titulo, function (v) { b.titulo = v; commit(); tudo(); })); ct.className += ' col'; props.appendChild(ct); }
     if (b.tipo === 'texto' || b.tipo === 'destaques' || b.tipo === 'resumo') props.appendChild(campo('Tamanho da letra', numero(b.tam || (b.tipo === 'texto' ? 14 : 12.5), 0.5, function (v) { b.tam = limitar(v, 6, 80); commit(); tudo(); })));
     if (b.tipo === 'texto') {
       props.appendChild(linhaBt(bt2('B', function () { b.negrito = !b.negrito; commit(); tudo(); }, b.negrito ? 'on' : '', 'Negrito no bloco todo (para trechos: selecione o texto e use Ctrl+B)'),
@@ -284,9 +318,9 @@
     var f = F(), A = area(), p = E.paginas[Math.min(pagAtual, E.paginas.length - 1)], w = 0.3, h = 0.25, b;
     function centro(w, h) { return { x: limitar((A.x0 + A.x1) / 2 - w / 2, 0, 1 - w), y: limitar((A.y0 + A.y1) / 2 - h / 2, 0, 1 - h) }; }
     if (tipo === 'grafico') { var wm = Math.min(130, 100 * g.ar), hm = wm / g.ar + 8; w = mmx(wm); h = mmy(hm); b = novo('grafico', { ref: g.id, titulo: g.nome, w: w, h: h }); }
-    else if (tipo === 'kpi') { w = mmx(52); h = mmy(26); b = novo('kpi', { w: w, h: h, valor: '0', rotulo: 'descrição do número' }); }
-    else if (tipo === 'destaques') { w = mmx(80); h = mmy(60); b = novo('destaques', { w: w, h: h, itens: ['Escreva aqui um destaque.'] }); }
-    else if (tipo === 'texto') { w = mmx(90); h = mmy(24); b = novo('texto', { w: w, h: h, html: 'Duplo clique para escrever.', tam: 14, borda: 'nenhuma' }); }
+    else if (tipo === 'kpi') { w = mmx(52); h = mmy(26); b = novo('kpi', { w: w, h: h, valor: '0', rotulo: tx('descrição do número') }); }
+    else if (tipo === 'destaques') { w = mmx(80); h = mmy(60); b = novo('destaques', { w: w, h: h, itens: [tx('Escreva aqui um destaque.')] }); }
+    else if (tipo === 'texto') { w = mmx(90); h = mmy(24); b = novo('texto', { w: w, h: h, html: tx('Duplo clique para escrever.'), tam: 14, borda: 'nenhuma' }); }
     else if (tipo === 'imagem') { w = mmx(40); h = mmy(26); b = novo('imagem', { w: w, h: h, borda: 'nenhuma' }); }
     else if (tipo === 'resumo') { w = mmx(75); h = mmy(14 + 5.5 * g.resumo.length); b = novo('resumo', { w: w, h: h, titulo: 'Resumo: ' + g.nome, linhas: g.resumo.slice() }); }
     var c = centro(w, h), n = p.blocos.length % 6; b.x = limitar(c.x + n * mmx(4), 0, 1 - w); b.y = limitar(c.y + n * mmy(4), 0, 1 - h);
@@ -312,7 +346,7 @@
   function mudarFormato(k) {
     if (k === E.formato) return; var tinha = E.paginas.some(function (p) { return p.blocos.length; });
     E.formato = k;
-    if (tinha && window.confirm('Mudou o formato da página. Refazer a disposição automática? (Cancelar mantém as posições, esticadas à nova página.)')) autoLayout();
+    if (tinha && window.confirm(tx('Mudou o formato da página. Refazer a disposição automática? (Cancelar mantém as posições, esticadas à nova página.)'))) autoLayout();
     commit(); tudo();
   }
 

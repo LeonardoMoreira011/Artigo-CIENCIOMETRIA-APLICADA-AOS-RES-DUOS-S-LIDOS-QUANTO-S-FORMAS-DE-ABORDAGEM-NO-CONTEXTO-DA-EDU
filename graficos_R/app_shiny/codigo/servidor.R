@@ -98,10 +98,10 @@ servidor <- function(input, output, session) {
   garantir_cartoes <- function(valores) for (slot in names(SLOTS)) for (k in seq_len(SLOTS[[slot]]$n))
     if (isTRUE(valores[[paste0(SLOTS[[slot]]$pref, k, "_ativo")]])) abrir_cartao(slot, k)
   # idioma da página (vem do endereço, ?idioma=en) e atalhos para traduzir o que o servidor escreve na tela
-  idioma <- reactive("pt")                                 # só português (inglês e espanhol arquivados); antes: input$idioma_pagina %||% "pt"
+  idioma <- reactive(input$idioma_pagina %||% "pt")        # o idioma da página (cookie ou ?idioma=); a tela dele já veio traduzida do servidor
   T <- function(x) tr(x, idioma())                         # um texto
   TF <- function(molde, ...) trf(molde, ..., idioma = idioma())   # um molde com %s / %.1f
-  UI <- function(x) traduzir_html(x, idioma())             # um pedaço de tela
+  UI <- function(x) { .i18n$idioma <- idioma(); on.exit(.i18n$idioma <- "pt"); traduzir_html(x, idioma()) }   # um pedaço de tela (o x só é montado aqui dentro, já com o idioma certo)
 
   # ---- dados -------------------------------------------------------------------------------------------------
   carregar <- function(caminho, nome) {
@@ -443,11 +443,13 @@ servidor <- function(input, output, session) {
   modelo_json <- function() as.character(jsonlite::toJSON(modelo_lista(), auto_unbox = TRUE, null = "null", na = "null", pretty = TRUE))
   output$salvar_cfg <- downloadHandler(filename = function() paste0(nome_base(), "_configuracao.json"), content = function(file) writeLines(modelo_json(), file, useBytes = TRUE))
   # Aplica valores salvos (o que não está no modelo volta ao padrão). Blocos congelados não mudam (respeitar = TRUE).
-  aplicar_config <- function(j, respeitar = TRUE, com_congelados = FALSE) {
+  # parcial = TRUE: só os campos que a configuração traz (numa página recém-aberta tudo o mais já está no padrão; poupa centenas de mensagens à tela)
+  aplicar_config <- function(j, respeitar = TRUE, com_congelados = FALSE, parcial = FALSE) {
     cong <- if (respeitar) ids_congelados() else character(0)
     garantir_cartoes(j$valores[setdiff(names(j$valores), cong)])                 # cartões ligados na configuração precisam existir na tela
     for (id in setdiff(names(ESPEC_CAMPOS), cong)) {
       c <- ESPEC_CAMPOS[[id]]; v <- j$valores[[id]]
+      if (parcial && is.null(v)) next
       if (c$tipo == "arquivo" || (c$tipo %in% c("colx", "colsy", "colsy2") && is.null(v))) next
       atualizar_campo(session, c, v, CFG0)
     }
@@ -495,16 +497,23 @@ servidor <- function(input, output, session) {
     aplicar_config(j, respeitar = FALSE, com_congelados = TRUE)
     showNotification(if (is.null(tmp)) T("Projeto aberto (sem dados dentro: carregue o CSV).") else T("Projeto aberto, com os dados e a configuração."), type = "message")
   })
-  modal_retomar <- function(j) modalDialog(title = "Retomar de onde você parou?", easyClose = FALSE, size = "s",
-    footer = tagList(actionButton("retomar_nao", "Começar do zero"), actionButton("retomar_sim", "Retomar", class = "btn-verde")),
-    tags$p("O Cinabro guardou sozinho o seu último gráfico:"),
-    tags$p(tags$b(j$dados %||% "dados"), tags$br(), tags$span(class = "ajuda", paste("salvo em", j$salvo_em %||% ""))))
+  modal_retomar <- function(j) modalDialog(title = T("Retomar de onde você parou?"), easyClose = FALSE, size = "s",
+    footer = tagList(actionButton("retomar_nao", T("Começar do zero")), actionButton("retomar_sim", T("Retomar"), class = "btn-verde")),
+    tags$p(T("O Cinabro guardou sozinho o seu último gráfico:")),
+    tags$p(tags$b(j$dados %||% "dados"), tags$br(), tags$span(class = "ajuda", paste(T("salvo em"), j$salvo_em %||% ""))))
   observeEvent(input$retomar_nao, removeModal())
-  observeEvent(input$retomar_sim, {
+  retomar_sessao <- function(aviso) {
     j <- ler_sessao_salva(); req(j)
+    t0 <- Sys.time()
     carregar(file.path(dir_sessao(), j$arquivo_dados %||% "dados_atual.csv"), j$dados %||% "dados.csv"); req(rv$dados)
-    aplicar_config(j, respeitar = FALSE, com_congelados = TRUE)
-    removeModal(); showNotification(T("Retomado de onde você parou."), type = "message")
+    aplicar_config(j, respeitar = FALSE, com_congelados = TRUE, parcial = TRUE)
+    removeModal(); showNotification(aviso, type = "message")
+    registrar_log("retomada da sessão: ", sprintf("%.1f", as.numeric(difftime(Sys.time(), t0, units = "secs"))), " s")
+  }
+  observeEvent(input$retomar_sim, retomar_sessao(T("Retomado de onde você parou.")))
+  # troca de idioma: guarda o trabalho agora e manda a página recarregar; ao voltar, o trabalho é retomado sozinho (sem perguntar)
+  observeEvent(input$trocar_idioma, {
+    salvar_sessao(); session$sendCustomMessage("recarregar_idioma", list(idioma = input$trocar_idioma$idioma))
   })
   ler_modelo <- function(txt) {
     j <- tryCatch(jsonlite::fromJSON(txt, simplifyVector = TRUE), error = function(e) NULL)
@@ -692,13 +701,13 @@ servidor <- function(input, output, session) {
       footer = tagList(if (!is.null(rv_dash$id)) actionButton("dash_reabrir", "Voltar ao último", class = "btn-sec"), modalButton("Cancelar"), actionButton("dash_montar", "Montar o dashboard", class = "btn-verde")),
       tags$p("Reúne os gráficos das suas abas numa folha: números-chave, destaques escritos a partir dos números e os gráficos. Depois você arruma na tela (mover, esticar, alinhar) e baixa em PDF ou HTML."),
       checkboxGroupInput("dash_abas", "Abas que entram", choices = stats::setNames(which(com), nomes[com]), selected = which(com)),
-      if (any(!com)) tags$p(class = "ajuda", paste0("Sem dados (ficam de fora): ", paste(nomes[!com], collapse = ", "), ".")),
+      if (any(!com)) tags$p(class = "ajuda", TF("Sem dados (ficam de fora): %s.", paste(nomes[!com], collapse = ", "))),
       div(class = "campos",
           div(class = "campo", selectInput("dash_formato", "Página", choices = c("A4 paisagem" = "a4h", "A4 retrato" = "a4v"), selectize = FALSE)),
           div(class = "campo", selectInput("dash_qualidade", "Gráficos", choices = c("Vetoriais (nítidos; arquivo maior)" = "vetorial", "Imagem leve (para e-mail)" = "leve"), selectize = FALSE))),
       checkboxInput("dash_destaques", "Escrever destaques automáticos (rascunho que você edita)", TRUE),
-      textInput("dash_titulo", "Título", value = "Painel de acompanhamento", width = "100%"),
-      textInput("dash_subtitulo", "Subtítulo", value = paste0("atualizado em ", format(Sys.Date(), "%d/%m/%Y")), width = "100%"),
+      textInput("dash_titulo", "Título", value = T("Painel de acompanhamento"), width = "100%"),
+      textInput("dash_subtitulo", "Subtítulo", value = TF("atualizado em %s", format(Sys.Date(), if (idioma() == "en") "%m/%d/%Y" else "%d/%m/%Y")), width = "100%"),
       tags$p(class = "ajuda", "Logo e cores da sua instituição: no editor, botão \"Identidade\" (ou fique com as cores padrão do Cinabro)."))))
   })
   observeEvent(input$dash_reabrir, { removeModal(); session$sendCustomMessage("dash_abrir", list(url = paste0("painel/dash_", rv_dash$id, ".html"))) })
@@ -708,7 +717,7 @@ servidor <- function(input, output, session) {
     abas <- lapply(sel, function(i) { sn <- rv$abas[[i]]$snap; list(nome = nome_aba(i), dados = sn$dados, valores = sn$valores, series = sn$series) })
     t0 <- Sys.time()
     r <- withProgress(message = T("Montando o dashboard..."), value = 0, {
-      dash_construir(abas, list(formato = input$dash_formato, qualidade = input$dash_qualidade, destaques = isTRUE(input$dash_destaques),
+      dash_construir(abas, list(idioma = idioma(), formato = input$dash_formato, qualidade = input$dash_qualidade, destaques = isTRUE(input$dash_destaques),
                                 titulo = trimws(input$dash_titulo %||% ""), subtitulo = trimws(input$dash_subtitulo %||% "")),
                      function(i, n, nome) setProgress(value = (i - 1) / n, detail = nome))
     })
@@ -754,7 +763,8 @@ servidor <- function(input, output, session) {
   observeEvent(input$guia, showModal(UI(guia_rapido())))
   observeEvent(input$idioma_pagina, {
     j <- ler_sessao_salva()
-    if (!is.null(j)) showModal(UI(modal_retomar(j)))                  # há trabalho guardado: oferece retomar (no lugar do guia)
+    if (!is.null(j) && isTRUE(isolate(input$retomar_auto))) retomar_sessao(T("Idioma alterado; seu trabalho foi retomado."))
+    else if (!is.null(j)) showModal(UI(modal_retomar(j)))             # há trabalho guardado: oferece retomar (no lugar do guia)
     else if (!isTRUE(getOption("gerador_sem_guia"))) showModal(UI(guia_rapido()))
   }, once = TRUE)
 }

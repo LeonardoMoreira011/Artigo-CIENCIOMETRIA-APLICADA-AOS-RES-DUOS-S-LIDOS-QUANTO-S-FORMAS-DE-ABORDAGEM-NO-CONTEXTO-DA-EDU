@@ -15,7 +15,7 @@ raiz <- normalizePath("..", winslash = "/")
 source(file.path(raiz, "01_config.R"), encoding = "UTF-8"); suppressMessages(source(file.path(raiz, "02_motor.R"), encoding = "UTF-8"))
 CFG0 <- .completar_cfg(cfg)
 for (a in c("idiomas.R", "espec.R", "nucleo.R", "ui_blocos.R", "dashboard.R", "servidor.R")) source(file.path("codigo", a), encoding = "UTF-8")
-carregar_dicionarios("idiomas")             # (pasta ausente: só português)
+carregar_dicionarios("idiomas")
 
 # ---- projeto (.cinabro): configuração + dados num arquivo só ---------------------------------------------------------------
 csv_t <- tempfile(fileext = ".csv"); writeBin(charToRaw("T;Valor\n1;2,5\n2;3,1\n3;ç\n"), csv_t)           # decimal com vírgula e acento: tem de voltar byte a byte
@@ -132,20 +132,52 @@ for (id in names(ESPEC_CAMPOS)) {
 if (length(erros_campos)) print(erros_campos)
 teste("todos os campos do app, alterados um a um, viram variáveis e o painel aplica sem erro", length(erros_campos) == 0)
 
-# ---- idioma: só português (inglês e espanhol arquivados em idiomas_arquivados/) --------------------------------------------------
-teste("o app é só em português: nenhum dicionário carregado, sem seletor de idioma, e ?idioma=en ou es vira português",
-      length(.i18n$dic) == 0 && identical(unname(IDIOMAS), "pt") && identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=en")), "pt") &&
-      identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=es")), "pt") && !grepl("idioma_sel", paste(readLines("app.R", encoding = "UTF-8"), collapse = ""), fixed = TRUE) && !grepl("idioma_sel", paste(readLines("www/app.js", encoding = "UTF-8"), collapse = ""), fixed = TRUE))
-teste("o texto do app não muda: tr()/traduzir_html() devolvem o texto em português, e os arquivos arquivados existem para reativar", {
-  tg <- tags$div(class = "x", tags$label("Limpar"), tags$input(placeholder = "Nenhum arquivo"))
-  identical(tr("Mais opções", "en"), "Mais opções") && identical(as.character(traduzir_html(tg, "pt")), as.character(tg)) &&
-    all(file.exists(file.path(raiz, "idiomas_arquivados", c("app/en.json", "app/es.json", "motor/02_traducoes_motor.R", "LEIA-ME.md")))) })
-d <- ler_csv(file.path(raiz, "dados", "exemplo_dois_eixos_e_quebra.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE)))
+# ---- idiomas: português (BR), inglês e espanhol -------------------------------------------------------------------------------
+teste("os dicionários de inglês e espanhol carregam (mais de 650 textos cada)", all(c("en", "es") %in% names(.i18n$dic)) &&
+      all(vapply(.i18n$dic, length, 1L) > 650))
+textos_espec <- local({
+  out <- character(0); add <- function(x) { x <- unlist(x, use.names = FALSE); out <<- c(out, x[!is.na(x) & nzchar(x)]) }
+  nomes_rec <- function(x) { if (is.list(x)) { add(names(x)); for (e in x) nomes_rec(e) } else if (!is.null(names(x))) add(names(x)) }
+  for (b in ESPEC) { add(c(b$titulo, b$resumo, b$dica)); for (g in b$grupos) add(g$titulo)
+    for (c in c(b$campos, unlist(lapply(b$grupos, function(g) g$campos), recursive = FALSE))) { add(c(c$rotulo, c$ajuda)); if (!is.null(c$opcoes)) nomes_rec(c$opcoes) } }
+  nomes_rec(.PALETAS_GRUPOS); unique(out) })
+textos_codigo <- local({            # textos entre aspas dentro de T(), TF(), tr() e trf() nos arquivos do app
+  out <- character(0)
+  for (arq in c("codigo/servidor.R", "codigo/ui_blocos.R")) {
+    walk <- function(e) if (is.call(e)) {
+      if (is.symbol(e[[1]]) && as.character(e[[1]]) %in% c("T", "TF", "tr", "trf") && length(e) > 1 && is.character(e[[2]])) out <<- c(out, e[[2]])
+      for (i in seq_along(e)) if (!identical(e[[i]], quote(expr = ))) walk(e[[i]]) }
+    for (e in parse(arq, keep.source = FALSE, encoding = "UTF-8")) walk(e) }
+  unique(out) })
+for (lg in c("en", "es"))
+  teste(paste0("todo texto do app tem tradução em ", lg, " (", length(textos_espec) + length(textos_codigo), " textos conferidos)"),
+        { f <- setdiff(c(textos_espec, textos_codigo), names(.i18n$dic[[lg]])); if (length(f)) print(head(f, 10)); length(f) == 0 })
+teste("tr(), tr_nomes() e trf() traduzem; texto sem tradução volta igual; em português nada muda",
+      identical(tr("Mais opções", "en"), "More options") && identical(tr("Mais opções", "pt"), "Mais opções") && identical(tr("texto que não existe", "es"), "texto que não existe") &&
+      identical(names(tr_nomes(c("Limpar" = "a", "Sem chave" = "b"), "en")), c("Clear", "Sem chave")) && identical(trf("Maior vazio: de %s a %s.", 1, 2, idioma = "es"), "Mayor vacío: de 1 a 2."))
+tg <- tags$div(class = "x", tags$label("Limpar"), tags$input(placeholder = "Nenhum arquivo", value = "Limpar"), HTML("Limpar"))
+th <- as.character(traduzir_html(tg, "en"))
+teste("traduzir_html troca o texto e o placeholder, mas não o value nem o HTML cru", grepl(">Clear<", th, fixed = TRUE) && grepl('placeholder="No file"', th, fixed = TRUE) &&
+      grepl('value="Limpar"', th, fixed = TRUE) && grepl("Limpar\n</div>", th, fixed = TRUE))
+teste("a tela inteira monta em inglês e em espanhol, sem restos do texto-chave em português nos títulos dos blocos", {
+  tudo_ok <- TRUE
+  for (lg in c("en", "es")) { .i18n$idioma <- lg; h <- paste(as.character(traduzir_html(ui_bloco(ESPEC[[2]], 2, CFG0, aberto = TRUE), lg)), collapse = "")
+    tudo_ok <- tudo_ok && !grepl("Intervalos dos eixos", h, fixed = TRUE) && grepl(tr("Intervalos dos eixos", lg), h, fixed = TRUE) }
+  .i18n$idioma <- "pt"; tudo_ok })
+teste("o idioma vem do endereço (?idioma=en | es); valor estranho vira português", identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=en")), "en") &&
+      identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=es")), "es") && identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=xx")), "pt") && identical(idioma_do_pedido(list(QUERY_STRING = "")), "pt"))
+teste("o cookie do seletor define o idioma (o endereço manda mais que o cookie; cookie estranho vira português)",
+      identical(idioma_do_pedido(list(QUERY_STRING = "", HTTP_COOKIE = "a=1; cinabro_idioma=es; b=2")), "es") && identical(idioma_do_pedido(list(QUERY_STRING = "?idioma=en", HTTP_COOKIE = "cinabro_idioma=es")), "en") &&
+      identical(idioma_do_pedido(list(QUERY_STRING = "", HTTP_COOKIE = "cinabro_idioma=zz")), "pt"))
+re_en <- construir_grafico(d <- ler_csv(file.path(raiz, "dados", "exemplo_dois_eixos_e_quebra.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE))),
+                           list(quebra_ativar = TRUE, quebra_de = 10, quebra_ate = 5), CFG0, idioma = "en")
+re_es <- construir_grafico(d, list(quebra_ativar = TRUE, quebra_de = 10, quebra_ate = 5), CFG0, idioma = "es")
 re_pt <- construir_grafico(d, list(quebra_ativar = TRUE, quebra_de = 10, quebra_ate = 5), CFG0)
-teste("as mensagens do motor saem em português mesmo se a tela pedir outro idioma, e o motor não fica com idioma trocado", {
-  re_en <- construir_grafico(d, list(quebra_ativar = TRUE, quebra_de = 10, quebra_ate = 5), CFG0, idioma = "en")
-  grepl("defina", re_pt$erro) && grepl("defina", re_en$erro) && identical(.idioma(), "pt") })
-vi <- montar_variaveis(v0, CFG0)
+teste("as mensagens do motor chegam ao app no idioma da tela (e o idioma do motor volta ao português depois)",
+      grepl("set de < ate", re_en$erro, fixed = TRUE) && grepl("define de < ate", re_es$erro, fixed = TRUE) && grepl("defina", re_pt$erro) && identical(getOption("cinabro.idioma", "pt"), "pt"))
+vi <- montar_variaveis(v0, CFG0); vi$idioma <- "en"
+teste("o idioma entra no código equivalente (idioma <- \"en\") e a variável idioma é aceita pelo painel", grepl('idioma +<- "en"', gerar_codigo(vi)) &&
+      { r <- construir_grafico(d, vi, CFG0, idioma = "en"); is.null(r$erro) })
 
 # ---- gráfico de verdade -----------------------------------------------------------------------------------------------
 d <- ler_csv(file.path(raiz, "dados", "exemplo_dois_eixos_e_quebra.csv"), utils::modifyList(CFG0$dados, list(relatorio = FALSE)))
@@ -249,9 +281,9 @@ teste("prévia reduzida: acima de 5 mil linhas só uma amostra com os picos e va
     { v1 <- v0g; v1$coluna_x <- "t"; v1$tipo_grafico <- "linha"
       rpv <- construir_grafico(dg, montar_variaveis(v1, CFG0), CFG0); rfull <- construir_grafico(dg, montar_variaveis(v1, CFG0), CFG0, preview = FALSE)
       !is.null(rpv$decimado) && is.null(rfull$decimado) && is.null(rpv$erro) && is.null(rfull$erro) } })
-teste("tela montada uma vez (.UI_PRONTA), botão Sair, espera de 10 minutos para o R fechar e o aquecimento ao abrir", {
+teste("tela montada uma vez por idioma (.UI_IDIOMA), botão Sair, espera de 10 minutos para o R fechar e o aquecimento ao abrir", {
   ap <- paste(readLines("app.R", encoding = "UTF-8"), collapse = "\n")
-  grepl(".UI_PRONTA <- traduzir_html(construir_ui(\"pt\"), \"pt\")", ap, fixed = TRUE) && grepl(".UI_RESPOSTA", ap, fixed = TRUE) &&
+  grepl("traduzir_html(construir_ui(lg), lg)", ap, fixed = TRUE) && grepl(".UI_IDIOMA[[lg]]", ap, fixed = TRUE) && grepl("idioma_sel", ap, fixed = TRUE) &&
     grepl('actionButton("sair"', ap, fixed = TRUE) && grepl("Aquecimento", ap, fixed = TRUE) && identical(.GRACA_ENCERRAR, 600) &&
     grepl("observeEvent(input$sair", paste(readLines("codigo/servidor.R", encoding = "UTF-8"), collapse = "\n"), fixed = TRUE) })
 teste("os 4 cartões de ajuste, 3 de traços, 3 de caixas, 6 de formas e 3 de figuras existem (19), sem depender uns dos outros", {
@@ -312,9 +344,10 @@ testServer(servidor, {
         !is.null(rv$geo) && all(rv$geo$legenda[1:2] >= rv$geo$painel[1:2] - 1e-6) && rv$geo$legenda[3] < rv$geo$painel[3])
   session$setInputs(legenda_arrastada = list(esq = 0.25, base = 0.5, t = 1), legenda_redimensionada = list(largura = 0.3, t = 1))
   teste("servidor: arrastar e redimensionar a legenda na prévia roda sem erro", is.null(rv$erro))
-  session$setInputs(idioma_pagina = "en", quebra_ativar = TRUE, quebra_de = 450000, quebra_ate = 100000, atualizar = 20)
-  teste("servidor: mesmo com idioma_pagina = en a tela do servidor (avisos e resumo dos dados) sai em português", {
-    h <- paste(as.character(output$avisos$html), collapse = ""); grepl("Algo precisa", h, fixed = TRUE) && !grepl("Something needs adjusting", h, fixed = TRUE) })
+  session$setInputs(idioma_pagina = "en")
+  teste("servidor: com idioma_pagina = en, a tela do servidor (avisos e resumo dos dados) sai em inglês", {
+    session$setInputs(quebra_ativar = TRUE, quebra_de = 450000, quebra_ate = 100000, atualizar = 20)
+    h <- paste(as.character(output$avisos$html), collapse = ""); grepl("Something needs adjusting", h, fixed = TRUE) && !grepl("Algo precisa", h, fixed = TRUE) })
   session$setInputs(quebra_ativar = FALSE, idioma_pagina = "pt")
   session$setInputs(paleta_propria = "#112233, #445566, #778899", paleta_nome = "Teste", paleta_salvar = 1)
   teste("servidor: guardar a paleta própria cria 'salva:Teste' na lista e fica nos valores", identical(names(rv$paletas), "Teste") &&
@@ -428,7 +461,8 @@ teste("dashboard: barras e linhas entregam maior valor / variação, com vírgul
 d_leve <- suppressWarnings(dash_construir(abas_d[2], list(qualidade = "leve", destaques = FALSE)))
 teste("dashboard: qualidade leve vai em PNG e 'destaques desligados' não escreve frases nem número-chave", d_leve$graficos[[1]]$formato == "png" && grepl("^data:image/png;base64,[A-Za-z0-9+/=]+$", d_leve$graficos[[1]]$conteudo) &&
       length(d_leve$graficos[[1]]$frases) == 0 && is.null(d_leve$graficos[[1]]$kpi))
-for (tp in list(c("boxplot", "replicatas.csv"), c("mapa_calor", "mapa_de_calor.csv"), c("pizza", "composicao_liga.csv"), c("mapa_mundo", "mapa_mundo_vendas.csv"), c("mapa_brasil", "mapa_brasil_estados.csv"), c("histograma", "replicatas.csv"))) {
+for (tp in list(c("boxplot", "replicatas.csv"), c("mapa_calor", "mapa_de_calor.csv"), c("pizza", "composicao_liga.csv"), c("mapa_mundo", "mapa_mundo_vendas.csv"), c("mapa_brasil", "mapa_brasil_estados.csv"), c("histograma", "replicatas.csv"),
+                c("superficie_3d", "superficie_rendimento.csv"), c("mapa_cor", "superficie_rendimento.csv"), c("barras_3d", "barras_3d_residuos.csv"))) {
   r1 <- suppressWarnings(dash_construir(list(list(nome = tp[1], dados = L(tp[2]), valores = list(tipo_grafico = tp[1]), series = NULL)), list(qualidade = "vetorial")))
   teste(paste0("dashboard: ", tp[1], " entra no dashboard com destaque e número-chave"), length(r1$graficos) == 1 && length(r1$graficos[[1]]$frases) >= 1 && !is.null(r1$graficos[[1]]$kpi))
 }
@@ -448,6 +482,35 @@ if (!is.na(.dash_navegador())) {
   arq_h <- file.path(DASH_DIR, "teste_pdf.html"); arq_p <- file.path(DASH_DIR, "teste_pdf.pdf"); writeLines(dash_html(dd$estado, dd$graficos, "pdf"), arq_h, useBytes = TRUE)
   teste("dashboard: o PDF sai pelo navegador do computador, com uma página por folha da página", dash_gerar_pdf(arq_h, arq_p) && identical(readBin(arq_p, "raw", 4), charToRaw("%PDF")) && file.size(arq_p) > 5000)
 } else cat("[PULOU ] dashboard: PDF (nenhum Edge/Chrome achado neste computador)\n")
+
+# ---- Dashboard e gráficos 3D em inglês e espanhol ---------------------------------------------------------------------------
+abas_i <- list(list(nome = "Linhas", dados = L("ensaio_temperatura.csv"), valores = list(tipo_grafico = "linha_pontos", colunas_y = c("Amostra A")), series = NULL),
+               list(nome = "Superfície", dados = L("superficie_rendimento.csv"), valores = list(tipo_grafico = "superficie_3d"), series = NULL))
+d_en <- suppressWarnings(dash_construir(abas_i, list(idioma = "en"))); d_es <- suppressWarnings(dash_construir(abas_i, list(idioma = "es"))); d_pt <- suppressWarnings(dash_construir(abas_i, list(idioma = "pt")))
+teste("dashboard em inglês: destaques, rótulos e números no idioma (ponto decimal), título e subtítulo padrão traduzidos; o idioma do motor volta ao português", {
+  fr <- unlist(lapply(d_en$graficos, function(g) g$frases))
+  any(grepl("rose <b>[0-9]+\\.[0-9]%</b> between", fr)) && any(grepl("The highest value is at", fr)) && grepl("change", d_en$graficos[[1]]$kpi$rotulo) && identical(d_en$estado$titulo, "Monitoring dashboard") &&
+    grepl("^updated on [0-9]{2}/[0-9]{2}/[0-9]{4}$", d_en$estado$subtitulo) && identical(d_en$estado$idioma, "en") && identical(getOption("cinabro.idioma", "pt"), "pt") })
+teste("dashboard em espanhol: frases, rótulos e título no idioma (vírgula decimal)", {
+  fr <- unlist(lapply(d_es$graficos, function(g) g$frases))
+  any(grepl("subió <b>[0-9]+,[0-9]%</b> entre", fr)) && any(grepl("El mayor valor está en", fr)) && identical(d_es$estado$titulo, "Panel de seguimiento") && identical(d_es$estado$idioma, "es") })
+teste("dashboard em português continua igual (subiu, maior valor, vírgula decimal)", any(grepl("subiu <b>[0-9]+,[0-9]%</b> entre", unlist(lapply(d_pt$graficos, function(g) g$frases)))) && identical(d_pt$estado$titulo, "Painel de acompanhamento"))
+teste("dashboard: a página leva o idioma (lang) e o editor traz o dicionário de inglês e espanhol com os mesmos textos", {
+  h_en <- dash_html(d_en$estado, d_en$graficos, "editar"); h_es <- dash_html(d_es$estado, d_es$graficos, "editar"); js <- paste(readLines(file.path(.DASH_WWW, "editor.js"), encoding = "UTF-8"), collapse = "\n")
+  m <- regmatches(js, regexec("I18N = (\\{.*?\\});\\n", js))[[1]]; di <- if (length(m) == 2) jsonlite::fromJSON(m[2]) else NULL
+  grepl('lang="en"', h_en, fixed = TRUE) && grepl('lang="es"', h_es, fixed = TRUE) && !is.null(di) && setequal(names(di$en), names(di$es)) && length(di$en) > 100 && all(nzchar(unlist(di$en))) && identical(di$en[["Exportar PDF"]], "Export PDF") })
+teste("3D no app: os campos tri_* e a escolha do tipo chegam ao cfg e o gráfico monta; os quatro tipos estão na lista do app", {
+  r3 <- construir_grafico(L("barras_3d_residuos.csv"), list(tipo_grafico = "barras_3d", tri_azimute = 120, tri_elevacao = 40, tri_barras_largura = 0.5, tri_z_titulo = "Resíduos (t)", tri_caixa = "base", calor_esquema = "viridis"), CFG0)
+  is.null(r3$erro) && !is.null(r3$g) && r3$cfg$tridimensional$azimute == 120 && r3$cfg$tridimensional$barras_largura == 0.5 && identical(r3$cfg$tridimensional$caixa, "base") && identical(r3$cfg$mapa_calor$esquema_cor, "viridis") &&
+    all(c("mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d") %in% unname(.TIPOS)) && all(c("tri_azimute", "tri_elevacao", "tri_z_titulo", "tri_hastes") %in% names(ESPEC_CAMPOS)) })
+teste("3D no app: o formato longo e a dispersão com hastes montam; ângulo fora do possível vira aviso claro na tela (não derruba o app)", {
+  r4 <- construir_grafico(L("dispersao_3d_doses.csv"), list(tipo_grafico = "dispersao_3d", calor_formato = "longo", tri_hastes = TRUE, tri_ponto_tamanho_pt = 8), CFG0)
+  r5 <- construir_grafico(L("superficie_rendimento.csv"), list(tipo_grafico = "superficie_3d", tri_elevacao = 120), CFG0)
+  is.null(r4$erro) && !is.null(r4$g) && isTRUE(r4$cfg$tridimensional$hastes) && !is.null(r5$erro) && grepl("elevacao", r5$erro) })
+teste("3D no app: mensagens de erro do motor chegam em inglês e em espanhol", {
+  e_en <- construir_grafico(L("superficie_rendimento.csv"), list(tipo_grafico = "superficie_3d", tri_elevacao = 120), CFG0, idioma = "en")$erro
+  e_es <- construir_grafico(L("barras_3d_residuos.csv"), list(tipo_grafico = "mapa_cor"), CFG0, idioma = "es")$erro
+  grepl("must be between 0 and 90 degrees", e_en, fixed = TRUE) && grepl("necesita números en los dos ejes", e_es, fixed = TRUE) && identical(.idioma(), "pt") })
 
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", ok, falhas))
 if (falhas) quit(status = 1)

@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: "Se você usar o Cinabro em uma publicação, cite-o assim (If you use Cinabro in a publication, please cite it as below)."
 title: "Cinabro: laboratório de gráficos científicos"
 type: software
-version: 0.2.0
-date-released: 2026-11-09
+version: 0.3.0
+date-released: 2026-11-11
 license: MIT
 authors:
   - family-names: Moreira

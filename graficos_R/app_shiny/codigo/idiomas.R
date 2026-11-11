@@ -1,14 +1,14 @@
 # =============================================================================
-#  app_shiny/codigo/idiomas.R — o app é só em português (BR)
+#  app_shiny/codigo/idiomas.R — o app em português (BR), inglês e espanhol
 # =============================================================================
-#  Todos os textos do app são escritos em português. O inglês e o espanhol (dicionários en.json e es.json, mensagens do motor, READMEs)
-#  estão ARQUIVADOS em idiomas_arquivados/ (veja o LEIA-ME de lá); para reativar, peça. A máquina de tradução abaixo continua no código,
-#  desligada: com IDIOMAS só com "pt", nenhum dicionário é carregado, o seletor não existe e ?idioma=en vira português.
-#  Versão com os três idiomas (guardada para reativar):
-#    IDIOMAS <- c("Português (BR)" = "pt", "English" = "en", "Español" = "es")
+#  Todos os textos do app são escritos em português. Para outro idioma, cada texto é procurado no dicionário app_shiny/idiomas/en.json (ou es.json):
+#  {"texto em português": "translation"}. Texto sem tradução aparece em português. Para acrescentar um texto novo: escreva em português no
+#  código e acrescente a linha nos dois .json (o teste de cobertura em testes_app.R avisa de qualquer texto que ficou sem tradução).
+#  COMO NÃO TRAVA: a tela de cada idioma é traduzida UMA vez (na primeira vez que alguém a pede) e guardada; trocar de idioma depois disso é
+#  só recarregar a página. O idioma vem do cookie "cinabro_idioma" (gravado pelo seletor do cabeçalho) ou do endereço (?idioma=en).
 # =============================================================================
 
-IDIOMAS <- c("Português (BR)" = "pt")
+IDIOMAS <- c("Português (BR)" = "pt", "English" = "en", "Español" = "es")
 
 .i18n <- new.env()
 .i18n$idioma <- "pt"          # idioma do que está sendo montado agora (a tela)
@@ -55,10 +55,12 @@ traduzir_html <- function(x, idioma = .i18n$idioma) {
   x
 }
 
-# Idioma pedido na página: ?idioma=en | es | pt  (padrão: pt)
+# Idioma pedido: ?idioma=en | es | pt no endereço, senão o cookie "cinabro_idioma" (gravado pelo seletor), senão pt.
 idioma_do_pedido <- function(request) {
   q <- tryCatch(shiny::parseQueryString(request$QUERY_STRING %||% ""), error = function(e) list())
-  i <- q[["idioma"]] %||% "pt"
+  i <- q[["idioma"]]
+  if (is.null(i)) { ck <- request$HTTP_COOKIE %||% ""; m <- regmatches(ck, regexec("(?:^|;\\s*)cinabro_idioma=([a-z]{2})", ck, perl = TRUE))[[1]]; if (length(m) == 2) i <- m[2] }
+  i <- i %||% "pt"
   if (i %in% unname(IDIOMAS)) i else "pt"
 }
 

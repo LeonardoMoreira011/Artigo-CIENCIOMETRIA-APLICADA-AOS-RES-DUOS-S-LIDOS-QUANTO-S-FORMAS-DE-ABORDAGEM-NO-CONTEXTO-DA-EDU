@@ -66,17 +66,19 @@ suppressPackageStartupMessages({
 }
 
 # Emite um aviso (warning) em português, sem mostrar a chamada interna.
-# Idioma das mensagens e dos textos que o motor escreve sozinho: SÓ PORTUGUÊS (o inglês e o espanhol estão arquivados em idiomas_arquivados/;
-# para reativar, peça). As mensagens ficam escritas em português e o resto da máquina de tradução (.traduzir_msg, .rot, .re) continua aqui, desligada.
-# Versão que lia o idioma (guardada para reativar):
-#   .idioma <- function() { i <- getOption("cinabro.idioma", "pt"); if (i %in% c("pt", "en", "es")) i else "pt" }
-.idioma <- function() "pt"
+# Idioma das mensagens e dos textos que o motor escreve sozinho: options(cinabro.idioma = "pt" | "en" | "es") (no painel: idioma <- "en").
+# As mensagens são escritas em português e traduzidas pelo dicionário de R/02_traducoes_motor.R (pedaços fixos; o que não tem tradução fica em português).
+.idioma <- function() { i <- getOption("cinabro.idioma", "pt"); if (i %in% c("pt", "en", "es")) i else "pt" }
+.cache_trad <- new.env()      # o padrão (regex) de cada idioma é montado uma vez só, não a cada mensagem
 .traduzir_msg <- function(msg) {
   i <- .idioma()
   if (i == "pt" || !exists(".TRAD_MOTOR", inherits = TRUE)) return(msg)
   d <- .TRAD_MOTOR[[i]]; if (is.null(d) || !length(d)) return(msg)
-  chaves <- names(d)[order(-nchar(names(d)))]                       # as mais longas primeiro; uma passada só (não retraduz o que já traduziu)
-  pad <- paste(gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", chaves), collapse = "|")
+  pad <- .cache_trad[[i]]
+  if (is.null(pad)) {
+    chaves <- names(d)[order(-nchar(names(d)))]                     # as mais longas primeiro; uma passada só (não retraduz o que já traduziu)
+    pad <- paste(gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", chaves), collapse = "|"); .cache_trad[[i]] <- pad
+  }
   m <- gregexpr(pad, msg, perl = TRUE)
   if (m[[1]][1] != -1) regmatches(msg, m) <- list(unname(d[regmatches(msg, m)[[1]]]))
   msg

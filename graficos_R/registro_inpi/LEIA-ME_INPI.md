@@ -25,6 +25,8 @@
 
 ## 3. Como gerar o hash da versão
 
+> **Atenção:** a versão **0.3.0** (idiomas em inglês e espanhol e gráficos 3D) tem um `Cinabro.zip` novo, portanto um **hash novo**. Se o pedido ainda não foi enviado, use o hash do ZIP desta versão; se já foi, o registro anterior vale para a 0.2.0 e a 0.3.0 pode ser incluída num pedido de nova versão.
+
 O hash prova **qual era o conteúdo do programa naquela data**. Use sempre o **mesmo arquivo** que vai ser distribuído:
 
 - Pegue o **`Cinabro.zip`** da versão e gere o SHA-512 dele.
@@ -38,7 +40,7 @@ O hash prova **qual era o conteúdo do programa naquela data**. Use sempre o **m
 | Campo | Sugestão |
 |---|---|
 | **Título** | Cinabro: laboratório de gráficos científicos |
-| **Versão** | 0.2.0 |
+| **Versão** | 0.3.0 |
 | **Linguagem de programação** | R (com HTML, CSS e JavaScript no aplicativo no navegador) |
 | **Data de criação** | A sua. O primeiro registro no controle de versão é de 21/10/2026; se o trabalho começou antes, use a data real. |
 | **Publicação** | Informe a data só se já divulgou o programa publicamente (repositório público, e-mail a terceiros). |
@@ -47,7 +49,7 @@ O hash prova **qual era o conteúdo do programa naquela data**. Use sempre o **m
 | **Titular / autor** | Leonardo Moreira (pessoa física) |
 
 **Resumo do programa (para o campo de descrição):**
-> O Cinabro é um programa em R, com aplicativo no navegador e interface em português, que transforma planilhas CSV em figuras científicas editáveis: gráficos de linhas, pontos, áreas, barras com barras de erro, pizza, histograma, densidade, boxplot, mapa de calor, PCA, CA e CCA, mapa-múndi e mapa do Brasil. Oferece ajuste de curva com equação e R², média ± desvio padrão, testes estatísticos (normalidade, ANOVA, Kruskal-Wallis), edição visual de legenda, rótulos e caixas de texto e estatística, um Dashboard que reúne os gráficos e os resumos numa folha editável e a exportação em PNG, TIFF, JPEG, SVG e PDF.
+> O Cinabro é um programa em R, com aplicativo no navegador e interface em português, inglês e espanhol, que transforma planilhas CSV em figuras científicas editáveis: gráficos de linhas, pontos, áreas, barras com barras de erro, pizza, histograma, densidade, boxplot, mapa de calor, PCA, CA e CCA, mapa-múndi, mapa do Brasil, mapa de cor (X, Y, Z), superfície 3D, barras 3D e dispersão 3D. Oferece ajuste de curva com equação e R², média ± desvio padrão, testes estatísticos (normalidade, ANOVA, Kruskal-Wallis), edição visual de legenda, rótulos e caixas de texto e estatística, um Dashboard que reúne os gráficos e os resumos numa folha editável e a exportação em PNG, TIFF, JPEG, SVG e PDF.
 
 **Texto sugerido para a Declaração de Veracidade / descrição da autoria** (ajuste ao que for verdade para você):
 > O programa foi concebido e especificado por Leonardo Moreira, que definiu os requisitos, as funcionalidades e o comportamento do sistema, tomou as decisões de design, revisou e testou o resultado. O código-fonte foi desenvolvido com a assistência de ferramentas de inteligência artificial generativa (Claude, da Anthropic), sob a direção e a revisão do autor. O programa utiliza, sem alteração, pacotes de código aberto de terceiros, com os avisos de licença preservados.
