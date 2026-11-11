@@ -9,6 +9,7 @@
 .ESQUEMAS_Z <- list(
   cinabro    = c("#F4ECDD", "#E8B49A", "#CF6F4E", "#B3262E", "#7E1B22"),
   petroleo   = c("#F4ECDD", "#BFD9DB", "#6FA5AC", "#2F6670", "#13343A"),
+  azul       = c("#16264F", "#2A4A8F", "#5B86D4", "#8FB0F2"),
   divergente = c("#2F6670", "#8FC3CC", "#F4ECDD", "#E9A58A", "#B3262E"))
 
 # Cores do gradiente. Entra: cfg. Sai: vetor de cores (do menor para o maior valor).

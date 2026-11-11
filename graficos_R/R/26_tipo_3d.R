@@ -86,10 +86,10 @@
   m$x <- nx; m$y <- ny; m$Z <- pmin(pmax(Zy, min(m$Z)), max(m$Z)); m
 }
 # Subdivisões por célula: o que o usuário escolheu (cfg$tridimensional$suavizar) ou, no automático, o bastante para chegar a ~alvo células no eixo maior.
-.n_suavizar <- function(s, m, alvo) {
+.n_suavizar <- function(s, m, alvo, maximo = 12) {
   if (!is.null(s) && is.finite(s)) return(as.integer(s))
   if (!is.numeric(m$x) || !is.numeric(m$y)) return(1L)
-  as.integer(max(1, min(12, ceiling(alvo / max(length(m$x) - 1, length(m$y) - 1, 1)))))
+  as.integer(max(1, min(maximo, ceiling(alvo / max(length(m$x) - 1, length(m$y) - 1, 1)))))
 }
 # Clareia (f > 1) ou escurece (f < 1) uma cor.
 .sombrear <- function(cor, f) {
@@ -152,6 +152,42 @@
        cor_linha = .cor(ex$cor_linha %||% "black"), esp_linha = ex$espessura_linha_pt %||% cfg$caixa$espessura_pt %||% 0.75)
 }
 
+# Números e títulos de eixos diferentes não podem ficar um sobre o outro (ex.: o 450 do X e o 0,5 do Y no mesmo canto). Cada texto vira uma fila de círculos
+# (do tamanho da letra, ao longo do texto); se encosta num texto de OUTRO eixo, ele sai um pouco mais para fora, na sua própria direção, até ficar livre.
+.desencostar_rotulos3d <- function(rt, tt, S, upi, larg_in) {
+  if (is.null(rt)) return(list(rot = rt, tit = tt))
+  circulos <- function(x, y, xe, ye, comp, w, h) {                  # (em polegadas) centros e raio
+    if (comp > 0) { n <- max(2, ceiling(comp / h)); k <- seq(0, 1, length.out = n); cbind(x + (xe - x) * k, y + (ye - y) * k) }
+    else { n <- max(1, ceiling(w / h)); k <- if (n == 1) 0 else seq(-0.5, 0.5, length.out = n) * (w - h); cbind(x + k, rep(y, n)) }
+  }
+  achar <- function(d, C, r, outro) any(vapply(C, function(Q) { if (is.null(Q)) return(FALSE); dd <- sqrt(outer(d[, 1], Q$c[, 1], "-")^2 + outer(d[, 2], Q$c[, 2], "-")^2); any(dd < (r + Q$r) * 0.9) }, NA))
+  pos <- list(); h <- S$pt_rot / 72
+  for (i in seq_len(nrow(rt))) {
+    w <- larg_in(rt$lab[i], S$pt_rot); x <- rt$x[i] / upi; y <- rt$y[i] / upi; xe <- rt$xe[i] / upi; ye <- rt$ye[i] / upi
+    outros <- pos[vapply(pos, function(q) !identical(q$eix, rt$eix[i]), NA)]
+    for (k in 0:12) {
+      dx <- rt$ux[i] * k * 0.3 * h; dy <- rt$uy[i] * k * 0.3 * h
+      cc <- circulos(x + dx, y + dy, xe + dx, ye + dy, rt$comp[i], w, h)
+      if (!achar(cc, outros, h / 2, NULL) || k == 12) break
+    }
+    rt$x[i] <- (x + dx) * upi; rt$y[i] <- (y + dy) * upi; rt$xe[i] <- (xe + dx) * upi; rt$ye[i] <- (ye + dy) * upi
+    pos[[length(pos) + 1]] <- list(eix = rt$eix[i], c = cc, r = h / 2)
+  }
+  if (!is.null(tt)) {
+    ht <- S$pt_tit / 72
+    for (i in seq_len(nrow(tt))) {
+      w <- larg_in(tt$lab[i], S$pt_tit); x <- tt$x[i] / upi; y <- tt$y[i] / upi; a <- tt$ang[i] * pi / 180
+      for (k in 0:12) {
+        dx <- tt$ux[i] * k * 0.3 * ht; dy <- tt$uy[i] * k * 0.3 * ht
+        n <- max(2, ceiling(w / ht)); s <- seq(-0.5, 0.5, length.out = n) * (w - ht); cc <- cbind(x + dx + s * cos(a), y + dy + s * sin(a))
+        if (!achar(cc, pos, ht / 2, NULL) || k == 12) break
+      }
+      tt$x[i] <- (x + dx) * upi; tt$y[i] <- (y + dy) * upi
+    }
+  }
+  list(rot = rt, tit = tt)
+}
+
 # Fundo do 3D: piso, paredes de atras, grade, eixos, traços, números e títulos. Devolve camadas e a caixa que ocupam (para os limites do gráfico).
 # upi = unidades do desenho por polegada (o tamanho dos textos e dos afastamentos é em pontos, não depende do zoom).
 .fundo3d <- function(P, E, H, cfg, upi, titulos) {
@@ -191,7 +227,7 @@
   rots <- list(); tks <- list(); tits <- list()
   # eixo ao longo de uma aresta: p(t) = ponto da aresta no parâmetro t (0..1); ticks em t = tt, rótulos em rot.
   # Se os nomes não cabem lado a lado, ficam em leque: cada um sai do traço, girado na direção para fora.
-  eixo_aresta <- function(p, tt, rot, titulo, u_fix = NULL, ang_fix = NULL) {
+  eixo_aresta <- function(p, tt, rot, titulo, u_fix = NULL, ang_fix = NULL, nome = "") {
     m <- p(0.5); p0 <- p(0); p1 <- p(1)
     u <- u_fix %||% { ev <- c(p1$sx - p0$sx, p1$sy - p0$sy); ev <- ev / max(sqrt(sum(ev^2)), 1e-9); pp <- c(-ev[2], ev[1])           # perpendicular à aresta, para fora
                       if (sum(pp * (c(m$sx, m$sy) - centro)) < 0) -pp else pp }
@@ -207,30 +243,30 @@
       d_in <- tick_in + gap_in + if (colide) 0 else alvo_in(ws[i], h, u)
       tks[[length(tks) + 1]] <<- data.frame(x = pt$sx[i], y = pt$sy[i], xend = pt$sx[i] + u[1] * tick_in * upi, yend = pt$sy[i] + u[2] * tick_in * upi)
       sobe <- if (!is.null(ang_fix) && tt[i] <= 1e-9) 0.55 * h * upi else 0          # no eixo Z, o número do piso sobe um pouco (não encosta no do eixo Y)
-      rots[[length(rots) + 1]] <<- data.frame(x = pt$sx[i] + u[1] * d_in * upi, y = pt$sy[i] + u[2] * d_in * upi + sobe, lab = rot[i], ang = th, hj = hj, comp = if (colide) ws[i] else 0, xe = pt$sx[i] + u[1] * (d_in + ws[i]) * upi, ye = pt$sy[i] + u[2] * (d_in + ws[i]) * upi + sobe)
+      rots[[length(rots) + 1]] <<- data.frame(x = pt$sx[i] + u[1] * d_in * upi, y = pt$sy[i] + u[2] * d_in * upi + sobe, lab = rot[i], ang = th, hj = hj, comp = if (colide) ws[i] else 0, ux = u[1], uy = u[2], eix = nome, xe = pt$sx[i] + u[1] * (d_in + ws[i]) * upi, ye = pt$sy[i] + u[2] * (d_in + ws[i]) * upi + sobe)
     }
     if (nzchar(titulo)) {
       ht <- S$pt_tit / 72; d_in <- tick_in + gap_in + (if (colide) ext_rot else 2 * ext_rot) + gap_in + alvo_in(larg_in(titulo, S$pt_tit), ht, u, ang)
-      tits[[length(tits) + 1]] <<- data.frame(x = m$sx + u[1] * d_in * upi, y = m$sy + u[2] * d_in * upi, lab = titulo, ang = ang)
+      tits[[length(tits) + 1]] <<- data.frame(x = m$sx + u[1] * d_in * upi, y = m$sy + u[2] * d_in * upi, lab = titulo, ang = ang, ux = u[1], uy = u[2], eix = nome)
     }
   }
   # arestas do piso mais perto de quem olha
   y_fr <- if (cos(a) > 1e-9 || abs(cos(a)) <= 1e-9) 0 else 1
   x_fr <- if (abs(sin(a)) < 0.45) (if (sin(a) >= 0) 1 else 0) else if (sin(a) > 0) 0 else 1      # vista quase de frente: o eixo de profundidade vai para o lado de fora, longe dos números do X
   px <- function(t) P(t, y_fr, 0); py <- function(t) P(x_fr, t, 0)
-  eixo_aresta(px, tx, E$x$rot, titulos$x); eixo_aresta(py, ty, E$y$rot, titulos$y)
+  eixo_aresta(px, tx, E$x$rot, titulos$x, nome = "x"); eixo_aresta(py, ty, E$y$rot, titulos$y, nome = "y")
   # eixo Z: a aresta vertical que fica mais à esquerda na tela
   cantos <- expand.grid(x = c(0, 1), y = c(0, 1)); sxs <- P(cantos$x, cantos$y, 0)$sx; k <- which.min(sxs)
   pz <- function(t) P(cantos$x[k], cantos$y[k], t * H)
-  eixo_aresta(pz, tz / H, E$z$rot, titulos$z, u_fix = c(-1, 0), ang_fix = 90)
+  eixo_aresta(pz, tz / H, E$z$rot, titulos$z, u_fix = c(-1, 0), ang_fix = 90, nome = "z")
   lin <- list(px(0), px(1), py(0), py(1), pz(0), pz(1))
   # aresta dos eixos (linha mais forte) e traços
   ar <- function(p) { p0 <- p(0); p1 <- p(1); data.frame(x = p0$sx, y = p0$sy, xend = p1$sx, yend = p1$sy) }
   cam[[length(cam) + 1]] <- geom_segment(data = rbind(ar(px), ar(py), ar(pz)), aes(x = x, y = y, xend = xend, yend = yend), colour = S$cor_linha, linewidth = .lw(S$esp_linha), lineend = "round")
   tk <- do.call(rbind, tks); if (!is.null(tk)) cam[[length(cam) + 1]] <- geom_segment(data = tk, aes(x = x, y = y, xend = xend, yend = yend), colour = S$cor_linha, linewidth = .lw(S$esp_linha))
-  rt <- do.call(rbind, rots)
+  rt <- do.call(rbind, rots); tt <- do.call(rbind, tits)
+  dz <- .desencostar_rotulos3d(rt, tt, S, upi, larg_in); rt <- dz$rot; tt <- dz$tit            # números de eixos diferentes nunca ficam um sobre o outro
   if (!is.null(rt)) cam[[length(cam) + 1]] <- geom_text(data = rt, aes(x = x, y = y, label = lab, angle = ang, hjust = hj), size = .tx(S$pt_rot), colour = S$cor_rot, family = S$fonte, fontface = S$face_rot)
-  tt <- do.call(rbind, tits)
   if (!is.null(tt)) cam[[length(cam) + 1]] <- geom_text(data = tt, aes(x = x, y = y, label = lab, angle = ang), size = .tx(S$pt_tit), colour = S$cor_tit, family = S$fonte, fontface = S$face_tit)
   # caixa ocupada (centros dos textos mais metade do tamanho de cada um)
   caixa <- rbind(do.call(rbind, lapply(lin, function(p) c(p$sx, p$sy))),
@@ -260,7 +296,7 @@
 }
 
 # Camada invisível que só serve para a barra de cores aparecer quando as faces usam cor pronta (I()).
-.camada_barra3d <- function(esc) geom_point(data = data.frame(x = 0, y = 0, z = esc$limites), aes(x = x, y = y, fill = z), shape = 21, alpha = 0, size = 0.1, inherit.aes = FALSE)
+.camada_barra3d <- function(esc, x = 0, y = 0) geom_point(data = data.frame(x = x, y = y, z = esc$limites), aes(x = x, y = y, fill = z), shape = 21, alpha = 0, size = 0.1, inherit.aes = FALSE)
 
 # ---- superfície 3D ------------------------------------------------------------------------------------
 .construir_superficie_3d <- function(dados, cfg) {
@@ -380,10 +416,10 @@
   m0 <- .grade_xyz(dados, cfg)
   if (!is.numeric(m0$x) || !is.numeric(m0$y)) .erro("O mapa de cor precisa de números nos dois eixos (a 1ª coluna e os cabeçalhos). Para nomes (genes, amostras...), use o mapa de calor.")
   if (length(m0$x) < 2 || length(m0$y) < 2) .erro("O mapa de cor precisa de pelo menos 2 valores em X e 2 em Y.")
-  ns <- .n_suavizar(T$suavizar, m0, 190)
-  m <- .limitar_grade(.refinar_grade(m0, ns))
-  # bordas das células: com a grade suavizada (células finas) a 1ª e a última acabam exatamente nos extremos dos dados, e a cor ocupa o painel todo, sem margem branca;
-  # com a tabela original (ns = 1), cada célula é uma célula inteira, e o eixo vai de uma borda à outra
+  faixas <- !is.null(H$niveis_cor) && is.finite(H$niveis_cor) && H$niveis_cor >= 2
+  ns <- .n_suavizar(T$suavizar, m0, if (faixas) 360 else 240, maximo = 64)      # grade fina: a cor sai contínua (com faixas, as bordas das faixas saem nítidas)
+  while (ns > 1 && (length(m0$x) - 1) * ns * (length(m0$y) - 1) * ns > 250000) ns <- ns - 1L
+  m <- if (ns > 1) .refinar_grade(m0, ns) else .limitar_grade(m0)
   bordas <- function(v) { mid <- (v[-1] + v[-length(v)]) / 2
     if (ns > 1) c(v[1], mid, v[length(v)]) else c(v[1] - (v[2] - v[1]) / 2, mid, v[length(v)] + (v[length(v)] - v[length(v) - 1]) / 2) }
   bx <- bordas(m$x); by <- bordas(m$y); nx <- length(m$x); ny <- length(m$y)
@@ -392,7 +428,11 @@
                   x = rep(m$x, each = ny), y = rep(m$y, times = nx))
   d$xmin[d$xmin < min(bx)] <- min(bx); d$xmax[d$xmax > max(bx)] <- max(bx); d$ymin[d$ymin < min(by)] <- min(by); d$ymax[d$ymax > max(by)] <- max(by)
   esc <- .escala_z(cfg, d$z, m$nome_z %||% .rot("Valor"))
-  cam <- list(geom_rect(data = d, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = z, colour = z), linewidth = .lw(0.3), na.rm = FALSE), esc$escala, esc$escala_cor)
+  if (ns > 1) {          # imagem contínua (um pixel por ponto da grade fina, suavizada pelo desenho): sem quadradinhos nem fios
+    R <- matrix(esc$cor_de(as.vector(m$Z)), ny, nx)[ny:1, , drop = FALSE]
+    cam <- list(.camada_barra3d(esc, mean(range(bx)), mean(range(by))),
+                annotation_raster(R, xmin = min(bx), xmax = max(bx), ymin = min(by), ymax = max(by), interpolate = !faixas), esc$escala)
+  } else cam <- list(geom_rect(data = d, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = z, colour = z), linewidth = .lw(0.3), na.rm = FALSE), esc$escala, esc$escala_cor)
   nn <- T$niveis %||% 0
   if (nn > 0 && !anyNA(m$Z)) {
     lim <- esc$limites; qb <- pretty(lim, n = nn + 1); qb <- qb[qb > lim[1] & qb < lim[2]]
@@ -406,7 +446,7 @@
   ax_y <- .calc_eixo(cfg$eixo_y, range(by), forcar = cfg$.interno$forcar_y %||% lim_y)
   list(camadas = cam,
        info = list(ax_x = ax_x, ax_y = ax_y, flip = FALSE, titulo_x = cfg$eixo_x$titulo %||% m$nome_x, titulo_y = cfg$eixo_y$titulo %||% m$nome_y,
-                   legenda_auto = TRUE, faixa_x = range(bx), faixa_y = range(by), titulo_barra = esc$titulo))
+                   legenda_auto = TRUE, faixa_x = range(bx), faixa_y = range(by), titulo_barra = esc$titulo, alinhar_cantos = TRUE))
 }
 
 # ---- linhas 3D (cascata) -------------------------------------------------------------------------------
@@ -447,9 +487,11 @@
       if (identical(modo, "gradiente")) {
         partes <- list(); g <- 0L
         for (b in seq_len(B)) {
-          topo <- pmin(zc, niv[b + 1]); fundo <- pmin(zc, niv[b])
+          ativo <- which(zc > niv[b] + 1e-9); if (!length(ativo)) next
+          i0 <- max(1L, min(ativo) - 1L); i1 <- min(length(zc), max(ativo) + 1L); xs <- Xn[i0:i1]; zs <- zc[i0:i1]      # só o trecho da linha que passa deste nível (menos pontos)
+          topo <- pmin(zs, niv[b + 1]); fundo <- pmin(zs, niv[b])
           if (max(topo - fundo) <= 1e-9) next
-          p <- P(c(Xn, rev(Xn)), Yn[j], c(topo, rev(fundo))); g <- g + 1L
+          p <- P(c(xs, rev(xs)), Yn[j], c(topo, rev(fundo))); g <- g + 1L
           partes[[g]] <- data.frame(x = p$sx, y = p$sy, grp = g, cor = esc$cor_de((niv_dado[b] + niv_dado[b + 1]) / 2))
         }
         if (length(partes)) tab <- do.call(rbind, partes)

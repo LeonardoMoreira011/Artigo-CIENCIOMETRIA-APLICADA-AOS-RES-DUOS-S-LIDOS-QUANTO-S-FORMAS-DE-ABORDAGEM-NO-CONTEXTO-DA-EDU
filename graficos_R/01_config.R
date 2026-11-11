@@ -778,7 +778,7 @@ cfg$mapa_calor <- list(
   agrupar = "nenhum",
 
   # esquema_cor: gradiente do eixo Z. "cinabro" (creme -> vermelho) | "petroleo" (creme -> azul petróleo) |
-  #   "divergente" (petróleo - creme - vermelho; o centro vale 0 ou o "centro" abaixo) | "viridis" | "magma" | "inferno" | "turbo"
+  #   "azul" (marinho -> azul claro) | "divergente" (petróleo - creme - vermelho; o centro vale 0 ou o "centro" abaixo) | "viridis" | "magma" | "inferno" | "turbo"
   esquema_cor = "cinabro",
 
   # cores_escala: sua própria escala (2 ou mais cores, do menor para o maior valor). NULL = usa o esquema_cor.
@@ -875,9 +875,9 @@ cfg$tridimensional <- list(
   # linhas 3D (cascata): linhas_preencher "gradiente" (cada linha preenchida com o gradiente do Z, em linhas_faixas faixas) | "branco" (preenche de branco: a linha da frente
   #   esconde a de trás) | "nenhum" (só as linhas). linhas_cor / linhas_espessura_pt: o traço de cada linha.
   linhas_preencher = "gradiente",
-  linhas_faixas = 10,
+  linhas_faixas = 40,
   linhas_cor = "black",
-  linhas_espessura_pt = 0.4,
+  linhas_espessura_pt = 0.25,
 
   # dispersão: ponto_tamanho_pt, cor_borda_pontos (NA = sem), hastes (linha de cada ponto até o piso) e cor_hastes
   ponto_tamanho_pt = 6,

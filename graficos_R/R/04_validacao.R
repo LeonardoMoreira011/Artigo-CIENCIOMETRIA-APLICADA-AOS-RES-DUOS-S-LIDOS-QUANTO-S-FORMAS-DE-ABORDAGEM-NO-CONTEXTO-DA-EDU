@@ -44,7 +44,7 @@
   "mapa_calor$formato" = c("matriz", "longo"),
   "mapa_calor$normalizar" = c("nenhum", "linha", "coluna"),
   "mapa_calor$agrupar" = c("nenhum", "linhas", "colunas", "ambos"),
-  "mapa_calor$esquema_cor" = c("cinabro", "petroleo", "divergente", "viridis", "magma", "inferno", "turbo"),
+  "mapa_calor$esquema_cor" = c("cinabro", "petroleo", "azul", "divergente", "viridis", "magma", "inferno", "turbo"),
   "multivariada$resumo_posicao" = c("caixa", "rodape"),
   "multivariada$legenda_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "tridimensional$caixa" = c("paredes", "base", "aberta"),

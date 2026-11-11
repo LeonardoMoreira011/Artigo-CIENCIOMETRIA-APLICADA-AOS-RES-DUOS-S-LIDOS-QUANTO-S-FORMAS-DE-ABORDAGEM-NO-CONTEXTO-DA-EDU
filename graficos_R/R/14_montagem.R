@@ -181,6 +181,11 @@
                    axis.text.y.right = .elem_rotulo(ev, cfg,
                                                     "right"), axis.title.y.right = .elem_titulo(ev, cfg, "right"))
   }
+  if (isTRUE(info$alinhar_cantos) && !isTRUE(info$flip)) {        # a cor vai de borda a borda: o 1º e o último número de cada eixo ficam para dentro, sem se sobrepor no canto
+    nxl <- length(info$ax_x$maiores); nyl <- length(info$ax_y$maiores)
+    if (nxl >= 2) g <- g + theme(axis.text.x.bottom = element_text(hjust = c(0, rep(0.5, nxl - 2), 1)))
+    if (nyl >= 2) g <- g + theme(axis.text.y.left = element_text(vjust = c(0, rep(0.5, nyl - 2), 1)))
+  }
   ti <- .ticks_internos(axh, axv, lados, info$ax_x, info$ax_y)
   if (!is.null(ti)) g <- g + ti
   if (!is.null(info$y2)) {

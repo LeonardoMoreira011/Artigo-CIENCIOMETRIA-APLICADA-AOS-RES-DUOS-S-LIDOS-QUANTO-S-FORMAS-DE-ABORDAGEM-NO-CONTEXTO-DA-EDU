@@ -1455,7 +1455,7 @@ cA <- function(tipo, fmt = "matriz", ...) { c1 <- cfg; c1$grafico$tipo <- tipo; 
 teste("suavizar automático: a grade da tabela (7 x 7) vira uma grade fina por spline cúbico, sem passar dos valores da tabela; suavizar = 1 mantém os blocos", {
   m0 <- .grade_xyz(d3, cA("mapa_cor")); n <- .n_suavizar(NULL, m0, 150); m <- .refinar_grade(m0, n)
   g <- suppressWarnings(plotar(d3, cA("mapa_cor"))); g1 <- suppressWarnings(plotar(d3, c3("mapa_cor")))
-  n > 10 && length(m$x) == 6 * n + 1 && min(m$Z) >= min(m0$Z) - 1e-9 && max(m$Z) <= max(m0$Z) + 1e-9 && nrow(ggplot2::ggplot_build(g)$data[[1]]) > 5000 && nrow(ggplot2::ggplot_build(g1)$data[[1]]) == 49 &&
+  n > 10 && length(m$x) == 6 * n + 1 && min(m$Z) >= min(m0$Z) - 1e-9 && max(m$Z) <= max(m0$Z) + 1e-9 && any(vapply(g$layers, function(l) inherits(l$geom, "GeomRasterAnn"), NA)) && !any(vapply(g$layers, function(l) inherits(l$geom, "GeomRect"), NA)) && nrow(ggplot2::ggplot_build(g1)$data[[1]]) == 49 &&
     .n_suavizar(4, m0, 150) == 4 && .n_suavizar(NULL, list(x = letters[1:3], y = 1:3, Z = matrix(0, 3, 3)), 150) == 1 })
 teste("mapa de cor: a cor ocupa o painel todo (o eixo vai exatamente de um extremo ao outro dos dados, sem margem branca) e início/fim escolhidos mandam", {
   g <- suppressWarnings(plotar(d3, cA("mapa_cor"))); i <- attr(g, "info"); g2 <- suppressWarnings(plotar(d3, cA("mapa_cor", eixo_x = utils::modifyList(cfg$eixo_x, list(inicio = 0, fim = 100)))))
@@ -1472,7 +1472,7 @@ teste("superfície 3D: sombreado liga e desliga, a malha é opcional e a superf�
   length(pol) == 1 && length(unique(pol[[1]]$group)) > 3000 && monta(g) && monta(gs) })
 teste("linhas 3D: uma linha por coluna (cabeçalho numérico vira a posição na profundidade), preenchida por faixas de cor, com o traço de cada uma; os três modos de preenchimento", {
   m <- .series_xyz(dc3, cA("linhas_3d")); g <- suppressWarnings(plotar(dc3, cA("linhas_3d"))); ncam <- function(md) length(suppressWarnings(plotar(dc3, cA("linhas_3d", tridimensional = utils::modifyList(cfg$tridimensional, list(linhas_preencher = md)))))$layers)
-  identical(m$y, c(0.5, 1, 1.5, 2, 2.5, 3, 3.5)) && length(m$x) == 51 && !m$ycat && monta(g) && ncam("gradiente") > ncam("nenhum") && ncam("branco") == ncam("nenhum") + 7 && ncam("gradiente") >= ncam("branco") })
+  isTRUE(all.equal(m$y[1:3], c(0.1, 0.185, 0.27))) && length(m$y) == 41 && length(m$x) == 101 && !m$ycat && monta(g) && ncam("gradiente") > ncam("nenhum") && ncam("branco") == ncam("nenhum") + 41 && ncam("gradiente") >= ncam("branco") })
 teste("linhas 3D: X em texto, uma coluna só e modo inválido dão erro claro; ângulos e eixo Z valem como nos outros 3D; sai em PNG", {
   dt <- dc3; dt[[1]] <- as.character(dt[[1]]); cx <- cA("linhas_3d", exportacao = utils::modifyList(cfg$exportacao, list(pasta = tmp, nome_arquivo = "linhas3d", formatos = "png")))
   arq <- suppressMessages(salvar(suppressWarnings(plotar(dc3, cx)), cx))
@@ -1490,6 +1490,20 @@ teste("radar: menos de 3 eixos, escala invertida, opacidade fora de 0 a 1 e rada
 teste("radar e linhas 3D em inglês e espanhol: mensagens do motor traduzidas", {
   e <- function(lg) { options(cinabro.idioma = lg); on.exit(options(cinabro.idioma = "pt")); tryCatch(plotar(dr3[, 1:3], cA("radar")), error = function(x) conditionMessage(x)) }
   grepl("at least 3 numeric columns", e("en"), fixed = TRUE) && grepl("al menos 3 columnas numéricas", e("es"), fixed = TRUE) })
+teste("números de eixos diferentes não se sobrepõem no 3D: dois textos no mesmo canto são afastados; e no mapa de cor o 1º e o último número de cada eixo ficam para dentro (sem se tocar no canto)", {
+  S <- .estilo3d(cfg); larg <- function(txt, pt) max(nchar(txt), 1) * pt * 0.52 / 72
+  rt <- data.frame(x = c(0, 0.01), y = c(0, 0.01), lab = c("450", "0.5"), ang = 0, hj = 0.5, comp = 0, ux = c(0, -0.7), uy = c(-1, -0.7), eix = c("x", "y"), xe = c(0, 0.01), ye = c(0, 0.01), stringsAsFactors = FALSE)
+  r <- .desencostar_rotulos3d(rt, NULL, S, 1, larg)$rot; d_antes <- sqrt(diff(rt$x)^2 + diff(rt$y)^2); d_depois <- sqrt(diff(r$x)^2 + diff(r$y)^2)
+  g <- suppressWarnings(plotar(d3, cA("mapa_cor"))); hx <- g$theme$axis.text.x.bottom$hjust; hy <- g$theme$axis.text.y.left$vjust
+  d_antes < 0.05 && d_depois > 0.1 && isTRUE(attr(g, "info")$alinhar_cantos) && hx[1] == 0 && hx[length(hx)] == 1 && length(hx) == length(attr(g, "info")$ax_x$maiores) && hy[1] == 0 && hy[length(hy)] == 1 })
+teste("mapa de cor: o gradiente é contínuo (imagem, sem quadradinhos) e os traços que caem nas pontas dos eixos somem com a moldura fechada (o desenho muda ao mostrar)", {
+  arq <- function(md) { cx <- cA("mapa_cor", caixa = utils::modifyList(cfg$caixa, list(ticks_nas_pontas = md)), exportacao = utils::modifyList(cfg$exportacao, list(pasta = tmp, nome_arquivo = paste0("pontas_", md), formatos = "png", dpi = 150)))
+    suppressMessages(salvar(suppressWarnings(plotar(d3, cx)), cx)) }
+  a1 <- arq("ocultar"); a2 <- arq("mostrar"); a3 <- arq("auto")
+  file.exists(a1) && !identical(readBin(a1, "raw", file.size(a1)), readBin(a2, "raw", file.size(a2))) && identical(readBin(a1, "raw", file.size(a1)), readBin(a3, "raw", file.size(a3))) })
+teste("linhas 3D: gradiente contínuo (40 faixas por linha), paleta azul e traço fino; o gráfico com 41 linhas desenha sem erro", {
+  g <- suppressWarnings(plotar(dc3, cA("linhas_3d", mapa_calor = utils::modifyList(cfg$mapa_calor, list(esquema_cor = "azul"))))); e <- .escala_z(utils::modifyList(cfg, list(mapa_calor = utils::modifyList(cfg$mapa_calor, list(esquema_cor = "azul")))), 0:10, "v")
+  cfg$tridimensional$linhas_faixas == 40 && cfg$tridimensional$linhas_espessura_pt <= 0.3 && monta(g) && length(unique(e$cor_de(seq(0, 10, 0.1)))) > 80 && identical(.cores_z(utils::modifyList(cfg, list(mapa_calor = utils::modifyList(cfg$mapa_calor, list(esquema_cor = "azul")))))[1], "#16264F") })
 
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", .res["passou"], .res["falhou"]))
 unlink(tmp, recursive = TRUE)
