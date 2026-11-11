@@ -63,7 +63,7 @@ cfg$grafico <- list(
   #   OPÇÕES: "pontos" | "linha" | "linha_pontos" | "area" | "area_empilhada" |
   #           "barras" | "pizza" | "histograma" | "densidade" | "ecdf" | "boxplot" |
   #           "mapa_calor" | "pca" | "ca" | "cca" | "mapa_mundo" | "mapa_brasil" |
-  #           "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d"
+  #           "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d" | "linhas_3d" | "radar"
   #   EX.: cfg$grafico$tipo <- "boxplot"
   tipo = "linha_pontos",
 
@@ -817,6 +817,13 @@ cfg$mapa_calor <- list(
   #   OPÇÕES: "direita" | "esquerda" | "topo" | "base" | "dentro"
   barra_posicao = "direita",
 
+  # niveis_cor: divide o gradiente em N faixas de cor (mais marcado; ex.: 8). NULL ou 0 = gradiente contínuo, suave.
+  niveis_cor = NULL,
+
+  # barra_intervalo / barra_casas: de quanto em quanto aparecem os números da barra de cores (NULL = automático) e quantas casas decimais eles têm.
+  barra_intervalo = NULL,
+  barra_casas = NULL,
+
   # barra_altura_cm / barra_largura_cm: tamanho da barra de cores (cm).
   barra_altura_cm = 4,
   barra_largura_cm = 0.4
@@ -847,22 +854,77 @@ cfg$tridimensional <- list(
   cor_grade = "#D9D9D9",
   cor_caixa = "#8C8C8C",
 
-  # suavizar: divide cada célula da grade em N pedaços por interpolação (superfície e mapa de cor). 1 = sem suavizar.
-  suavizar = 1,
+  # suavizar: divide cada célula da grade em N pedaços por interpolação cúbica (superfície e mapa de cor): cores e relevo fluidos. 1 = sem suavizar
+  #   (blocos). NULL = automático (o bastante para uma grade fina, até 12). Quanto maior, mais suave (e mais pesado).
+  suavizar = NULL,
+
+  # sombreado: a superfície 3D clareia e escurece conforme a inclinação (luz do alto, à esquerda). malha: mostra as linhas da grade sobre a superfície
+  #   (cor e grossura de cfg$mapa_calor$contorno_cor e contorno_espessura_pt).
+  sombreado = TRUE,
+  malha = FALSE,
 
   # niveis: quantidade aproximada de linhas de nível no mapa de cor (0 = sem linhas). cor_niveis: cor das linhas.
   niveis = 0,
   cor_niveis = "#333333",
+  niveis_espessura_pt = 0.4,
 
   # barras_largura: largura da barra em relação à célula (0 a 1). cor_borda_barras: contorno das faces (NA = sem).
   barras_largura = 0.7,
   cor_borda_barras = "white",
+
+  # linhas 3D (cascata): linhas_preencher "gradiente" (cada linha preenchida com o gradiente do Z, em linhas_faixas faixas) | "branco" (preenche de branco: a linha da frente
+  #   esconde a de trás) | "nenhum" (só as linhas). linhas_cor / linhas_espessura_pt: o traço de cada linha.
+  linhas_preencher = "gradiente",
+  linhas_faixas = 10,
+  linhas_cor = "black",
+  linhas_espessura_pt = 0.4,
 
   # dispersão: ponto_tamanho_pt, cor_borda_pontos (NA = sem), hastes (linha de cada ponto até o piso) e cor_hastes
   ponto_tamanho_pt = 6,
   cor_borda_pontos = "white",
   hastes = FALSE,
   cor_hastes = "#9A9A9A"
+)
+
+# -----------------------------------------------------------------------------
+# RADAR — gráfico de radar / teia de aranha (tipo "radar")
+# -----------------------------------------------------------------------------
+#  Planilha: a 1ª coluna traz o nome de cada série (uma linha = um polígono); as outras colunas numéricas são os eixos do radar (3 ou mais).
+cfg$radar <- list(
+  # aneis: quantidade aproximada de anéis da grade. anel_min / anel_max: onde a escala começa e termina (NULL = automático: do 0 ao maior valor, em números redondos).
+  aneis = 5,
+  anel_min = NULL,
+  anel_max = NULL,
+
+  # normalizar: TRUE põe cada eixo na escala de 0 a 1 (compara colunas de unidades diferentes).
+  normalizar = FALSE,
+
+  # formato_grade: "poligono" (anéis retos, como a teia) | "circulo"
+  formato_grade = "poligono",
+
+  # sentido: "horario" | "antihorario". angulo_inicial: onde fica o 1º eixo (graus; 0 = em cima).
+  sentido = "horario",
+  angulo_inicial = 0,
+
+  # preencher_opacidade: transparência do preenchimento de cada série (0 = só a linha, 1 = sólido). linha_espessura_pt: o contorno.
+  preencher_opacidade = 0.25,
+  linha_espessura_pt = 1.2,
+
+  # pontos: marca o valor em cada eixo. ponto_tamanho_pt: tamanho da marca.
+  pontos = TRUE,
+  ponto_tamanho_pt = 4,
+
+  # grade_cor / grade_espessura_pt: anéis e eixos de fundo. rotulos_aneis: escreve o valor de cada anel; rotulos_casas: casas decimais.
+  grade_cor = "#BDBDBD",
+  grade_espessura_pt = 0.5,
+  rotulos_aneis = TRUE,
+  rotulos_casas = NULL,
+
+  # rotulos_tamanho_pt: tamanho dos nomes dos eixos (NULL = o tamanho base).
+  rotulos_tamanho_pt = NULL,
+
+  # legenda_posicao: "direita" | "esquerda" | "topo" | "base" | "dentro"
+  legenda_posicao = "direita"
 )
 
 # -----------------------------------------------------------------------------

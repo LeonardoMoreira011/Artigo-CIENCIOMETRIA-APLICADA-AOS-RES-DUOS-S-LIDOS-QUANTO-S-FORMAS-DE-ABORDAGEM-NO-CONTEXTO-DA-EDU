@@ -421,7 +421,7 @@ testServer(servidor, {
 })
 # ---- modelos de planilha (modelos_csv/): todos abrem e os de ordenação e mapas montam o gráfico ---------------------------------------
 arqs_m <- list.files(file.path(raiz, "modelos_csv"), "^modelo_[0-9]+[b-z]?_.*\\.csv$", full.names = TRUE); arqs_m <- arqs_m[!grepl("ANTES", arqs_m)]
-teste("modelos_csv: 18 modelos de planilha (17 gráficos + o 'depois' da tabela cruzada)", length(arqs_m) == 18)
+teste("modelos_csv: 20 modelos de planilha (19 gráficos + o 'depois' da tabela cruzada)", length(arqs_m) == 20)
 lidos_m <- lapply(arqs_m, function(a) tryCatch(suppressMessages(ler_csv(a, utils::modifyList(CFG0$dados, list(relatorio = FALSE)))), error = function(e) NULL))
 teste("modelos_csv: todos abrem no Cinabro, com várias colunas e linhas", all(vapply(lidos_m, function(d) !is.null(d) && ncol(d) >= 2 && nrow(d) >= 4, NA)))
 tp_m <- c(modelo_11_pca.csv = "pca", modelo_12_cca.csv = "cca", modelo_13_mapa_mundo.csv = "mapa_mundo", modelo_14_mapa_brasil.csv = "mapa_brasil", modelo_09_mapa_calor.csv = "mapa_calor", modelo_15b_DEPOIS_pca.csv = "pca")
@@ -432,7 +432,7 @@ for (n in names(tp_m)) {
   r <- suppressWarnings(construir_grafico(d, montar_variaveis(v, CFG0, NULL), CFG0, preview = FALSE))
   teste(paste0("modelos_csv: ", n, " monta o gráfico (", tp_m[[n]], ") sem erro"), is.null(r$erro) && !is.null(r$g))
 }
-tp3 <- list(modelo_16_superficie_matriz.csv = list("superficie_3d", "matriz"), modelo_17_barras_3d.csv = list("barras_3d", "matriz"), modelo_18_dispersao_3d_longo.csv = list("dispersao_3d", "longo"))
+tp3 <- list(modelo_16_superficie_matriz.csv = list("superficie_3d", "matriz"), modelo_17_barras_3d.csv = list("barras_3d", "matriz"), modelo_18_dispersao_3d_longo.csv = list("dispersao_3d", "longo"), modelo_19_linhas_3d.csv = list("linhas_3d", "matriz"), modelo_20_radar.csv = list("radar", "matriz"))
 for (n in names(tp3)) {
   d <- lidos_m[[which(basename(arqs_m) == n)]]
   r <- suppressWarnings(construir_grafico(d, montar_variaveis(list(tipo_grafico = tp3[[n]][[1]], calor_formato = tp3[[n]][[2]]), CFG0, NULL), CFG0, preview = FALSE))
@@ -469,7 +469,7 @@ d_leve <- suppressWarnings(dash_construir(abas_d[2], list(qualidade = "leve", de
 teste("dashboard: qualidade leve vai em PNG e 'destaques desligados' não escreve frases nem número-chave", d_leve$graficos[[1]]$formato == "png" && grepl("^data:image/png;base64,[A-Za-z0-9+/=]+$", d_leve$graficos[[1]]$conteudo) &&
       length(d_leve$graficos[[1]]$frases) == 0 && is.null(d_leve$graficos[[1]]$kpi))
 for (tp in list(c("boxplot", "replicatas.csv"), c("mapa_calor", "mapa_de_calor.csv"), c("pizza", "composicao_liga.csv"), c("mapa_mundo", "mapa_mundo_vendas.csv"), c("mapa_brasil", "mapa_brasil_estados.csv"), c("histograma", "replicatas.csv"),
-                c("superficie_3d", "superficie_rendimento.csv"), c("mapa_cor", "superficie_rendimento.csv"), c("barras_3d", "barras_3d_residuos.csv"))) {
+                c("superficie_3d", "superficie_rendimento.csv"), c("mapa_cor", "superficie_rendimento.csv"), c("barras_3d", "barras_3d_residuos.csv"), c("linhas_3d", "espectros_cascata.csv"), c("radar", "radar_materiais.csv"))) {
   r1 <- suppressWarnings(dash_construir(list(list(nome = tp[1], dados = L(tp[2]), valores = list(tipo_grafico = tp[1]), series = NULL)), list(qualidade = "vetorial")))
   teste(paste0("dashboard: ", tp[1], " entra no dashboard com destaque e número-chave"), length(r1$graficos) == 1 && length(r1$graficos[[1]]$frases) >= 1 && !is.null(r1$graficos[[1]]$kpi))
 }
@@ -518,6 +518,17 @@ teste("3D no app: mensagens de erro do motor chegam em inglês e em espanhol", {
   e_en <- construir_grafico(L("superficie_rendimento.csv"), list(tipo_grafico = "superficie_3d", tri_elevacao = 120), CFG0, idioma = "en")$erro
   e_es <- construir_grafico(L("barras_3d_residuos.csv"), list(tipo_grafico = "mapa_cor"), CFG0, idioma = "es")$erro
   grepl("must be between 0 and 90 degrees", e_en, fixed = TRUE) && grepl("necesita números en los dos ejes", e_es, fixed = TRUE) && identical(.idioma(), "pt") })
+teste("cores suaves, faixas de cor, linhas 3D e radar no app: os campos novos chegam ao cfg e o gráfico monta", {
+  r6 <- construir_grafico(L("superficie_rendimento.csv"), list(tipo_grafico = "mapa_cor", calor_niveis_cor = 8, calor_barra_intervalo = 10, calor_barra_casas = 0, tri_suavizar = 4, tri_niveis = 6, tri_niveis_espessura_pt = 0.8), CFG0)
+  r7 <- construir_grafico(L("espectros_cascata.csv"), list(tipo_grafico = "linhas_3d", tri_linhas_preencher = "branco", tri_linhas_faixas = 5, tri_linhas_cor = "navy", tri_linhas_espessura_pt = 0.6), CFG0)
+  r8 <- construir_grafico(L("radar_materiais.csv"), list(tipo_grafico = "radar", radar_aneis = 4, radar_normalizar = TRUE, radar_formato_grade = "circulo", radar_opacidade = 0.4, radar_pontos = FALSE, radar_rotulos_aneis = FALSE, radar_legenda_posicao = "base"), CFG0)
+  is.null(r6$erro) && is.null(r7$erro) && is.null(r8$erro) && r6$cfg$mapa_calor$niveis_cor == 8 && r6$cfg$mapa_calor$barra_intervalo == 10 && r6$cfg$tridimensional$suavizar == 4 && r6$cfg$tridimensional$niveis_espessura_pt == 0.8 &&
+    identical(r7$cfg$tridimensional$linhas_preencher, "branco") && r7$cfg$tridimensional$linhas_faixas == 5 && isTRUE(r8$cfg$radar$normalizar) && identical(r8$cfg$radar$formato_grade, "circulo") && identical(r8$cfg$legenda$posicao, "base") &&
+    all(c("linhas_3d", "radar") %in% unname(.TIPOS)) && all(c("calor_niveis_cor", "tri_linhas_preencher", "radar_aneis", "radar_legenda_posicao") %in% names(ESPEC_CAMPOS)) })
+teste("radar e linhas 3D no app: erro do motor chega claro, em inglês e espanhol", {
+  e_en <- construir_grafico(L("radar_materiais.csv")[, 1:3], list(tipo_grafico = "radar"), CFG0, idioma = "en")$erro
+  e_es <- construir_grafico(L("espectros_cascata.csv")[, 1:2], list(tipo_grafico = "linhas_3d"), CFG0, idioma = "es")$erro
+  grepl("at least 3 numeric columns", e_en, fixed = TRUE) && grepl("al menos 2 columnas de serie", e_es, fixed = TRUE) })
 
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", ok, falhas))
 if (falhas) quit(status = 1)

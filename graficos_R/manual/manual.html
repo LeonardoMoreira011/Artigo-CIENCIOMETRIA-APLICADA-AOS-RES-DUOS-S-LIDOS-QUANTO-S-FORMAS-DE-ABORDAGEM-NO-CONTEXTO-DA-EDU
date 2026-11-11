@@ -290,20 +290,25 @@ Listening on http://127.0.0.1:8421</div>
   <div class="dica"><b>Dica</b> <b>Arraste os nomes.</b> No PCA, CA, CCA e nos mapas com nomes, cada nome (variável, ambiental, país, região) tem uma moldura sobre o gráfico: arraste para onde quiser; <b>duplo clique</b> devolve o nome à posição automática. Os nomes que você não mexe se posicionam sozinhos, sem cobrir pontos, setas nem outros nomes (com um fio quando ficam longe). Fonte, tamanho, negrito, itálico e cor de cada tipo de nome ficam em <i>Mais opções</i>; cor, símbolo, tamanho e nome na legenda de cada grupo, na tabela de grupos da aba <b>Cores</b>.</div>
   <div class="dica"><b>Resumo estatístico.</b> No PCA, CA e CCA uma caixa com o resumo aparece sozinha: os dois primeiros eixos (PC1 e PC2, por padrão) e a <b>abrangência</b> dos dois juntos (% da variação explicada), mais a inércia restrita e o teste de permutação no CCA, ou o R² e o p de cada ambiental no PCA e no CA. Para tirar a caixa, escolher só alguns itens ou mandar o resumo para uma linha sob a figura, use <b>Resumo estatístico no gráfico</b> em Dados.</div>
   <div class="atencao"><b>Atenção</b> Nos mapas e no mapa de calor não existem eixos numéricos: a quebra de eixo, o eixo da direita e o ajuste de curva não se aplicam. Nas ordenações, as setas são esticadas para caber na nuvem de amostras: valem a direção e o tamanho relativo, não o comprimento absoluto. Os dois eixos usam a mesma escala (1 unidade ocupa o mesmo comprimento no X e no Y), para os ângulos e as distâncias não ficarem deformados.</div>
-  <h2>5.2 Mapa de cor e gráficos 3D (X, Y e Z)</h2>
-  <p>Quatro tipos para uma grandeza <b>Z</b> que depende de <b>X</b> e de <b>Y</b>: o Z aparece na <b>cor</b> (com barra de cores) e, nos 3D, também na <b>altura</b>. Não precisam de pacote extra e saem em PNG, TIFF, JPEG, SVG e PDF como os outros gráficos.</p>
+  <h2>5.2 Mapa de cor, gráficos 3D e radar</h2>
+  <p>Seis tipos novos. Cinco mostram uma grandeza <b>Z</b> que depende de <b>X</b> e de <b>Y</b>: <b>mapa de cor</b>, <b>superfície 3D</b>, <b>barras 3D</b>, <b>dispersão 3D</b> e <b>linhas 3D (cascata)</b>. O Z aparece na <b>cor</b> (com barra de cores) e, nos 3D, também na <b>altura</b>. O sexto é o <b>radar</b>. Nenhum precisa de pacote extra e todos saem em PNG, TIFF, JPEG, SVG e PDF como os outros gráficos.</p>
   <div class="galeria">
     <figure><img src="img/m16_superficie_matriz.png"><div class="nome">Superfície 3D (e Mapa de cor)</div><div class="quando">Rendimento em função da temperatura e do pH. O Mapa de cor é o mesmo dado visto de cima, com eixos numéricos e linhas de nível opcionais.</div></figure>
     <figure><img src="img/m17_barras_3d.png"><div class="nome">Barras 3D</div><div class="quando">Uma barra por combinação de duas categorias (região × material); aceita nomes nos dois eixos.</div></figure>
     <figure><img src="img/m18_dispersao_3d_longo.png"><div class="nome">Dispersão 3D</div><div class="quando">Um ponto por linha da planilha, colorido pelo Z; a linha até o piso ajuda a ver a posição no espaço.</div></figure>
+    <figure><img src="img/m19_linhas_3d.png"><div class="nome">Linhas 3D (cascata)</div><div class="quando">Espectros ou curvas medidas em momentos diferentes: uma linha por coluna da planilha, preenchida com o gradiente do Z.</div></figure>
+    <figure><img src="img/m20_radar.png"><div class="nome">Radar</div><div class="quando">Cada linha da planilha é um polígono; cada coluna numérica, um eixo. Compara perfis em vários critérios.</div></figure>
   </div>
   <table>
     <tr><th>Formato da planilha</th><th>Como preparar</th></tr>
     <tr><td><b>Matriz</b> (padrão)</td><td>A <b>1ª coluna traz os valores de Y</b>; o <b>cabeçalho das outras colunas traz os valores de X</b>; as <b>células são o Z</b>. Cabeçalhos e 1ª coluna em números (nas Barras 3D podem ser nomes).</td></tr>
     <tr><td><b>Longo</b></td><td>Uma linha por ponto, com três colunas: <b>X, Y e Z</b>. No campo <i>Formato da tabela</i>, escolha <i>Longo</i>. Se as três primeiras colunas são X, Y e Z nessa ordem, não precisa marcar mais nada.</td></tr>
+    <tr><td><b>Linhas 3D</b></td><td>A <b>1ª coluna é o X</b> (número) e <b>cada outra coluna é uma linha</b>; o cabeçalho dela (um número, como o tempo, ou um nome) diz onde ela fica na profundidade.</td></tr>
+    <tr><td><b>Radar</b></td><td>A <b>1ª coluna traz o nome de cada série</b> (uma linha da planilha = um polígono) e as outras colunas numéricas são os <b>eixos</b> do radar (3 ou mais).</td></tr>
   </table>
+  <div class="dica"><b>Dica</b> <b>Cores suaves ou marcadas.</b> <i>Suavizar</i> (vazio = automático) interpola entre os pontos da tabela e deixa a cor e o relevo fluidos; <b>1</b> mostra os blocos da tabela. <i>Faixas de cor</i> (ex.: 8) divide o gradiente em degraus iguais, e a barra de cores vira degraus. Também dá para escolher a <i>escala</i> (começa em, termina em), a <i>distância entre os números da barra</i>, as <i>casas decimais</i>, as <i>linhas de nível</i> (quantidade, cor e grossura) e o esquema de cores. No mapa de cor, a cor ocupa o painel todo, sem margem branca.</div>
   <div class="dica"><b>Dica</b> <b>Ângulo.</b> <i>Giro da vista</i> (40° é o padrão) e <i>Altura do olhar</i> (28°) mostram o gráfico por outro lado: gire até as barras baixas aparecerem atrás das altas. <i>Suavizar</i> (3 a 6) interpola entre os pontos e deixa a superfície e o mapa de cor lisos. O eixo Z tem título, início, fim e intervalo próprios.</div>
-  <div class="atencao"><b>Atenção</b> No 3D os eixos são lineares e não valem a quebra de eixo, o eixo da direita nem o ajuste de curva. Células sem valor ficam em branco na superfície. A cor segue as mesmas escolhas do mapa de calor (esquema, limites, centro e barra de cores).</div>
+  <div class="atencao"><b>Atenção</b> Nos gráficos 3D e no radar os eixos são lineares e não valem a quebra de eixo, o eixo da direita nem o ajuste de curva. Células sem valor ficam em branco na superfície. A cor segue as mesmas escolhas do mapa de calor (esquema, limites, centro e barra de cores).</div>
 </section>
 
 <!-- ===================== 6. APARÊNCIA ===================== -->
@@ -805,6 +810,30 @@ Listening on http://127.0.0.1:8421</div>
       <div class="dica">A tabela longa também serve para a Superfície 3D, as Barras 3D e o Mapa de cor, se os pontos formarem uma grade (todas as combinações de X e Y).</div>
     </div>
     <figure><img src="img/m18_dispersao_3d_longo.png" alt="Dispersão 3D e tabela longa: uma linha por ponto"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.21 Linhas 3D (cascata): uma linha por coluna</h3>
+  <p class="quando">Espectros, curvas de calibração ou séries medidas em momentos diferentes. <b>A 1ª coluna é o X</b> (número) e <b>cada outra coluna é uma linha</b>; o <b>cabeçalho</b> da coluna diz onde ela fica na profundidade (um número, como o tempo, ou um nome). Arquivo: <code>modelos_csv/modelo_19_linhas_3d.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Comprimento de onda (nm)</th><th>0.5</th><th>1</th><th>1.5</th><th>2</th><th>2.5</th><th>3</th><th>3.5</th></tr><tr><td>450</td><td>0</td><td>0,018</td><td>0,001</td><td>0,009</td><td>0,001</td><td>0,011</td><td>0,019</td></tr><tr><td>455</td><td>0,018</td><td>0,001</td><td>0,025</td><td>0,002</td><td>0,027</td><td>0,025</td><td>0,015</td></tr><tr><td>460</td><td>0,018</td><td>0,022</td><td>0,019</td><td>0,011</td><td>0,009</td><td>0,011</td><td>0,026</td></tr><tr><td>465</td><td>0,02</td><td>0,016</td><td>0,015</td><td>0,03</td><td>0,014</td><td>0,004</td><td>0,001</td></tr><tr><td>470</td><td>0,008</td><td>0,022</td><td>0,018</td><td>0,001</td><td>0,001</td><td>0,019</td><td>0,012</td></tr><tr><td>475</td><td>0,011</td><td>0,019</td><td>0,008</td><td>0,001</td><td>0,02</td><td>0,018</td><td>0,006</td></tr><tr class="mais"><td colspan="8">… (e assim por diante)</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Linhas 3D (cascata).</li><li><b>Coluna do eixo X:</b> Comprimento de onda. <b>Colunas do eixo Y:</b> deixe vazio (usa todas) ou escolha só algumas linhas.</li><li><b>Preenchimento das linhas:</b> Gradiente do Z, Fundo branco (a da frente esconde a de trás) ou Só as linhas.</li><li><b>Giro da vista</b> e <b>Altura do olhar:</b> escolha o ângulo; o <b>título do eixo Y</b> (profundidade) está no bloco do eixo Y.</li></ol>
+      <div class="dica">Os cabeçalhos numéricos (0,5; 1; 1,5...) viram os números do eixo da profundidade. Com nomes nos cabeçalhos (Amostra A, B...), os nomes aparecem no eixo.</div>
+    </div>
+    <figure><img src="img/m19_linhas_3d.png" alt="Linhas 3D (cascata): uma linha por coluna"><figcaption>O resultado com esta planilha.</figcaption></figure>
+  </div>
+</div>
+<div class="modelo">
+  <h3>A.22 Radar: comparar perfis em vários critérios</h3>
+  <p class="quando">Cada linha é uma série (material, amostra, tratamento) e <b>cada coluna numérica é um eixo do radar</b> (3 ou mais). A 1ª coluna traz o nome da série. Arquivo: <code>modelos_csv/modelo_20_radar.csv</code></p>
+  <div class="lado">
+    <div class="texto">
+      <table class="csv"><tr><th>Material</th><th>Resistência</th><th>Dureza</th><th>Densidade</th><th>Condutividade</th><th>Custo</th><th>Durabilidade</th></tr><tr><td>Aço</td><td>85</td><td>80</td><td>90</td><td>40</td><td>55</td><td>75</td></tr><tr><td>Alumínio</td><td>55</td><td>45</td><td>35</td><td>90</td><td>60</td><td>65</td></tr><tr><td>Titânio</td><td>95</td><td>85</td><td>60</td><td>30</td><td>20</td><td>95</td></tr><tr><td>Polímero</td><td>25</td><td>30</td><td>15</td><td>10</td><td>90</td><td>40</td></tr></table>
+      <ol class="passos"><li><b>Tipo de gráfico:</b> Radar (teia).</li><li><b>Coluna do eixo X (ou dos nomes):</b> Material. <b>Colunas do eixo Y:</b> deixe vazio (usa todas) ou escolha os critérios.</li><li><b>Normalizar cada eixo:</b> marque se as colunas têm unidades diferentes (cada uma vai de 0 a 1).</li><li><b>Anéis, escala, formato da grade e opacidade:</b> nas opções do radar.</li></ol>
+      <div class="dica">Todas as colunas precisam estar na mesma ordem de grandeza, ou use <i>Normalizar cada eixo</i>. Valores fora da escala escolhida são encostados na borda, com aviso.</div>
+    </div>
+    <figure><img src="img/m20_radar.png" alt="Radar: comparar perfis em vários critérios"><figcaption>O resultado com esta planilha.</figcaption></figure>
   </div>
 </div>
 <!-- MODELOS-FIM -->

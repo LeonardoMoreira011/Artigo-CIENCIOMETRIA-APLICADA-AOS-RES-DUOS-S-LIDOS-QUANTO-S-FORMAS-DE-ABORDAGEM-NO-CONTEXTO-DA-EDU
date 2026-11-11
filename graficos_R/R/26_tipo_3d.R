@@ -74,14 +74,29 @@
   m$x <- m$x[ix]; m$y <- m$y[iy]; m$Z <- m$Z[iy, ix, drop = FALSE]; m
 }
 
-# Refina a grade por interpolação linear (n subdivisões por célula). Só para eixos numéricos.
+# Refina a grade por interpolação em spline cúbico (n subdivisões por célula): as cores e a superfície ficam fluidas, sem as quebras de uma grade grossa.
+# Os valores não passam do menor e do maior da tabela. Só para eixos numéricos; com célula vazia (NA) a grade fica como está.
 .refinar_grade <- function(m, n) {
   if (n < 2 || !is.numeric(m$x) || !is.numeric(m$y) || length(m$x) < 2 || length(m$y) < 2 || anyNA(m$Z)) return(m)
   sub <- function(v) unique(unlist(lapply(seq_len(length(v) - 1), function(i) seq(v[i], v[i + 1], length.out = n + 1))))
   nx <- sub(m$x); ny <- sub(m$y)
-  Zx <- t(apply(m$Z, 1, function(r) stats::approx(m$x, r, nx)$y))
-  if (length(ny) && nrow(m$Z) > 1) Zx <- apply(Zx, 2, function(cl) stats::approx(m$y, cl, ny)$y) else Zx <- matrix(Zx, nrow = length(ny))
-  m$x <- nx; m$y <- ny; m$Z <- matrix(Zx, length(ny), length(nx)); m
+  f <- function(x, y, xo) if (length(x) >= 3) stats::spline(x, y, xout = xo, method = "natural")$y else stats::approx(x, y, xout = xo)$y
+  Zx <- t(apply(m$Z, 1, function(r) f(m$x, r, nx)))
+  Zy <- matrix(apply(Zx, 2, function(cl) f(m$y, cl, ny)), length(ny), length(nx))
+  m$x <- nx; m$y <- ny; m$Z <- pmin(pmax(Zy, min(m$Z)), max(m$Z)); m
+}
+# Subdivisões por célula: o que o usuário escolheu (cfg$tridimensional$suavizar) ou, no automático, o bastante para chegar a ~alvo células no eixo maior.
+.n_suavizar <- function(s, m, alvo) {
+  if (!is.null(s) && is.finite(s)) return(as.integer(s))
+  if (!is.numeric(m$x) || !is.numeric(m$y)) return(1L)
+  as.integer(max(1, min(12, ceiling(alvo / max(length(m$x) - 1, length(m$y) - 1, 1)))))
+}
+# Clareia (f > 1) ou escurece (f < 1) uma cor.
+.sombrear <- function(cor, f) {
+  m <- grDevices::col2rgb(cor); f <- rep_len(f, ncol(m)); esc <- f < 1
+  r <- m; r[, esc] <- t(t(m[, esc, drop = FALSE]) * f[esc])                                   # escurece
+  r[, !esc] <- 255 - t(t(255 - m[, !esc, drop = FALSE]) * pmax(2 - f[!esc], 0))             # clareia
+  grDevices::rgb(pmin(pmax(r[1, ], 0), 255), pmin(pmax(r[2, ], 0), 255), pmin(pmax(r[3, ], 0), 255), maxColorValue = 255)
 }
 
 # ---- eixos ---------------------------------------------------------------------------------------
@@ -201,7 +216,7 @@
   }
   # arestas do piso mais perto de quem olha
   y_fr <- if (cos(a) > 1e-9 || abs(cos(a)) <= 1e-9) 0 else 1
-  x_fr <- if (sin(a) > 1e-9) 0 else if (sin(a) < -1e-9) 1 else 0
+  x_fr <- if (abs(sin(a)) < 0.45) (if (sin(a) >= 0) 1 else 0) else if (sin(a) > 0) 0 else 1      # vista quase de frente: o eixo de profundidade vai para o lado de fora, longe dos números do X
   px <- function(t) P(t, y_fr, 0); py <- function(t) P(x_fr, t, 0)
   eixo_aresta(px, tx, E$x$rot, titulos$x); eixo_aresta(py, ty, E$y$rot, titulos$y)
   # eixo Z: a aresta vertical que fica mais à esquerda na tela
@@ -250,7 +265,7 @@
 # ---- superfície 3D ------------------------------------------------------------------------------------
 .construir_superficie_3d <- function(dados, cfg) {
   T <- cfg$tridimensional; H <- cfg$mapa_calor
-  m <- .limitar_grade(.refinar_grade(.grade_xyz(dados, cfg), T$suavizar %||% 1))
+  m0 <- .grade_xyz(dados, cfg); m <- .limitar_grade(.refinar_grade(m0, .n_suavizar(T$suavizar, m0, 70)))
   nx <- length(m$x); ny <- length(m$y)
   if (nx < 2 || ny < 2) .erro("A superfície precisa de pelo menos 2 valores em X e 2 em Y (a planilha tem ", nx, " x ", ny, ").")
   if (all(is.na(m$Z))) .erro("Não há valores numéricos de Z para desenhar.")
@@ -269,8 +284,20 @@
     dep <- (pr[[1]]$d + pr[[2]]$d + pr[[3]]$d + pr[[4]]$d) / 4; zm <- (cs[[1]]$v[ok] + cs[[2]]$v[ok] + cs[[3]]$v[ok] + cs[[4]]$v[ok]) / 4
     o <- order(dep, decreasing = TRUE)
     cx <- cbind(pr[[1]]$sx, pr[[2]]$sx, pr[[3]]$sx, pr[[4]]$sx)[o, , drop = FALSE]; cy <- cbind(pr[[1]]$sy, pr[[2]]$sy, pr[[3]]$sy, pr[[4]]$sy)[o, , drop = FALSE]
-    tab <- .tabela_faces(cx, cy, list(z = zm[o]))
-    cam <- list(geom_polygon(data = tab, aes(x = x, y = y, group = grp, fill = z), colour = if (is.na(H$contorno_cor)) NA else .cor(H$contorno_cor), linewidth = .lw(if ((T$suavizar %||% 1) > 1) min(H$contorno_espessura_pt, 0.12) else H$contorno_espessura_pt)), esc$escala)
+    # luz: vem do alto, à esquerda de quem olha; a inclinação de cada face (a partir dos cantos) clareia ou escurece a cor
+    ang <- T$azimute * pi / 180
+    zx <- ((cs[[2]]$z - cs[[1]]$z) + (cs[[3]]$z - cs[[4]]$z))[ok] / 2 / pmax(cs[[2]]$x[ok] - cs[[1]]$x[ok], 1e-9)
+    zy <- ((cs[[4]]$z - cs[[1]]$z) + (cs[[3]]$z - cs[[2]]$z))[ok] / 2 / pmax(cs[[4]]$y[ok] - cs[[1]]$y[ok], 1e-9)
+    nxv <- -zx * cos(ang) + zy * sin(ang); nyv <- -zx * sin(ang) - zy * cos(ang); nzv <- 1
+    nl <- sqrt(nxv^2 + nyv^2 + nzv^2); L <- c(-0.45, -0.55, 0.7); L <- L / sqrt(sum(L^2))
+    luz <- (nxv * L[1] + nyv * L[2] + nzv * L[3]) / nl
+    f <- if (isTRUE(T$sombreado %||% TRUE)) 0.62 + 0.62 * pmax(luz, 0) else rep(1, length(luz))
+    cor <- .sombrear(esc$cor_de(zm), f)[o]
+    tab <- .tabela_faces(cx, cy, list(cor = cor)); tab$cor <- I(tab$cor)
+    borda <- if (isTRUE(T$malha)) list(colour = if (is.na(H$contorno_cor)) NA else .cor(H$contorno_cor), linewidth = .lw(H$contorno_espessura_pt)) else NULL
+    cam <- list(.camada_barra3d(esc),
+                if (is.null(borda)) geom_polygon(data = tab, aes(x = x, y = y, group = grp, fill = I(cor), colour = I(cor)), linewidth = .lw(0.35))
+                else geom_polygon(data = tab, aes(x = x, y = y, group = grp, fill = I(cor)), colour = borda$colour, linewidth = borda$linewidth), esc$escala)
     list(camadas = cam, caixa = cbind(tab$x, tab$y))
   }
   r <- .montar3d(cfg, E, titulos, dados3d)
@@ -353,24 +380,89 @@
   m0 <- .grade_xyz(dados, cfg)
   if (!is.numeric(m0$x) || !is.numeric(m0$y)) .erro("O mapa de cor precisa de números nos dois eixos (a 1ª coluna e os cabeçalhos). Para nomes (genes, amostras...), use o mapa de calor.")
   if (length(m0$x) < 2 || length(m0$y) < 2) .erro("O mapa de cor precisa de pelo menos 2 valores em X e 2 em Y.")
-  m <- .limitar_grade(.refinar_grade(m0, T$suavizar %||% 1))
-  bordas <- function(v) { mid <- (v[-1] + v[-length(v)]) / 2; c(v[1] - (v[2] - v[1]) / 2, mid, v[length(v)] + (v[length(v)] - v[length(v) - 1]) / 2) }
+  ns <- .n_suavizar(T$suavizar, m0, 190)
+  m <- .limitar_grade(.refinar_grade(m0, ns))
+  # bordas das células: com a grade suavizada (células finas) a 1ª e a última acabam exatamente nos extremos dos dados, e a cor ocupa o painel todo, sem margem branca;
+  # com a tabela original (ns = 1), cada célula é uma célula inteira, e o eixo vai de uma borda à outra
+  bordas <- function(v) { mid <- (v[-1] + v[-length(v)]) / 2
+    if (ns > 1) c(v[1], mid, v[length(v)]) else c(v[1] - (v[2] - v[1]) / 2, mid, v[length(v)] + (v[length(v)] - v[length(v) - 1]) / 2) }
   bx <- bordas(m$x); by <- bordas(m$y); nx <- length(m$x); ny <- length(m$y)
   ex <- 0.01 * min(diff(bx)); ey <- 0.01 * min(diff(by))       # as células se sobrepõem um pouco: sem fios claros entre elas
   d <- data.frame(xmin = rep(bx[-(nx + 1)], each = ny) - ex, xmax = rep(bx[-1], each = ny) + ex, ymin = rep(by[-(ny + 1)], times = nx) - ey, ymax = rep(by[-1], times = nx) + ey, z = as.vector(m$Z),
                   x = rep(m$x, each = ny), y = rep(m$y, times = nx))
+  d$xmin[d$xmin < min(bx)] <- min(bx); d$xmax[d$xmax > max(bx)] <- max(bx); d$ymin[d$ymin < min(by)] <- min(by); d$ymax[d$ymax > max(by)] <- max(by)
   esc <- .escala_z(cfg, d$z, m$nome_z %||% .rot("Valor"))
-  cam <- list(geom_rect(data = d, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = z), colour = NA, na.rm = FALSE), esc$escala)
+  cam <- list(geom_rect(data = d, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax, fill = z, colour = z), linewidth = .lw(0.3), na.rm = FALSE), esc$escala, esc$escala_cor)
   nn <- T$niveis %||% 0
   if (nn > 0 && !anyNA(m$Z)) {
     lim <- esc$limites; qb <- pretty(lim, n = nn + 1); qb <- qb[qb > lim[1] & qb < lim[2]]
-    cam[[length(cam) + 1]] <- tryCatch(geom_contour(data = d, aes(x = x, y = y, z = z), breaks = qb, colour = .cor(T$cor_niveis), linewidth = .lw(0.4), inherit.aes = FALSE),
+    cam[[length(cam) + 1]] <- tryCatch(geom_contour(data = d, aes(x = x, y = y, z = z), breaks = qb, colour = .cor(T$cor_niveis), linewidth = .lw(T$niveis_espessura_pt %||% 0.4), inherit.aes = FALSE),
                                         error = function(e) { .aviso("Não consegui traçar as linhas de nível: ", conditionMessage(e)); NULL })
     cam <- Filter(Negate(is.null), cam)
   }
-  ax_x <- .calc_eixo(cfg$eixo_x, range(bx), forcar = cfg$.interno$forcar_x)
-  ax_y <- .calc_eixo(cfg$eixo_y, range(by), forcar = cfg$.interno$forcar_y)
+  lim_x <- if (is.null(cfg$eixo_x$inicio) && is.null(cfg$eixo_x$fim)) range(bx) else NULL       # o eixo acompanha a cor (sem margem), a não ser que você escolha início e fim
+  lim_y <- if (is.null(cfg$eixo_y$inicio) && is.null(cfg$eixo_y$fim)) range(by) else NULL
+  ax_x <- .calc_eixo(cfg$eixo_x, range(bx), forcar = cfg$.interno$forcar_x %||% lim_x)
+  ax_y <- .calc_eixo(cfg$eixo_y, range(by), forcar = cfg$.interno$forcar_y %||% lim_y)
   list(camadas = cam,
        info = list(ax_x = ax_x, ax_y = ax_y, flip = FALSE, titulo_x = cfg$eixo_x$titulo %||% m$nome_x, titulo_y = cfg$eixo_y$titulo %||% m$nome_y,
                    legenda_auto = TRUE, faixa_x = range(bx), faixa_y = range(by), titulo_barra = esc$titulo))
+}
+
+# ---- linhas 3D (cascata) -------------------------------------------------------------------------------
+# Planilha: a 1ª coluna é o X (número); cada outra coluna é uma linha (uma série) e o cabeçalho dela diz onde fica na profundidade (Y): um número (tempo, dose...)
+# ou um nome. Entra: dados e cfg. Sai: list(x, Z (linhas = X, colunas = séries), y (posição de cada série), ynomes, ycat, nome_x).
+.series_xyz <- function(dados, cfg) {
+  G <- cfg$grafico
+  xcol <- .coluna(dados, G$coluna_x %||% 1, "cfg$grafico$coluna_x")
+  if (!is.numeric(dados[[xcol]])) .erro("As linhas 3D precisam de números na coluna do eixo X ('", xcol, "'), por exemplo o comprimento de onda.")
+  ycols <- .colunas_y(dados, cfg, excluir = xcol)
+  if (length(ycols) < 2) .erro("As linhas 3D precisam de pelo menos 2 colunas de série: cada coluna é uma linha e o cabeçalho dela diz onde fica na profundidade (um número, como o tempo, ou um nome).")
+  hy <- .tri_num(ycols); ycat <- !all(is.finite(hy))
+  x <- dados[[xcol]]; o <- order(x); o <- o[is.finite(x[o])]
+  Z <- as.matrix(dados[ycols])[o, , drop = FALSE]; storage.mode(Z) <- "double"; x <- x[o]
+  if (!ycat) { oy <- order(hy); ycols <- ycols[oy]; hy <- hy[oy]; Z <- Z[, oy, drop = FALSE] }
+  list(x = x, Z = unname(Z), y = if (ycat) seq_along(ycols) else hy, ynomes = ycols, ycat = ycat, nome_x = xcol)
+}
+
+.construir_linhas_3d <- function(dados, cfg) {
+  T <- cfg$tridimensional; H <- cfg$mapa_calor
+  s <- .series_xyz(dados, cfg)
+  if (ncol(s$Z) > 80) { k <- unique(round(seq(1, ncol(s$Z), length.out = 80))); .aviso("A tabela tem ", ncol(s$Z), " séries; para o desenho não ficar pesado, usei 80 delas."); s$Z <- s$Z[, k, drop = FALSE]; s$y <- s$y[k]; s$ynomes <- s$ynomes[k] }
+  if (length(s$x) > 300) { k <- unique(round(seq(1, length(s$x), length.out = 300))); s$x <- s$x[k]; s$Z <- s$Z[k, , drop = FALSE] }
+  ns <- ncol(s$Z); if (all(is.na(s$Z))) .erro("Não há valores numéricos de Z para desenhar.")
+  E <- list(x = .eixo3d(cfg$eixo_x, s$x), y = .eixo3d(cfg$eixo_y, if (s$ycat) s$ynomes else s$y, s$ycat), z = .eixo3d(.eixo_z(cfg), c(0, s$Z)))
+  Xn <- .n3(E$x, s$x); Yn <- .n3(E$y, if (s$ycat) seq_len(ns) else s$y)
+  esc <- .escala_z(cfg, s$Z, .rot("Valor"))
+  titulos <- list(x = cfg$eixo_x$titulo %||% s$nome_x, y = cfg$eixo_y$titulo %||% "", z = T$z_titulo %||% .rot("Valor"))
+  modo <- T$linhas_preencher %||% "gradiente"; B <- max(1L, as.integer(T$linhas_faixas %||% 10))
+  dados3d <- function(P, Hh) {
+    base <- min(max(0, E$z$lo), E$z$hi); zb0 <- (base - E$z$lo) / (E$z$hi - E$z$lo) * Hh
+    zn <- .n3(E$z, s$Z) * Hh; zn[!is.finite(zn)] <- zb0; zn <- pmax(zn, zb0)
+    ordem <- order(P(0.5, Yn, 0)$d, decreasing = TRUE)                       # da série mais longe para a mais perto
+    niv <- seq(zb0, Hh, length.out = B + 1); niv_dado <- E$z$lo + niv / Hh * (E$z$hi - E$z$lo)
+    cam <- list(.camada_barra3d(esc)); pts <- matrix(numeric(0), 0, 2)
+    for (j in ordem) {
+      zc <- zn[, j]; tab <- NULL
+      if (identical(modo, "gradiente")) {
+        partes <- list(); g <- 0L
+        for (b in seq_len(B)) {
+          topo <- pmin(zc, niv[b + 1]); fundo <- pmin(zc, niv[b])
+          if (max(topo - fundo) <= 1e-9) next
+          p <- P(c(Xn, rev(Xn)), Yn[j], c(topo, rev(fundo))); g <- g + 1L
+          partes[[g]] <- data.frame(x = p$sx, y = p$sy, grp = g, cor = esc$cor_de((niv_dado[b] + niv_dado[b + 1]) / 2))
+        }
+        if (length(partes)) tab <- do.call(rbind, partes)
+      } else if (identical(modo, "branco")) {
+        p <- P(c(Xn, rev(Xn)), Yn[j], c(zc, rep(zb0, length(Xn)))); tab <- data.frame(x = p$sx, y = p$sy, grp = 1L, cor = "white")
+      }
+      if (!is.null(tab)) { tab$cor <- I(tab$cor); cam[[length(cam) + 1]] <- geom_polygon(data = tab, aes(x = x, y = y, group = grp, fill = I(cor), colour = I(cor)), linewidth = .lw(0.3)) }
+      pl <- P(Xn, Yn[j], zc); linha <- data.frame(x = pl$sx, y = pl$sy)
+      cam[[length(cam) + 1]] <- geom_path(data = linha, aes(x = x, y = y), colour = .cor(T$linhas_cor %||% "black"), linewidth = .lw(T$linhas_espessura_pt %||% 0.4), lineend = "round")
+      pts <- rbind(pts, cbind(pl$sx, pl$sy))
+    }
+    list(camadas = c(cam, list(esc$escala)), caixa = pts)
+  }
+  r <- .montar3d(cfg, E, titulos, dados3d)
+  list(camadas = r$camadas, info = list(mapa = TRUE, xlim = r$xlim, ylim = r$ylim, legenda_auto = TRUE, flip = FALSE, titulo_barra = esc$titulo))
 }

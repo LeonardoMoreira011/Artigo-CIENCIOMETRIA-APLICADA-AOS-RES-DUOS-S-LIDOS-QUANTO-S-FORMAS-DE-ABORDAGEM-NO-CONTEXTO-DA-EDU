@@ -34,7 +34,8 @@ EXEMPLOS <- c("Dois eixos + quebra de eixo (Y esquerdo e direito)" = "exemplo_do
               "PCA / CA / CCA (amostras × variáveis + ambientais)" = "ordenacao_amostras_variaveis_ambientais.csv", "Mapa de calor (genes × doses)" = "mapa_de_calor.csv",
               "Mapa-múndi (vendas por país)" = "mapa_mundo_vendas.csv", "Mapa do Brasil (resíduos por estado)" = "mapa_brasil_estados.csv",
               "Superfície 3D / mapa de cor (matriz X, Y, Z)" = "superficie_rendimento.csv", "Barras 3D (região × material)" = "barras_3d_residuos.csv",
-              "Dispersão 3D (tabela longa X, Y, Z)" = "dispersao_3d_doses.csv")
+              "Dispersão 3D (tabela longa X, Y, Z)" = "dispersao_3d_doses.csv",
+              "Linhas 3D (espectros em cascata)" = "espectros_cascata.csv", "Radar (materiais e propriedades)" = "radar_materiais.csv")
 EXEMPLOS <- EXEMPLOS[file.exists(file.path(raiz, "dados", EXEMPLOS))]
 
 cartao_dados <- function() div(class = "dados-cartao",

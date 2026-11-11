@@ -697,3 +697,45 @@
     "Não consegui traçar as linhas de nível: " = "No pude trazar las líneas de nivel: "))
 .ROTULOS_IDIOMA$en <- c(.ROTULOS_IDIOMA$en, "Nota z" = "z-score")
 .ROTULOS_IDIOMA$es <- c(.ROTULOS_IDIOMA$es, "Nota z" = "Puntuación z")
+
+# ---- mensagens acrescentadas depois (PCA/CA/CCA, mapas, mapa de cor e 3D) ----
+.TRAD_MOTOR$en <- c(.TRAD_MOTOR$en, c(
+    "cfg$tridimensional$linhas_faixas deve estar entre 1 e 40 (faixas de cor de cada linha)." = "cfg$tridimensional$linhas_faixas must be between 1 and 40 (color bands of each line).",
+    "cfg$radar$aneis deve estar entre 1 e 20 (anéis da grade)." = "cfg$radar$aneis must be between 1 and 20 (grid rings).",
+    ") deve ser menor que anel_max (" = ") must be smaller than anel_max (",
+    "cfg$radar$preencher_opacidade deve estar entre 0 e 1." = "cfg$radar$preencher_opacidade must be between 0 and 1.",
+    " geraria " = " would produce ",
+    " números na barra; usei o automático." = " numbers on the bar; I used the automatic one.",
+    "As linhas 3D precisam de números na coluna do eixo X ('" = "The 3D lines need numbers in the X axis column ('",
+    "'), por exemplo o comprimento de onda." = "'), for example the wavelength.",
+    "As linhas 3D precisam de pelo menos 2 colunas de série: cada coluna é uma linha e o cabeçalho dela diz onde fica na profundidade (um número, como o tempo, ou um nome)." = "The 3D lines need at least 2 series columns: each column is a line and its header says where it sits in depth (a number, like time, or a name).",
+    "A tabela tem " = "The table has ",
+    " séries; para o desenho não ficar pesado, usei 80 delas." = " series; to keep the drawing light, I used 80 of them.",
+    "O radar precisa de pelo menos 3 colunas numéricas: cada coluna é um eixo do radar e cada linha da planilha é uma série (o nome dela fica na 1ª coluna)." = "The radar needs at least 3 numeric columns: each column is a radar axis and each row of the sheet is a series (its name is in the 1st column).",
+    "': acrescentei números para diferenciar as séries." = "': I added numbers to tell the series apart.",
+    "Não há valores numéricos para desenhar no radar." = "There are no numeric values to draw in the radar.",
+    "O radar precisa de valores diferentes entre si (a escala vai de " = "The radar needs values that differ from each other (the scale goes from ",
+    " valor(es) fora da escala do radar (" = " value(s) outside the radar scale (",
+    "Células vazias no radar foram desenhadas no centro (valor mínimo da escala)." = "Empty cells in the radar were drawn at the center (minimum of the scale)."))
+.TRAD_MOTOR$es <- c(.TRAD_MOTOR$es, c(
+    "cfg$tridimensional$linhas_faixas deve estar entre 1 e 40 (faixas de cor de cada linha)." = "cfg$tridimensional$linhas_faixas debe estar entre 1 y 40 (franjas de color de cada línea).",
+    "cfg$radar$aneis deve estar entre 1 e 20 (anéis da grade)." = "cfg$radar$aneis debe estar entre 1 y 20 (anillos de la cuadrícula).",
+    ") deve ser menor que anel_max (" = ") debe ser menor que anel_max (",
+    "cfg$radar$preencher_opacidade deve estar entre 0 e 1." = "cfg$radar$preencher_opacidade debe estar entre 0 y 1.",
+    " geraria " = " generaría ",
+    " números na barra; usei o automático." = " números en la barra; usé el automático.",
+    "As linhas 3D precisam de números na coluna do eixo X ('" = "Las líneas 3D necesitan números en la columna del eje X ('",
+    "'), por exemplo o comprimento de onda." = "'), por ejemplo la longitud de onda.",
+    "As linhas 3D precisam de pelo menos 2 colunas de série: cada coluna é uma linha e o cabeçalho dela diz onde fica na profundidade (um número, como o tempo, ou um nome)." = "Las líneas 3D necesitan al menos 2 columnas de serie: cada columna es una línea y su encabezado dice dónde queda en profundidad (un número, como el tiempo, o un nombre).",
+    "A tabela tem " = "La tabla tiene ",
+    " séries; para o desenho não ficar pesado, usei 80 delas." = " series; para que el dibujo no quede pesado, usé 80 de ellas.",
+    "O radar precisa de pelo menos 3 colunas numéricas: cada coluna é um eixo do radar e cada linha da planilha é uma série (o nome dela fica na 1ª coluna)." = "El radar necesita al menos 3 columnas numéricas: cada columna es un eje del radar y cada fila de la hoja es una serie (su nombre está en la 1.ª columna).",
+    "': acrescentei números para diferenciar as séries." = "': añadí números para diferenciar las series.",
+    "Não há valores numéricos para desenhar no radar." = "No hay valores numéricos para dibujar en el radar.",
+    "O radar precisa de valores diferentes entre si (a escala vai de " = "El radar necesita valores distintos entre sí (la escala va de ",
+    " valor(es) fora da escala do radar (" = " valor(es) fuera de la escala del radar (",
+    "Células vazias no radar foram desenhadas no centro (valor mínimo da escala)." = "Las celdas vacías en el radar se dibujaron en el centro (mínimo de la escala)."))
+.TRAD_MOTOR$en <- c(.TRAD_MOTOR$en, c("cfg$mapa_calor$niveis_cor deve ser 0 (gradiente contínuo) ou um número de 2 a 64 (faixas de cor)." = "cfg$mapa_calor$niveis_cor must be 0 (continuous gradient) or a number from 2 to 64 (color bands).",
+  "cfg$mapa_calor$barra_intervalo deve ser um número maior que 0 (ou NULL)." = "cfg$mapa_calor$barra_intervalo must be a number greater than 0 (or NULL)."))
+.TRAD_MOTOR$es <- c(.TRAD_MOTOR$es, c("cfg$mapa_calor$niveis_cor deve ser 0 (gradiente contínuo) ou um número de 2 a 64 (faixas de cor)." = "cfg$mapa_calor$niveis_cor debe ser 0 (degradado continuo) o un número de 2 a 64 (franjas de color).",
+  "cfg$mapa_calor$barra_intervalo deve ser um número maior que 0 (ou NULL)." = "cfg$mapa_calor$barra_intervalo debe ser un número mayor que 0 (o NULL)."))

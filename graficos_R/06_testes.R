@@ -1373,7 +1373,7 @@ cat("\n--- Mapa de cor (X, Y, Z) e gráficos 3D ---\n")
 d3 <- ler_csv(file.path("dados", "superficie_rendimento.csv"), op)           # matriz: 1ª coluna = pH (Y), cabeçalhos = temperatura (X)
 db3 <- ler_csv(file.path("dados", "barras_3d_residuos.csv"), op)             # matriz com X em texto (materiais)
 dp3 <- ler_csv(file.path("dados", "dispersao_3d_doses.csv"), op)             # longo: X, Y, Z
-c3 <- function(tipo, ..., fmt = "matriz", tri = list()) { c1 <- cfg; c1$grafico$tipo <- tipo; c1$mapa_calor$formato <- fmt; c1$tridimensional <- utils::modifyList(c1$tridimensional, tri); utils::modifyList(c1, list(...)) }
+c3 <- function(tipo, ..., fmt = "matriz", tri = list()) { c1 <- cfg; c1$grafico$tipo <- tipo; c1$mapa_calor$formato <- fmt; c1$tridimensional$suavizar <- 1; c1$tridimensional <- utils::modifyList(c1$tridimensional, tri); utils::modifyList(c1, list(...)) }   # (suavizar = 1: os testes antigos contam as células da tabela)
 teste("3D: a tabela em matriz (Y na 1ª coluna, X nos cabeçalhos, Z nas células) vira a grade certa, e a tabela longa com os mesmos números dá a mesma grade", {
   m <- .grade_xyz(d3, c3("superficie_3d")); lg <- data.frame(X = rep(m$x, each = length(m$y)), Y = rep(m$y, times = length(m$x)), Z = as.vector(m$Z))
   m2 <- .grade_xyz(lg, c3("superficie_3d", fmt = "longo"))
@@ -1448,6 +1448,48 @@ teste("idioma: mensagens novas do motor (3D, mapas, ordenação) e rótulos auto
   g_es <- { options(cinabro.idioma = "es"); x <- attr(suppressWarnings(plotar(d3, c3("superficie_3d"))), "info")$titulo_barra; options(cinabro.idioma = "pt"); x }
   grepl("at least 2 values in X and 2 in Y", e3("en"), fixed = TRUE) && grepl("al menos 2 valores en X y 2 en Y", e3("es"), fixed = TRUE) && grepl("pelo menos 2 valores", e3("pt"), fixed = TRUE) &&
     identical(g_en, "Value") && identical(g_es, "Valor") && identical(.idioma(), "pt") })
+
+cat("\n--- Cores suaves, faixas de cor, linhas 3D e radar ---\n")
+dc3 <- ler_csv(file.path("dados", "espectros_cascata.csv"), op); dr3 <- ler_csv(file.path("dados", "radar_materiais.csv"), op)
+cA <- function(tipo, fmt = "matriz", ...) { c1 <- cfg; c1$grafico$tipo <- tipo; c1$mapa_calor$formato <- fmt; utils::modifyList(c1, list(...)) }     # cfg com os padrões (suavizar automático)
+teste("suavizar automático: a grade da tabela (7 x 7) vira uma grade fina por spline cúbico, sem passar dos valores da tabela; suavizar = 1 mantém os blocos", {
+  m0 <- .grade_xyz(d3, cA("mapa_cor")); n <- .n_suavizar(NULL, m0, 150); m <- .refinar_grade(m0, n)
+  g <- suppressWarnings(plotar(d3, cA("mapa_cor"))); g1 <- suppressWarnings(plotar(d3, c3("mapa_cor")))
+  n > 10 && length(m$x) == 6 * n + 1 && min(m$Z) >= min(m0$Z) - 1e-9 && max(m$Z) <= max(m0$Z) + 1e-9 && nrow(ggplot2::ggplot_build(g)$data[[1]]) > 5000 && nrow(ggplot2::ggplot_build(g1)$data[[1]]) == 49 &&
+    .n_suavizar(4, m0, 150) == 4 && .n_suavizar(NULL, list(x = letters[1:3], y = 1:3, Z = matrix(0, 3, 3)), 150) == 1 })
+teste("mapa de cor: a cor ocupa o painel todo (o eixo vai exatamente de um extremo ao outro dos dados, sem margem branca) e início/fim escolhidos mandam", {
+  g <- suppressWarnings(plotar(d3, cA("mapa_cor"))); i <- attr(g, "info"); g2 <- suppressWarnings(plotar(d3, cA("mapa_cor", eixo_x = utils::modifyList(cfg$eixo_x, list(inicio = 0, fim = 100)))))
+  isTRUE(all.equal(i$ax_x$limites, c(20, 80))) && isTRUE(all.equal(i$ax_y$limites, c(4, 10))) && isTRUE(all.equal(attr(g2, "info")$ax_x$limites, c(0, 100))) })
+teste("faixas de cor: niveis_cor divide o gradiente em N faixas iguais (barra em degraus); barra_intervalo e barra_casas mandam nos números da barra; 0 volta ao contínuo", {
+  e1 <- .escala_z(utils::modifyList(cfg, list(mapa_calor = utils::modifyList(cfg$mapa_calor, list(niveis_cor = 5)))), 0:100, "v")
+  e2 <- .escala_z(utils::modifyList(cfg, list(mapa_calor = utils::modifyList(cfg$mapa_calor, list(niveis_cor = 0)))), 0:100, "v")
+  g <- suppressWarnings(plotar(d3, cA("superficie_3d", mapa_calor = utils::modifyList(cfg$mapa_calor, list(niveis_cor = 6, barra_intervalo = 20, barra_casas = 1)))))
+  length(unique(e1$cor_de(seq(0, 100, 0.5)))) == 5 && length(unique(e2$cor_de(seq(0, 100, 0.5)))) > 50 && inherits(e1$escala, "ScaleBinned") && monta(g) &&
+    da_erro(plotar(d3, cA("mapa_cor", mapa_calor = utils::modifyList(cfg$mapa_calor, list(niveis_cor = 200)))), "niveis_cor") && da_erro(plotar(d3, cA("mapa_cor", mapa_calor = utils::modifyList(cfg$mapa_calor, list(barra_intervalo = -1)))), "barra_intervalo") })
+teste("superfície 3D: sombreado liga e desliga, a malha é opcional e a superfície suave desenha sem fios (muitos polígonos)", {
+  g <- suppressWarnings(plotar(d3, cA("superficie_3d"))); gs <- suppressWarnings(plotar(d3, cA("superficie_3d", tridimensional = utils::modifyList(cfg$tridimensional, list(sombreado = FALSE, malha = TRUE)))))
+  pol <- Filter(function(x) "group" %in% names(x) && length(unique(x$group)) > 1000, ggplot2::ggplot_build(g)$data)
+  length(pol) == 1 && length(unique(pol[[1]]$group)) > 3000 && monta(g) && monta(gs) })
+teste("linhas 3D: uma linha por coluna (cabeçalho numérico vira a posição na profundidade), preenchida por faixas de cor, com o traço de cada uma; os três modos de preenchimento", {
+  m <- .series_xyz(dc3, cA("linhas_3d")); g <- suppressWarnings(plotar(dc3, cA("linhas_3d"))); ncam <- function(md) length(suppressWarnings(plotar(dc3, cA("linhas_3d", tridimensional = utils::modifyList(cfg$tridimensional, list(linhas_preencher = md)))))$layers)
+  identical(m$y, c(0.5, 1, 1.5, 2, 2.5, 3, 3.5)) && length(m$x) == 51 && !m$ycat && monta(g) && ncam("gradiente") > ncam("nenhum") && ncam("branco") == ncam("nenhum") + 7 && ncam("gradiente") >= ncam("branco") })
+teste("linhas 3D: X em texto, uma coluna só e modo inválido dão erro claro; ângulos e eixo Z valem como nos outros 3D; sai em PNG", {
+  dt <- dc3; dt[[1]] <- as.character(dt[[1]]); cx <- cA("linhas_3d", exportacao = utils::modifyList(cfg$exportacao, list(pasta = tmp, nome_arquivo = "linhas3d", formatos = "png")))
+  arq <- suppressMessages(salvar(suppressWarnings(plotar(dc3, cx)), cx))
+  da_erro(plotar(dt, cA("linhas_3d")), "números na coluna do eixo X") && da_erro(plotar(dc3[, 1:2], cA("linhas_3d")), "pelo menos 2 colunas") && da_erro(plotar(dc3, cA("linhas_3d", tridimensional = utils::modifyList(cfg$tridimensional, list(linhas_preencher = "x")))), "linhas_preencher") &&
+    file.exists(arq) && monta(suppressWarnings(plotar(dc3, cA("linhas_3d", tridimensional = utils::modifyList(cfg$tridimensional, list(azimute = 200, elevacao = 40, z_inicio = 0, z_fim = 5, z_titulo = "PL")))))) })
+teste("radar: um polígono por linha da planilha, um eixo por coluna, anéis da grade, legenda com as séries e as cores da paleta; escala e normalização", {
+  g <- suppressWarnings(plotar(dr3, cA("radar"))); b <- ggplot2::ggplot_build(g); pol <- Filter(function(x) "group" %in% names(x) && "fill" %in% names(x) && length(unique(x$group)) == 4, b$data)
+  gn <- suppressWarnings(plotar(dr3, cA("radar", radar = utils::modifyList(cfg$radar, list(normalizar = TRUE, anel_max = 1))))); ge <- suppressWarnings(plotar(dr3, cA("radar", radar = utils::modifyList(cfg$radar, list(anel_min = 0, anel_max = 200, formato_grade = "circulo", sentido = "antihorario")))))
+  length(pol) >= 1 && isTRUE(attr(g, "info")$mapa) && isTRUE(attr(g, "info")$legenda_auto) && identical(attr(g, "cfg")$legenda$posicao, "direita") && monta(g) && monta(gn) && monta(ge) &&
+    length(g$layers) >= 6 })
+teste("radar: menos de 3 eixos, escala invertida, opacidade fora de 0 a 1 e radar em painéis/quebra de eixo dão erro claro; valores fora da escala avisam", {
+  da_erro(plotar(dr3[, 1:3], cA("radar")), "pelo menos 3 colunas") && da_erro(plotar(dr3, cA("radar", radar = utils::modifyList(cfg$radar, list(anel_min = 5, anel_max = 1)))), "anel_min") &&
+    da_erro(plotar(dr3, cA("radar", radar = utils::modifyList(cfg$radar, list(preencher_opacidade = 2)))), "preencher_opacidade") && da_erro(plotar(dr3, cA("radar", radar = utils::modifyList(cfg$radar, list(sentido = "lado")))), "sentido") &&
+    da_aviso(plotar(dr3, cA("radar", radar = utils::modifyList(cfg$radar, list(anel_max = 50)))), "fora da escala") })
+teste("radar e linhas 3D em inglês e espanhol: mensagens do motor traduzidas", {
+  e <- function(lg) { options(cinabro.idioma = lg); on.exit(options(cinabro.idioma = "pt")); tryCatch(plotar(dr3[, 1:3], cA("radar")), error = function(x) conditionMessage(x)) }
+  grepl("at least 3 numeric columns", e("en"), fixed = TRUE) && grepl("al menos 3 columnas numéricas", e("es"), fixed = TRUE) })
 
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", .res["passou"], .res["falhou"]))
 unlink(tmp, recursive = TRUE)

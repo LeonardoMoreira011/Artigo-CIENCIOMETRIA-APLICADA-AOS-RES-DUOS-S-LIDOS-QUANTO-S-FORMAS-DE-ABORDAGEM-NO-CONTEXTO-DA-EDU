@@ -63,6 +63,16 @@ dir.create(DASH_DIR, showWarnings = FALSE, recursive = TRUE)
        kpi = list(valor = v(Z[i[1], i[2]]), rotulo = .d("maior valor")), resumo = NULL)
 }
 
+# Radar: a série de maior média e o eixo em que ela mais se destaca.
+.dest_radar <- function(dados, cfg) {
+  xc <- .coluna(dados, cfg$grafico$coluna_x %||% 1, "x"); ys <- .colunas_y(dados, cfg, excluir = xc)
+  if (length(ys) < 3) return(.dash_vazio())
+  V <- as.matrix(dados[ys]); nm <- as.character(dados[[xc]]); med <- rowMeans(V, na.rm = TRUE); i <- which.max(med); j <- which.max(V[i, ])
+  v <- function(z) .dash_num(z, .dash_casas(c(V[is.finite(V)])))
+  fr <- c(paste0(.dash_b(nm[i]), .d(" tem a maior média ("), v(med[i]), ")."), paste0(.d("O maior valor de "), .dash_b(nm[i]), .d(" está em "), .dash_b(ys[j]), " (", v(V[i, j]), ")."))
+  list(frases = fr, kpi = list(valor = v(med[i]), rotulo = paste0(nm[i], .d(" (maior média)"))), resumo = NULL)
+}
+
 .dest_calor <- function(dados, cfg) {
   M <- .matriz_mapa_calor(dados, cfg); Z <- M$Z; if (!any(is.finite(Z))) return(.dash_vazio())
   i <- which(Z == max(Z, na.rm = TRUE), arr.ind = TRUE)[1, ]; j <- which(Z == min(Z, na.rm = TRUE), arr.ind = TRUE)[1, ]
@@ -140,6 +150,7 @@ dir.create(DASH_DIR, showWarnings = FALSE, recursive = TRUE)
     pca = , ca = , cca = .dest_ordenacao(attr(g, "info"), cfg),
     mapa_calor = .dest_calor(dados, cfg),
     mapa_cor = , superficie_3d = , barras_3d = , dispersao_3d = .dest_xyz(dados, cfg),
+    radar = .dest_radar(dados, cfg),
     mapa_mundo = , mapa_brasil = , barras = , pizza = .dest_categorias(dados, cfg),
     boxplot = .dest_grupos(dados, cfg),
     histograma = , densidade = , ecdf = .dest_distribuicao(dados, cfg),

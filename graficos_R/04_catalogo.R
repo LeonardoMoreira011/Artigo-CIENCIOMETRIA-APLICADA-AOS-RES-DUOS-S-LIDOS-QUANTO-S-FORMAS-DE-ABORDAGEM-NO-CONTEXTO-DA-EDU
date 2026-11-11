@@ -22,7 +22,8 @@
                tempo = "eixo_x", data = "eixo_x", datas = "eixo_x", ordenar_x = "linhas",
                pca = "multivariada", ca = "multivariada", cca = "multivariada", ordenacao = "multivariada", biplot = "multivariada",
                mapa_mundo = "mapa", mapa_brasil = "mapa", mundo = "mapa", brasil = "mapa", heatmap = "mapa_calor", calor = "mapa_calor",
-               mapa_cor = "tridimensional", superficie_3d = "tridimensional", barras_3d = "tridimensional", dispersao_3d = "tridimensional", "3d" = "tridimensional", z = "tridimensional")
+               mapa_cor = "tridimensional", superficie_3d = "tridimensional", barras_3d = "tridimensional", dispersao_3d = "tridimensional", linhas_3d = "tridimensional", "3d" = "tridimensional", z = "tridimensional",
+               teia = "radar")
 
 ajuda <- function(bloco = NULL) {
   arq <- file.path(.motor_pasta, "01_config.R")
@@ -61,6 +62,8 @@ TIPOS DE GRÁFICO  (cfg$grafico$tipo)            colunas usadas / bloco de opç�
   "mapa_brasil"     mapa do Brasil (estados, regiões) coluna_x (sigla ou nome) + colunas_y[1] -> ajuda("mapa")
   "mapa_cor"        mapa de cor (X, Y, Z)        matriz (1ª coluna = Y, cabeçalhos = X, células = Z) ou longo (X, Y, Z) -> ajuda("tridimensional")
   "superficie_3d" | "barras_3d" | "dispersao_3d"  gráficos 3D, Z em cor e altura      mesma planilha -> ajuda("tridimensional")
+  "linhas_3d"       cascata: uma linha por coluna    coluna_x (número) + colunas de série (cabeçalho = profundidade) -> ajuda("tridimensional")
+  "radar"           radar (teia de aranha)           coluna_x (nome da série) + colunas numéricas (os eixos) -> ajuda("radar")
 
 RECURSOS QUE VALEM PARA TODOS (exceto pizza, mapas, mapa de calor e 3D, que não têm eixos comuns): eixo_x, eixo_y, eixo_y2, caixa, grade,
   legenda, titulos, texto, referencias, anotacoes, quebra, paineis, exportacao.

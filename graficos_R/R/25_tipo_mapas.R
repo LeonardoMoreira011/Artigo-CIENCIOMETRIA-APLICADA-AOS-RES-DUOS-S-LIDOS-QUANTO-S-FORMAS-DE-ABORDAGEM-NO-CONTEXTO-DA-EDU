@@ -21,7 +21,9 @@
   if (isTRUE(H$inverter_cores)) rev(cores) else cores
 }
 
-# Escala contínua de preenchimento (com barra de cores). Entra: cfg e os valores Z. Sai: list(escala, limites, cor_de).
+# Escala de preenchimento (com barra de cores). Entra: cfg e os valores Z. Sai: list(escala, escala_cor, limites, titulo, cor_de).
+# Contínua por padrão; com cfg$mapa_calor$niveis_cor = N, o gradiente vira N faixas de cor. barra_intervalo e barra_casas mandam nos números da barra.
+# escala_cor é a mesma escala para a aesthetic "colour" (sem legenda): serve para o contorno de cada polígono ficar da cor do preenchimento (sem fios claros).
 .escala_z <- function(cfg, z, nome) {
   H <- cfg$mapa_calor; z <- z[is.finite(z)]
   if (!length(z)) .erro("Não há valores numéricos para colorir.")
@@ -34,12 +36,27 @@
     meio <- NULL
   }
   resc <- if (is.null(meio)) scales::rescale else function(x, to = c(0, 1), from = range(x, na.rm = TRUE)) scales::rescale_mid(x, to, from, mid = meio)
-  barra <- guide_colourbar(theme = theme(legend.key.height = unit(H$barra_altura_cm, "cm"), legend.key.width = unit(H$barra_largura_cm, "cm")),
-                           ticks.colour = "white", frame.colour = NA)
-  esc <- scale_fill_gradientn(colours = cores, limits = lim, rescaler = resc, oob = scales::squish, na.value = .cor(H$cor_sem_dado),
-                              name = .texto(H$titulo_barra %||% nome), guide = barra)
+  nn <- as.integer(H$niveis_cor %||% 0); faixas <- !is.na(nn) && nn >= 2
+  passo <- H$barra_intervalo
+  quebras <- if (!is.null(passo) && is.finite(passo) && passo > 0) { s <- seq(ceiling(lim[1] / passo - 1e-9) * passo, lim[2] + 1e-9, by = passo); if (length(s) > 60) { .aviso("barra_intervalo ", passo, " geraria ", length(s), " números na barra; usei o automático."); ggplot2::waiver() } else round(s, 10) } else ggplot2::waiver()
+  rotulos <- if (!is.null(H$barra_casas)) function(x) .fmt_num(x, H$barra_casas) else if (faixas) function(x) .fmt_num(signif(x, 3)) else ggplot2::waiver()
+  tam <- theme(legend.key.height = unit(H$barra_altura_cm, "cm"), legend.key.width = unit(H$barra_largura_cm, "cm"))
   pal <- scales::pal_gradient_n(cores)
-  list(escala = esc, limites = lim, titulo = H$titulo_barra %||% nome, cor_de = function(v) pal(resc(v, from = lim)))
+  if (faixas) {                                                # N faixas de cor, de tamanho igual
+    borda <- seq(lim[1], lim[2], length.out = nn + 1); meios <- (borda[-1] + borda[-length(borda)]) / 2
+    q <- if (inherits(quebras, "waiver")) borda[-c(1, length(borda))] else quebras[quebras > lim[1] & quebras < lim[2]]
+    esc <- scale_fill_stepsn(colours = cores, limits = lim, breaks = q, labels = rotulos, rescaler = resc, oob = scales::squish, na.value = .cor(H$cor_sem_dado),
+                             name = .texto(H$titulo_barra %||% nome), guide = guide_coloursteps(theme = tam, even.steps = FALSE, show.limits = FALSE))
+    esc_cor <- scale_colour_stepsn(colours = cores, limits = lim, breaks = q, rescaler = resc, oob = scales::squish, na.value = .cor(H$cor_sem_dado), guide = "none")
+    cor_de <- function(v) { k <- findInterval(v, borda, all.inside = TRUE); pal(resc(meios[k], from = lim)) }
+  } else {
+    barra <- guide_colourbar(theme = tam, ticks.colour = "white", frame.colour = NA)
+    esc <- scale_fill_gradientn(colours = cores, limits = lim, rescaler = resc, oob = scales::squish, na.value = .cor(H$cor_sem_dado), breaks = quebras, labels = rotulos,
+                                name = .texto(H$titulo_barra %||% nome), guide = barra)
+    esc_cor <- scale_colour_gradientn(colours = cores, limits = lim, rescaler = resc, oob = scales::squish, na.value = .cor(H$cor_sem_dado), guide = "none")
+    cor_de <- function(v) pal(resc(v, from = lim))
+  }
+  list(escala = esc, escala_cor = esc_cor, limites = lim, titulo = H$titulo_barra %||% nome, cor_de = cor_de)
 }
 
 # Rótulo de contraste (preto ou branco) para escrever sobre uma cor.

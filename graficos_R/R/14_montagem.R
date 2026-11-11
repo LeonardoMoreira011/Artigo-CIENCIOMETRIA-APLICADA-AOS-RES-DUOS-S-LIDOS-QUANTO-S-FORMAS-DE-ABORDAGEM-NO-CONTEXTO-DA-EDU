@@ -85,6 +85,8 @@
     superficie_3d = .construir_superficie_3d(dados, cfg),
     barras_3d = .construir_barras_3d(dados, cfg),
     dispersao_3d = .construir_dispersao_3d(dados, cfg),
+    linhas_3d = .construir_linhas_3d(dados, cfg),
+    radar = .construir_radar(dados, cfg),
     mapa_mundo = , mapa_brasil = .construir_mapa(dados, cfg))
   info <- res$info
   if (isTRUE(so_info)) return(info)

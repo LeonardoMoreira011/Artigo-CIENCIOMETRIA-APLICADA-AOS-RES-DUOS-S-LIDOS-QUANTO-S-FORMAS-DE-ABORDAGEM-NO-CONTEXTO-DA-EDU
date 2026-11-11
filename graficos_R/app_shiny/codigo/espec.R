@@ -32,7 +32,7 @@ bloco <- function(id, titulo, resumo, dica = NULL, campos = list(), grupos = NUL
             "Boxplot (caixas)" = "boxplot",
             "Mapa de calor (eixo Z em cores)" = "mapa_calor", "PCA (componentes principais)" = "pca", "CA (análise de correspondência)" = "ca",
             "CCA (correspondência canônica)" = "cca", "Mapa-múndi (países e regiões)" = "mapa_mundo", "Mapa do Brasil (estados)" = "mapa_brasil",
-            "Mapa de cor (X, Y e Z)" = "mapa_cor", "Superfície 3D" = "superficie_3d", "Barras 3D" = "barras_3d", "Dispersão 3D" = "dispersao_3d")
+            "Mapa de cor (X, Y e Z)" = "mapa_cor", "Superfície 3D" = "superficie_3d", "Barras 3D" = "barras_3d", "Dispersão 3D" = "dispersao_3d", "Linhas 3D (cascata)" = "linhas_3d", "Radar (teia)" = "radar")
 # Fontes: as oficiais (Barlow), as genéricas e TODAS as que o systemfonts enxerga neste computador (e as adicionadas pelo app).
 opcoes_fontes <- function() {
   oficiais <- c("Barlow (oficial)" = "Barlow", "Barlow Condensed" = "Barlow Condensed", "Barlow Semi Condensed" = "Barlow Semi Condensed")
@@ -110,15 +110,16 @@ opcoes_paletas <- function(guardadas = character(0)) {
 .SE_QUEBRA <- "input.quebra_ativar"
 .SE_ERRO <- "input.colunas_erro && input.colunas_erro.length"
 .SE_MULTI <- "['pca','ca','cca'].indexOf(input.tipo_grafico) >= 0"
-.SE_NAO_XY <- "['pca','ca','cca','mapa_calor','mapa_mundo','mapa_brasil','mapa_cor','superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) < 0"
+.SE_NAO_XY <- "['pca','ca','cca','mapa_calor','mapa_mundo','mapa_brasil','mapa_cor','superficie_3d','barras_3d','dispersao_3d','linhas_3d','radar'].indexOf(input.tipo_grafico) < 0"
 .SE_XYZ <- "['mapa_cor','superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) >= 0"
-.SE_3D <- "['superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) >= 0"
+.SE_3D <- "['superficie_3d','barras_3d','dispersao_3d','linhas_3d'].indexOf(input.tipo_grafico) >= 0"
+.SE_RADAR <- "input.tipo_grafico == 'radar'"
 .SE_TABELA <- "['mapa_calor','mapa_cor','superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) >= 0"
 .SE_PCA <- "input.tipo_grafico == 'pca'"
 .SE_CALOR <- "input.tipo_grafico == 'mapa_calor'"
 .SE_MAPA <- "['mapa_mundo','mapa_brasil'].indexOf(input.tipo_grafico) >= 0"
 .SE_MUNDO <- "input.tipo_grafico == 'mapa_mundo'"
-.SE_Z <- "['mapa_calor','mapa_mundo','mapa_brasil','mapa_cor','superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) >= 0"
+.SE_Z <- "['mapa_calor','mapa_mundo','mapa_brasil','mapa_cor','superficie_3d','barras_3d','dispersao_3d','linhas_3d'].indexOf(input.tipo_grafico) >= 0"
 .SE_ELIPSE <- "['pca','ca','cca'].indexOf(input.tipo_grafico) >= 0 && input.multi_elipses && input.multi_elipses != 'nenhuma'"
 .SE_QUEBRA_Y2 <- "input.quebra_ativar && input.y2_series && input.y2_series.length"
 
@@ -339,8 +340,8 @@ ESPEC <- list(
         "O arquivo é um CSV com uma linha de títulos. A 1ª coluna costuma ser o eixo X e as demais, as séries (eixo Y).",
         list(
           campo("tipo_grafico", "sel", "Tipo de gráfico", "Linha, pontos, barras, pizza...", opcoes = .TIPOS, padrao = "linha_pontos", largura = 12),
-          campo("coluna_x", "colx", "Coluna do eixo X (ou dos nomes)", "Vazio = a 1ª coluna. No PCA/CA/CCA: o nome de cada amostra. No mapa de calor: o nome das linhas. Nos mapas: o país (em inglês) ou o estado (sigla). No mapa de cor e no 3D: na tabela em matriz, os valores de Y; na tabela longa, os valores de X."),
-          campo("colunas_y", "colsy", "Colunas do eixo Y (séries)", "Vazio = todas as outras colunas numéricas. No mapa de calor: as colunas do mapa. Nos mapas: a coluna do valor que vira cor (a 1ª). No mapa de cor e no 3D: em matriz, as colunas de Z (os cabeçalhos são os valores de X); em tabela longa, a coluna do Z.", se = "['pca','ca','cca'].indexOf(input.tipo_grafico) < 0"),
+          campo("coluna_x", "colx", "Coluna do eixo X (ou dos nomes)", "Vazio = a 1ª coluna. No PCA/CA/CCA: o nome de cada amostra. No mapa de calor: o nome das linhas. Nos mapas: o país (em inglês) ou o estado (sigla). No mapa de cor e no 3D: na tabela em matriz, os valores de Y; na tabela longa, os valores de X. Nas linhas 3D: o X (número, como o comprimento de onda). No radar: o nome de cada série (uma linha da planilha = um polígono)."),
+          campo("colunas_y", "colsy", "Colunas do eixo Y (séries)", "Vazio = todas as outras colunas numéricas. No mapa de calor: as colunas do mapa. Nos mapas: a coluna do valor que vira cor (a 1ª). No mapa de cor e no 3D: em matriz, as colunas de Z (os cabeçalhos são os valores de X); em tabela longa, a coluna do Z. Nas linhas 3D: cada coluna é uma linha (o cabeçalho, número ou nome, é a posição dela na profundidade). No radar: cada coluna é um eixo do radar (3 ou mais).", se = "['pca','ca','cca'].indexOf(input.tipo_grafico) < 0"),
           campo("colunas_erro", "colsy2", "Colunas de erro (± desvio padrão)", "Barras de erro nos pontos. A 1ª coluna vale para a 1ª série, a 2ª para a 2ª, e assim por diante. Elas não são desenhadas como série.", largura = 12, se = .SE_NAO_XY),
           campo("coluna_grupo", "colx", "Coluna dos grupos", "Separa as amostras em grupos (cores e elipses). No mapa de calor \"longo\": a coluna dos nomes das colunas do mapa. No mapa de cor e no 3D \"longo\": a coluna do Y (vazio = a 2ª coluna). Vazio = sem grupos.", se = "['pca','ca','cca'].indexOf(input.tipo_grafico) >= 0 || (['mapa_calor','mapa_cor','superficie_3d','barras_3d','dispersao_3d'].indexOf(input.tipo_grafico) >= 0 && input.calor_formato == 'longo')"),
           campo("multi_variaveis", "colsy2", "Variáveis (a matriz principal)", "As colunas da matriz: espécies, parâmetros... Vazio = todas as colunas numéricas que não são ambientais.", largura = 12, se = .SE_MULTI),
@@ -418,6 +419,9 @@ ESPEC <- list(
           campo("calor_max", "num", "Escala termina em", "Vazio = o maior valor.", se = .SE_Z),
           campo("calor_centro", "num", "Valor do centro", "Cor do meio da escala divergente. Vazio = 0.", se = .SE_Z),
           campo("calor_titulo_barra", "txt", "Título da barra de cores", "Vazio = o nome da coluna do valor.", se = .SE_Z),
+          campo("calor_niveis_cor", "num", "Faixas de cor (gradiente em degraus)", "Vazio ou 0 = gradiente contínuo, suave. Um número (ex.: 8) divide as cores em faixas iguais, mais marcadas, e a barra de cores vira degraus.", min = 0, max = 64, passo = 1, se = .SE_Z),
+          campo("calor_barra_intervalo", "num", "Distância entre os números da barra de cores", "Vazio = automático. Ex.: 10 mostra 0, 10, 20...", min = 0, se = .SE_Z),
+          campo("calor_barra_casas", "num", "Casas decimais da barra de cores", "Vazio = automático.", min = 0, max = 6, passo = 1, se = .SE_Z),
           campo("calor_valores", "chk", "Escrever o número em cada célula", NULL, se = .SE_CALOR),
           campo("calor_casas", "int", "Casas decimais", NULL, min = 0, max = 6, se = .SE_Z),
           campo("calor_contorno_cor", "cor", "Cor das linhas entre as células / fronteiras", NULL, se = .SE_Z),
@@ -431,9 +435,16 @@ ESPEC <- list(
           campo("tri_z_inicio", "num", "Eixo Z começa em", "Vazio = automático.", se = .SE_3D),
           campo("tri_z_fim", "num", "Eixo Z termina em", "Vazio = automático.", se = .SE_3D),
           campo("tri_z_intervalo", "num", "Distância entre os números do eixo Z", "Vazio = automático.", se = .SE_3D),
-          campo("tri_suavizar", "int", "Suavizar a grade (divisões por célula)", "1 = sem suavizar. 3 a 6 deixam a superfície e o mapa de cor lisos, interpolando entre os pontos da tabela.", min = 1, max = 12, se = "['mapa_cor','superficie_3d'].indexOf(input.tipo_grafico) >= 0"),
+          campo("tri_suavizar", "num", "Suavizar a grade (divisões por célula)", "Vazio = automático (cores e relevo fluidos). 1 = sem suavizar (blocos). Quanto maior, mais suave e mais pesado (até 12). Interpola entre os pontos da tabela.", min = 1, max = 12, passo = 1, se = "['mapa_cor','superficie_3d'].indexOf(input.tipo_grafico) >= 0"),
+          campo("tri_sombreado", "chk", "Sombreado da superfície", "A superfície clareia e escurece conforme a inclinação, para dar relevo.", se = "input.tipo_grafico == 'superficie_3d'"),
+          campo("tri_malha", "chk", "Linhas da grade sobre a superfície", "Usa a cor e a grossura de \"Cor das linhas entre as células / fronteiras\".", se = "input.tipo_grafico == 'superficie_3d'"),
           campo("tri_niveis", "int", "Linhas de nível (quantidade)", "0 = sem linhas. No mapa de cor, desenha as curvas de mesmo valor de Z.", min = 0, max = 30, se = "input.tipo_grafico == 'mapa_cor'"),
           campo("tri_cor_niveis", "cor", "Cor das linhas de nível", NULL, se = "input.tipo_grafico == 'mapa_cor'", mais = TRUE),
+          campo("tri_niveis_espessura_pt", "num", "Grossura das linhas de nível (pt)", NULL, min = 0.1, max = 5, passo = 0.1, se = "input.tipo_grafico == 'mapa_cor'", mais = TRUE),
+          campo("tri_linhas_preencher", "sel", "Preenchimento das linhas", "Gradiente: cada linha é preenchida com as cores do Z. Fundo branco: a linha da frente esconde a de trás. Só as linhas: sem preenchimento.", opcoes = c("Gradiente do Z" = "gradiente", "Fundo branco" = "branco", "Só as linhas" = "nenhum"), se = "input.tipo_grafico == 'linhas_3d'"),
+          campo("tri_linhas_faixas", "num", "Faixas de cor de cada linha", "Mais faixas = gradiente mais fluido (padrão 10).", min = 1, max = 40, passo = 1, se = "input.tipo_grafico == 'linhas_3d'"),
+          campo("tri_linhas_cor", "cor", "Cor do traço das linhas", NULL, se = "input.tipo_grafico == 'linhas_3d'"),
+          campo("tri_linhas_espessura_pt", "num", "Grossura do traço das linhas (pt)", NULL, min = 0.1, max = 5, passo = 0.1, se = "input.tipo_grafico == 'linhas_3d'"),
           campo("tri_barras_largura", "num", "Largura das barras (0 a 1)", "Em relação à célula: 1 = barras coladas.", min = 0.1, max = 1, passo = 0.05, se = "input.tipo_grafico == 'barras_3d'"),
           campo("tri_cor_borda_barras", "cor", "Cor do contorno das barras", NULL, se = "input.tipo_grafico == 'barras_3d'", mais = TRUE),
           campo("tri_ponto_tamanho_pt", "num", "Tamanho dos pontos (pt)", NULL, min = 1, max = 30, passo = 0.5, se = "input.tipo_grafico == 'dispersao_3d'"),
@@ -443,6 +454,22 @@ ESPEC <- list(
           campo("tri_cor_paredes", "cor", "Cor das paredes e do piso", NULL, se = .SE_3D, mais = TRUE),
           campo("tri_cor_grade", "cor", "Cor da grade das paredes", NULL, se = .SE_3D, mais = TRUE),
           campo("tri_cor_caixa", "cor", "Cor das arestas da caixa", NULL, se = .SE_3D, mais = TRUE),
+          campo("radar_aneis", "num", "Anéis da grade", "Quantidade aproximada de anéis (a escala usa números redondos).", min = 1, max = 20, passo = 1, se = .SE_RADAR),
+          campo("radar_min", "num", "Escala começa em", "Vazio = automático (0 ou o menor valor).", se = .SE_RADAR),
+          campo("radar_max", "num", "Escala termina em", "Vazio = automático (o maior valor, arredondado).", se = .SE_RADAR),
+          campo("radar_normalizar", "chk", "Normalizar cada eixo (0 a 1)", "Para comparar eixos de unidades diferentes: cada coluna vai do seu menor ao seu maior valor.", se = .SE_RADAR),
+          campo("radar_formato_grade", "sel", "Formato da grade", NULL, opcoes = c("Polígono (teia)" = "poligono", "Círculo" = "circulo"), se = .SE_RADAR),
+          campo("radar_sentido", "sel", "Sentido dos eixos", NULL, opcoes = c("Horário" = "horario", "Anti-horário" = "antihorario"), se = .SE_RADAR),
+          campo("radar_angulo", "num", "Ângulo do 1º eixo (graus)", "0 = em cima.", min = -360, max = 360, passo = 15, se = .SE_RADAR),
+          campo("radar_opacidade", "num", "Opacidade do preenchimento (0 a 1)", "0 = só a linha; 1 = sólido.", min = 0, max = 1, passo = 0.05, se = .SE_RADAR),
+          campo("radar_linha_espessura_pt", "num", "Grossura da linha (pt)", NULL, min = 0.1, max = 6, passo = 0.1, se = .SE_RADAR),
+          campo("radar_pontos", "chk", "Marcar o valor em cada eixo", NULL, se = .SE_RADAR),
+          campo("radar_ponto_tamanho_pt", "num", "Tamanho das marcas (pt)", NULL, min = 1, max = 20, passo = 0.5, se = .SE_RADAR, mais = TRUE),
+          campo("radar_rotulos_aneis", "chk", "Escrever o valor de cada anel", NULL, se = .SE_RADAR),
+          campo("radar_rotulos_casas", "num", "Casas decimais dos anéis", "Vazio = automático.", min = 0, max = 6, passo = 1, se = .SE_RADAR, mais = TRUE),
+          campo("radar_rotulos_tamanho_pt", "num", "Tamanho dos nomes dos eixos (pt)", "Vazio = o tamanho base.", min = 3, max = 30, passo = 0.5, se = .SE_RADAR, mais = TRUE),
+          campo("radar_grade_cor", "cor", "Cor da grade", NULL, se = .SE_RADAR, mais = TRUE),
+          campo("radar_legenda_posicao", "sel", "Posição da legenda", NULL, opcoes = c("Direita" = "direita", "Esquerda" = "esquerda", "Em cima" = "topo", "Embaixo" = "base", "Dentro do gráfico" = "dentro"), se = .SE_RADAR, mais = TRUE),
           campo("erro_lado", "sel", "Lado da barra de erro", "Os dois lados, só para cima ou só para baixo.", opcoes = c("Os dois lados" = "ambos", "Só para cima" = "superior", "Só para baixo" = "inferior"), se = .SE_ERRO),
           campo("erro_cor", "cor", "Cor da barra de erro", "Vazio = a cor de cada série. Com uma cor, as barras ficam dessa cor, independente da cor dos pontos.", se = .SE_ERRO),
           campo("erro_espessura_pt", "num", "Grossura da barra de erro (pt)", "Espessura do traço.", min = 0, max = 10, passo = 0.25, se = .SE_ERRO),

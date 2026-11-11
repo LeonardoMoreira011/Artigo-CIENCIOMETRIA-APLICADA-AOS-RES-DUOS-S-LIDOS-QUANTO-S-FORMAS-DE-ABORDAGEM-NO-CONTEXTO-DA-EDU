@@ -14,7 +14,7 @@
 .OPCOES <- list(
   "grafico$tipo" = c("pontos", "linha", "linha_pontos", "area", "area_empilhada", "barras",
                      "pizza", "histograma", "densidade", "ecdf", "boxplot", "mapa_calor", "pca", "ca", "cca",
-                     "mapa_mundo", "mapa_brasil", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d"),
+                     "mapa_mundo", "mapa_brasil", "mapa_cor", "superficie_3d", "barras_3d", "dispersao_3d", "linhas_3d", "radar"),
   "cores$preenchimento" = c("solido", "gradiente"),
   "cores$gradiente_direcao" = c("vertical", "vertical_invertido", "horizontal",
                                 "horizontal_invertido", "diagonal", "radial"),
@@ -48,6 +48,10 @@
   "multivariada$resumo_posicao" = c("caixa", "rodape"),
   "multivariada$legenda_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "tridimensional$caixa" = c("paredes", "base", "aberta"),
+  "tridimensional$linhas_preencher" = c("gradiente", "branco", "nenhum"),
+  "radar$formato_grade" = c("poligono", "circulo"),
+  "radar$sentido" = c("horario", "antihorario"),
+  "radar$legenda_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "mapa_calor$barra_posicao" = c("direita", "esquerda", "topo", "base", "dentro"),
   "mapa$nivel" = c("pais", "estado", "regiao"),
   "mapa$agregacao" = c("soma", "media", "maximo"),
@@ -247,6 +251,13 @@
   if (!is.null(mc$limite_min) && !is.null(mc$limite_max) && mc$limite_min >= mc$limite_max)
     .erro("cfg$mapa_calor$limite_min (", mc$limite_min, ") deve ser menor que limite_max (", mc$limite_max, ").")
   tr3 <- cfg$tridimensional
+  if (!is.null(mc$niveis_cor) && (!is.numeric(mc$niveis_cor) || mc$niveis_cor < 0 || mc$niveis_cor > 64)) .erro("cfg$mapa_calor$niveis_cor deve ser 0 (gradiente contínuo) ou um número de 2 a 64 (faixas de cor).")
+  if (!is.null(mc$barra_intervalo) && (!is.numeric(mc$barra_intervalo) || mc$barra_intervalo <= 0)) .erro("cfg$mapa_calor$barra_intervalo deve ser um número maior que 0 (ou NULL).")
+  if (!is.null(tr3$linhas_faixas) && (!is.numeric(tr3$linhas_faixas) || tr3$linhas_faixas < 1 || tr3$linhas_faixas > 40)) .erro("cfg$tridimensional$linhas_faixas deve estar entre 1 e 40 (faixas de cor de cada linha).")
+  rd <- cfg$radar
+  if (!is.null(rd$aneis) && (!is.numeric(rd$aneis) || rd$aneis < 1 || rd$aneis > 20)) .erro("cfg$radar$aneis deve estar entre 1 e 20 (anéis da grade).")
+  if (!is.null(rd$anel_min) && !is.null(rd$anel_max) && rd$anel_min >= rd$anel_max) .erro("cfg$radar$anel_min (", rd$anel_min, ") deve ser menor que anel_max (", rd$anel_max, ").")
+  if (!is.null(rd$preencher_opacidade) && (!is.numeric(rd$preencher_opacidade) || rd$preencher_opacidade < 0 || rd$preencher_opacidade > 1)) .erro("cfg$radar$preencher_opacidade deve estar entre 0 e 1.")
   if (!is.null(tr3$azimute) && (!is.numeric(tr3$azimute) || length(tr3$azimute) != 1 || !is.finite(tr3$azimute))) .erro("cfg$tridimensional$azimute deve ser um número em graus (ex.: 40).")
   if (!is.null(tr3$elevacao) && (!is.numeric(tr3$elevacao) || tr3$elevacao < 0 || tr3$elevacao > 90)) .erro("cfg$tridimensional$elevacao deve estar entre 0 e 90 graus (ex.: 28).")
   if (!is.null(tr3$altura_relativa) && (!is.numeric(tr3$altura_relativa) || tr3$altura_relativa < 0.1 || tr3$altura_relativa > 3)) .erro("cfg$tridimensional$altura_relativa deve estar entre 0.1 e 3 (ex.: 0.7).")

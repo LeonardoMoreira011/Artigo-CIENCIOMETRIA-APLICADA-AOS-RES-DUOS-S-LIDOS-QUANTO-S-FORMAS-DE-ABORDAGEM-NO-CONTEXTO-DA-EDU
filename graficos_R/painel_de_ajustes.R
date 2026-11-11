@@ -12,7 +12,7 @@
 
 # ---- 1. ARQUIVO E TIPO DE GRÁFICO -----------------------------------------------------------
 ARQUIVO_CSV <- ""        # caminho do CSV. EX.: "C:/pasta/dados.csv". Vazio = só carrega o template.
-tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barras" | "pizza" | "boxplot" | "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d"...
+tipo_grafico <- NULL     # "pontos" | "linha" | "linha_pontos" | "area" | "barras" | "pizza" | "boxplot" | "mapa_cor" | "superficie_3d" | "barras_3d" | "dispersao_3d" | "linhas_3d" | "radar"...
 coluna_x     <- NULL     # coluna do eixo X: número ou "nome". EX.: 1  |  "Years"
 colunas_y    <- NULL     # colunas Y. NULL = todas as outras numéricas. EX.: c(2, 3)  |  c("WORLD", "LATAM")
 coluna_grupo <- NULL     # coluna que separa as amostras em grupos (cores e elipses do PCA/CA/CCA; colunas do mapa de calor "longo"). EX.: "Local"
@@ -130,6 +130,33 @@ tri_cor_borda_pontos <- NULL # contorno dos pontos (NA = sem)
 tri_cor_paredes <- NULL   # cor do piso e das paredes
 tri_cor_grade <- NULL     # cor da grade das paredes
 tri_cor_caixa <- NULL     # cor das arestas da caixa
+tri_sombreado <- NULL   # TRUE/FALSE: superfície clareia e escurece conforme a inclinação
+tri_malha <- NULL   # TRUE = linhas da grade sobre a superfície
+tri_niveis_espessura_pt <- NULL   # grossura das linhas de nível (pt)
+tri_linhas_preencher <- NULL   # linhas 3D: "gradiente" | "branco" | "nenhum"
+tri_linhas_faixas <- NULL   # linhas 3D: faixas de cor de cada linha (1 a 40)
+tri_linhas_cor <- NULL   # linhas 3D: cor do traço
+tri_linhas_espessura_pt <- NULL   # linhas 3D: grossura do traço (pt)
+calor_niveis_cor <- NULL   # gradiente em N faixas de cor (NULL ou 0 = contínuo)
+calor_barra_intervalo <- NULL   # distância entre os números da barra de cores
+calor_barra_casas <- NULL   # casas decimais da barra de cores
+# Radar (tipo_grafico "radar"): a 1ª coluna traz o nome de cada série; as outras colunas numéricas são os eixos.
+radar_aneis <- NULL   # radar: quantidade de anéis da grade
+radar_min <- NULL   # radar: onde a escala começa
+radar_max <- NULL   # radar: onde a escala termina
+radar_normalizar <- NULL   # radar: TRUE = cada eixo de 0 a 1
+radar_formato_grade <- NULL   # radar: "poligono" | "circulo"
+radar_sentido <- NULL   # radar: "horario" | "antihorario"
+radar_angulo <- NULL   # radar: ângulo do 1º eixo (graus; 0 = em cima)
+radar_opacidade <- NULL   # radar: opacidade do preenchimento (0 a 1)
+radar_linha_espessura_pt <- NULL   # radar: grossura da linha (pt)
+radar_pontos <- NULL   # radar: TRUE = marca o valor em cada eixo
+radar_ponto_tamanho_pt <- NULL   # radar: tamanho das marcas (pt)
+radar_rotulos_aneis <- NULL   # radar: TRUE = escreve o valor de cada anel
+radar_rotulos_casas <- NULL   # radar: casas decimais dos anéis
+radar_rotulos_tamanho_pt <- NULL   # radar: tamanho dos nomes dos eixos (pt)
+radar_grade_cor <- NULL   # radar: cor da grade
+radar_legenda_posicao <- NULL   # radar: "direita" | "esquerda" | "topo" | "base" | "dentro"
 
 
 # ---- 2. INTERVALOS DOS EIXOS (início, fim, passo e grossura dos traços) -------------------------

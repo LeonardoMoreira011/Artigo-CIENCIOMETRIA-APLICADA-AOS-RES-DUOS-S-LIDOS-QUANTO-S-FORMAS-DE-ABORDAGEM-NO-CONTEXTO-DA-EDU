@@ -149,6 +149,23 @@ add("m18", "Dispersão 3D e tabela longa: uma linha por ponto", "Cada linha é u
     "modelo_18_dispersao_3d_longo.csv", c("<b>Tipo de gráfico:</b> Dispersão 3D.", "<b>Formato da tabela:</b> Longo (linha, coluna, valor).", "<b>Colunas:</b> deixe as três escolhas vazias: o Cinabro usa a 1ª coluna como X, a 2ª como Y e a 3ª como Z. (Para outra ordem: <i>Coluna do eixo X</i> = X, <i>Coluna dos grupos</i> = Y e <i>Colunas do eixo Y</i> = Z.)", "<b>Linha de cada ponto até o piso:</b> marque para ver a posição no espaço."),
     "A tabela longa também serve para a Superfície 3D, as Barras 3D e o Mapa de cor, se os pontos formarem uma grade (todas as combinações de X e Y).")
 
+# ---- 19. linhas 3D (cascata) e 20. radar --------------------------------------------------------------------------------------------------------------------
+wl <- seq(450, 650, 5); tt <- c(0.5, 1, 1.5, 2, 2.5, 3, 3.5)
+pic <- function(x, c, l, a) a * exp(-((x - c) / l)^2)
+esp <- sapply(tt, function(t) exp(-(t - 0.3) / 1.1) * (pic(wl, 545, 9, 3.3) + pic(wl, 588, 8, 4.6) + pic(wl, 620, 10, 1.1) + pic(wl, 650, 12, .4)) + runif(length(wl), 0, .03))
+m19 <- data.frame(`Comprimento de onda (nm)` = wl, as.data.frame(round(esp, 3)), check.names = FALSE); names(m19)[-1] <- tt
+gravar(m19, "modelo_19_linhas_3d.csv")
+c <- novo("m19_linhas_3d", 11, 8); c$grafico$tipo <- "linhas_3d"; c$eixo_x$titulo <- "Comprimento de onda (nm)"; c$eixo_y$titulo <- "Tempo (ms)"; c$tridimensional$z_titulo <- "Fotoluminescência (u.a.)"; c$tridimensional$azimute <- 40; c$tridimensional$elevacao <- 25
+c$mapa_calor$esquema_cor <- "petroleo"; c$mapa_calor$titulo_barra <- "u.a."; gerar(c, lê("modelo_19_linhas_3d.csv"))
+add("m19", "Linhas 3D (cascata): uma linha por coluna", "Espectros, curvas de calibração ou séries medidas em momentos diferentes. <b>A 1ª coluna é o X</b> (número) e <b>cada outra coluna é uma linha</b>; o <b>cabeçalho</b> da coluna diz onde ela fica na profundidade (um número, como o tempo, ou um nome).",
+    "modelo_19_linhas_3d.csv", c("<b>Tipo de gráfico:</b> Linhas 3D (cascata).", "<b>Coluna do eixo X:</b> Comprimento de onda. <b>Colunas do eixo Y:</b> deixe vazio (usa todas) ou escolha só algumas linhas.", "<b>Preenchimento das linhas:</b> Gradiente do Z, Fundo branco (a da frente esconde a de trás) ou Só as linhas.", "<b>Giro da vista</b> e <b>Altura do olhar:</b> escolha o ângulo; o <b>título do eixo Y</b> (profundidade) está no bloco do eixo Y."),
+    "Os cabeçalhos numéricos (0,5; 1; 1,5...) viram os números do eixo da profundidade. Com nomes nos cabeçalhos (Amostra A, B...), os nomes aparecem no eixo.")
+gravar(data.frame(Material = c("Aço", "Alumínio", "Titânio", "Polímero"), Resistência = c(85, 55, 95, 25), Dureza = c(80, 45, 85, 30), Densidade = c(90, 35, 60, 15), `Condutividade` = c(40, 90, 30, 10), Custo = c(55, 60, 20, 90), Durabilidade = c(75, 65, 95, 40), check.names = FALSE), "modelo_20_radar.csv")
+c <- novo("m20_radar", 10, 7.6); c$grafico$tipo <- "radar"; gerar(c, lê("modelo_20_radar.csv"))
+add("m20", "Radar: comparar perfis em vários critérios", "Cada linha é uma série (material, amostra, tratamento) e <b>cada coluna numérica é um eixo do radar</b> (3 ou mais). A 1ª coluna traz o nome da série.",
+    "modelo_20_radar.csv", c("<b>Tipo de gráfico:</b> Radar (teia).", "<b>Coluna do eixo X (ou dos nomes):</b> Material. <b>Colunas do eixo Y:</b> deixe vazio (usa todas) ou escolha os critérios.", "<b>Normalizar cada eixo:</b> marque se as colunas têm unidades diferentes (cada uma vai de 0 a 1).", "<b>Anéis, escala, formato da grade e opacidade:</b> nas opções do radar."),
+    "Todas as colunas precisam estar na mesma ordem de grandeza, ou use <i>Normalizar cada eixo</i>. Valores fora da escala escolhida são encostados na borda, com aviso.")
+
 # ---- 15. antes e depois: tabela cruzada -> uma linha por amostra ---------------------------------------------------------------------------------------------
 antes <- c(";Dia 1;;;Dia 7;;", ";Controle;Trat. A;Trat. B;Controle;Trat. A;Trat. B",
            "Clorofila;1;1,12;0,95;1;1,31;0,82", "Carotenoides;1;0,97;1,08;1;1,15;1,22", "Prolina;1;1,25;1,4;1;1,9;2,3")

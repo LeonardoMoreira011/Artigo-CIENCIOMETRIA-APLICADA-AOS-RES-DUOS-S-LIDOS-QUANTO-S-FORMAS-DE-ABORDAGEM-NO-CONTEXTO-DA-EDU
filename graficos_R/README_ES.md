@@ -21,7 +21,7 @@ La aplicación habla **Português (BR)**, **English** y **Español**. Elige el i
 La página se abre en `http://cinabro.localhost:8421`. El proceso de R se cierra unos segundos después de cerrar la pestaña del navegador.
 
 ## Qué puedes hacer
-- **Tipos de gráfico:** líneas, líneas con puntos, dispersión, áreas, áreas apiladas, barras, circular/anillo, histograma, densidad, distribución acumulada, diagrama de cajas, mapa de calor, PCA / CA / CCA, mapamundi y mapa de Brasil, y **mapa de color (X, Y, Z), superficie 3D, barras 3D y dispersión 3D** (tabla en matriz: primera columna = Y, encabezados = X, celdas = Z; o tabla larga con columnas X, Y, Z).
+- **Tipos de gráfico:** líneas, líneas con puntos, dispersión, áreas, áreas apiladas, barras, circular/anillo, histograma, densidad, distribución acumulada, diagrama de cajas, mapa de calor, PCA / CA / CCA, mapamundi y mapa de Brasil, y **mapa de color (X, Y, Z), superficie 3D, barras 3D, dispersión 3D, líneas 3D (cascada) y radar** (tabla en matriz: primera columna = Y, encabezados = X, celdas = Z; o tabla larga con columnas X, Y, Z).
 - **Ejes:** inicio/fin, separación de marcas, marcas secundarias, primera marca, marcas manuales, escalas logarítmicas y otras, formato de los números, rotación, factor de división, títulos con exponentes y subíndices (`m^{2}`, `CO_{2}`).
 - **Eje Y derecho (Y2):** las mismas opciones que el eje izquierdo, con escala, color e intervalos propios.
 - **Interrupción del eje:** dos estilos (marcos separados o marco continuo), separación de marcas y marcas secundarias por tramo, y un botón que encuentra el mayor hueco en tus datos.
