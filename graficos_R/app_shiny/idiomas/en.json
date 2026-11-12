@@ -1382,5 +1382,21 @@
  " tem a maior média (": " has the highest mean (",
  "O maior valor de ": "The highest value of ",
  " (maior média)": " (highest mean)",
- "Azul (marinho → claro)": "Blue (navy → light)"
+ "Azul (marinho → claro)": "Blue (navy → light)",
+ "Profundidade do eixo Y": "Y axis depth",
+ "Comprimento do eixo Y em relação ao X: 1 = quadrado; 0,5 = metade; 2 = o dobro.": "Length of the Y axis relative to X: 1 = square; 0.5 = half; 2 = double.",
+ "Perspectiva": "Perspective",
+ "0 = sem perspectiva (como um desenho técnico); 1 = bem marcada (o que está longe encolhe).": "0 = no perspective (like a technical drawing); 1 = strong (what is far away shrinks).",
+ "Grade nas paredes e no piso": "Grid on the walls and floor",
+ "Grossura da grade (pt)": "Grid thickness (pt)",
+ "Grossura das arestas da caixa (pt)": "Box edge thickness (pt)",
+ "Comprimento dos traços dos eixos (pt)": "Axis tick length (pt)",
+ "Vazio = o do eixo (blocos Intervalos dos eixos). A cor, a grossura, a fonte e o tamanho dos números e dos títulos de cada eixo vêm dos blocos dos eixos X e Y (o Z herda o estilo do Y).": "Empty = the axis one (Axis intervals blocks). The color, thickness, font and size of the numbers and titles of each axis come from the X and Y axis blocks (Z inherits the Y style).",
+ "Arraste o gráfico para girar em qualquer direção": "Drag the chart to rotate it in any direction",
+ "⟲ Girar": "⟲ Rotate",
+ "Frente": "Front",
+ "Lado": "Side",
+ "Topo": "Top",
+ "Padrão": "Default",
+ "Arraste o gráfico para girar": "Drag the chart to rotate"
 }

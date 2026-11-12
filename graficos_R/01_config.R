@@ -842,6 +842,11 @@ cfg$tridimensional <- list(
   elevacao = 28,
   altura_relativa = 0.7,
 
+  # profundidade: comprimento do eixo Y em relação ao X (1 = quadrado; 0.5 = metade; 2 = o dobro). perspectiva: 0 = ortográfica (sem encolher o que está longe)
+  #   a 1 = bem marcada.
+  profundidade = 1,
+  perspectiva = 0,
+
   # eixo Z (vertical): título (NULL = nome da coluna do valor), início, fim e intervalo dos números (NULL = automático).
   z_titulo = NULL,
   z_inicio = NULL,
@@ -853,6 +858,13 @@ cfg$tridimensional <- list(
   cor_paredes = "#F4F4F4",
   cor_grade = "#D9D9D9",
   cor_caixa = "#8C8C8C",
+  # grade_mostrar: linhas da grade nas paredes e no piso. grade_espessura_pt / caixa_espessura_pt: grossura da grade e das arestas da caixa.
+  #   traco_comprimento_pt: comprimento dos traços dos eixos (NULL = o do eixo: cfg$eixo_x$comprimento_maiores_pt; a cor, a grossura, a fonte e o tamanho dos
+  #   números e dos títulos de cada eixo vêm de cfg$eixo_x, cfg$eixo_y e do eixo Z, que herda o estilo do eixo Y).
+  grade_mostrar = TRUE,
+  grade_espessura_pt = 0.3,
+  caixa_espessura_pt = 0.4,
+  traco_comprimento_pt = NULL,
 
   # suavizar: divide cada célula da grade em N pedaços por interpolação cúbica (superfície e mapa de cor): cores e relevo fluidos. 1 = sem suavizar
   #   (blocos). NULL = automático (o bastante para uma grade fina, até 12). Quanto maior, mais suave (e mais pesado).

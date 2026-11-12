@@ -333,6 +333,61 @@
   }
   Shiny.addCustomMessageHandler('legenda_geom', function (m) { geo = m; setTimeout(colocar, 60); });
   $(document).on('shiny:value', function (e) { if (e.name === 'previa') setTimeout(colocar, 120); });
+
+  // ---- giro do gráfico 3D: arrastar a prévia (rotação circular em volta do gráfico), botão Girar (giro contínuo) e vistas prontas ------
+  // O navegador manda o ângulo; o R devolve uma prévia leve enquanto gira e a completa ao parar. Só manda o próximo quando o anterior voltou.
+  var TIPOS3D = ['superficie_3d', 'barras_3d', 'dispersao_3d', 'linhas_3d'];
+  var ob = { az: 40, el: 28, espera: false, pend: null, arrasto: null, gira: false, raf: null, t: 0, ult: 0 };
+  function e3d() { return TIPOS3D.indexOf($('#tipo_grafico').val()) >= 0 && !!imagem(); }
+  function numIn(id, def) { var v = parseFloat($('#' + id).val()); return isFinite(v) ? v : def; }
+  function normAz(a) { return ((a + 180) % 360 + 360) % 360 - 180; }
+  function mostrarOrbita() { $('#orbita-barra').css('display', e3d() ? 'flex' : 'none'); $('.previa-quadro').toggleClass('orbita-ativa', e3d()); }
+  function enviarOrbita(fim) {
+    var d = { az: Math.round(ob.az * 10) / 10, el: Math.round(ob.el * 10) / 10, fim: !!fim, t: ++ob.t };
+    if (ob.espera && !fim) { ob.pend = d; return; }
+    ob.espera = true; ob.pend = null; Shiny.setInputValue('orbita_3d', d, { priority: 'event' });
+    clearTimeout(ob.guarda); ob.guarda = setTimeout(function () { ob.espera = false; }, 8000);
+  }
+  Shiny.addCustomMessageHandler('orbita_ok', function (m) {
+    ob.espera = false; clearTimeout(ob.guarda);
+    if (ob.pend && (ob.arrasto || ob.gira)) { var d = ob.pend; ob.pend = null; ob.espera = true; Shiny.setInputValue('orbita_3d', d, { priority: 'event' }); }
+    else if (ob.pend && !ob.pend.fim) ob.pend = null;
+    if (m && m.fim) { $('#tri_azimute').val(ob.az); $('#tri_elevacao').val(ob.el); }
+  });
+  function ler() { ob.az = numIn('tri_azimute', 40); ob.el = numIn('tri_elevacao', 28); }
+  $(document).on('pointerdown', '.previa-quadro', function (e) {
+    if (!e3d() || e.target.tagName !== 'IMG' || $(e.target).closest('#previa').length === 0) return;
+    pararGiro(false); ler(); ob.arrasto = { x: e.clientX, y: e.clientY, az: ob.az, el: ob.el };
+    $('.previa-quadro').addClass('orbita-arrastando'); try { e.target.setPointerCapture(e.pointerId); } catch (x) {} e.preventDefault();
+  });
+  $(document).on('pointermove', '.previa-quadro', function (e) {
+    if (!ob.arrasto) return;
+    ob.az = normAz(ob.arrasto.az - (e.clientX - ob.arrasto.x) * 0.5);
+    ob.el = Math.min(90, Math.max(0, ob.arrasto.el + (e.clientY - ob.arrasto.y) * 0.4));
+    enviarOrbita(false);
+  });
+  $(document).on('pointerup pointercancel', '.previa-quadro', function () {
+    if (!ob.arrasto) return; ob.arrasto = null; $('.previa-quadro').removeClass('orbita-arrastando'); enviarOrbita(true);
+  });
+  function pararGiro(enviar) {
+    if (!ob.gira) return; ob.gira = false; cancelAnimationFrame(ob.raf); $('#orbita-girar').removeClass('btn-verde');
+    if (enviar) enviarOrbita(true);
+  }
+  function passoGiro(ts) {
+    if (!ob.gira) return;
+    if (!ob.espera && ts - ob.ult > 40) { var dt = ob.ult ? Math.min(ts - ob.ult, 250) : 40; ob.ult = ts; ob.az = normAz(ob.az + dt * 0.06); enviarOrbita(false); }
+    ob.raf = requestAnimationFrame(passoGiro);
+  }
+  $(document).on('click', '#orbita-girar', function () {
+    if (!e3d()) return;
+    if (ob.gira) { pararGiro(true); return; }
+    ler(); ob.gira = true; ob.ult = 0; $(this).addClass('btn-verde'); ob.raf = requestAnimationFrame(passoGiro);
+  });
+  $(document).on('click', '.orbita-vista', function () {
+    if (!e3d()) return; pararGiro(false); ob.az = parseFloat($(this).data('az')); ob.el = parseFloat($(this).data('el')); enviarOrbita(true);
+  });
+  $(document).on('shiny:value', function (e) { if (e.name === 'previa') setTimeout(mostrarOrbita, 150); });
+  $(document).on('change', '#tipo_grafico', function () { pararGiro(false); setTimeout(mostrarOrbita, 400); });
   $(document).on('change', '#arrastar', colocar);
   $(window).on('resize', colocar);
   $(document).on('pointerdown', '#legenda-caixa', function (e) {

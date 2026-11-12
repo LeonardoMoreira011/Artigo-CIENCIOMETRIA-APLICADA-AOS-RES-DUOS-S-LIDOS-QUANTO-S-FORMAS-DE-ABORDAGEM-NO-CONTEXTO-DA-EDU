@@ -61,6 +61,8 @@
   tri_cor_borda_barras = c("tridimensional", "cor_borda_barras"), tri_ponto_tamanho_pt = c("tridimensional", "ponto_tamanho_pt"), tri_hastes = c("tridimensional", "hastes"),
   tri_cor_hastes = c("tridimensional", "cor_hastes"), tri_cor_borda_pontos = c("tridimensional", "cor_borda_pontos"), tri_cor_paredes = c("tridimensional", "cor_paredes"),
   tri_cor_grade = c("tridimensional", "cor_grade"), tri_cor_caixa = c("tridimensional", "cor_caixa"),
+  tri_profundidade = c("tridimensional", "profundidade"), tri_perspectiva = c("tridimensional", "perspectiva"), tri_grade_mostrar = c("tridimensional", "grade_mostrar"),
+  tri_grade_espessura_pt = c("tridimensional", "grade_espessura_pt"), tri_caixa_espessura_pt = c("tridimensional", "caixa_espessura_pt"), tri_traco_comprimento_pt = c("tridimensional", "traco_comprimento_pt"),
   tri_sombreado = c("tridimensional", "sombreado"), tri_malha = c("tridimensional", "malha"), tri_niveis_espessura_pt = c("tridimensional", "niveis_espessura_pt"),
   tri_linhas_preencher = c("tridimensional", "linhas_preencher"), tri_linhas_faixas = c("tridimensional", "linhas_faixas"), tri_linhas_cor = c("tridimensional", "linhas_cor"),
   tri_linhas_espessura_pt = c("tridimensional", "linhas_espessura_pt"),

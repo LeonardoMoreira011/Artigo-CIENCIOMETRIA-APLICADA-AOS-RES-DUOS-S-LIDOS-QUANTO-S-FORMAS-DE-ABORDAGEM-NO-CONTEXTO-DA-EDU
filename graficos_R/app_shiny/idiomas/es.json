@@ -1382,5 +1382,21 @@
  " tem a maior média (": " tiene la mayor media (",
  "O maior valor de ": "El mayor valor de ",
  " (maior média)": " (mayor media)",
- "Azul (marinho → claro)": "Azul (marino → claro)"
+ "Azul (marinho → claro)": "Azul (marino → claro)",
+ "Profundidade do eixo Y": "Profundidad del eje Y",
+ "Comprimento do eixo Y em relação ao X: 1 = quadrado; 0,5 = metade; 2 = o dobro.": "Longitud del eje Y respecto al X: 1 = cuadrado; 0,5 = la mitad; 2 = el doble.",
+ "Perspectiva": "Perspectiva",
+ "0 = sem perspectiva (como um desenho técnico); 1 = bem marcada (o que está longe encolhe).": "0 = sin perspectiva (como un dibujo técnico); 1 = muy marcada (lo que está lejos se encoge).",
+ "Grade nas paredes e no piso": "Cuadrícula en las paredes y el piso",
+ "Grossura da grade (pt)": "Grosor de la cuadrícula (pt)",
+ "Grossura das arestas da caixa (pt)": "Grosor de las aristas de la caja (pt)",
+ "Comprimento dos traços dos eixos (pt)": "Longitud de las marcas de los ejes (pt)",
+ "Vazio = o do eixo (blocos Intervalos dos eixos). A cor, a grossura, a fonte e o tamanho dos números e dos títulos de cada eixo vêm dos blocos dos eixos X e Y (o Z herda o estilo do Y).": "Vacío = el del eje (bloques Intervalos de los ejes). El color, el grosor, la fuente y el tamaño de los números y títulos de cada eje vienen de los bloques de los ejes X e Y (el Z hereda el estilo del Y).",
+ "Arraste o gráfico para girar em qualquer direção": "Arrastra el gráfico para girarlo en cualquier dirección",
+ "⟲ Girar": "⟲ Girar",
+ "Frente": "Frente",
+ "Lado": "Lado",
+ "Topo": "Arriba",
+ "Padrão": "Predeterminado",
+ "Arraste o gráfico para girar": "Arrastra el gráfico para girar"
 }

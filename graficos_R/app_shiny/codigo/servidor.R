@@ -262,17 +262,20 @@ servidor <- function(input, output, session) {
   vars_deb <- debounce(vars_atual, 700)
 
   st <- new.env(); st$ate <- Sys.time() - 1                 # troca de aba em andamento: espera as telas serem atualizadas antes de montar
-  calcular <- function() {
-    if (Sys.time() < st$ate) { rv$pend_calc <- TRUE; return(invisible()) }
+  # sobrescrever: valores que valem só neste desenho (o giro do gráfico 3D); rapido: prévia leve (menos pontos, resolução menor) enquanto o gráfico gira
+  calcular <- function(sobrescrever = NULL, rapido = FALSE) {
+    if (!rapido && Sys.time() < st$ate) { rv$pend_calc <- TRUE; return(invisible()) }
     if (is.null(rv$dados)) { rv$erro <- NULL; return(invisible()) }
     t_ini <- Sys.time()
-    withProgress(message = T("Montando o gráfico..."), value = 0.4, {
-      r <- construir_grafico(rv$dados, vars_atual(), CFG0, idioma = idioma())
+    v_atual <- vars_atual(); for (n in names(sobrescrever)) v_atual[[n]] <- sobrescrever[[n]]
+    options(cinabro.rapido = rapido); on.exit(options(cinabro.rapido = NULL), add = TRUE)
+    corpo <- function() {
+      r <- construir_grafico(rv$dados, v_atual, CFG0, idioma = idioma())
       t_mont <- as.numeric(difftime(Sys.time(), t_ini, units = "secs"))
       if (!is.null(r$erro)) { rv$erro <- r$erro; rv$res <- r; registrar_log("gráfico com erro (", sprintf("%.2f", t_mont), " s): ", substr(r$erro, 1, 200)); return(invisible()) }
-      incProgress(0.3)
+      if (!rapido) incProgress(0.3)
       prep <- tryCatch(.preparar_saida(r$g, r$cfg), error = function(e) NULL)                # o gráfico é montado uma vez e serve ao desenho e às medidas
-      p <- tryCatch(desenhar_previa(r$g, r$cfg, dpi = 130, alvo_px = if (!is.null(rv$palco_larg)) rv$palco_larg - 30, prep = prep), error = function(e) { rv$erro <- conditionMessage(e); NULL })
+      p <- tryCatch(desenhar_previa(r$g, r$cfg, dpi = if (rapido) 72 else 130, alvo_px = if (!is.null(rv$palco_larg)) rv$palco_larg - 30, prep = prep), error = function(e) { rv$erro <- conditionMessage(e); NULL })
       if (!is.null(p)) rv$palco_usado <- rv$palco_larg
       registrar_log("gráfico: montar ", sprintf("%.2f", t_mont), " s, total ", sprintf("%.2f", as.numeric(difftime(Sys.time(), t_ini, units = "secs"))),
                     " s; campos em uso: ", paste(names(vars_atual()), collapse = ","), "; memória do R ", round(sum(gc()[, 2])), " MB; pasta temporária ",
@@ -280,6 +283,8 @@ servidor <- function(input, output, session) {
       if (!is.null(p)) {
         if (!is.null(rv$previa$arquivo)) unlink(rv$previa$arquivo)          # a prévia anterior não fica acumulando na pasta temporária
         rv$res <- r; rv$previa <- p; rv$erro <- NULL
+        if (!rapido) rv$vars_render <- v_atual                    # o que está na tela: se os campos voltarem a este mesmo valor, não precisa desenhar de novo
+        if (rapido) return(invisible())                            # durante o giro não calcula a legenda, as zonas nem as caixas
         geo <- tryCatch(.geometria_legenda(r$g, r$cfg, prep), error = function(e) NULL)   # onde está a legenda (caixa que se arrasta)
         rv$geo <- geo
         zonas <- tryCatch(.geometria_zonas(r$g, r$cfg, prep), error = function(e) NULL)       # títulos clicáveis sobre a prévia
@@ -287,10 +292,24 @@ servidor <- function(input, output, session) {
         session$sendCustomMessage("legenda_geom", if (is.null(geo)) list(ok = FALSE, zonas = zonas, caixas = caixas)
                                   else list(ok = TRUE, painel = geo$painel, legenda = geo$legenda, pagina = geo$pagina, zonas = zonas, caixas = caixas))
       }
-    })
+    }
+    if (rapido) corpo() else withProgress(message = T("Montando o gráfico..."), value = 0.4, corpo())
   }
   observe({ req(isTRUE(rv$pend_calc)); invalidateLater(400); isolate(if (Sys.time() >= st$ate) { rv$pend_calc <- FALSE; if (isTRUE(input$auto)) calcular() }) })
-  observeEvent(vars_deb(), { if (isTRUE(input$auto) && !is.null(rv$dados)) calcular() }, ignoreInit = TRUE)
+  observeEvent(vars_deb(), { if (isTRUE(input$auto) && !is.null(rv$dados) && !identical(vars_deb(), rv$vars_render)) calcular() }, ignoreInit = TRUE)
+  # giro do gráfico 3D com o mouse (arrastar na prévia, botão Girar, vistas prontas): o navegador manda o ângulo; o R devolve a prévia leve e, ao soltar, a completa
+  TIPOS_3D <- c("superficie_3d", "barras_3d", "dispersao_3d", "linhas_3d")
+  observeEvent(input$orbita_3d, {
+    d <- input$orbita_3d; req(rv$dados, d)
+    if (!(vars_atual()$tipo_grafico %||% "linha_pontos") %in% TIPOS_3D) { session$sendCustomMessage("orbita_ok", list(t = d$t)); return() }
+    az <- suppressWarnings(as.numeric(d$az)); el <- suppressWarnings(as.numeric(d$el))
+    if (!is.finite(az) || !is.finite(el)) { session$sendCustomMessage("orbita_ok", list(t = d$t)); return() }
+    az <- round(((az + 180) %% 360) - 180, 1); el <- round(min(max(el, 0), 90), 1)
+    sob <- list(tri_azimute = az, tri_elevacao = el)
+    if (isTRUE(d$fim)) { calcular(sob, rapido = FALSE); updateNumericInput(session, "tri_azimute", value = az); updateNumericInput(session, "tri_elevacao", value = el) }
+    else calcular(sob, rapido = TRUE)
+    session$sendCustomMessage("orbita_ok", list(t = d$t, fim = isTRUE(d$fim)))
+  }, ignoreInit = TRUE)
   observeEvent(rv$dados, { if (isTRUE(input$auto)) calcular() }, ignoreInit = TRUE, priority = -10)
   observeEvent(input$atualizar, calcular())
 

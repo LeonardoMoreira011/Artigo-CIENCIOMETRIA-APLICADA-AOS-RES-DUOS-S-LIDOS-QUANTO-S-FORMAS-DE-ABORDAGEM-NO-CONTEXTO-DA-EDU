@@ -130,6 +130,12 @@ tri_cor_borda_pontos <- NULL # contorno dos pontos (NA = sem)
 tri_cor_paredes <- NULL   # cor do piso e das paredes
 tri_cor_grade <- NULL     # cor da grade das paredes
 tri_cor_caixa <- NULL     # cor das arestas da caixa
+tri_profundidade <- NULL  # comprimento do eixo Y em relação ao X (1 = quadrado)
+tri_perspectiva <- NULL   # 0 = sem perspectiva a 1 = bem marcada
+tri_grade_mostrar <- NULL # TRUE/FALSE: grade das paredes e do piso
+tri_grade_espessura_pt <- NULL # grossura da grade (pt)
+tri_caixa_espessura_pt <- NULL # grossura das arestas da caixa (pt)
+tri_traco_comprimento_pt <- NULL # comprimento dos traços dos eixos (pt)
 tri_sombreado <- NULL   # TRUE/FALSE: superfície clareia e escurece conforme a inclinação
 tri_malha <- NULL   # TRUE = linhas da grade sobre a superfície
 tri_niveis_espessura_pt <- NULL   # grossura das linhas de nível (pt)

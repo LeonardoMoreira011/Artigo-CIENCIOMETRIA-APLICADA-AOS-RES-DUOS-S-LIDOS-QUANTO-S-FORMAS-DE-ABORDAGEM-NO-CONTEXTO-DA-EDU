@@ -1492,7 +1492,7 @@ teste("radar e linhas 3D em inglês e espanhol: mensagens do motor traduzidas", 
   grepl("at least 3 numeric columns", e("en"), fixed = TRUE) && grepl("al menos 3 columnas numéricas", e("es"), fixed = TRUE) })
 teste("números de eixos diferentes não se sobrepõem no 3D: dois textos no mesmo canto são afastados; e no mapa de cor o 1º e o último número de cada eixo ficam para dentro (sem se tocar no canto)", {
   S <- .estilo3d(cfg); larg <- function(txt, pt) max(nchar(txt), 1) * pt * 0.52 / 72
-  rt <- data.frame(x = c(0, 0.01), y = c(0, 0.01), lab = c("450", "0.5"), ang = 0, hj = 0.5, comp = 0, ux = c(0, -0.7), uy = c(-1, -0.7), eix = c("x", "y"), xe = c(0, 0.01), ye = c(0, 0.01), stringsAsFactors = FALSE)
+  rt <- data.frame(x = c(0, 0.01), y = c(0, 0.01), lab = c("450", "0.5"), pt = 10, ang = 0, hj = 0.5, comp = 0, ux = c(0, -0.7), uy = c(-1, -0.7), eix = c("x", "y"), xe = c(0, 0.01), ye = c(0, 0.01), stringsAsFactors = FALSE)
   r <- .desencostar_rotulos3d(rt, NULL, S, 1, larg)$rot; d_antes <- sqrt(diff(rt$x)^2 + diff(rt$y)^2); d_depois <- sqrt(diff(r$x)^2 + diff(r$y)^2)
   g <- suppressWarnings(plotar(d3, cA("mapa_cor"))); hx <- g$theme$axis.text.x.bottom$hjust; hy <- g$theme$axis.text.y.left$vjust
   d_antes < 0.05 && d_depois > 0.1 && isTRUE(attr(g, "info")$alinhar_cantos) && hx[1] == 0 && hx[length(hx)] == 1 && length(hx) == length(attr(g, "info")$ax_x$maiores) && hy[1] == 0 && hy[length(hy)] == 1 })
@@ -1504,6 +1504,20 @@ teste("mapa de cor: o gradiente é contínuo (imagem, sem quadradinhos) e os tra
 teste("linhas 3D: gradiente contínuo (40 faixas por linha), paleta azul e traço fino; o gráfico com 41 linhas desenha sem erro", {
   g <- suppressWarnings(plotar(dc3, cA("linhas_3d", mapa_calor = utils::modifyList(cfg$mapa_calor, list(esquema_cor = "azul"))))); e <- .escala_z(utils::modifyList(cfg, list(mapa_calor = utils::modifyList(cfg$mapa_calor, list(esquema_cor = "azul")))), 0:10, "v")
   cfg$tridimensional$linhas_faixas == 40 && cfg$tridimensional$linhas_espessura_pt <= 0.3 && monta(g) && length(unique(e$cor_de(seq(0, 10, 0.1)))) > 80 && identical(.cores_z(utils::modifyList(cfg, list(mapa_calor = utils::modifyList(cfg$mapa_calor, list(esquema_cor = "azul")))))[1], "#16264F") })
+
+teste("3D dinâmico: profundidade e perspectiva mudam o desenho, grade e caixa são editáveis, e o modo rápido (giro) monta mais leve mas desenha igual por fora", {
+  arqv <- function(nome, ...) { cx <- cA("superficie_3d", tridimensional = utils::modifyList(cfg$tridimensional, list(...)), exportacao = utils::modifyList(cfg$exportacao, list(pasta = tmp, nome_arquivo = nome, formatos = "png", dpi = 100)))
+    suppressMessages(salvar(suppressWarnings(plotar(d3, cx)), cx)) }
+  lerb <- function(a) readBin(a, "raw", file.size(a))
+  a0 <- arqv("dyn0"); ap <- arqv("dyn_prof", profundidade = 1.6); ae <- arqv("dyn_persp", perspectiva = 0.8); ag <- arqv("dyn_grade", grade_mostrar = FALSE); ac <- arqv("dyn_caixa", caixa_espessura_pt = 1.2)
+  P0 <- .proj3d(40, 28, 1, 0); P1 <- .proj3d(40, 28, 1, 0.8); q0 <- P0(0.5, 1, 0.5); q1 <- P1(0.5, 1, 0.5)
+  options(cinabro.rapido = TRUE); gr <- suppressWarnings(plotar(d3, cA("superficie_3d"))); options(cinabro.rapido = NULL)
+  n_rapido <- sum(vapply(gr$layers, function(l) nrow(l$data), 0L)); n_normal <- sum(vapply(suppressWarnings(plotar(d3, cA("superficie_3d")))$layers, function(l) nrow(l$data), 0L))
+  all(!vapply(list(ap, ae, ag, ac), function(a) identical(lerb(a), lerb(a0)), NA)) && abs(q1$sx - q0$sx) > 1e-6 && is.finite(n_rapido) && n_rapido < n_normal })
+teste("3D de lado ou de cima: os números dos eixos quase de ponta não se empilham (ficam só os que cabem) e as vistas extremas desenham sem erro", {
+  vs <- list(c(0, 90), c(90, 12), c(180, 5), c(-45, 60), c(0, 0))
+  r <- vapply(vs, function(v) { g <- tryCatch(suppressWarnings(plotar(d3, cA("superficie_3d", tridimensional = utils::modifyList(cfg$tridimensional, list(azimute = v[1], elevacao = v[2]))))), error = function(e) NULL); !is.null(g) && monta(g) }, NA)
+  all(r) })
 
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", .res["passou"], .res["falhou"]))
 unlink(tmp, recursive = TRUE)

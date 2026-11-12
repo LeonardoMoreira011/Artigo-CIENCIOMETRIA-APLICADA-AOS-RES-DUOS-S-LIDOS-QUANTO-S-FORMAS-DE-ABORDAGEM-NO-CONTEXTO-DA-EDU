@@ -342,6 +342,15 @@ testServer(servidor, {
   teste("servidor: 'Atualizar agora' monta a prévia", !is.null(rv$previa) && is.null(rv$erro))
   teste("servidor: a prévia calcula onde está a legenda (caixa que se arrasta) dentro do painel",
         !is.null(rv$geo) && all(rv$geo$legenda[1:2] >= rv$geo$painel[1:2] - 1e-6) && rv$geo$legenda[3] < rv$geo$painel[3])
+  session$setInputs(exemplo = "superficie_rendimento.csv", tipo_grafico = "superficie_3d", auto = FALSE, atualizar = 2)
+  teste("servidor: giro 3D — o gráfico gira com o ângulo vindo do navegador (prévia leve) e, ao soltar, a prévia completa e o valor guardado", {
+    session$setInputs(orbita_3d = list(az = 75, el = 40, fim = FALSE, t = 1)); p1 <- rv$previa; ok1 <- is.null(rv$erro) && !is.null(p1) && is.null(getOption("cinabro.rapido"))
+    session$setInputs(orbita_3d = list(az = 75, el = 40, fim = TRUE, t = 2)); ok2 <- is.null(rv$erro) && identical(rv$vars_render$tri_azimute, 75) && identical(rv$vars_render$tri_elevacao, 40) && attr(rv$res$g, "cfg")$tridimensional$azimute == 75
+    session$setInputs(orbita_3d = list(az = 999, el = 500, fim = TRUE, t = 3)); ok3 <- is.null(rv$erro) && rv$vars_render$tri_elevacao == 90
+    ok1 && ok2 && ok3 })
+  session$setInputs(tipo_grafico = "linha_pontos"); session$setInputs(orbita_3d = list(az = 10, el = 10, fim = TRUE, t = 4))
+  teste("servidor: o giro num gráfico que não é 3D é ignorado sem erro", is.null(rv$erro))
+  session$setInputs(exemplo = "exemplo_dois_eixos_e_quebra.csv", auto = FALSE, atualizar = 3)
   session$setInputs(legenda_arrastada = list(esq = 0.25, base = 0.5, t = 1), legenda_redimensionada = list(largura = 0.3, t = 1))
   teste("servidor: arrastar e redimensionar a legenda na prévia roda sem erro", is.null(rv$erro))
   session$setInputs(idioma_pagina = "en")

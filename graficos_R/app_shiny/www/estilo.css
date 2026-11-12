@@ -370,3 +370,9 @@ a:hover { color: var(--vermelho); }
 
 a.btn-topo, .topo-acoes button.btn-topo { display: inline-flex; align-items: center; margin: 0; vertical-align: middle; }
 #dash_abas .shiny-options-group { display: flex; flex-direction: column; gap: 2px; }
+
+/* giro do gráfico 3D */
+#orbita-barra { display: none; align-items: center; gap: 6px; flex-wrap: wrap; }
+#orbita-barra .orbita-dica { color: #6b6b6b; font-size: 12px; margin-left: 4px; }
+.previa-quadro.orbita-ativa #previa img { cursor: grab; touch-action: none; user-select: none; -webkit-user-drag: none; }
+.previa-quadro.orbita-arrastando #previa img { cursor: grabbing; }
