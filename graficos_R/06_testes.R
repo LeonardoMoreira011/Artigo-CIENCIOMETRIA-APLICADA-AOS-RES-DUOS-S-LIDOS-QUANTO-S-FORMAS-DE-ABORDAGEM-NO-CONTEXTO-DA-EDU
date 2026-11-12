@@ -978,8 +978,8 @@ teste("painel: legenda_n_linhas e fundo_transparente chegam ao cfg", cpl$legenda
 
 cat("--- paletas ---\n")
 ids_pal <- unlist(.PALETAS_GRUPOS, use.names = FALSE)
-teste("paletas: a lista da tela tem 12 paletas e todas existem e entregam n cores válidas (n = 1, 3 e 12)",
-      length(ids_pal) == 12 && all(vapply(ids_pal, function(i) all(vapply(c(1, 3, 12), function(n) {
+teste("paletas: a lista da tela tem 32 paletas e todas existem e entregam n cores válidas (n = 1, 3 e 12)",
+      length(ids_pal) == 32 && all(vapply(ids_pal, function(i) all(vapply(c(1, 3, 12), function(n) {
         x <- .paleta(i, n, c0$cores); length(x) == n && !anyNA(x) && is.matrix(grDevices::col2rgb(x)) }, NA)), NA)))
 teste("paletas: a padrão 'cinabro' começa pelas 4 cores da marca (vermelho, petróleo, tinta, terracota), tem 10 cores e o painel a aceita",
       identical(.paleta("cinabro", 4, c0$cores), c("#B3262E", "#2F6670", "#20242B", "#C96A4A")) && length(.paleta("cinabro", 10, c0$cores)) == 10 &&
@@ -988,10 +988,11 @@ teste("paletas: a padrão 'cinabro' começa pelas 4 cores da marca (vermelho, pe
 teste("paletas: os degradês vão do claro ao escuro e a 'cinabro' (categórica) fica na ordem da lista", {
   a <- .paleta("brewer_Reds", 5, c0$cores); l <- function(x) sum(grDevices::col2rgb(x)) / 3
   l(a[1]) > l(a[5]) && identical(.paleta("cinabro", 3, c0$cores), c("#B3262E", "#2F6670", "#20242B")) })
-teste("paletas retiradas (okabe_ito, marca, tol_*, brewer_Set*, viridis, tableau...) ainda funcionam com um aviso e a paleta mantida mais parecida; 'classico' vale como 'cinabro' sem aviso",
+teste("paletas retiradas (okabe_ito, marca, tol_*, brewer_Set*, cmo_matter, tableau...) ainda funcionam com um aviso e a paleta mantida mais parecida; 'classico' vale como 'cinabro' sem aviso",
       da_aviso(.paleta("okabe_ito", 3, c0$cores), "foi retirada") && identical(suppressWarnings(.paleta("okabe_ito", 3, c0$cores)), .paleta("cinabro", 3, c0$cores)) &&
-      identical(suppressWarnings(.paleta("brewer_Blues", 4, c0$cores)), .paleta("brewer_YlGnBu", 4, c0$cores)) &&
-      identical(suppressWarnings(.paleta("viridis", 4, c0$cores)), .paleta("brewer_YlGnBu", 4, c0$cores)) &&
+      identical(suppressWarnings(.paleta("brewer_Set1", 4, c0$cores)), .paleta("cinabro", 4, c0$cores)) &&
+      identical(suppressWarnings(.paleta("seq_azul", 4, c0$cores)), .paleta("brewer_Blues", 4, c0$cores)) &&
+      identical(suppressWarnings(.paleta("cmo_matter", 4, c0$cores)), .paleta("brewer_YlOrRd", 4, c0$cores)) &&
       all(unname(.PALETAS_ANTIGAS) %in% c(ids_pal)) && length(avisos_de(.paleta("classico", 3, c0$cores))) == 0 &&
       identical(.paleta("classico", 4, c0$cores), .paleta("cinabro", 4, c0$cores)))
 teste("paleta desconhecida dá erro com a lista de opções", da_erro(.paleta("nao_existe", 3, c0$cores), "Opções:"))

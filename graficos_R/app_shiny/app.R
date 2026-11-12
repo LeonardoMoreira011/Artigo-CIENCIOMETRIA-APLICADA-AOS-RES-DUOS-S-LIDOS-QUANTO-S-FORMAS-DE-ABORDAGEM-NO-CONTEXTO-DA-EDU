@@ -101,7 +101,7 @@ construir_ui <- function(idioma) fluidPage(
                   tags$button(type = "button", class = "btn btn-default btn-xs orbita-vista", `data-az` = "40", `data-el` = "28", "Padrão"),
                   tags$button(type = "button", id = "orbita-persp", class = "btn btn-default btn-xs", title = "Liga/desliga a perspectiva (o que está longe encolhe)", "Perspectiva"),
                   tags$button(type = "button", id = "orbita-grade", class = "btn btn-default btn-xs", title = "Mostra/esconde a grade das paredes e do piso", "Grade"),
-                  span(class = "orbita-dica", "Arraste o gráfico para girar"), span(id = "orbita-info", class = "orbita-info", ""))
+                  span(class = "orbita-dica", "Arraste o gráfico para girar"), span(id = "orbita-info", class = "orbita-info", "")),
               div(class = "previa-ctl", checkboxInput("arrastar", "Mover legenda e caixas com o mouse", TRUE), checkboxInput("auto", "Atualizar sozinho", TRUE),
                   actionButton("atualizar", "Atualizar agora", class = "btn-verde"))),
           div(class = "previa-quadro", uiOutput("estado"), imageOutput("previa", height = "auto"),

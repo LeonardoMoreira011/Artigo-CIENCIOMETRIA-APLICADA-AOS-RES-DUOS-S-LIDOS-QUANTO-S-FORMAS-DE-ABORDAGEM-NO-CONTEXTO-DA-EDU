@@ -1398,5 +1398,16 @@
  "Lado": "Lado",
  "Topo": "Arriba",
  "Padrão": "Predeterminado",
- "Arraste o gráfico para girar": "Arrastra el gráfico para girar"
+ "Arraste o gráfico para girar": "Arrastra el gráfico para girar",
+ "Todas as paletas do Cinabro servem: digite para procurar. Os degradês vão do menor ao maior valor; os divergentes têm um centro claro (use \"Centro\" para fixá-lo, por exemplo em zero). Dá para inverter, ou escrever as suas próprias cores logo abaixo.": "Sirve cualquier paleta de Cinabro: escribe para buscar. Los degradados van del menor al mayor valor; los divergentes tienen un centro claro (usa \"Centro\" para fijarlo, por ejemplo en cero). Puedes invertirlo o escribir tus propios colores justo debajo.",
+ "Científicas": "Científicas",
+ "Petróleo (creme → azul-petróleo)": "Petróleo (crema → azul petróleo)",
+ "Divergente Cinabro (petróleo - creme - vermelho)": "Divergente Cinabro (petróleo - crema - rojo)",
+ "Cividis (daltonismo)": "Cividis (daltonismo)",
+ "Altura da barra de cores (cm)": "Altura de la barra de colores (cm)",
+ "Padrão 4. Aumente para a barra acompanhar a altura do gráfico.": "Predeterminado 4. Auméntala para que la barra acompañe la altura del gráfico.",
+ "Largura da barra de cores (cm)": "Ancho de la barra de colores (cm)",
+ "Padrão 0,4.": "Predeterminado 0,4.",
+ "Liga/desliga a perspectiva (o que está longe encolhe)": "Activa/desactiva la perspectiva (lo que está lejos se encoge)",
+ "Mostra/esconde a grade das paredes e do piso": "Muestra/oculta la cuadrícula de las paredes y el piso"
 }

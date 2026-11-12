@@ -18,8 +18,8 @@ O Cinabro usa, sem alterar, os trabalhos abaixo. Cada um tem a sua licença; os 
 - **ColorBrewer** (`brewer_*`) — Copyright 2002 Cynthia Brewer, Mark Harrower e The Pennsylvania State University. Licença estilo Apache (http://colorbrewer.org). Nota de agradecimento exigida: *"Colors from ColorBrewer, Cynthia A. Brewer, Geography, Pennsylvania State University."* O nome "ColorBrewer" não pode ser usado no nome de um produto derivado sem permissão.
 - **cmocean** (`cmo_*`) — Copyright 2015 Kristen M. Thyng. Licença MIT. Referência: Thyng, Greene, Hetland, Zimmerle e DiMarco (2016), *Oceanography* 29(3).
 - **Scientific Colour Maps** (`crameri_*`) — Fabio Crameri. Licença MIT. Referências: Crameri (2018), Zenodo, https://doi.org/10.5281/zenodo.1243862; Crameri, Shephard e Heron (2020), *Nature Communications* 11, 5444.
-- **magma, inferno e turbo** — pacote R *viridisLite* (Garnier et al., licença MIT); usado quando instalado.
-- A paleta `cinabro` (cores da marca e variações) é original deste projeto.
+- **viridis, magma, plasma, cividis, inferno, turbo, mako e rocket** — pacote R *viridisLite* (Garnier et al., licença MIT); usado quando instalado.
+- A paleta `cinabro` (cores da marca e variações) e os gradientes `cinabro_degrade`, `petroleo_degrade`, `azul_degrade` e `divergente_cinabro` são originais deste projeto.
 
 ## Pacotes R usados (instalados à parte, não incluídos)
 ggplot2, scales, patchwork, ragg, systemfonts, shiny, svglite, devEMF, viridisLite, sf, vegan, ggrepel — cada um com a sua licença (MIT, GPL ou similar); veja o `DESCRIPTION` de cada pacote.

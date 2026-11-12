@@ -1,0 +1,334 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Cinabro — Guia visual</title><style>@font-face { font-family: "Barlow"; src: url("../fontes/Barlow/Barlow-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "Barlow"; src: url("../fontes/Barlow/Barlow-Bold.ttf"); font-weight: 700; }
+@font-face { font-family: "Barlow"; src: url("../fontes/Barlow/Barlow-Italic.ttf"); font-weight: 400; font-style: italic; }
+:root { --verm: #B3262E; --creme: #F5EBDD; --tinta: #20242B; --terra: #C96A4A; --petr: #2F6670; --cartao: #FAF4EA; --linha: #E0D2BC; --sec: #6B6358; }
+@page { size: 297mm 210mm; margin: 0; }
+* { box-sizing: border-box; }
+html { font-family: "Barlow", sans-serif; color: var(--tinta); font-size: 10.4pt; line-height: 1.38; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; background: #fff; }
+.ic { width: 1.25em; height: 1.25em; flex: none; vertical-align: -0.25em; }
+.ic.sm { width: 1.1em; height: 1.1em; color: var(--petr); margin-right: 1mm; }
+/* páginas */
+section { width: 297mm; height: 210mm; overflow: hidden; position: relative; break-after: page; page-break-after: always; }
+.pg { padding: 11mm 15mm 12mm; background: linear-gradient(180deg, #fff 0, #fff 100%); }
+.pg header { display: flex; justify-content: space-between; font-size: 8.5pt; color: var(--sec); text-transform: uppercase; letter-spacing: .08em; border-bottom: 1.2px solid var(--linha); padding-bottom: 1.6mm; }
+.pg header .sec { color: var(--petr); font-weight: 700; }
+.pg footer { position: absolute; left: 15mm; right: 15mm; bottom: 6mm; font-size: 8pt; color: var(--sec); border-top: 1px solid var(--linha); padding-top: 1.2mm; }
+.pg h2 { display: flex; align-items: center; gap: 4mm; font-size: 20pt; line-height: 1.1; color: var(--verm); margin: 4mm 0 4mm; }
+.pg h2 .hi { width: 11mm; height: 11mm; border-radius: 3mm; background: var(--verm); color: #fff; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.pg h2 .hi .ic { width: 7mm; height: 7mm; vertical-align: 0; }
+h3 { font-size: 11.5pt; color: var(--petr); margin: 0 0 1.5mm; }
+h4 { font-size: 9pt; color: var(--sec); margin: 0 0 1.2mm; text-transform: uppercase; letter-spacing: .06em; }
+p { margin: 0 0 2.2mm; } .lead { font-size: 11.6pt; margin-bottom: 3mm; } .peq { font-size: 9pt; color: var(--sec); }
+.corpo { height: auto; }
+.col2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; align-items: start; }
+.col3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5mm; align-items: start; }
+figure { margin: 0 0 3mm; } figure img { width: 100%; display: block; border-radius: 2mm; border: 1px solid var(--linha); background: #fff; }
+figcaption { font-size: 8.4pt; color: var(--sec); margin-top: 1mm; font-style: italic; }
+.cartao { background: var(--cartao); border: 1px solid var(--linha); border-radius: 3mm; padding: 4mm 4.5mm; }
+.cartao figure { margin-bottom: 2mm; }
+/* notas */
+.nota { display: flex; gap: 3mm; align-items: flex-start; border-radius: 3mm; padding: 3mm 4mm; margin-top: 3mm; font-size: 9.8pt; }
+.nota .ic { width: 6.5mm; height: 6.5mm; margin-top: .3mm; }
+.nota.dica { background: #EAF3F4; border-left: 1.6mm solid var(--petr); } .nota.dica .ic { color: var(--petr); }
+.nota.atencao { background: #FBE9E7; border-left: 1.6mm solid var(--verm); } .nota.atencao .ic { color: var(--verm); }
+.nota.atalho { background: #F7EFDC; border-left: 1.6mm solid #B98A2E; } .nota.atalho .ic { color: #B98A2E; }
+.nota.exemplo { background: #F3EAF4; border-left: 1.6mm solid #7B4FA3; } .nota.exemplo .ic { color: #7B4FA3; }
+/* listas */
+ul.tick { list-style: none; padding: 0; margin: 0 0 2mm; } ul.tick li { padding-left: 5.5mm; position: relative; margin-bottom: 1.6mm; }
+ul.tick li::before { content: ""; position: absolute; left: 0; top: .42em; width: 2.4mm; height: 2.4mm; border-radius: 50%; background: var(--terra); }
+ol.lista-passos, ol.leg-mapa { padding-left: 6mm; margin: 0 0 2mm; } ol.lista-passos li, ol.leg-mapa li { margin-bottom: 1.8mm; }
+ol.leg-mapa { list-style: none; counter-reset: m; padding: 0; } ol.leg-mapa li { counter-increment: m; position: relative; padding-left: 8mm; font-size: 9.6pt; }
+ol.leg-mapa li::before { content: counter(m); position: absolute; left: 0; top: 0; width: 5.6mm; height: 5.6mm; border-radius: 50%; background: var(--verm); color: #fff; font-weight: 700; font-size: 9pt; text-align: center; line-height: 5.6mm; }
+/* passos */
+.passos4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; }
+.passo { background: var(--cartao); border: 1px solid var(--linha); border-radius: 3mm; padding: 4mm; display: flex; gap: 3mm; font-size: 9.8pt; }
+.passo .num { width: 8mm; height: 8mm; border-radius: 50%; background: var(--verm); color: #fff; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none; font-size: 12pt; }
+/* mapa da tela */
+.mapa { position: relative; } .mapa .tela { margin: 0; }
+.bd { position: absolute; width: 6.2mm; height: 6.2mm; margin: -3.1mm 0 0 -3.1mm; border-radius: 50%; background: var(--verm); color: #fff; border: 1.2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.25); font-weight: 700; font-size: 9.5pt; text-align: center; line-height: 5.6mm; }
+/* tabela demo */
+.tabela-demo { display: flex; align-items: center; gap: 4mm; margin: 2mm 0 4mm; } .tabela-demo table { border-collapse: collapse; font-size: 9.4pt; background: #fff; }
+.tabela-demo th { background: var(--petr); color: #fff; padding: 1.4mm 3mm; } .tabela-demo td { border: 1px solid var(--linha); padding: 1.2mm 3mm; text-align: right; } .tabela-demo.grande table { font-size: 10.6pt; }
+.tabela-demo .seta { font-size: 20pt; color: var(--terra); } .tabela-demo figure { width: 62mm; margin: 0; }
+.trio { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3mm; margin: 3mm 0; } .trio div { background: var(--cartao); border: 1px solid var(--linha); border-radius: 2mm; padding: 2mm 3mm; font-size: 9.2pt; }
+/* galeria */
+.galeria { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4mm; } .gal { font-size: 8.8pt; line-height: 1.25; } .gal b { display: block; font-size: 9.6pt; color: var(--petr); margin-bottom: .6mm; } .gal span { color: var(--sec); }
+.gal figure { margin-bottom: 1.6mm; } .gal figure img { aspect-ratio: 1.25; object-fit: contain; padding: 1mm; }
+/* sete blocos */
+.blocos7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3mm; } .b7 { background: var(--cartao); border: 1px solid var(--linha); border-radius: 3mm; padding: 3mm; font-size: 8.8pt; line-height: 1.25; } .b7 b { display: block; color: var(--petr); font-size: 10pt; margin: 1.5mm 0 .6mm; }
+.b7 .ci { width: 9mm; height: 9mm; border-radius: 50%; background: #1A1E25; color: #fff; display: inline-flex; align-items: center; justify-content: center; } .b7 .ci .ic { width: 5.4mm; height: 5.4mm; vertical-align: 0; }
+/* giro */
+.barra img { width: auto; max-width: 100%; max-height: 12mm; } .larga { margin-top: 2mm; } .larga img { max-height: 70mm; object-fit: contain; width: 100%; }
+.trilha { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4mm; margin-top: 3mm; } .tr1 { background: var(--cartao); border: 1px solid var(--linha); border-radius: 3mm; padding: 3mm 4mm 3mm 11mm; position: relative; font-size: 9.2pt; line-height: 1.3; }
+.tr1 .n { position: absolute; left: 3mm; top: 3mm; width: 6mm; height: 6mm; border-radius: 50%; background: var(--terra); color: #fff; font-weight: 700; text-align: center; line-height: 6mm; }
+/* atlas */
+.atlas { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4mm; align-items: start; } .atl-g { background: var(--cartao); border: 1px solid var(--linha); border-radius: 3mm; padding: 3mm; }
+.atl-i { display: flex; flex-direction: column; margin-bottom: 1.6mm; font-size: 8.4pt; line-height: 1.15; } .atl-i i { display: block; height: 4.4mm; border-radius: 1mm; border: .5px solid rgba(0,0,0,.2); margin-bottom: .5mm; }
+/* edição */
+.tres-img { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2mm; } .tres-img figure { margin: 0 0 2mm; }
+.tab-edit { border-collapse: collapse; width: 100%; font-size: 9.4pt; } .tab-edit td { border-bottom: 1px solid var(--linha); padding: 1.6mm 2mm; vertical-align: top; } .tab-edit td:first-child { white-space: nowrap; color: var(--petr); width: 38mm; }
+.idiomas { display: flex; gap: 3mm; margin: 2mm 0 4mm; } .idiomas span { border: 1.4px solid var(--petr); border-radius: 5mm; padding: 1.4mm 5mm; font-weight: 700; color: var(--petr); }
+/* faq e problemas */
+.faq { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm 8mm; } .faq .q { background: var(--cartao); border: 1px solid var(--linha); border-radius: 3mm; padding: 3mm 4mm; font-size: 9.6pt; } .faq .q b { color: var(--petr); } .faq .q .ic { color: var(--verm); }
+table.sp { border-collapse: collapse; width: 100%; font-size: 9.2pt; } table.sp th { background: var(--petr); color: #fff; text-align: left; padding: 2mm 3mm; } table.sp td { border-bottom: 1px solid var(--linha); padding: 1.9mm 3mm; vertical-align: top; } table.sp td:first-child { width: 62mm; font-weight: 700; }
+.fim { display: flex; align-items: center; gap: 5mm; margin-top: 8mm; padding: 5mm 6mm; background: var(--tinta); color: #fff; border-radius: 3mm; } .fim .ic { width: 14mm; height: 14mm; color: var(--terra); }
+/* capa */
+.capa { display: grid; grid-template-columns: 52% 48%; background: var(--tinta); color: #fff; }
+.capa-esq { padding: 22mm 18mm 14mm 20mm; position: relative; } .capa-sel { display: inline-block; letter-spacing: .3em; font-size: 9.5pt; color: var(--terra); font-weight: 700; border-bottom: 2px solid var(--verm); padding-bottom: 1.5mm; }
+.capa h1 { font-size: 66pt; margin: 8mm 0 2mm; line-height: 1; color: #fff; letter-spacing: .02em; } .capa-lema { font-size: 17pt; color: #F4D9C8; margin-bottom: 6mm; } .capa-txt { font-size: 11.4pt; color: #D8D2C6; max-width: 120mm; }
+.capa-lista { list-style: none; padding: 0; margin: 8mm 0 0; font-size: 11pt; } .capa-lista li { margin-bottom: 2.6mm; color: #EFE6D6; } .capa-lista .ic { color: var(--terra); margin-right: 2mm; width: 1.5em; height: 1.5em; }
+.capa-rodape { position: absolute; left: 20mm; bottom: 12mm; font-size: 9pt; color: #9A958C; }
+.capa-dir { position: relative; background: linear-gradient(135deg, #2F6670 0%, #1D4650 100%); overflow: hidden; } .capa-dir::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, rgba(255,255,255,.03) 0 6px, transparent 6px 14px); }
+.cp { position: absolute; margin: 0; z-index: 2; } .cp img { border: 0; border-radius: 3mm; box-shadow: 0 8px 22px rgba(0,0,0,.35); } .cp1 { width: 112mm; left: 14mm; top: 16mm; } .cp2 { width: 84mm; right: 10mm; top: 70mm; } .cp3 { width: 104mm; left: 24mm; bottom: 12mm; }
+.alto img { max-height: 88mm; width: auto; max-width: 100%; margin: 0 auto; object-position: top; object-fit: cover; }
+.duas-img { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; } .duas-img figure { margin: 0; }
+</style></head><body><section class="capa">
+  <div class="capa-esq">
+    <div class="capa-sel">GUIA VISUAL</div>
+    <h1>Cinabro</h1>
+    <p class="capa-lema">Dos seus dados ao gráfico pronto, sem programar.</p>
+    <p class="capa-txt">Um passeio ilustrado, passo a passo, para quem vai usar o Cinabro todos os dias: do primeiro clique ao dashboard, com gráficos 3D, paletas de cores, projetos e idiomas.</p>
+    <ul class="capa-lista">
+      <li><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12L3 7M12 12v10"/></svg> Gráficos 2D, 3D, mapas e radar</li><li><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 100 18c1.4 0 2-1 1.6-2.2-.4-1.3.3-2.3 1.6-2.3H17a4 4 0 004-4c0-5-4-9.5-9-9.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg> 32 paletas de cores para os gradientes</li><li><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg> Português, English e Español</li><li><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="10" rx="1"/><rect x="13" y="3" width="8" height="6" rx="1"/><rect x="13" y="11" width="8" height="10" rx="1"/><rect x="3" y="15" width="8" height="6" rx="1"/></svg> Dashboard em uma página, com PDF</li>
+    </ul>
+    <div class="capa-rodape">Versão 0.3.0 · Leonardo Moreira · licença MIT</div>
+  </div>
+  <div class="capa-dir"><figure class="cp cp1" style=""><img src="img_guia/pal_viridis.png" alt=""></figure><figure class="cp cp2" style=""><img src="img_guia/m20_radar.png" alt=""></figure><figure class="cp cp3" style=""><img src="img_guia/pal_divergente.png" alt=""></figure></div>
+</section><section class="pg "><header><span class="sec"> Comece aqui</span><span class="pnum">2 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 7-6 2-2 6z"/></svg></span>Conheça a tela em 1 minuto</h2><div class="corpo">
+<div class="col2" style="grid-template-columns:1.75fr 1fr">
+  <div class="mapa"><figure class="tela" style=""><img src="img_guia/tela_3d.png" alt=""></figure><span class="bd" style="left:7%;top:8.2%">1</span><span class="bd" style="left:78%;top:2.5%">2</span><span class="bd" style="left:2.1%;top:36%">3</span><span class="bd" style="left:17%;top:55%">4</span><span class="bd" style="left:62%;top:15%">5</span><span class="bd" style="left:47%;top:23.6%">6</span><span class="bd" style="left:70%;top:64%">7</span></div>
+  <div>
+    <ol class="leg-mapa">
+      <li><b>Abas</b> — vários gráficos no mesmo trabalho (+ Nova aba, Duplicar, Renomear).</li>
+      <li><b>Barra do topo</b> — idioma, estilos prontos, <i>Salvar projeto</i>, <i>Abrir projeto</i>, <i>Restaurar tudo</i> e <i>Sair</i>.</li>
+      <li><b>Trilho de blocos</b> — 7 ícones: Dados · Eixos · Cores · Texto · Legenda · Análises · Exportação.</li>
+      <li><b>Gaveta de ajustes</b> — os campos do bloco escolhido. Tudo muda o gráfico na hora.</li>
+      <li><b>Faixa de ações</b> — ajuste de curva, média ± DP, caixa de estatística, anotações, baixar PNG/PDF, Dashboard.</li>
+      <li><b>Barra de giro 3D</b> — só aparece nos gráficos 3D: arraste, gire e escolha vistas.</li>
+      <li><b>Prévia</b> — o gráfico. Clique no título para editar; arraste a legenda e as caixas.</li>
+    </ol>
+    <div class="nota dica"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg><div><b>Menos é mais.</b> Você só precisa de 3 passos para o primeiro gráfico: <b>dados → tipo de gráfico → ajustes</b>. O resto é refinamento, no seu tempo.</div></div>
+  </div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Comece aqui</span><span class="pnum">3 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></svg></span>Instalar e abrir (Windows)</h2><div class="corpo">
+<div class="passos4"><div class="passo"><span class="num">1</span><div><b>Descompacte</b><br>Extraia o <b>Cinabro.zip</b> numa pasta sua (não rode de dentro do ZIP).</div></div><div class="passo"><span class="num">2</span><div><b>Abra</b><br>Dê dois cliques em <b>abrir_app.bat</b>. Uma janela preta aparece: é o Cinabro trabalhando.</div></div><div class="passo"><span class="num">3</span><div><b>Espere o navegador</b><br>O programa abre sozinho no navegador, em <i>localhost</i>. Seus dados <b>não saem</b> do computador.</div></div><div class="passo"><span class="num">4</span><div><b>Trabalhe</b><br>Escolha um exemplo ou o seu CSV. Para encerrar, clique em <b>Sair</b>.</div></div></div>
+<div class="col2" style="margin-top:6mm">
+  <div class="cartao"><h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg> Na primeira vez</h3><p>O Cinabro baixa sozinho os pacotes de que precisa. <b>Precisa de internet</b> e leva alguns minutos; as próximas aberturas conferem tudo em menos de 1 segundo.</p>
+  <p>Em rede de empresa, se aparecer o aviso de internet, informe o proxy (a mensagem na tela mostra o comando).</p></div>
+  <div class="cartao"><h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg> Atalho na área de trabalho</h3><p>Na 1ª abertura o Cinabro cria o atalho sozinho. Se mudar a pasta de lugar, ele refaz o atalho.</p>
+  <p>Para fechar: botão <b>Sair</b> no topo (fecha o programa de verdade, não só a aba do navegador).</p></div>
+</div>
+<div class="nota atencao"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg><div><b>Nunca feche a janela preta antes de terminar</b> ela é o motor do programa. Se fechar sem querer, abra o <i>abrir_app.bat</i> de novo e use o aviso <b>Retomar de onde você parou</b>: o Cinabro guarda o último gráfico sozinho.</div></div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Passo a passo</span><span class="pnum">4 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></span>Passo 1 · Traga os seus dados</h2><div class="corpo">
+<div class="col2">
+  <div>
+    <p class="lead">Um arquivo <b>CSV</b> (salvo pelo Excel) é tudo de que você precisa. A <b>1ª coluna</b> costuma ser o eixo X; as outras, as séries (eixo Y).</p>
+    <div class="tabela-demo"><table><tr><th>Tempo (min)</th><th>Amostra A</th><th>Amostra B</th></tr><tr><td>0</td><td>22,1</td><td>19,6</td></tr><tr><td>5</td><td>36,2</td><td>29,8</td></tr><tr><td>10</td><td>49,7</td><td>38,7</td></tr></table><span class="seta">→</span><figure class="mini" style=""><img src="img_guia/g01_linha_pontos.png" alt=""></figure></div>
+    <ol class="lista-passos">
+      <li>Clique em <b>Escolher arquivo...</b> (bloco <i>Dados</i>) ou use <b>...ou use um exemplo</b>.</li>
+      <li>Confira a tabela que aparece: o Cinabro mostra as primeiras linhas e quantas colunas leu.</li>
+      <li>Se precisar, troque a <b>Coluna do eixo X</b> e marque quais <b>Colunas Y</b> entram.</li>
+    </ol>
+  </div>
+  <div>
+    <figure class="" style=""><img src="img_guia/tela_2d.png" alt=""><figcaption>Exemplo carregado: tabela, tipo de gráfico e colunas à esquerda; o gráfico à direita.</figcaption></figure>
+    <div class="nota dica"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg><div><b>Excel em português?</b> Pode salvar do jeito que o Excel salva (separador <b>;</b> e vírgula decimal, acentos em UTF-8). O Cinabro reconhece sozinho; não precisa trocar nada.</div></div>
+  </div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg galeria-pg"><header><span class="sec"> Passo a passo</span><span class="pnum">5 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>Passo 2 · Escolha o tipo de gráfico</h2><div class="corpo"><div class="galeria"><div class="gal"><figure class="" style=""><img src="img_guia/g01_linha_pontos.png" alt=""></figure><b>Linha e pontos</b><span>Uma grandeza que muda (tempo, dose, temperatura).</span></div><div class="gal"><figure class="" style=""><img src="img_guia/g06_barras.png" alt=""></figure><b>Barras</b><span>Comparar categorias, com barras de erro.</span></div><div class="gal"><figure class="" style=""><img src="img_guia/g07_pizza.png" alt=""></figure><b>Pizza / rosca</b><span>Partes de um todo (poucas categorias).</span></div><div class="gal"><figure class="" style=""><img src="img_guia/g08_histograma.png" alt=""></figure><b>Histograma · densidade</b><span>Como os valores se distribuem.</span></div><div class="gal"><figure class="" style=""><img src="img_guia/g09_boxplot.png" alt=""></figure><b>Boxplot</b><span>Comparar grupos e ver valores atípicos.</span></div><div class="gal"><figure class="" style=""><img src="img_guia/g16_mapa_calor.png" alt=""></figure><b>Mapa de calor</b><span>Muitas amostras × muitas variáveis.</span></div><div class="gal"><figure class="" style=""><img src="img_guia/g14_pca.png" alt=""></figure><b>PCA · CA · CCA</b><span>Resumir muitas variáveis em 2 eixos.</span></div><div class="gal"><figure class="" style=""><img src="img_guia/m16_superficie_matriz.png" alt=""></figure><b>Superfície 3D · mapa de cor</b><span>Uma grandeza Z que depende de X e Y.</span></div><div class="gal"><figure class="" style=""><img src="img_guia/m17_barras_3d.png" alt=""></figure><b>Barras 3D · dispersão 3D</b><span>Valores numa grade, ou pontos no espaço.</span></div><div class="gal"><figure class="" style=""><img src="img_guia/m19_linhas_3d.png" alt=""></figure><b>Linhas 3D (cascata)</b><span>Espectros, perfis ao longo do tempo.</span></div><div class="gal"><figure class="" style=""><img src="img_guia/m20_radar.png" alt=""></figure><b>Radar</b><span>Perfil de várias notas, de cada item.</span></div><div class="gal"><figure class="" style=""><img src="img_guia/g18_mapa_brasil.png" alt=""></figure><b>Mapas (mundo · Brasil)</b><span>Valor por país ou estado.</span></div></div><div class="nota dica"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg><div><b>Em dúvida?</b> Escolha o tipo e olhe a prévia: dá para trocar quantas vezes quiser, sem perder os dados. A ajuda embaixo de cada campo explica o que ele faz.</div></div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Passo a passo</span><span class="pnum">6 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>Passo 3 · Ajuste do jeito que você quer</h2><div class="corpo">
+<div class="blocos7">
+  <div class="b7"><span class="ci"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></span><b>Dados</b>Arquivo, tipo, colunas.</div>
+  <div class="b7"><span class="ci"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span><b>Eixos</b>Início, fim, intervalo, escala, grade, quebra, Y2.</div>
+  <div class="b7"><span class="ci"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 100 18c1.4 0 2-1 1.6-2.2-.4-1.3.3-2.3 1.6-2.3H17a4 4 0 004-4c0-5-4-9.5-9-9.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg></span><b>Cores</b>Paleta, linhas, símbolos, série por série.</div>
+  <div class="b7"><span class="ci"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l5.5-14 5.5 14M6 15h7M16 10h5M18.5 10v10"/></svg></span><b>Texto</b>Fonte, tamanhos, títulos.</div>
+  <div class="b7"><span class="ci"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h2M12 9h6M7 13h2M12 13h6M7 17h2M12 17h4"/></svg></span><b>Legenda</b>Posição, fundo, borda.</div>
+  <div class="b7"><span class="ci"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l4 4M4 20l9-9M13 4l7 7-3 3-7-7z"/></svg></span><b>Análises</b>Curvas, estatística, anotações.</div>
+  <div class="b7"><span class="ci"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg></span><b>Exportação</b>Formato, tamanho, qualidade.</div>
+</div>
+<div class="col2" style="margin-top:5mm">
+  <div><figure class="" style=""><img src="img_guia/31_caixas_moveis.png" alt=""><figcaption>Caixas e figuras se movem com o mouse.</figcaption></figure></div>
+  <div>
+    <h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 7-6 2-2 6z"/></svg> Edite direto no gráfico</h3>
+    <ul class="tick">
+      <li><b>Clique no título</b> (ou nos títulos dos eixos): abre uma caixa com o texto, o negrito e o tamanho.</li>
+      <li><b>Arraste a legenda</b> e puxe a alça da direita para mudar a largura.</li>
+      <li><b>Caixas de texto, formas e figuras</b>: arraste e estique; as setas do teclado movem de 2 em 2 (com Shift, de 10 em 10).</li>
+      <li><b>Trave um bloco</b> (<i>Congelar</i>) para manter o mesmo estilo em todas as abas.</li>
+    </ul>
+    <div class="nota atalho"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 7-6 2-2 6z"/></svg><div><b>Atalho:</b> em qualquer campo, o botão <b>Restaurar tudo</b> (topo) devolve o padrão. Nada é gravado nos seus dados.</div></div>
+  </div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Gráficos 3D e mapas</span><span class="pnum">7 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12L3 7M12 12v10"/></svg></span>Do Excel ao 3D: a planilha em matriz X, Y, Z</h2><div class="corpo">
+<div class="col2">
+  <div>
+    <p class="lead">Para o <b>eixo Z</b> (a altura ou a cor), organize a planilha como uma <b>matriz</b>: a 1ª coluna traz os valores de Y, o cabeçalho das outras colunas traz os valores de X, e as células são o Z.</p>
+    <div class="tabela-demo grande"><table><tr><th>pH \ Temperatura</th><th>20</th><th>30</th><th>40</th><th>50</th></tr><tr><td><b>4</b></td><td>6,3</td><td>7,7</td><td>11,7</td><td>13,3</td></tr><tr><td><b>5</b></td><td>8,4</td><td>13,1</td><td>24,3</td><td>33,0</td></tr><tr><td><b>6</b></td><td>10,3</td><td>22,9</td><td>46,1</td><td>67,2</td></tr><tr><td><b>7</b></td><td>12,0</td><td>30,7</td><td>60,4</td><td>88,1</td></tr></table></div>
+    <div class="trio">
+      <div><b>X</b> = cabeçalho das colunas (temperatura)</div><div><b>Y</b> = 1ª coluna (pH)</div><div><b>Z</b> = células (rendimento)</div>
+    </div>
+    <h3>Três jeitos de usar</h3>
+    <ul class="tick"><li><b>Superfície 3D</b>: o Z vira altura <i>e</i> cor.</li><li><b>Mapa de cor</b>: visto de cima, só cores (gradiente contínuo).</li><li><b>Barras 3D / Dispersão 3D</b>: uma barra ou ponto por célula.</li></ul>
+  </div>
+  <div>
+    <div class="duas-img"><figure class="" style=""><img src="img_guia/m16_superficie_matriz.png" alt=""><figcaption>Superfície 3D</figcaption></figure><figure class="" style=""><img src="img_guia/d3_mapa_cor.png" alt=""><figcaption>O mesmo dado como mapa de cor</figcaption></figure></div>
+    <div class="nota dica"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg><div><b>Tabela longa também vale.</b> Se os seus dados vêm como três colunas (X, Y, Z), escolha <b>Formato da tabela: Longo</b>. Pontos que formam uma grade viram superfície; os demais, dispersão 3D.</div></div>
+  </div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Gráficos 3D e mapas</span><span class="pnum">8 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.6-5.9"/><path d="M20 4v5h-5"/></svg></span>Gire o gráfico 3D como se estivesse na mão</h2><div class="corpo">
+<figure class="barra" style=""><img src="img_guia/barra_giro.png" alt=""><figcaption>A barra de giro (aparece sozinha nos gráficos 3D).</figcaption></figure>
+<div class="trilha">
+  <div class="tr1"><span class="n">1</span><b>Arraste</b><br>Clique no gráfico e arraste em qualquer direção: a rotação é circular. Solte e a imagem completa volta nítida.</div>
+  <div class="tr1"><span class="n">2</span><b>⟲ Girar</b><br>Giro contínuo, ótimo para apresentar. Clique de novo para parar (o ângulo fica gravado).</div>
+  <div class="tr1"><span class="n">3</span><b>Vistas prontas</b><br><i>Frente</i>, <i>Lado</i>, <i>Topo</i> e <i>Padrão</i> levam direto ao ângulo mais útil.</div>
+  <div class="tr1"><span class="n">4</span><b>Perspectiva · Grade</b><br>Dois botões ligam/desligam a perspectiva e a grade das paredes. A leitura mostra o ângulo atual.</div>
+</div>
+<figure class="larga" style=""><img src="img_guia/rotacao_6_angulos.png" alt=""><figcaption>A mesma superfície em seis ângulos de uma volta completa — os números dos eixos nunca se sobrepõem.</figcaption></figure>
+<div class="col2" style="margin-top:3mm">
+  <div class="cartao"><h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.6-5.9"/><path d="M20 4v5h-5"/></svg> Quando soltar, o ângulo é guardado</h3><p>Os campos <b>Giro da vista</b> e <b>Altura do olhar</b> acompanham o que você fez. Dá para digitar o valor exato para repetir a mesma vista em outro gráfico.</p></div>
+  <div class="cartao"><h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg> Também editável</h3><p><b>Profundidade</b> do eixo Y, <b>perspectiva</b>, <b>altura</b> do eixo Z, caixa (paredes/piso), <b>grade</b> e sua grossura, arestas, traços e o estilo de cada eixo.</p></div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Cores e paletas</span><span class="pnum">9 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 100 18c1.4 0 2-1 1.6-2.2-.4-1.3.3-2.3 1.6-2.3H17a4 4 0 004-4c0-5-4-9.5-9-9.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg></span>As 32 paletas do Cinabro</h2><div class="corpo">
+<p class="lead">Todas funcionam nos gradientes do <b>eixo Z</b> (3D, mapa de cor, mapa de calor, mapas geográficos) <b>e</b> como cor automática das séries. Cada uma aparece com a sua amostra de cor.</p>
+<div class="atlas"><div class="atl-g"><h4>Do Cinabro</h4><div class="atl-i"><i style="background:linear-gradient(90deg,#B3262E 0%,#2F6670 11%,#20242B 22%,#C96A4A 33%,#93C9D4 44%,#797D85 56%,#E8908A 67%,#00454F 78%,#E3B08F 89%,#679DA7 100%)"></i><span>Cinabro (séries)</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#F4ECDD 0%,#E8B49A 25%,#CF6F4E 50%,#B3262E 75%,#7E1B22 100%)"></i><span>Cinabro</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#F4ECDD 0%,#BFD9DB 25%,#6FA5AC 50%,#2F6670 75%,#13343A 100%)"></i><span>Petróleo</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#16264F 0%,#2A4A8F 33%,#5B86D4 67%,#8FB0F2 100%)"></i><span>Azul</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#2F6670 0%,#8FC3CC 25%,#F4ECDD 50%,#E9A58A 75%,#B3262E 100%)"></i><span>Divergente Cinabro</span></div></div><div class="atl-g"><h4>Degradês</h4><div class="atl-i"><i style="background:linear-gradient(90deg,#FFF5F0 0%,#FEE0D2 12%,#FCBBA1 25%,#FC9272 38%,#FB6A4A 50%,#EF3B2C 62%,#CB181D 75%,#A50F15 88%,#67000D 100%)"></i><span>Vermelhos</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#FCFBFD 0%,#EFEDF5 12%,#DADAEB 25%,#BCBDDC 38%,#9E9AC8 50%,#807DBA 62%,#6A51A3 75%,#54278F 88%,#3F007D 100%)"></i><span>Roxos</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#F7FBFF 0%,#DEEBF7 12%,#C6DBEF 25%,#9ECAE1 38%,#6BAED6 50%,#4292C6 62%,#2171B5 75%,#08519C 88%,#08306B 100%)"></i><span>Azuis</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#F7FCF5 0%,#E5F5E0 12%,#C7E9C0 25%,#A1D99B 38%,#74C476 50%,#41AB5D 62%,#238B45 75%,#006D2C 88%,#00441B 100%)"></i><span>Verdes</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#FFF5EB 0%,#FEE6CE 12%,#FDD0A2 25%,#FDAE6B 38%,#FD8D3C 50%,#F16913 62%,#D94801 75%,#A63603 88%,#7F2704 100%)"></i><span>Laranjas</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#FFFFD9 0%,#EDF8B1 12%,#C7E9B4 25%,#7FCDBB 38%,#41B6C4 50%,#1D91C0 62%,#225EA8 75%,#253494 88%,#081D58 100%)"></i><span>Amarelo → azul</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#FFFFCC 0%,#FFEDA0 12%,#FED976 25%,#FEB24C 38%,#FD8D3C 50%,#FC4E2A 62%,#E31A1C 75%,#BD0026 88%,#800026 100%)"></i><span>Amarelo → vermelho</span></div></div><div class="atl-g"><h4>Divergentes</h4><div class="atl-i"><i style="background:linear-gradient(90deg,#A50026 0%,#D73027 10%,#F46D43 20%,#FDAE61 30%,#FEE08B 40%,#FFFFBF 50%,#D9EF8B 60%,#A6D96A 70%,#66BD63 80%,#1A9850 90%,#006837 100%)"></i><span>Vermelho-escuro → verde</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#9E0142 0%,#D53E4F 10%,#F46D43 20%,#FDAE61 30%,#FEE08B 40%,#FFFFBF 50%,#E6F598 60%,#ABDDA4 70%,#66C2A5 80%,#3288BD 90%,#5E4FA2 100%)"></i><span>Espectro</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#A50026 0%,#D73027 10%,#F46D43 20%,#FDAE61 30%,#FEE090 40%,#FFFFBF 50%,#E0F3F8 60%,#ABD9E9 70%,#74ADD1 80%,#4575B4 90%,#313695 100%)"></i><span>Vermelho → azul, com amarelo</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#67001F 0%,#B2182B 10%,#D6604D 20%,#F4A582 30%,#FDDBC7 40%,#F7F7F7 50%,#D1E5F0 60%,#92C5DE 70%,#4393C3 80%,#2166AC 90%,#053061 100%)"></i><span>Vermelho ↔ azul</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#543005 0%,#8C510A 10%,#BF812D 20%,#DFC27D 30%,#F6E8C3 40%,#F5F5F5 50%,#C7EAE5 60%,#80CDC1 70%,#35978F 80%,#01665E 90%,#003C30 100%)"></i><span>Marrom ↔ verde-azulado</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#8E0152 0%,#C51B7D 10%,#DE77AE 20%,#F1B6DA 30%,#FDE0EF 40%,#F7F7F7 50%,#E6F5D0 60%,#B8E186 70%,#7FBC41 80%,#4D9221 90%,#276419 100%)"></i><span>Rosa ↔ verde</span></div></div><div class="atl-g"><h4>Contínuas (viridis)</h4><div class="atl-i"><i style="background:linear-gradient(90deg,#440154FF 0%,#472D7BFF 12%,#3B528BFF 25%,#2C728EFF 38%,#21908CFF 50%,#27AD81FF 62%,#5DC863FF 75%,#AADC32FF 88%,#FDE725FF 100%)"></i><span>Viridis</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#000004FF 0%,#1D1147FF 12%,#51127CFF 25%,#822681FF 38%,#B63679FF 50%,#E65164FF 62%,#FB8861FF 75%,#FEC287FF 88%,#FCFDBFFF 100%)"></i><span>Magma</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#0D0887FF 0%,#4C02A1FF 12%,#7E03A8FF 25%,#A92395FF 38%,#CC4678FF 50%,#E56B5DFF 62%,#F89441FF 75%,#FDC328FF 88%,#F0F921FF 100%)"></i><span>Plasma</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#00204DFF 0%,#05366EFF 12%,#414D6BFF 25%,#61646FFF 38%,#7C7B78FF 50%,#9B9477FF 62%,#BCAF6FFF 75%,#E0CB5EFF 88%,#FFEA46FF 100%)"></i><span>Cividis</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#000004FF 0%,#210C4AFF 12%,#56106EFF 25%,#89226AFF 38%,#BB3754FF 50%,#E35932FF 62%,#F98C0AFF 75%,#F9C932FF 88%,#FCFFA4FF 100%)"></i><span>Inferno</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#30123BFF 0%,#466BE3FF 12%,#28BBECFF 25%,#31F299FF 38%,#A2FC3CFF 50%,#EDD03AFF 62%,#FB8022FF 75%,#D23105FF 88%,#7A0403FF 100%)"></i><span>Turbo</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#0B0405FF 0%,#2B1C35FF 12%,#3E356BFF 25%,#3B5698FF 38%,#357BA2FF 50%,#359EAAFF 62%,#49C1ADFF 75%,#96DDB5FF 88%,#DEF5E5FF 100%)"></i><span>Mako</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#03051AFF 0%,#30173AFF 12%,#611F53FF 25%,#961C5BFF 38%,#CB1B4FFF 50%,#EC4B3EFF 62%,#F4875EFF 75%,#F6BB97FF 88%,#FAEBDDFF 100%)"></i><span>Rocket</span></div></div><div class="atl-g"><h4>Científicas</h4><div class="atl-i"><i style="background:linear-gradient(90deg,#042333 0%,#19337C 12%,#563B9C 25%,#83508F 38%,#B15F82 50%,#DF7064 62%,#F99341 75%,#F9C641 88%,#E8FA5B 100%)"></i><span>Térmica</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#2A186C 0%,#2034A2 12%,#0F5B90 25%,#297789 38%,#3C9387 50%,#50B07E 62%,#7ACB67 75%,#C4DD65 88%,#FDEF9A 100%)"></i><span>Salinidade</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#D7F9D0 0%,#AFDDA2 12%,#84C47A 25%,#50AD59 38%,#129450 50%,#0D7748 62%,#185B3B 75%,#193F29 88%,#122414 100%)"></i><span>Algas</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#FDFECC 0%,#BBE6AC 12%,#78CEA3 25%,#55AEA3 38%,#488E9E 50%,#3F6E97 62%,#404C8B 75%,#3B315A 88%,#281A2C 100%)"></i><span>Profundidade</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#010101 0%,#0E1E2E 12%,#15395B 25%,#26578C 38%,#507BBC 50%,#7D99CA 62%,#A3B1CA 75%,#CFD2D8 88%,#FFFFFF 100%)"></i><span>Oslo</span></div><div class="atl-i"><i style="background:linear-gradient(90deg,#011959 0%,#114360 12%,#226061 25%,#4D734D 38%,#828231 50%,#C09036 62%,#F29D6D 75%,#FDB4B6 88%,#FACCFA 100%)"></i><span>Batlow</span></div></div></div>
+<div class="nota dica"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg><div><b>Como escolher?</b> <b>Degradês</b> para valores que só crescem (dose, temperatura). <b>Divergentes</b> quando há um centro que importa (zero, média): o centro claro cai em zero sozinho quando os dados passam por zero. <b>Cividis</b> é a mais segura para daltonismo. <b>Viridis, Magma e Turbo</b> dão contraste forte em superfícies.</div></div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Cores e paletas</span><span class="pnum">10 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 100 18c1.4 0 2-1 1.6-2.2-.4-1.3.3-2.3 1.6-2.3H17a4 4 0 004-4c0-5-4-9.5-9-9.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg></span>Escolha e afine o gradiente</h2><div class="corpo">
+<div class="col2">
+  <div>
+    <figure class="" style=""><img src="img_guia/paleta_aberta.png" alt=""><figcaption>O seletor: grupos, nomes e amostras.</figcaption></figure>
+    <ol class="lista-passos" style="margin-top:3mm">
+      <li>No bloco <b>Dados</b>, achei <b>Cores do gradiente (eixo Z)</b>.</li>
+      <li>Clique e <b>digite para procurar</b> (ex.: <i>viri</i> → Viridis). Cada opção traz a sua amostra.</li>
+      <li>Não gostou da direção? Marque <b>Inverter o gradiente</b>.</li>
+    </ol>
+  </div>
+  <div>
+    <div class="tres-img"><figure class="mini3" style=""><img src="img_guia/pal_inverter.png" alt=""><figcaption>Invertido</figcaption></figure><figure class="mini3" style=""><img src="img_guia/pal_faixas.png" alt=""><figcaption>Em 7 faixas</figcaption></figure><figure class="mini3" style=""><img src="img_guia/pal_divergente_cinabro.png" alt=""><figcaption>Divergente</figcaption></figure></div>
+    <table class="tab-edit">
+      <tr><td><b>Faixas de cor</b></td><td>Gradiente liso (vazio) ou em degraus (ex.: 7 faixas).</td></tr>
+      <tr><td><b>Escala começa/termina em</b></td><td>Fixa os limites para comparar gráficos entre si.</td></tr>
+      <tr><td><b>Valor do centro</b></td><td>Nas divergentes: o ponto neutro (ex.: 0).</td></tr>
+      <tr><td><b>As suas cores</b></td><td>Escreva <i>white, gold, red</i> (ou #RRGGBB): vale mais que a paleta.</td></tr>
+      <tr><td><b>Barra de cores</b></td><td>Título, intervalo, casas decimais, posição, altura e largura.</td></tr>
+    </table>
+  </div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Gráficos 3D e mapas</span><span class="pnum">11 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>Radar, mapa de calor e mapas</h2><div class="corpo">
+<div class="col3">
+  <div class="cartao"><figure class="" style=""><img src="img_guia/m20_radar.png" alt=""></figure><h3>Radar</h3><p>1ª coluna = nome de cada item; as outras colunas numéricas (3 ou mais) são os eixos. Ótimo para comparar <b>protótipos, materiais, notas</b>.</p>
+  <p class="peq">Edite: anéis, escala, grade (círculo/polígono), opacidade, pontos, legenda.</p></div>
+  <div class="cartao"><figure class="" style=""><img src="img_guia/pal_divergente.png" alt=""></figure><h3>Mapa de calor</h3><p>Linhas × colunas coloridas pelo valor. Escreva os números nas células, <b>normalize</b> por linha (nota z) e <b>reordene por semelhança</b>.</p>
+  <p class="peq">Divergentes + nota z: o centro cai em zero sozinho.</p></div>
+  <div class="cartao"><figure class="" style=""><img src="img_guia/g18_mapa_brasil.png" alt=""></figure><h3>Mapas</h3><p>Valor por <b>país</b> (nome em inglês) ou por <b>estado</b> (sigla). Projeção, recorte e nomes escritos nos locais.</p>
+  <p class="peq">Cores: as mesmas 32 paletas.</p></div>
+</div>
+<div class="nota exemplo"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg><div><b>Exemplos prontos.</b> No bloco <i>Dados</i>, o menu <b>...ou use um exemplo</b> traz planilhas modelo para cada tipo (radar, superfície, cascata, mapas...). A pasta <b>modelos_csv</b> tem os mesmos arquivos para você copiar a estrutura.</div></div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Análises e anotações</span><span class="pnum">12 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 6l4 4M4 20l9-9M13 4l7 7-3 3-7-7z"/></svg></span>Curvas, estatística e anotações</h2><div class="corpo">
+<div class="col2">
+  <div>
+    <h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg> Ajuste de curva</h3>
+    <p>Na faixa de ações, <b>Ajuste de curva</b>: linear, exponencial, potência, logarítmico, polinomial, loess ou <b>a sua fórmula</b> (ex.: <i>a*x/(b+x)</i>). A equação e o R² aparecem numa <b>caixa de estatística</b> que você move e edita.</p>
+    <figure class="" style=""><img src="img_guia/18_ajuste_resultado.png" alt=""><figcaption>Curva ajustada, com equação e R².</figcaption></figure>
+  </div>
+  <div>
+    <h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18M3 15h18M9 4v16"/></svg> Média ± DP, testes e tabelas</h3>
+    <p>Traços de média e desvio, barras de erro por coluna, ANOVA, Tukey, Kruskal-Wallis e outras comparações em <b>Tabelas e testes</b>, com tabela pronta para copiar.</p>
+    <figure class="" style=""><img src="img_guia/g11_media_desvio.png" alt=""><figcaption>Média e desvio padrão.</figcaption></figure>
+    <h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l5.5-14 5.5 14M6 15h7M16 10h5M18.5 10v10"/></svg> Anotar</h3>
+    <p><b>Texto</b>, <b>Forma</b> (retângulo, elipse, seta, polígono...) e <b>Figura</b> (PNG/JPEG, ex.: logo). Tudo arrastável, com cor, borda e sombra.</p>
+  </div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Seu trabalho</span><span class="pnum">13 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></span>Abas e projetos: não perca nada</h2><div class="corpo">
+<div class="col3">
+  <div class="cartao"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg><h3>Abas</h3><p>Cada aba é um gráfico completo (dados + ajustes). <b>+ Nova aba</b>, <b>Duplicar</b> (copia dados e configuração) e <b>Renomear</b>.</p></div>
+  <div class="cartao"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><h3>Salvar / Abrir projeto</h3><p>Um arquivo <b>.cinabro</b> guarda os <b>dados e a configuração</b> juntos: mande para um colega e ele abre igualzinho, ou volte a ele daqui a um mês.</p></div>
+  <div class="cartao"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 11-2.6-5.9"/><path d="M20 4v5h-5"/></svg><h3>Retomar de onde parou</h3><p>O Cinabro guarda sozinho o último gráfico. Ao abrir de novo ele pergunta se você quer <b>Retomar</b>.</p></div>
+</div>
+<div class="col2" style="margin-top:5mm">
+  <div><figure class="" style=""><img src="img_guia/27_cabecalho_abas.png" alt=""><figcaption>As abas no alto da tela.</figcaption></figure></div>
+  <div>
+    <h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4 4 0 005 5L20 12l-8 8a2.1 2.1 0 01-3-3l8-8z"/></svg> Modelo e código</h3>
+    <p>No fim da página, <b>Modelo, configuração e código</b> mostra o script R equivalente ao gráfico: para repetir em lote, auditar ou aprender.</p>
+    <div class="nota dica"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg><div><b>Boa prática.</b> Salve um <b>.cinabro</b> por gráfico importante. Para refazer um relatório com dados novos, abra o projeto e carregue o CSV atualizado.</div></div>
+  </div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Seu trabalho</span><span class="pnum">14 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="10" rx="1"/><rect x="13" y="3" width="8" height="6" rx="1"/><rect x="13" y="11" width="8" height="10" rx="1"/><rect x="3" y="15" width="8" height="6" rx="1"/></svg></span>Dashboard: tudo numa página</h2><div class="corpo">
+<div class="col2">
+  <div><figure class="" style=""><img src="img_guia/dash_exemplo.png" alt=""><figcaption>Exemplo: dashboard de uma história de ativos de personal care (dados fictícios).</figcaption></figure></div>
+  <div>
+    <ol class="lista-passos">
+      <li>Deixe cada gráfico numa <b>aba</b>.</li>
+      <li>Clique em <b>Dashboard</b> (faixa de ações) e marque as abas que entram.</li>
+      <li>O <b>editor em tela cheia</b> abre: arraste e estique os blocos, edite os textos dos <b>destaques</b> e dos <b>números-chave</b>, troque a <b>identidade</b> (cores e logo da empresa).</li>
+      <li>Baixe em <b>PDF</b> (A4, vetorial) ou <b>HTML</b> (abre em qualquer navegador).</li>
+    </ol>
+    <div class="nota dica"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg><div><b>Já vem com análise.</b> O Cinabro escreve frases e números-chave a partir dos seus dados (variação, máximo, correlações...). Você reescreve o que quiser.</div></div>
+    <div class="nota atencao"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg><div><b>PDF pelo app:</b> usa o Edge ou o Chrome do computador. Se o seu não for encontrado, abra o HTML e imprima em PDF pelo navegador.</div></div>
+  </div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Seu trabalho</span><span class="pnum">15 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg></span>Exporte para o Word, PowerPoint e revistas</h2><div class="corpo">
+<div class="col2">
+  <div>
+    <table class="tab-edit">
+      <tr><td><b>PNG</b></td><td>Imagem comum, para slides e e-mail.</td></tr>
+      <tr><td><b>PDF · SVG · EMF</b></td><td>Vetoriais: não perdem qualidade ao ampliar. O <b>EMF</b> cola no Word/PowerPoint e continua editável.</td></tr>
+      <tr><td><b>TIFF · JPEG</b></td><td>Para revistas e fotos.</td></tr>
+    </table>
+    <ul class="tick" style="margin-top:3mm"><li><b>Tamanho da página</b> em cm, mm ou polegadas (bloco <i>Exportação</i>). Com a <b>caixa fixa</b>, todos os gráficos saem do mesmo tamanho.</li><li><b>Resolução</b> em dpi: 300 para impressão, 150 para tela.</li><li>Botões <b>Baixar PNG</b> e <b>Baixar PDF</b> ficam ao lado do gráfico.</li><li>Estilos prontos (topo): <i>Publicação</i> (artigo) e <i>Apresentação</i> (slides).</li></ul>
+  </div>
+  <div><figure class="alto" style=""><img src="img_guia/26_exportar.png" alt=""><figcaption>Bloco Exportação.</figcaption></figure><div class="nota dica"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg><div><b>Para artigos:</b> escolha o estilo <b>Publicação</b>, tamanho de coluna da revista e baixe em PDF ou TIFF.</div></div></div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Seu trabalho</span><span class="pnum">16 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg></span>Português, English e Español</h2><div class="corpo">
+<div class="col2">
+  <div>
+    <p class="lead">O seletor de idioma, no topo, troca <b>toda a tela e o gráfico</b>: menus, ajudas, avisos, nomes dos eixos criados pelo programa e frases do dashboard.</p>
+    <div class="idiomas"><span>Português (BR)</span><span>English</span><span>Español</span></div>
+    <ul class="tick"><li>A troca <b>não perde o trabalho</b>: dados, ajustes e gráfico continuam onde estavam.</li><li>A 1ª vez de cada idioma leva alguns segundos; depois é imediato.</li><li>O último idioma fica lembrado no navegador.</li><li>O seu texto (títulos, nomes de séries) <b>não é traduzido</b>: o que você escreveu continua igual.</li></ul>
+  </div>
+  <div><figure class="" style=""><img src="img_guia/topo_barra.png" alt=""><figcaption>Seletor de idioma, estilos prontos e projetos: tudo na barra do topo.</figcaption></figure><div class="nota exemplo"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg><div><b>Equipe global?</b> Abra o mesmo <b>.cinabro</b> em English ou Español para o colega de outro país: o gráfico é o mesmo, a tela fala a língua dele.</div></div></div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Dúvidas</span><span class="pnum">17 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.8.6-1.5 1-1.5 2.2M12 17h.01"/></svg></span>Dúvidas frequentes</h2><div class="corpo">
+<div class="faq">
+  <div class="q"><b><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg> Meus dados saem do computador?</b><br>Não. O Cinabro roda local; os arquivos não são enviados a nenhum servidor. A internet só é usada na 1ª abertura, para baixar pacotes.</div>
+  <div class="q"><b><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg> Preciso saber programar?</b><br>Não. Tudo é feito na tela. O script R equivalente fica disponível se você quiser (e para auditoria).</div>
+  <div class="q"><b><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg> Posso usar o logo e as cores da minha empresa?</b><br>Sim: no editor do dashboard (identidade institucional), na paleta das séries e nos gradientes (<i>As suas cores</i>).</div>
+  <div class="q"><b><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg> Como repito o gráfico com dados novos?</b><br>Abra o <i>.cinabro</i> e carregue o CSV novo (ou troque os dados mantendo os ajustes com os blocos <i>Congelar</i>).</div>
+  <div class="q"><b><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg> Posso editar depois no PowerPoint/Illustrator?</b><br>Sim: exporte em <b>SVG</b> ou <b>EMF</b>; PDF vetorial também abre no Illustrator/Inkscape.</div>
+  <div class="q"><b><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg> Quantos pontos aguenta?</b><br>Dezenas de milhares: a prévia usa uma versão reduzida para ficar rápida; o arquivo final sai completo.</div>
+  <div class="q"><b><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg> Roda no Mac ou Linux?</b><br>O programa é em R, então sim, abrindo pelo R. O atalho e o <i>abrir_app.bat</i> são para Windows.</div>
+  <div class="q"><b><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg> De quem é e posso compartilhar?</b><br>Licença MIT: uso livre, mantendo o aviso de autoria (Leonardo Moreira). Veja NOTICE.md para as paletas e fontes.</div>
+</div></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Dúvidas</span><span class="pnum">18 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6.5a4 4 0 005 5L20 12l-8 8a2.1 2.1 0 01-3-3l8-8z"/></svg></span>Algo não saiu como esperado? Veja aqui</h2><div class="corpo">
+<table class="sp">
+  <tr><th>O que acontece</th><th>Por quê</th><th>O que fazer</th></tr>
+  <tr><td><svg class="ic sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg> O programa não abre</td><td>Pasta dentro do ZIP, ou falta a internet na 1ª vez.</td><td>Extraia o ZIP; confira a internet (na empresa, informe o proxy como a mensagem mostra) e abra de novo.</td></tr>
+  <tr><td><svg class="ic sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg> Aviso <b>Algo precisa de ajuste</b></td><td>Uma combinação de campos não faz sentido para o gráfico.</td><td>Leia a mensagem: ela diz o campo e o que mudar. A lista <i>O que você mudou</i> mostra o último ajuste feito.</td></tr>
+  <tr><td><svg class="ic sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg> O 3D pede “números nos dois eixos”</td><td>A 1ª coluna ou o cabeçalho têm texto.</td><td>Use números em Y (1ª coluna) e X (cabeçalhos), ou o <b>mapa de calor</b> para nomes.</td></tr>
+  <tr><td><svg class="ic sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg> Acentos aparecem estranhos</td><td>Codificação do CSV.</td><td>O Cinabro tenta UTF-8 e o Excel em português; se persistir, salve como <i>CSV UTF-8</i>.</td></tr>
+  <tr><td><svg class="ic sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg> O eixo X virou data (ou não virou)</td><td>O formato da 1ª coluna.</td><td>Use datas como <i>01/03/2024</i>; para números simples, use ponto ou vírgula decimal.</td></tr>
+  <tr><td><svg class="ic sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg> As cores parecem invertidas</td><td>O sentido da paleta (ex.: divergente RdBu: vermelho = menor).</td><td>Marque <b>Inverter o gradiente</b> ou escolha outra paleta.</td></tr>
+  <tr><td><svg class="ic sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg> O PDF do dashboard não sai</td><td>Não achei o Edge/Chrome.</td><td>Abra o <b>HTML</b> do dashboard e use Imprimir → Salvar como PDF.</td></tr>
+  <tr><td><svg class="ic sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg> A tela ficou lenta</td><td>Dados muito grandes ou muitas abas.</td><td>Use <b>Atualizar agora</b> (desligue <i>Atualizar sozinho</i>) enquanto ajusta; feche abas que não usa.</td></tr>
+</table></div><footer>Cinabro · Guia visual</footer></section><section class="pg "><header><span class="sec"> Dúvidas</span><span class="pnum">19 / 19</span></header>
+<h2><span class="hi"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg></span>Cola rápida</h2><div class="corpo">
+<div class="col3">
+  <div class="cartao"><h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 7-6 2-2 6z"/></svg> Mouse</h3><ul class="tick"><li>Clicar no título → editar texto</li><li>Arrastar a legenda / caixas</li><li>Arrastar o 3D → girar</li><li>Duplo clique no nome de um mapa → posição automática</li></ul></div>
+  <div class="cartao"><h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h18M3 15h18M9 4v16"/></svg> Teclado</h3><ul class="tick"><li>Setas: mover caixa 2 px</li><li>Shift + setas: 10 px</li><li>Esc: fecha janelas e buscas</li></ul></div>
+  <div class="cartao"><h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> Botões do topo</h3><ul class="tick"><li><b>Salvar projeto</b> (.cinabro)</li><li><b>Abrir projeto</b></li><li><b>Restaurar tudo</b></li><li><b>Sair</b></li></ul></div>
+</div>
+<div class="col3" style="margin-top:5mm">
+  <div class="cartao"><h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 12l9-5M12 12L3 7M12 12v10"/></svg> 3D</h3><ul class="tick"><li>Arraste · ⟲ Girar · Frente/Lado/Topo/Padrão</li><li>Perspectiva · Grade</li><li>Profundidade, altura Z, caixa</li></ul></div>
+  <div class="cartao"><h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 100 18c1.4 0 2-1 1.6-2.2-.4-1.3.3-2.3 1.6-2.3H17a4 4 0 004-4c0-5-4-9.5-9-9.5z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg> Cores</h3><ul class="tick"><li>32 paletas, com busca e amostra</li><li>Inverter · Faixas · Centro</li><li>As suas cores: <i>white, gold, red</i></li></ul></div>
+  <div class="cartao"><h3><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg> Entrega</h3><ul class="tick"><li>PNG · PDF · SVG · EMF · TIFF</li><li>Dashboard → PDF / HTML</li><li>Idioma: PT · EN · ES</li></ul></div>
+</div>
+<div class="fim"><svg class="ic " viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:14mm;height:14mm"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><div><b>Cinabro</b> · <i>A punctis ad curvam: ubi data colorem accipiunt.</i><br>Dos pontos à curva: onde os dados ganham cor.</div></div></div><footer>Cinabro · Guia visual</footer></section><script>
+window.addEventListener('load', function () {
+  document.querySelectorAll('.pg').forEach(function (s) {
+    var c = s.querySelector('.corpo'), lim = s.getBoundingClientRect().top + s.clientHeight - 17 * 3.78, z = 1.5; c.style.zoom = z;
+    while (z > 0.7 && c.getBoundingClientRect().bottom > lim) { z = Math.round((z - 0.025) * 1000) / 1000; c.style.zoom = z; }
+  });
+  document.body.setAttribute('data-pronto', '1');
+});
+</script></body></html>

@@ -1398,5 +1398,16 @@
  "Lado": "Side",
  "Topo": "Top",
  "Padrão": "Default",
- "Arraste o gráfico para girar": "Drag the chart to rotate"
+ "Arraste o gráfico para girar": "Drag the chart to rotate",
+ "Todas as paletas do Cinabro servem: digite para procurar. Os degradês vão do menor ao maior valor; os divergentes têm um centro claro (use \"Centro\" para fixá-lo, por exemplo em zero). Dá para inverter, ou escrever as suas próprias cores logo abaixo.": "Every Cinabro palette works here: type to search. Gradients go from the lowest to the highest value; diverging ones have a light center (use \"Center\" to fix it, for example at zero). You can reverse it, or type your own colors just below.",
+ "Científicas": "Scientific",
+ "Petróleo (creme → azul-petróleo)": "Petrol (cream → petrol blue)",
+ "Divergente Cinabro (petróleo - creme - vermelho)": "Cinabro diverging (petrol - cream - red)",
+ "Cividis (daltonismo)": "Cividis (color-blind friendly)",
+ "Altura da barra de cores (cm)": "Color bar height (cm)",
+ "Padrão 4. Aumente para a barra acompanhar a altura do gráfico.": "Default 4. Increase it so the bar follows the chart height.",
+ "Largura da barra de cores (cm)": "Color bar width (cm)",
+ "Padrão 0,4.": "Default 0.4.",
+ "Liga/desliga a perspectiva (o que está longe encolhe)": "Turns perspective on/off (what is far away shrinks)",
+ "Mostra/esconde a grade das paredes e do piso": "Shows/hides the grid on the walls and floor"
 }
