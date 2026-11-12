@@ -26,7 +26,7 @@
   calor_esquema = c("mapa_calor", "esquema_cor"), calor_cores = c("mapa_calor", "cores_escala"), calor_inverter = c("mapa_calor", "inverter_cores"),
   calor_min = c("mapa_calor", "limite_min"), calor_max = c("mapa_calor", "limite_max"), calor_centro = c("mapa_calor", "centro"),
   calor_titulo_barra = c("mapa_calor", "titulo_barra"), calor_valores = c("mapa_calor", "valores_nas_celulas"), calor_casas = c("mapa_calor", "casas"),
-  calor_contorno_cor = c("mapa_calor", "contorno_cor"), calor_cor_sem_dado = c("mapa_calor", "cor_sem_dado"), calor_barra_posicao = c("mapa_calor", "barra_posicao"),
+  calor_contorno_cor = c("mapa_calor", "contorno_cor"), calor_cor_sem_dado = c("mapa_calor", "cor_sem_dado"), calor_barra_posicao = c("mapa_calor", "barra_posicao"), calor_barra_altura_cm = c("mapa_calor", "barra_altura_cm"), calor_barra_largura_cm = c("mapa_calor", "barra_largura_cm"),
   multi_amostras_fonte = c("multivariada", "amostras_fonte"),
   multi_amostras_tamanho_pt = c("multivariada", "amostras_tamanho_pt"),
   multi_amostras_negrito = c("multivariada", "amostras_negrito"),

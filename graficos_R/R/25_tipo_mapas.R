@@ -6,19 +6,28 @@
 # =============================================================================
 
 # ---- escala de cor do eixo Z -------------------------------------------------------------------
-.ESQUEMAS_Z <- list(
-  cinabro    = c("#F4ECDD", "#E8B49A", "#CF6F4E", "#B3262E", "#7E1B22"),
-  petroleo   = c("#F4ECDD", "#BFD9DB", "#6FA5AC", "#2F6670", "#13343A"),
-  azul       = c("#16264F", "#2A4A8F", "#5B86D4", "#8FB0F2"),
-  divergente = c("#2F6670", "#8FC3CC", "#F4ECDD", "#E9A58A", "#B3262E"))
+# Os gradientes do eixo Z vêm do catálogo de paletas (R/02_cores_texto.R): qualquer nome de .PALETAS_GRUPOS vale (veja mostrar_paletas()).
+# Nomes antigos continuam valendo: "cinabro", "petroleo", "azul" e "divergente" são os gradientes da identidade.
+.esquema_z <- function(nome) { nome <- nome %||% "cinabro"; if (nome %in% names(.ESQUEMAS_Z_ANTIGOS)) .ESQUEMAS_Z_ANTIGOS[[nome]] else nome }
+
+# Cores-base do gradiente (do menor para o maior valor). Entra: nome da paleta. Sai: vetor de cores.
+.base_gradiente <- function(nome) {
+  nome <- .esquema_z(nome)
+  if (nome %in% names(.PALETAS_ANTIGAS)) { .aviso("A paleta '", nome, "' foi retirada do Cinabro; usei '", .PALETAS_ANTIGAS[[nome]], "'."); nome <- .PALETAS_ANTIGAS[[nome]] }
+  if (nome == "cinabro") nome <- "cinabro_degrade"                      # a "cinabro" das séries é qualitativa; no gradiente vale a da identidade
+  if (nome %in% .PALETAS_VIRIDIS) {
+    if (!.tem("viridisLite")) { .aviso("O esquema \"", nome, "\" precisa do pacote viridisLite; usando \"cinabro\"."); return(.PALETAS$cinabro_degrade) }
+    return(viridisLite::viridis(9, option = c(viridis = "D", magma = "A", plasma = "C", cividis = "E", inferno = "B", turbo = "H", mako = "G", rocket = "F")[[nome]]))
+  }
+  if (nome == "cinza") return(grDevices::grey.colors(9, start = 0.95, end = 0.1))
+  if (!nome %in% names(.PALETAS)) .erro("Esquema de cor '", nome, "' desconhecido. Veja mostrar_paletas() para os nomes.")
+  .PALETAS[[nome]]
+}
 
 # Cores do gradiente. Entra: cfg. Sai: vetor de cores (do menor para o maior valor).
 .cores_z <- function(cfg) {
   H <- cfg$mapa_calor
-  cores <- if (!is.null(H$cores_escala)) vapply(H$cores_escala, .cor, "", "cfg$mapa_calor$cores_escala")
-    else if (H$esquema_cor %in% names(.ESQUEMAS_Z)) .ESQUEMAS_Z[[H$esquema_cor]]
-    else if (.tem("viridisLite")) viridisLite::viridis(7, option = switch(H$esquema_cor, viridis = "D", magma = "A", inferno = "B", turbo = "H"))
-    else { .aviso("O esquema \"", H$esquema_cor, "\" precisa do pacote viridisLite; usando \"cinabro\"."); .ESQUEMAS_Z$cinabro }
+  cores <- if (!is.null(H$cores_escala)) vapply(H$cores_escala, .cor, "", "cfg$mapa_calor$cores_escala") else .base_gradiente(H$esquema_cor)
   if (isTRUE(H$inverter_cores)) rev(cores) else cores
 }
 
@@ -31,7 +40,9 @@
   lim <- c(H$limite_min %||% min(z), H$limite_max %||% max(z))
   if (lim[1] == lim[2]) lim <- lim + c(-0.5, 0.5)
   cores <- .cores_z(cfg)
-  meio <- H$centro %||% (if (identical(H$esquema_cor, "divergente") && is.null(H$cores_escala)) 0 else NULL)
+  # paleta divergente (com um centro claro): se os dados passam por zero, o centro cai em zero sozinho (o "Centro" do painel manda se for preenchido)
+  divergente <- .esquema_z(H$esquema_cor) %in% .PALETAS_DIVERGENTES && is.null(H$cores_escala)
+  meio <- H$centro %||% (if (divergente && lim[1] < 0 && lim[2] > 0) 0 else NULL)
   if (!is.null(meio) && (meio <= lim[1] || meio >= lim[2])) {
     .aviso("O centro (", meio, ") está fora dos limites (", lim[1], " a ", lim[2], "); ele será ignorado.")
     meio <- NULL

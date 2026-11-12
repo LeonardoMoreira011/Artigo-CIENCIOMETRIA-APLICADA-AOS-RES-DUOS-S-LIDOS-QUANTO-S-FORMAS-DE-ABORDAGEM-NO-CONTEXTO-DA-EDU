@@ -40,7 +40,7 @@ ui_campo <- function(campo, cfg0) {
     area = textAreaInput(id, rot, value = "", rows = 4, resize = "vertical", width = "100%"),
     sel = , tri = selectInput(id, rot, choices = opc, selected = ini, selectize = FALSE),
     selbusca = selectizeInput(id, rot, choices = opc, selected = ini,
-                              options = if (id == "cores_paleta") c(OPC_SELECTIZE, list(render = I("window.renderPaleta"))) else OPC_SELECTIZE),
+                              options = if (id %in% c("cores_paleta", "calor_esquema")) c(OPC_SELECTIZE, list(render = I("window.renderPaleta"))) else OPC_SELECTIZE),
     chk = checkboxInput(id, rot, value = ini),
     chkgrupo = checkboxGroupInput(id, rot, choices = opc, selected = ini, inline = TRUE),
     cor = cor_input(id, rot, hex_de(padrao_do_campo(campo, cfg0))),
@@ -246,5 +246,5 @@ ui_paleta_propria <- function() {
 # As cores de cada paleta pronta (6 de cada), para desenhar os quadradinhos na lista de paletas.
 paletas_js <- function() {
   ids <- unlist(.PALETAS_GRUPOS, use.names = FALSE)
-  stats::setNames(lapply(ids, function(i) as.list(tryCatch(.paleta(i, 6, CFG0$cores), error = function(e) character(0)))), ids)
+  stats::setNames(lapply(ids, function(i) as.list(tryCatch(.paleta(i, 8, CFG0$cores), error = function(e) character(0)))), ids)
 }

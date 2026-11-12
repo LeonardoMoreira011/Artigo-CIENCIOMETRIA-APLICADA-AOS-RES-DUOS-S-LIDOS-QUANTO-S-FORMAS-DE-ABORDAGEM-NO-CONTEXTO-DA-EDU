@@ -1519,5 +1519,21 @@ teste("3D de lado ou de cima: os números dos eixos quase de ponta não se empil
   r <- vapply(vs, function(v) { g <- tryCatch(suppressWarnings(plotar(d3, cA("superficie_3d", tridimensional = utils::modifyList(cfg$tridimensional, list(azimute = v[1], elevacao = v[2]))))), error = function(e) NULL); !is.null(g) && monta(g) }, NA)
   all(r) })
 
+teste("32 paletas: o catálogo tem 32 nomes únicos e todos valem como gradiente do eixo Z (3D, mapa de cor, mapa de calor) e como paleta das séries; os nomes curtos antigos dão as mesmas cores", {
+  nomes <- unlist(.PALETAS_GRUPOS, use.names = FALSE)
+  gr <- function(tp, n, fmt = "matriz") { c1 <- cA(tp, fmt, mapa_calor = utils::modifyList(cfg$mapa_calor, list(esquema_cor = n, formato = fmt))); tryCatch(monta(suppressWarnings(plotar(d3, c1))), error = function(e) FALSE) }
+  ok3d <- vapply(nomes, function(n) gr("superficie_3d", n), NA); okmc <- vapply(nomes[c(1, 12, 20, 32)], function(n) gr("mapa_cor", n), NA)
+  ok_serie <- vapply(nomes, function(n) length(.paleta(n, 5)) == 5, NA)
+  cz <- function(n) { c1 <- cfg; c1$mapa_calor$esquema_cor <- n; .cores_z(c1) }
+  length(nomes) == 32 && !anyDuplicated(nomes) && all(ok3d) && all(okmc) && all(ok_serie) &&
+    identical(cz("petroleo"), cz("petroleo_degrade")) && identical(cz("azul"), cz("azul_degrade")) && identical(cz("divergente"), cz("divergente_cinabro")) && identical(cz("cinabro"), cz("cinabro_degrade")) &&
+    length(cz("viridis")) >= 7 && length(cz("brewer_RdBu")) == 11 })
+teste("32 paletas: inverter o gradiente e a escala própria seguem valendo, e nome antigo de paleta retirada vira um gradiente parecido com aviso", {
+  c1 <- cfg; c1$mapa_calor$esquema_cor <- "brewer_Blues"; a <- .cores_z(c1); c1$mapa_calor$inverter_cores <- TRUE; b <- .cores_z(c1)
+  c1$mapa_calor$cores_escala <- c("white", "gold", "red"); p <- .cores_z(c1)
+  c2 <- cfg; c2$mapa_calor$esquema_cor <- "tol_por_do_sol"; av <- character(0)
+  r <- withCallingHandlers(.cores_z(c2), warning = function(w) { av <<- c(av, conditionMessage(w)); invokeRestart("muffleWarning") })
+  identical(b, rev(a)) && length(p) == 3 && length(av) >= 1 && identical(r, .PALETAS$brewer_YlOrRd) })
+
 cat(sprintf("\n==== %d PASSOU / %d FALHOU ====\n", .res["passou"], .res["falhou"]))
 unlink(tmp, recursive = TRUE)

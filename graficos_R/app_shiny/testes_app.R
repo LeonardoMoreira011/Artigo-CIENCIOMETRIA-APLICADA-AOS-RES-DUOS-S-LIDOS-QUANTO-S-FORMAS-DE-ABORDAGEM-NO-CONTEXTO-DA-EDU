@@ -333,6 +333,11 @@ teste("o registro de uso grava linhas de texto com horário, respeita a opção 
   cat(strrep("x", 2.1e6), file = tmp_log); registrar_log("depois de girar"); girou <- file.exists(paste0(tmp_log, ".antigo")) && file.size(tmp_log) < 1000
   options(cinabro.sem_log = TRUE)
   grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9:]{8} linha de teste$", l1) && length(l2) == 1 && girou })
+teste("32 paletas no app: o gradiente do eixo Z oferece todas (menos a qualitativa das séries), com busca e amostra, e a paleta das séries oferece as 32",
+      { og <- unlist(opcoes_gradientes(), use.names = FALSE); os <- unlist(.PALETAS_GRUPOS, use.names = FALSE)
+        length(os) == 32 && length(og) == 31 && !"cinabro" %in% og && "viridis" %in% og && "brewer_RdBu" %in% og && "cinabro_degrade" %in% og &&
+          all(og %in% names(paletas_js())) && all(vapply(paletas_js()[og], length, 0L) >= 6) &&
+          ESPEC_CAMPOS$calor_esquema$tipo == "selbusca" })
 # ---- servidor (testServer) -------------------------------------------------------------------------------------------
 options(gerador_sem_guia = TRUE)
 testServer(servidor, {

@@ -34,21 +34,36 @@
   # a paleta padrão do Cinabro: as cores da identidade (vermelho-cinábrio, azul-petróleo, tinta e terracota) e variações delas
   # (petróleo claro, ardósia, coral, petróleo profundo, areia, petróleo médio). As 4 primeiras são as da marca e as mais distintas
   # entre si; da 5ª em diante as cores se parecem mais, então o app já varia também a forma dos pontos de cada série.
-  cinabro   = c("#B3262E", "#2F6670", "#20242B", "#C96A4A", "#93C9D4", "#797D85", "#E8908A", "#00454F", "#E3B08F", "#679DA7")
+  cinabro   = c("#B3262E", "#2F6670", "#20242B", "#C96A4A", "#93C9D4", "#797D85", "#E8908A", "#00454F", "#E3B08F", "#679DA7"),
+  # gradientes da identidade (pontos de apoio; o motor interpola): do creme ao tom forte, e um divergente com centro claro
+  cinabro_degrade    = c("#F4ECDD", "#E8B49A", "#CF6F4E", "#B3262E", "#7E1B22"),
+  petroleo_degrade   = c("#F4ECDD", "#BFD9DB", "#6FA5AC", "#2F6670", "#13343A"),
+  azul_degrade       = c("#16264F", "#2A4A8F", "#5B86D4", "#8FB0F2"),
+  divergente_cinabro = c("#2F6670", "#8FC3CC", "#F4ECDD", "#E9A58A", "#B3262E")
 )
 .PALETAS <- c(.PALETAS_PROPRIAS, .PALETAS_DADOS)
 # As que percorrem um degradê (a n-ésima cor é interpolada ao longo da paleta inteira, não a n-ésima da lista).
-.PALETAS_RAMPA <- c(grep("^brewer_", names(.PALETAS), value = TRUE), grep("^(cmo|crameri)_", names(.PALETAS), value = TRUE))
-.PALETAS_VIRIDIS <- c("magma", "inferno", "turbo")   # do pacote viridisLite
+.PALETAS_RAMPA <- c(grep("^brewer_", names(.PALETAS), value = TRUE), grep("^(cmo|crameri)_", names(.PALETAS), value = TRUE), grep("_degrade$|^divergente_cinabro$", names(.PALETAS), value = TRUE))
+.PALETAS_VIRIDIS <- c("viridis", "magma", "plasma", "cividis", "inferno", "turbo", "mako", "rocket")   # do pacote viridisLite
 
 # Para a tela e para mostrar_paletas(): grupo -> c(rótulo = nome).
 .PALETAS_GRUPOS <- list(
-  "Do Cinabro" = c("Cinabro (padrão: cores da marca e variações)" = "cinabro"),
-  "Degradês" = c("Vermelhos" = "brewer_Reds", "Roxos" = "brewer_Purples", "Amarelo → azul" = "brewer_YlGnBu",
-                 "Amarelo → vermelho" = "brewer_YlOrRd", "Algas" = "cmo_algae", "Oslo" = "crameri_oslo"),
-  "Divergentes" = c("Vermelho-escuro → verde" = "brewer_RdYlGn", "Espectro (vermelho → violeta)" = "brewer_Spectral"),
-  "Contínuas" = c("Magma" = "magma", "Inferno" = "inferno", "Turbo" = "turbo")
+  "Do Cinabro" = c("Cinabro (padrão: cores da marca e variações)" = "cinabro", "Cinabro (creme → vermelho)" = "cinabro_degrade", "Petróleo (creme → azul-petróleo)" = "petroleo_degrade",
+                   "Azul (marinho → claro)" = "azul_degrade", "Divergente Cinabro (petróleo - creme - vermelho)" = "divergente_cinabro"),
+  "Degradês" = c("Vermelhos" = "brewer_Reds", "Roxos" = "brewer_Purples", "Azuis" = "brewer_Blues", "Verdes" = "brewer_Greens", "Laranjas" = "brewer_Oranges",
+                 "Amarelo → azul" = "brewer_YlGnBu", "Amarelo → vermelho" = "brewer_YlOrRd"),
+  "Divergentes" = c("Vermelho-escuro → verde" = "brewer_RdYlGn", "Espectro (vermelho → violeta)" = "brewer_Spectral", "Vermelho → azul, com amarelo" = "brewer_RdYlBu",
+                    "Vermelho ↔ azul" = "brewer_RdBu", "Marrom ↔ verde-azulado" = "brewer_BrBG", "Rosa ↔ verde" = "brewer_PiYG"),
+  "Contínuas (viridis)" = c("Viridis" = "viridis", "Magma" = "magma", "Plasma" = "plasma", "Cividis (daltonismo)" = "cividis", "Inferno" = "inferno", "Turbo" = "turbo",
+                            "Mako" = "mako", "Rocket" = "rocket"),
+  "Científicas" = c("Térmica" = "cmo_thermal", "Salinidade" = "cmo_haline", "Algas" = "cmo_algae", "Profundidade" = "cmo_deep", "Oslo" = "crameri_oslo", "Batlow" = "crameri_batlow")
 )
+
+# As divergentes de verdade (centro claro): o centro do gradiente vai para zero quando os dados passam por zero.
+.PALETAS_DIVERGENTES <- c("divergente_cinabro", "brewer_RdYlGn", "brewer_RdYlBu", "brewer_RdBu", "brewer_BrBG", "brewer_PiYG")
+
+# Nomes antigos dos gradientes do eixo Z (3D, mapas, mapa de calor): valem como os gradientes da identidade.
+.ESQUEMAS_Z_ANTIGOS <- c(cinabro = "cinabro_degrade", petroleo = "petroleo_degrade", azul = "azul_degrade", divergente = "divergente_cinabro")
 
 # Nomes de paletas que existiram antes e foram retiradas (para deixar a lista curta; programas, revistas e marcas saíram antes):
 # quem ainda os usa (script, configuração salva) recebe a paleta mantida mais parecida e um aviso, em vez de um erro.
@@ -59,19 +74,15 @@
   tol_medio_contraste = "cinabro", tol_claro = "cinabro", tol_escuro = "cinabro", tol_palido = "cinabro",
   brewer_Set1 = "cinabro", brewer_Set2 = "cinabro", brewer_Dark2 = "cinabro", brewer_Paired = "cinabro", brewer_Accent = "cinabro",
   brewer_Pastel1 = "cinabro", brewer_Pastel2 = "cinabro", brewer_Set3 = "cinabro",
-  brewer_Blues = "brewer_YlGnBu", brewer_Greens = "brewer_YlGnBu", brewer_Oranges = "brewer_YlOrRd",
-  brewer_RdYlBu = "brewer_Spectral", brewer_RdBu = "brewer_Spectral", brewer_BrBG = "brewer_RdYlGn", brewer_PiYG = "brewer_RdYlGn",
   brewer_PRGn = "brewer_RdYlGn",
-  viridis = "brewer_YlGnBu", cividis = "brewer_YlGnBu", plasma = "magma", mako = "crameri_oslo", rocket = "magma",
-  cmo_thermal = "inferno", cmo_haline = "brewer_YlGnBu", cmo_matter = "brewer_YlOrRd", cmo_deep = "crameri_oslo",
-  cmo_balance = "brewer_Spectral", cmo_delta = "brewer_Spectral", cmo_curl = "brewer_Spectral",
-  crameri_batlow = "turbo", crameri_roma = "brewer_Spectral", crameri_bam = "brewer_Spectral", crameri_vik = "brewer_Spectral",
+  cmo_matter = "brewer_YlOrRd", cmo_balance = "brewer_Spectral", cmo_delta = "brewer_Spectral", cmo_curl = "brewer_Spectral",
+  crameri_roma = "brewer_Spectral", crameri_bam = "brewer_Spectral", crameri_vik = "brewer_Spectral",
   crameri_berlin = "brewer_Spectral", crameri_lajolla = "brewer_YlOrRd", crameri_bilbao = "brewer_YlOrRd",
   crameri_lapaz = "crameri_oslo", crameri_hawaii = "crameri_oslo", crameri_tokyo = "crameri_oslo",
   tol_por_do_sol = "brewer_YlOrRd", tol_iridescente = "brewer_Spectral", tol_BuRd = "brewer_Spectral",
-  seq_azul = "brewer_YlGnBu", seq_verde = "brewer_YlGnBu", seq_laranja = "brewer_YlOrRd", seq_vermelho = "brewer_Reds",
-  seq_roxo = "brewer_Purples", seq_azul_verde = "brewer_YlGnBu", seq_calor = "brewer_YlOrRd", seq_frio = "brewer_YlGnBu",
-  div_vermelho_azul = "brewer_Spectral", div_espectro = "brewer_Spectral", div_marrom_verde = "brewer_RdYlGn", arco_iris = "brewer_Spectral")
+  seq_azul = "brewer_Blues", seq_verde = "brewer_Greens", seq_laranja = "brewer_Oranges", seq_vermelho = "brewer_Reds",
+  seq_roxo = "brewer_Purples", seq_azul_verde = "brewer_YlGnBu", seq_calor = "brewer_YlOrRd", seq_frio = "brewer_Blues",
+  div_vermelho_azul = "brewer_RdBu", div_espectro = "brewer_Spectral", div_marrom_verde = "brewer_BrBG", arco_iris = "brewer_Spectral")
 
 # Entra: nome da paleta e n. Sai: vetor com n cores (interpola se a paleta for menor que n).
 .paleta <- function(nome, n, cfg_cores = NULL) {
@@ -88,7 +99,7 @@
   } else if (nome %in% .PALETAS_VIRIDIS) {
     if (!.tem("viridisLite")) .erro("Paleta '", nome, "' precisa do pacote viridisLite.")
     fun <- getExportedValue("viridisLite", nome)
-    return(fun(n, end = 0.88))
+    return(fun(n, end = if (nome %in% c("viridis", "cividis")) 0.92 else 0.88))
   } else if (nome == "cinza") {                                # não aparece na lista; o estilo "publicacao_classico" (preto e branco) usa
     return(grDevices::grey.colors(n, start = 0, end = 0.75))
   } else if (nome == "personalizada") {

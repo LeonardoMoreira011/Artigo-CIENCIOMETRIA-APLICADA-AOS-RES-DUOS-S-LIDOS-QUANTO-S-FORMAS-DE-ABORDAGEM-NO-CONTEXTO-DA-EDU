@@ -21,6 +21,9 @@ atualizar_campo <- function(session, campo, valor, cfg0, colunas = NULL) {
   id <- campo$id
   if (is.null(valor)) valor <- valor_inicial(campo, cfg0)
   if (identical(id, "cores_paleta") && length(valor) == 1 && as.character(valor) %in% names(.PALETAS_ANTIGAS)) valor <- .PALETAS_ANTIGAS[[as.character(valor)]]   # paleta que saiu da lista: vale a mais parecida
+  if (identical(id, "calor_esquema") && length(valor) == 1) {                          # nome curto antigo ("petroleo") ou paleta que saiu da lista: vale o gradiente equivalente
+    v1 <- as.character(valor); if (v1 %in% names(.ESQUEMAS_Z_ANTIGOS)) v1 <- .ESQUEMAS_Z_ANTIGOS[[v1]]; if (v1 %in% names(.PALETAS_ANTIGAS)) v1 <- .PALETAS_ANTIGAS[[v1]]
+    if (identical(v1, "cinabro")) v1 <- "cinabro_degrade"; valor <- v1 }
   switch(campo$tipo,
     num = , int = updateNumericInput(session, id, value = if (is.null(valor) || length(valor) != 1) NA else valor),
     txt = , vec = updateTextInput(session, id, value = paste(valor, collapse = ", ")),

@@ -376,3 +376,4 @@ a.btn-topo, .topo-acoes button.btn-topo { display: inline-flex; align-items: cen
 #orbita-barra .orbita-dica { color: #6b6b6b; font-size: 12px; margin-left: 4px; }
 .previa-quadro.orbita-ativa #previa img { cursor: grab; touch-action: none; user-select: none; -webkit-user-drag: none; }
 .previa-quadro.orbita-arrastando #previa img { cursor: grabbing; }
+#orbita-barra .orbita-info { font-variant-numeric: tabular-nums; color: #20242B; font-size: 12px; font-weight: 600; min-width: 64px; }

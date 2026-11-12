@@ -341,8 +341,12 @@
   function e3d() { return TIPOS3D.indexOf($('#tipo_grafico').val()) >= 0 && !!imagem(); }
   function numIn(id, def) { var v = parseFloat($('#' + id).val()); return isFinite(v) ? v : def; }
   function normAz(a) { return ((a + 180) % 360 + 360) % 360 - 180; }
-  function mostrarOrbita() { $('#orbita-barra').css('display', e3d() ? 'flex' : 'none'); $('.previa-quadro').toggleClass('orbita-ativa', e3d()); }
+  function leituraOrbita() { $('#orbita-info').text(Math.round(numIn('tri_azimute', 40)) + '° · ' + Math.round(numIn('tri_elevacao', 28)) + '°'); }
+  $(document).on('click', '#orbita-persp', function () { var v = numIn('tri_perspectiva', 0); $('#tri_perspectiva').val(v > 0 ? 0 : 0.6).trigger('change'); });
+  $(document).on('click', '#orbita-grade', function () { var $g = $('#tri_grade_mostrar'); $g.prop('checked', !$g.prop('checked')).trigger('change'); });
+  function mostrarOrbita() { $('#orbita-barra').css('display', e3d() ? 'flex' : 'none'); $('.previa-quadro').toggleClass('orbita-ativa', e3d()); leituraOrbita(); }
   function enviarOrbita(fim) {
+    $('#orbita-info').text(Math.round(ob.az) + '° · ' + Math.round(ob.el) + '°');
     var d = { az: Math.round(ob.az * 10) / 10, el: Math.round(ob.el * 10) / 10, fim: !!fim, t: ++ob.t };
     if (ob.espera && !fim) { ob.pend = d; return; }
     ob.espera = true; ob.pend = null; Shiny.setInputValue('orbita_3d', d, { priority: 'event' });
@@ -364,7 +368,7 @@
     if (!ob.arrasto) return;
     ob.az = normAz(ob.arrasto.az - (e.clientX - ob.arrasto.x) * 0.5);
     ob.el = Math.min(90, Math.max(0, ob.arrasto.el + (e.clientY - ob.arrasto.y) * 0.4));
-    enviarOrbita(false);
+    $('#orbita-info').text(Math.round(ob.az) + '° · ' + Math.round(ob.el) + '°'); enviarOrbita(false);
   });
   $(document).on('pointerup pointercancel', '.previa-quadro', function () {
     if (!ob.arrasto) return; ob.arrasto = null; $('.previa-quadro').removeClass('orbita-arrastando'); enviarOrbita(true);

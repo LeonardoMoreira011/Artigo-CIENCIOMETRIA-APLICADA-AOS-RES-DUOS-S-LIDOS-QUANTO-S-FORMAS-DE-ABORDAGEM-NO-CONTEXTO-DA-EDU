@@ -58,6 +58,8 @@ calor_casas      <- NULL   # casas decimais desses números
 calor_contorno_cor <- NULL # cor das linhas entre as células / das fronteiras. EX.: "white"
 calor_cor_sem_dado <- NULL # cor do que não tem valor. EX.: "grey88"
 calor_barra_posicao <- NULL # "direita" | "esquerda" | "topo" | "base" | "dentro"
+calor_barra_altura_cm <- NULL  # altura da barra de cores em cm (padrão 4)
+calor_barra_largura_cm <- NULL # largura da barra de cores em cm (padrão 0,4)
 mapa_nivel     <- NULL     # mundo: "pais" | "regiao" (regiões comerciais) · Brasil: "estado" | "regiao"
 mapa_agregacao <- NULL     # "soma" | "media" | "maximo" (valores repetidos ou por região)
 mapa_projecao  <- NULL     # mundo: "robinson" | "equal_earth" | "mercator" | "plana"

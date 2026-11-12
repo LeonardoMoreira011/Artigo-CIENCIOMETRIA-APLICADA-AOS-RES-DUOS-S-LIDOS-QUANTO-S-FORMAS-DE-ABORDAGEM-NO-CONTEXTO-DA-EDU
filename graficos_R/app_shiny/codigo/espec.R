@@ -49,6 +49,8 @@ opcoes_paletas <- function(guardadas = character(0)) {
   minhas <- c("★ A que estou criando (veja abaixo)" = "propria", if (length(guardadas)) stats::setNames(paste0("salva:", guardadas), paste0("★ ", guardadas)))
   c(.PALETAS_GRUPOS, list("Minhas paletas" = minhas))
 }
+# Gradientes do eixo Z (3D, mapas, mapa de calor): as mesmas paletas do motor, menos a "cinabro" das séries (qualitativa; o gradiente da identidade é a "Cinabro (creme → vermelho)").
+opcoes_gradientes <- function() lapply(.PALETAS_GRUPOS, function(g) g[g != "cinabro"])
 .FORMATOS <- c("PNG (imagem)" = "png", "TIFF (revistas)" = "tiff", "JPEG (foto)" = "jpeg", "SVG (editável)" = "svg", "PDF (vetorial)" = "pdf",
                 if (requireNamespace("devEMF", quietly = TRUE)) c("EMF (Word/PowerPoint)" = "emf"))
 .CANTOS <- c("(posição manual)" = "", "Em cima, à esquerda" = "sup_esq", "Em cima, no centro" = "sup_centro",
@@ -412,7 +414,7 @@ ESPEC <- list(
           campo("mapa_projecao", "sel", "Projeção do mapa", "Robinson e Equal Earth distorcem pouco; Mercator estica os polos.", opcoes = c("Robinson" = "robinson", "Equal Earth" = "equal_earth", "Mercator" = "mercator", "Plana (lat/long)" = "plana"), se = .SE_MUNDO),
           campo("mapa_recorte", "sel", "Parte do mundo", NULL, opcoes = c("Mundo todo" = "mundo", "Américas" = "america", "Europa" = "europa", "Ásia-Pacífico" = "asia_pacifico"), se = .SE_MUNDO),
           campo("mapa_rotulos", "sel", "Escrever nos locais", "Nome e/ou valor sobre cada local com dado.", opcoes = c("Nada" = "nenhum", "Nome" = "nome", "Nome e valor" = "nome_valor", "Só o valor" = "valor"), se = .SE_MAPA),
-          campo("calor_esquema", "sel", "Cores do gradiente (eixo Z)", "Cinabro e petróleo: do creme ao tom forte. Divergente: duas cores com um centro (ex.: zero).", opcoes = c("Cinabro (creme → vermelho)" = "cinabro", "Petróleo (creme → azul)" = "petroleo", "Azul (marinho → claro)" = "azul", "Divergente (azul - creme - vermelho)" = "divergente", "Viridis" = "viridis", "Magma" = "magma", "Inferno" = "inferno", "Turbo" = "turbo"), se = .SE_Z),
+          campo("calor_esquema", "selbusca", "Cores do gradiente (eixo Z)", "Todas as paletas do Cinabro servem: digite para procurar. Os degradês vão do menor ao maior valor; os divergentes têm um centro claro (use \"Centro\" para fixá-lo, por exemplo em zero). Dá para inverter, ou escrever as suas próprias cores logo abaixo.", opcoes = opcoes_gradientes(), padrao = "cinabro_degrade", largura = 12, se = .SE_Z),
           campo("calor_cores", "vec", "Ou as suas cores (do menor ao maior)", "Separe por vírgula: white, gold, red (ou #RRGGBB). Vale mais que o gradiente acima.", largura = 12, se = .SE_Z),
           campo("calor_inverter", "chk", "Inverter o gradiente", NULL, se = .SE_Z),
           campo("calor_min", "num", "Escala começa em", "Vazio = o menor valor.", se = .SE_Z),
@@ -427,6 +429,8 @@ ESPEC <- list(
           campo("calor_contorno_cor", "cor", "Cor das linhas entre as células / fronteiras", NULL, se = .SE_Z),
           campo("calor_cor_sem_dado", "cor", "Cor de onde não há valor", NULL, se = .SE_Z),
           campo("calor_barra_posicao", "sel", "Posição da barra de cores", NULL, opcoes = c("Direita" = "direita", "Esquerda" = "esquerda", "Em cima" = "topo", "Embaixo" = "base", "Dentro do gráfico" = "dentro"), se = .SE_Z),
+          campo("calor_barra_altura_cm", "num", "Altura da barra de cores (cm)", "Padrão 4. Aumente para a barra acompanhar a altura do gráfico.", min = 1, max = 20, passo = 0.5, se = .SE_Z, mais = TRUE),
+          campo("calor_barra_largura_cm", "num", "Largura da barra de cores (cm)", "Padrão 0,4.", min = 0.1, max = 3, passo = 0.1, se = .SE_Z, mais = TRUE),
           campo("tri_azimute", "num", "Giro da vista (graus)", "Gira o gráfico em volta do eixo vertical. 40 é o padrão; 0 olha de frente.", min = -360, max = 360, passo = 5, se = .SE_3D),
           campo("tri_elevacao", "num", "Altura do olhar (graus)", "0 = de lado, 90 = de cima. O padrão é 28.", min = 0, max = 90, passo = 2, se = .SE_3D),
           campo("tri_altura", "num", "Altura do eixo Z", "Em relação ao tamanho da base. Padrão 0,7; aumente para um gráfico mais alto.", min = 0.1, max = 3, passo = 0.05, se = .SE_3D),

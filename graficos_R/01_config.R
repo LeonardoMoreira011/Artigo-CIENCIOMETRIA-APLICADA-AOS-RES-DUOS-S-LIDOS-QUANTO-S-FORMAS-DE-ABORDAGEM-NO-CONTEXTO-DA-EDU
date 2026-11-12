@@ -777,8 +777,10 @@ cfg$mapa_calor <- list(
   # agrupar: reordena linhas e/ou colunas por semelhança (agrupamento hierárquico). "nenhum" | "linhas" | "colunas" | "ambos"
   agrupar = "nenhum",
 
-  # esquema_cor: gradiente do eixo Z. "cinabro" (creme -> vermelho) | "petroleo" (creme -> azul petróleo) |
-  #   "azul" (marinho -> azul claro) | "divergente" (petróleo - creme - vermelho; o centro vale 0 ou o "centro" abaixo) | "viridis" | "magma" | "inferno" | "turbo"
+  # esquema_cor: gradiente do eixo Z. Vale qualquer paleta do catálogo (veja mostrar_paletas()): "cinabro_degrade" (creme -> vermelho),
+  #   "petroleo_degrade", "azul_degrade", "divergente_cinabro" (petróleo - creme - vermelho; o centro vale 0 ou o "centro" abaixo),
+  #   brewer_* (Reds, Blues, YlGnBu, Spectral, RdBu...), viridis, magma, plasma, cividis, inferno, turbo, mako, rocket, cmo_*, crameri_*...
+  #   Os nomes curtos antigos "cinabro", "petroleo", "azul" e "divergente" continuam valendo.
   esquema_cor = "cinabro",
 
   # cores_escala: sua própria escala (2 ou mais cores, do menor para o maior valor). NULL = usa o esquema_cor.
