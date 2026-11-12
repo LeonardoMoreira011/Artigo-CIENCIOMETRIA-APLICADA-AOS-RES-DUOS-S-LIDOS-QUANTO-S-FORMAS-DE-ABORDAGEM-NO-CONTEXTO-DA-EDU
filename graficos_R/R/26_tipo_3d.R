@@ -271,11 +271,11 @@
   }
   # arestas do piso mais perto de quem olha
   y_fr <- if (cos(a) > 1e-9 || abs(cos(a)) <= 1e-9) 0 else 1
-  x_fr <- if (abs(sin(a)) < 0.45) (if (sin(a) >= 0) 1 else 0) else if (sin(a) > 0) 0 else 1      # vista quase de frente: o eixo de profundidade vai para o lado de fora, longe dos números do X
+  cantos <- expand.grid(x = c(0, 1), y = c(0, 1)); sxs <- P(cantos$x, cantos$y, 0)$sx; k <- which.min(sxs)               # o eixo Z fica na aresta vertical mais à esquerda
+  x_fr <- if (abs(sin(a)) < 0.45) 1 - cantos$x[k] else if (sin(a) > 0) 0 else 1      # vista quase de frente: o eixo de profundidade vai para o lado de fora, longe dos números do X
   px <- function(t) P(t, y_fr, 0); py <- function(t) P(x_fr, t, 0)
   eixo_aresta(px, tx, E$x$rot, titulos$x, nome = "x", S = SS$x); eixo_aresta(py, ty, E$y$rot, titulos$y, nome = "y", S = SS$y)
   # eixo Z: a aresta vertical que fica mais à esquerda na tela
-  cantos <- expand.grid(x = c(0, 1), y = c(0, 1)); sxs <- P(cantos$x, cantos$y, 0)$sx; k <- which.min(sxs)
   pz <- function(t) P(cantos$x[k], cantos$y[k], t * H)
   eixo_aresta(pz, tz / H, E$z$rot, titulos$z, u_fix = c(-1, 0), ang_fix = 90, nome = "z", S = SS$z)
   lin <- list(px(0), px(1), py(0), py(1), pz(0), pz(1))
